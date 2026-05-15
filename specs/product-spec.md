@@ -354,10 +354,10 @@ At a high level, the settings fall into three groups:
 
 ### Workspace Path Settings
 
-- `tfTools.manifestPath`: string, default `core/embed/.tf-tools/manifest.yaml`. Path to the manifest file, relative to the workspace root.
+- `tfTools.manifestPath`: string, default `core/embed/xtask/tf-tools/manifest.yaml`. Path to the manifest file, relative to the workspace root.
 - `tfTools.cargoWorkspacePath`: string, default `core/embed`. Path to the cargo workspace used for build-related tasks, relative to the workspace root. If the setting is cleared, the workspace root is used.
 - `tfTools.artifactsPath`: string, default `core/build-xtask/artifacts`. Absolute or workspace-relative path to the build artifacts directory. If the setting is cleared, artifact-based IntelliSense resolution is disabled.
-- `tfTools.debug.templatesPath`: string, default `core/embed/.tf-tools/debug`. Path to the directory that contains debug template files, relative to the workspace root unless given as an absolute path.
+- `tfTools.debug.templatesPath`: string, default `core/embed/xtask/tf-tools/debug`. Path to the directory that contains debug template files, relative to the workspace root unless given as an absolute path.
 
 ### Visibility Settings
 
@@ -1006,7 +1006,7 @@ Collection requirements:
 At a high level, the manifest structure looks like this:
 
 ```text
-core/embed/.tf-tools/manifest.yaml
+core/embed/xtask/tf-tools/manifest.yaml
 ├── models
 │   └── [model]
 ├── targets

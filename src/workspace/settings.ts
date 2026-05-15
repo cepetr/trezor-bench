@@ -3,14 +3,14 @@ import * as path from "path";
 
 /**
  * Returns the manifest path setting for the given workspace folder, resolved
- * to an absolute URI. Falls back to `core/embed/.tf-tools/manifest.yaml`
+ * to an absolute URI. Falls back to `core/embed/xtask/tf-tools/manifest.yaml`
  * under the workspace root.
  */
 export function resolveManifestUri(
   workspaceFolder: vscode.WorkspaceFolder
 ): vscode.Uri {
   const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
-  const relative: string = cfg.get<string>("manifestPath") || "core/embed/.tf-tools/manifest.yaml";
+  const relative: string = cfg.get<string>("manifestPath") || "core/embed/xtask/tf-tools/manifest.yaml";
   return vscode.Uri.joinPath(workspaceFolder.uri, relative);
 }
 
@@ -111,14 +111,14 @@ export function readExcludedFilesSettings(
  * Returns the resolved absolute path to the debug templates directory for the
  * given workspace folder. Uses `tfTools.debug.templatesPath` when set (resolved
  * relative to the workspace root when it is not an absolute path); falls back to
- * the default `"core/embed/.tf-tools/debug"` joined to the workspace root.
+ * the default `"core/embed/xtask/tf-tools/debug"` joined to the workspace root.
  */
 export function resolveDebugTemplatesPath(
   workspaceFolder: vscode.WorkspaceFolder
 ): string {
   const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
   const value: string | undefined = cfg.get<string>("debug.templatesPath");
-  const relative = value && value.trim() ? value.trim() : "core/embed/.tf-tools/debug";
+  const relative = value && value.trim() ? value.trim() : "core/embed/xtask/tf-tools/debug";
   if (path.isAbsolute(relative)) {
     return relative;
   }

@@ -213,7 +213,7 @@
       "properties": {
         "tfTools.manifestPath": {
           "type": "string",
-          "default": "core/embed/.tf-tools/manifest.yaml",
+          "default": "core/embed/xtask/tf-tools/manifest.yaml",
           "description": "(Trezor) Path to the tf-tools manifest file, relative to the workspace root.",
           "scope": "resource"
         },
@@ -272,8 +272,8 @@
         },
         "tfTools.debug.templatesPath": {
           "type": "string",
-          "default": "core/embed/.tf-tools/debug",
-          "description": "(Trezor) Path to the directory containing debugger template files (JSONC). Relative to the workspace root. Defaults to 'core/embed/.tf-tools/debug'.",
+          "default": "core/embed/xtask/tf-tools/debug",
+          "description": "(Trezor) Path to the directory containing debugger template files (JSONC). Relative to the workspace root. Defaults to 'core/embed/xtask/tf-tools/debug'.",
           "scope": "resource"
         }
       }
