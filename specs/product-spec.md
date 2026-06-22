@@ -531,6 +531,8 @@ In general:
 
 This section documents the user-facing commands, where they appear, and the rules that govern their availability and execution.
 
+Workflow actions that launch `cargo xtask` run `cargo` directly from the configured cargo workspace path and inherit the VS Code session environment. They avoid shell-mediated startup so user shell scripts cannot unexpectedly replace toolchain-related environment variables such as `PATH` or `VIRTUAL_ENV`.
+
 ### Build
 
 #### Purpose

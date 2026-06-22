@@ -21,7 +21,7 @@ import {
 import { ResolvedOption } from "../configuration/build-options";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
-import { resolveCargoWorkspacePath } from "../workspace/settings";
+import { createCargoTaskExecution } from "./xtask-execution";
 
 // ---------------------------------------------------------------------------
 // Task type identifier
@@ -96,9 +96,6 @@ function cleanShellArgs(ctx: WorkflowContext): string[] {
 
 /**
  * Creates a VS Code `Task` for the given workflow kind.
- *
- * The task uses a `ShellExecution` with the cargo workspace path as the cwd
- * (resolved from the `tfTools.cargoWorkspacePath` setting).
  */
 export function createWorkflowTask(
   kind: WorkflowKind,
@@ -106,20 +103,13 @@ export function createWorkflowTask(
   workspaceFolder: vscode.WorkspaceFolder,
   resolved: ReadonlyArray<ResolvedOption>
 ): vscode.Task {
-  const cargoPath = resolveCargoWorkspacePath(workspaceFolder);
-
   const args =
     kind === "Clean"
       ? cleanShellArgs(ctx)
       : buildShellArgs(kind as Exclude<WorkflowKind, "Clean">, ctx, resolved);
 
-  // cargo xtask <subcommand> [args...]
   const subcommand = kind.toLowerCase();
-  const command = args.length > 0
-    ? `cargo xtask ${subcommand} ${args.join(" ")}`
-    : `cargo xtask ${subcommand}`;
-
-  const shellExec = new vscode.ShellExecution(command, { cwd: cargoPath });
+  const execution = createCargoTaskExecution(subcommand, args, workspaceFolder);
 
   const taskDef = { type: TASK_TYPE, kind };
   const task = new vscode.Task(
@@ -127,7 +117,7 @@ export function createWorkflowTask(
     workspaceFolder,
     buildTaskLabel(kind, ctx),
     TASK_SOURCE,
-    shellExec,
+    execution,
     [] // problemMatchers
   );
 

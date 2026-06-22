@@ -300,12 +300,11 @@ suite("createFlashTask", () => {
     assert.strictEqual(task.name, "Flash to Device Trezor Model T (v1) | HW | Core");
   });
 
-  test("task shell execution includes xtask flash with component-id and model-id", () => {
+  test("task process execution includes xtask flash with component-id and model-id", () => {
     const task = createFlashTask(ctx, MOCK_WORKSPACE_FOLDER);
-    const exec = task.execution as import("vscode").ShellExecution;
-    assert.ok(exec.commandLine?.includes("xtask flash"));
-    assert.ok(exec.commandLine?.includes("core"));
-    assert.ok(exec.commandLine?.includes("-m T2T1"));
+    const exec = task.execution as import("vscode").ProcessExecution;
+    assert.strictEqual(exec.process, "cargo");
+    assert.deepStrictEqual(exec.args, ["xtask", "flash", "core", "-m", "T2T1"]);
   });
 
   test("flash task has no group (not a standard build-task entry)", () => {
@@ -329,12 +328,11 @@ suite("createUploadTask", () => {
     assert.strictEqual(task.name, "Upload to Device Trezor Model T (v1) | HW | Core");
   });
 
-  test("task shell execution includes xtask upload with component-id and model-id", () => {
+  test("task process execution includes xtask upload with component-id and model-id", () => {
     const task = createUploadTask(ctx, MOCK_WORKSPACE_FOLDER);
-    const exec = task.execution as import("vscode").ShellExecution;
-    assert.ok(exec.commandLine?.includes("xtask upload"));
-    assert.ok(exec.commandLine?.includes("core"));
-    assert.ok(exec.commandLine?.includes("-m T2T1"));
+    const exec = task.execution as import("vscode").ProcessExecution;
+    assert.strictEqual(exec.process, "cargo");
+    assert.deepStrictEqual(exec.args, ["xtask", "upload", "core", "-m", "T2T1"]);
   });
 
   test("upload task has no group (not a standard build-task entry)", () => {

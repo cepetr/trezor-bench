@@ -18,7 +18,7 @@ import {
 } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
 import { evaluateWhenExpression, EvalContext } from "../manifest/when-expressions";
-import { resolveCargoWorkspacePath } from "../workspace/settings";
+import { createCargoTaskExecution } from "../tasks/xtask-execution";
 import { logWorkflowFailure } from "../observability/log-channel";
 
 // ---------------------------------------------------------------------------
@@ -219,14 +219,10 @@ export function createFlashTask(
   workspaceFolder: vscode.WorkspaceFolder
 ): vscode.Task {
   const label = formatArtifactTaskLabel("flash", ctx);
-  const cargoPath = resolveCargoWorkspacePath(workspaceFolder);
   const args = [ctx.componentId, "-m", ctx.modelId];
-  const command = `cargo xtask flash ${args.join(" ")}`;
 
   const definition: vscode.TaskDefinition = { type: TASK_TYPE };
-  const execution = new vscode.ShellExecution(command, {
-    cwd: cargoPath,
-  });
+  const execution = createCargoTaskExecution("flash", args, workspaceFolder);
   const task = new vscode.Task(
     definition,
     workspaceFolder,
@@ -248,14 +244,10 @@ export function createUploadTask(
   workspaceFolder: vscode.WorkspaceFolder
 ): vscode.Task {
   const label = formatArtifactTaskLabel("upload", ctx);
-  const cargoPath = resolveCargoWorkspacePath(workspaceFolder);
   const args = [ctx.componentId, "-m", ctx.modelId];
-  const command = `cargo xtask upload ${args.join(" ")}`;
 
   const definition: vscode.TaskDefinition = { type: TASK_TYPE };
-  const execution = new vscode.ShellExecution(command, {
-    cwd: cargoPath,
-  });
+  const execution = createCargoTaskExecution("upload", args, workspaceFolder);
   const task = new vscode.Task(
     definition,
     workspaceFolder,

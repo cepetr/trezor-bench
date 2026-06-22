@@ -98,7 +98,7 @@ suite("Build Task Provider – task failure visibility", () => {
     assert.ok(typeof msg === "string" && msg.length > 0);
   });
 
-  test("build task defines a shell execution", () => {
+  test("build task defines a process execution", () => {
     const activeConfig = {
       modelId: "model-t2t1",
       targetId: "hw",
@@ -128,7 +128,7 @@ suite("Build Task Provider – task failure visibility", () => {
 
     const task = createWorkflowTask("Build", wfCtx, workspaceFolder, []);
     assert.ok(task instanceof vscode.Task, "expected a vscode.Task");
-    assert.ok(task.execution instanceof vscode.ShellExecution, "expected ShellExecution");
+    assert.ok(task.execution instanceof vscode.ProcessExecution, "expected ProcessExecution");
     assert.ok(task.name.startsWith("Build"), "task name should start with Build");
   });
 });
