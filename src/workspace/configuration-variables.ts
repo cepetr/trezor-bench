@@ -40,10 +40,10 @@ export function resolveConfigurationVariablesDeep<T>(
     return value.map((item) => resolveConfigurationVariablesDeep(item, workspaceFolder)) as T;
   }
   if (value !== null && typeof value === "object") {
-    const result: Record<string, unknown> = {};
+    const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
     for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
-      result[resolveConfigurationVariables(key, workspaceFolder)] =
-        resolveConfigurationVariablesDeep(nested, workspaceFolder);
+      const resolvedKey = resolveConfigurationVariables(key, workspaceFolder);
+      result[resolvedKey] = resolveConfigurationVariablesDeep(nested, workspaceFolder);
     }
     return result as T;
   }

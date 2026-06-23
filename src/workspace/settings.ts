@@ -22,7 +22,7 @@ function resolveConfiguredPath(
   if (path.isAbsolute(expanded)) {
     return expanded;
   }
-  return vscode.Uri.joinPath(workspaceFolder.uri, expanded).fsPath;
+  return path.resolve(workspaceFolder.uri.fsPath, expanded);
 }
 
 /**
@@ -75,8 +75,25 @@ export function readTaskExtraEnv(
   workspaceFolder: vscode.WorkspaceFolder
 ): Readonly<Record<string, string>> {
   const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
-  const raw = cfg.get<Record<string, string>>("taskExtraEnv") ?? {};
-  return resolveConfigurationVariablesDeep(raw, workspaceFolder);
+  const raw = cfg.get<unknown>("taskExtraEnv") ?? {};
+
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+    return {};
+  }
+
+  const resolved = resolveConfigurationVariablesDeep(
+    raw as Record<string, unknown>,
+    workspaceFolder
+  ) as Record<string, unknown>;
+
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(resolved)) {
+    if (typeof value === "string") {
+      env[key] = value;
+    }
+  }
+
+  return env;
 }
 
 /**
