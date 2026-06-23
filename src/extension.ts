@@ -7,7 +7,8 @@ import { StatusBarPresenter } from "./ui/status-bar";
 import {
   disposeLogChannel,
   initLogChannel,
-  log,
+  logWarning,
+  logError,
   revealLogs,
   logManifestState,
 } from "./observability/log-channel";
@@ -394,8 +395,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Extension activated without a workspace — show a visible warning and bail.
     const noWorkspaceMsg =
       "Trezor Firmware Tools requires an open workspace folder.";
-    log(`[WARN] ${noWorkspaceMsg}`);
-    vscode.window.showWarningMessage(noWorkspaceMsg);
+    logWarning(noWorkspaceMsg);
     // Mark workflow as blocked (workspace unsupported) so header actions are disabled.
     vscode.commands.executeCommand("setContext", "tfTools.workflowBlocked", true);
     return;
@@ -583,8 +583,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         _manifestService.start().catch((err) => {
           const detail = err instanceof Error ? err.message : String(err);
           const message = `Failed to start manifest service after path change: ${detail}`;
-          log(`[ERROR] ${message}`);
-          void vscode.window.showErrorMessage(`[tf-tools] ${message}`);
+          logError(`[tf-tools] ${message}`);
         });
       }
     })
