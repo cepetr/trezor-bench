@@ -67,6 +67,9 @@ This glossary defines the preferred product and documentation terms used by the 
 | **executable artifact** | The executable file derived for debug launch from artifact name, suffix, and executable extension. | Preferred term when discussing debug readiness. |
 | **artifact status** | The user-facing presence state of an artifact row: `valid` or `missing`. | Use for tree row descriptions, not for low-level file existence checks. |
 | **xtask** | The workspace's Cargo-based task runner used by the extension to launch build-related firmware workflows. | Use this term when referring to the command backend that receives model, target, component, and build-option arguments. |
+| **workflow task environment** | The process environment used when the extension launches a `cargo xtask` workflow task. | Formed from the VS Code session environment plus entries from `tfTools.taskExtraEnv` after configuration variable references are resolved. |
+| **task extra environment** | The workspace setting object that supplies additional environment variables for workflow tasks. | Exposed as `tfTools.taskExtraEnv`. |
+| **configuration variable reference** | A `${...}` placeholder in a tf-tools setting value that the extension resolves when reading that setting. | Covers supported VS Code variable-reference forms such as `${workspaceFolder}` and `${env:NAME}`. Distinct from tf-tools debug substitution tokens in debug templates. |
 | **Build** | The primary command and task that runs the active firmware build workflow. | Capitalize when referring to the named command. |
 | **Clippy** | The command and task that runs lint-oriented firmware checks for the active build context. | Capitalize as the task/command name. |
 | **Check** | The command and task that runs non-building validation for the active build context. | Capitalize as the task/command name. |
@@ -120,6 +123,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
 | **resource-scoped setting** | A VS Code setting that can vary by workspace rather than being globally fixed. | Use when describing tf-tools configuration settings. |
+| **configuration variable resolution** | The extension behavior that expands supported `${...}` references while reading string-based tf-tools settings. | VS Code does not perform this automatically for extension settings; tf-tools resolves supported references in path settings, `tfTools.taskExtraEnv`, and excluded-file glob settings. |
 | **command surface** | A user-facing place where a command is exposed, such as the Command Palette, a view header, an overflow menu, or an inline row action. | Use when describing shared command availability and visibility rules across multiple entry points. |
 | **invalid when expression** | A manifest `when`, `flashWhen`, or `uploadWhen` expression that cannot be parsed, validated, or resolved against known ids. | Use for manifest validation failures rather than runtime false results. |
 | **status bar configuration item** | The status bar entry that shows the active build context and opens the Configuration view. | Preferred product phrase over generic "status bar text". |

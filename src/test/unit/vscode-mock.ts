@@ -132,7 +132,7 @@ class ProcessExecution {
   constructor(
     public readonly process: string,
     public readonly args: string[],
-    public readonly options?: { cwd?: string }
+    public readonly options?: { cwd?: string; env?: Record<string, string> }
   ) {}
 }
 

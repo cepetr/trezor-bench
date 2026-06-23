@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { resolveCargoWorkspacePath } from "../workspace/settings";
+import { readTaskExtraEnv, resolveCargoWorkspacePath } from "../workspace/settings";
 
 /**
  * Creates a `ProcessExecution` for `cargo xtask`.
@@ -12,11 +12,12 @@ export function createCargoTaskExecution(
   args: ReadonlyArray<string>,
   workspaceFolder: vscode.WorkspaceFolder
 ): vscode.ProcessExecution {
-  return new vscode.ProcessExecution(
-    "cargo",
-    ["xtask", subcommand, ...args],
-    {
-      cwd: resolveCargoWorkspacePath(workspaceFolder)
-    }
-  );
+  const options: vscode.ProcessExecutionOptions = {
+    cwd: resolveCargoWorkspacePath(workspaceFolder),
+  };
+  const extraEnv = readTaskExtraEnv(workspaceFolder);
+  if (Object.keys(extraEnv).length > 0) {
+    options.env = { ...extraEnv };
+  }
+  return new vscode.ProcessExecution("cargo", ["xtask", subcommand, ...args], options);
 }
