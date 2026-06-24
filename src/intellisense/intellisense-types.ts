@@ -56,9 +56,9 @@ export interface ActiveCompileCommandsArtifact {
 
 export type ProviderWarningState = "none" | "missing-provider" | "wrong-provider";
 
-/** Whether the extension can currently provide IntelliSense through cpptools. */
+/** Whether the extension can currently provide IntelliSense through cpptools or clangd. */
 export interface IntelliSenseProviderReadiness {
-  /** Whether Microsoft C/C++ (ms-vscode.cpptools) is installed and enabled. */
+  /** Whether a compatible IntelliSense backend is installed and enabled. */
   readonly providerInstalled: boolean;
   /** Whether tf-tools is the active configuration provider in the workspace. */
   readonly providerConfigured: boolean;

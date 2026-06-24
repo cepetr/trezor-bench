@@ -299,9 +299,24 @@ The expected compile-commands path is constructed as `<artifacts-root>/<artifact
 
 The `Compile Commands` row in `Build Artifacts` shows whether that artifact is currently available for the active build context. When the artifact exists, the row shows `valid` and its tooltip shows the resolved artifact path. When it does not exist, the row shows `missing` and its tooltip states that the artifact is missing and shows the resolved artifact path that was checked.
 
-When IntelliSense refresh runs and the active compile-commands artifact is available, the extension parses the active compile database and passes the resulting configuration to the Microsoft C/C++ (`cpptools`) extension so editor assistance follows the currently selected model, target, and component.
+When IntelliSense refresh runs and the active compile-commands artifact is available, the extension parses the active compile database and applies the resulting configuration through the active IntelliSense backend so editor assistance follows the currently selected model, target, and component.
 
-The extension does not intentionally keep using a stale compile database from another build context. If the expected active artifact is unavailable, it clears the previously applied IntelliSense state instead of silently reusing a different artifact.
+The extension supports two IntelliSense backends and selects one automatically:
+
+- **Microsoft C/C++ (`cpptools`)** is preferred. It is used when the installed `ms-vscode.cpptools` extension exposes the supported custom-configuration API and the workspace `C_Cpp.default.configurationProvider` setting points to `cepetr.tf-tools`. In this mode the parsed compile database is pushed to cpptools through its custom configuration provider.
+- **clangd (`llvm-vs-code-extensions.vscode-clangd`)** is used as a fallback when cpptools cannot be used — either because the Microsoft C/C++ extension is not installed (as in editors such as Cursor, which provide C/C++ support through clangd instead) or because an installed Microsoft C/C++ extension does not expose the supported custom-configuration API — and the clangd extension is installed. In this mode the extension points clangd at the active compile database rather than pushing per-file configuration.
+
+When cpptools is installed but a different configuration provider is active, the extension treats this as a misconfiguration to be fixed and does not silently fall back to clangd.
+
+When the clangd backend is active, the extension makes the active compile database discoverable to clangd without requiring manual setup:
+
+- it maintains a managed compile database at `.tf-tools/compile_commands.json` in the workspace root as a link to the active compile-commands artifact, and retargets that link whenever the active build context changes;
+- it ensures the workspace `.clangd` configuration points clangd at the `.tf-tools` directory. If no `.clangd` file exists, the extension creates one it owns and marks it as managed by Trezor Firmware Tools. If a `.clangd` file already exists without the managed marker and without a matching `CompilationDatabase` entry, the extension does not modify it and instead logs a warning that clangd may not discover the managed compile database;
+- it restarts the clangd language server after applying or clearing the managed compile database so clangd reloads the current configuration.
+
+The managed `.tf-tools/compile_commands.json` link and the managed `.clangd` file are generated workspace-local artifacts rather than authored configuration, so they are not intended for version control.
+
+The extension does not intentionally keep using a stale compile database from another build context. If the expected active artifact is unavailable, it clears the previously applied IntelliSense state instead of silently reusing a different artifact. For the clangd backend, clearing removes the managed `.tf-tools/compile_commands.json` link and restarts clangd.
 
 ### Excluded-File Visibility
 
@@ -337,8 +352,8 @@ The extension also provides `Refresh IntelliSense` as a manual way to re-run Int
 When IntelliSense prerequisites are not satisfied, the extension reports that state explicitly instead of silently pretending IntelliSense is aligned:
 
 - if the active compile-commands artifact is missing, the extension clears previously applied IntelliSense state and the `Compile Commands` row shows the missing state
-- if the Microsoft C/C++ extension is unavailable, the extension reports that IntelliSense integration is unavailable
-- if the Microsoft C/C++ extension is installed but a different configuration provider is active, the extension reports the misconfiguration and can offer a workspace-setting fix
+- if no supported IntelliSense backend is available — neither the Microsoft C/C++ extension exposing the supported custom-configuration API nor the clangd extension — the extension reports that IntelliSense integration is unavailable
+- if the Microsoft C/C++ extension is installed but a different configuration provider is active, the extension reports the misconfiguration and can offer a workspace-setting fix, and does not fall back to clangd while that misconfiguration stands
 
 When excluded-file input data becomes unavailable, excluded-file badges and overlays are also cleared so stale excluded-file state does not remain visible after the active context changes.
 

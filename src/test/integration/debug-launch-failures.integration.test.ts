@@ -33,7 +33,6 @@ import {
   makeDebugTargetWithExtension,
   makeIntelliSenseLoadedState,
   debugLaunchFailuresWorkspaceRoot,
-  debugLaunchValidTemplatesRoot,
 } from "../unit/workflow-test-helpers";
 import { ManifestStateLoaded, ManifestComponentDebugProfile } from "../../manifest/manifest-types";
 
@@ -110,7 +109,7 @@ suite("Debug Launch Failures – no-match", () => {
 
     // Should not throw — blocked launch is handled gracefully
     await assert.doesNotReject(
-      () => executeDebugLaunch(workspaceFolder, manifest, config, "/nonexistent/artifacts", "/nonexistent/templates"),
+      () => executeDebugLaunch(workspaceFolder, manifest, config),
       "expected executeDebugLaunch to resolve without throwing for no-match"
     );
   });
@@ -144,7 +143,7 @@ suite("Debug Launch Failures – first-match-wins", () => {
     }
 
     await assert.doesNotReject(
-      () => executeDebugLaunch(workspaceFolder, manifest, config, "/nonexistent/artifacts", "/nonexistent/templates"),
+      () => executeDebugLaunch(workspaceFolder, manifest, config),
       "expected executeDebugLaunch to resolve without throwing for first-match"
     );
   });
@@ -189,7 +188,7 @@ suite("Debug Launch Failures – missing-executable", () => {
     }
 
     await assert.doesNotReject(
-      () => executeDebugLaunch(workspaceFolder, manifest, config, tmpDir, debugLaunchValidTemplatesRoot()),
+      () => executeDebugLaunch(workspaceFolder, manifest, config),
       "expected executeDebugLaunch to resolve without throwing for missing executable"
     );
   });
@@ -225,7 +224,7 @@ suite("Debug Launch Failures – missing-template", () => {
 
       // Use tmpDir as both artifacts and templates root — template is missing
       await assert.doesNotReject(
-        () => executeDebugLaunch(workspaceFolder, manifest, config, tmpDir, tmpDir),
+        () => executeDebugLaunch(workspaceFolder, manifest, config),
         "expected executeDebugLaunch to resolve without throwing for missing template"
       );
     } finally {
@@ -266,7 +265,7 @@ suite("Debug Launch Failures – malformed-template", () => {
       const config = makeConfig("T2T1");
 
       await assert.doesNotReject(
-        () => executeDebugLaunch(workspaceFolder, manifest, config, tmpDir, failuresTemplatesRoot),
+        () => executeDebugLaunch(workspaceFolder, manifest, config),
         "expected executeDebugLaunch to resolve without throwing for malformed template"
       );
     } finally {
@@ -318,7 +317,7 @@ suite("Debug Launch Failures – unresolved-variable", () => {
       const config = makeConfig("T2T1");
 
       await assert.doesNotReject(
-        () => executeDebugLaunch(workspaceFolder, manifest, config, tmpDir, failuresTemplatesRoot),
+        () => executeDebugLaunch(workspaceFolder, manifest, config),
         "expected executeDebugLaunch to resolve without throwing for unknown-var template"
       );
     } finally {
@@ -355,7 +354,7 @@ suite("Debug Launch Failures – traversal", () => {
       const config = makeConfig("T2T1");
 
       await assert.doesNotReject(
-        () => executeDebugLaunch(workspaceFolder, manifest, config, tmpDir, tmpDir),
+        () => executeDebugLaunch(workspaceFolder, manifest, config),
         "expected executeDebugLaunch to resolve without throwing for traversal attempt"
       );
     } finally {
@@ -386,7 +385,7 @@ suite("Debug Launch Failures – manifest-invalid", () => {
     const config = makeConfig("T2T1");
 
     await assert.doesNotReject(
-      () => executeDebugLaunch(workspaceFolder, manifest, config, "/nonexistent/artifacts", "/nonexistent/templates"),
+      () => executeDebugLaunch(workspaceFolder, manifest, config),
       "expected executeDebugLaunch to resolve without throwing for manifest-invalid"
     );
   });

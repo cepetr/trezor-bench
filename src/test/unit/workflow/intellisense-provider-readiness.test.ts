@@ -12,10 +12,12 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import {
-  checkProviderReadiness,
   applyProviderSettingFix,
   PROVIDER_SETTING_FIX,
+  CPPTOOLS_EXTENSION_ID,
 } from "../../../intellisense/cpptools-provider";
+import { checkProviderReadiness } from "../../../intellisense/intellisense-backend";
+import { CLANGD_EXTENSION_ID } from "../../../intellisense/clangd-provider";
 
 // ---------------------------------------------------------------------------
 // Access the vscode mock so we can control extension and configuration state
@@ -33,52 +35,87 @@ type GetConfigurationFn = (section?: string) => { get: (key: string) => unknown 
 
 let originalGetExtension: GetExtensionFn;
 let originalGetConfiguration: GetConfigurationFn;
+let originalExtensionsAll: unknown[];
+
+function restoreExtensionMocks(): void {
+  vscodeMock.extensions.getExtension = originalGetExtension;
+  vscodeMock.extensions.all = originalExtensionsAll;
+  vscodeMock.workspace.getConfiguration = originalGetConfiguration;
+}
 
 function stubExtensionMissing(): void {
   vscodeMock.extensions.getExtension = () => undefined;
+  vscodeMock.extensions.all = [];
 }
 
-function stubExtensionInstalled(): void {
-  vscodeMock.extensions.getExtension = (_id: string) => ({
-    id: "ms-vscode.cpptools",
+function makeCpptoolsExtensionStub(id: string, overrides: Record<string, unknown> = {}) {
+  return {
+    id,
     isActive: true,
     exports: {
       getApi: (_version: number) => ({
-        registerCustomConfigurationProvider() {},
-        notifyReady() {},
-        didChangeCustomConfiguration() {},
-        didChangeCustomBrowseConfiguration() {},
-        dispose() {},
+        registerCustomConfigurationProvider() { },
+        notifyReady() { },
+        didChangeCustomConfiguration() { },
+        didChangeCustomBrowseConfiguration() { },
+        dispose() { },
       }),
     },
-  });
+    ...overrides,
+  };
 }
 
-function stubExtensionInstalledWithUnsupportedApi(): void {
-  vscodeMock.extensions.getExtension = (_id: string) => ({
-    id: "ms-vscode.cpptools",
+function stubExtensionInstalled(id = "ms-vscode.cpptools"): void {
+  const extension = makeCpptoolsExtensionStub(id);
+  vscodeMock.extensions.getExtension = (requestedId: string) =>
+    requestedId === id ? extension : undefined;
+  vscodeMock.extensions.all = [extension];
+}
+
+function stubExtensionInstalledWithUnsupportedApi(id = "ms-vscode.cpptools"): void {
+  const extension = {
+    id,
     isActive: true,
     exports: {
       getApi: () => {
         throw new RangeError("Invalid version");
       },
     },
-  });
+  };
+  vscodeMock.extensions.getExtension = (requestedId: string) =>
+    requestedId === id ? extension : undefined;
+  vscodeMock.extensions.all = [extension];
 }
 
-function stubExtensionInstalledButInactive(): void {
+function stubExtensionInstalledButInactive(id = "ms-vscode.cpptools"): void {
   const extension = {
-    id: "ms-vscode.cpptools",
+    id,
     isActive: false,
   };
 
   Object.defineProperty(extension, "exports", {
     get() {
-      throw new Error("Extension 'ms-vscode.cpptools' is not known or not activated");
+      throw new Error(`Extension '${id}' is not known or not activated`);
     },
   });
 
-  vscodeMock.extensions.getExtension = (_id: string) => extension;
+  vscodeMock.extensions.getExtension = (requestedId: string) =>
+    requestedId === id ? extension : undefined;
+  vscodeMock.extensions.all = [extension];
+}
+
+function stubClangdExtensionInstalled(): void {
+  const clangdExtension = { id: CLANGD_EXTENSION_ID, isActive: true };
+  const existingGetExtension = vscodeMock.extensions.getExtension as GetExtensionFn;
+  vscodeMock.extensions.getExtension = (id: string) => {
+    if (id === CLANGD_EXTENSION_ID) {
+      return clangdExtension;
+    }
+    return existingGetExtension(id);
+  };
+  if (!vscodeMock.extensions.all.some((ext: { id: string }) => ext.id === CLANGD_EXTENSION_ID)) {
+    vscodeMock.extensions.all = [...vscodeMock.extensions.all, clangdExtension];
+  }
 }
 
 function stubConfigurationProvider(value: string | undefined): void {
@@ -94,12 +131,12 @@ function stubConfigurationProvider(value: string | undefined): void {
 suite("checkProviderReadiness – missing-provider", () => {
   suiteSetup(() => {
     originalGetExtension = vscodeMock.extensions.getExtension as GetExtensionFn;
+    originalExtensionsAll = vscodeMock.extensions.all;
     originalGetConfiguration = vscodeMock.workspace.getConfiguration as GetConfigurationFn;
   });
 
   suiteTeardown(() => {
-    vscodeMock.extensions.getExtension = originalGetExtension;
-    vscodeMock.workspace.getConfiguration = originalGetConfiguration;
+    restoreExtensionMocks();
   });
 
   setup(() => {
@@ -130,29 +167,49 @@ suite("checkProviderReadiness – missing-provider", () => {
     );
   });
 
-  test("lastWarningMessage mentions ms-vscode.cpptools", () => {
+  test("lastWarningMessage mentions known IntelliSense backends", () => {
     const result = checkProviderReadiness();
     assert.ok(
-      result.lastWarningMessage?.includes("ms-vscode.cpptools"),
-      `expected message to mention 'ms-vscode.cpptools', got: ${result.lastWarningMessage}`
+      result.lastWarningMessage?.includes(CPPTOOLS_EXTENSION_ID),
+      `expected message to mention '${CPPTOOLS_EXTENSION_ID}', got: ${result.lastWarningMessage}`
+    );
+
+    assert.ok(
+      result.lastWarningMessage?.includes(CLANGD_EXTENSION_ID),
+      `expected message to mention '${CLANGD_EXTENSION_ID}', got: ${result.lastWarningMessage}`
     );
   });
 
-  test("warningState is 'missing-provider' when cpptools API does not support v7", () => {
+  test("warningState is 'missing-provider' when cpptools API is unsupported and clangd is absent", () => {
     stubExtensionInstalledWithUnsupportedApi();
     stubConfigurationProvider("cepetr.tf-tools");
     const result = checkProviderReadiness();
     assert.strictEqual(result.warningState, "missing-provider");
   });
 
-  test("unsupported cpptools API message mentions supported v7 custom-configuration API", () => {
+  test("unsupported cpptools API message names cpptools and clangd when clangd is absent", () => {
     stubExtensionInstalledWithUnsupportedApi();
     stubConfigurationProvider("cepetr.tf-tools");
     const result = checkProviderReadiness();
+    assert.strictEqual(result.warningState, "missing-provider");
     assert.ok(
-      result.lastWarningMessage?.includes("v7 custom-configuration API"),
-      `expected unsupported-api message, got: ${result.lastWarningMessage}`
+      result.lastWarningMessage?.includes(CPPTOOLS_EXTENSION_ID),
+      `expected unsupported-api message to mention ${CPPTOOLS_EXTENSION_ID}, got: ${result.lastWarningMessage}`
     );
+    assert.ok(
+      result.lastWarningMessage?.includes(CLANGD_EXTENSION_ID),
+      `expected unsupported-api message to mention clangd, got: ${result.lastWarningMessage}`
+    );
+  });
+
+  test("warningState is 'none' when cpptools API is unsupported but clangd is installed", () => {
+    stubExtensionInstalledWithUnsupportedApi();
+    stubClangdExtensionInstalled();
+    stubConfigurationProvider("cepetr.tf-tools");
+    const result = checkProviderReadiness();
+    assert.strictEqual(result.warningState, "none");
+    assert.strictEqual(result.providerInstalled, true);
+    assert.strictEqual(result.providerConfigured, true);
   });
 });
 
@@ -163,12 +220,12 @@ suite("checkProviderReadiness – missing-provider", () => {
 suite("checkProviderReadiness – wrong-provider", () => {
   suiteSetup(() => {
     originalGetExtension = vscodeMock.extensions.getExtension as GetExtensionFn;
+    originalExtensionsAll = vscodeMock.extensions.all;
     originalGetConfiguration = vscodeMock.workspace.getConfiguration as GetConfigurationFn;
   });
 
   suiteTeardown(() => {
-    vscodeMock.extensions.getExtension = originalGetExtension;
-    vscodeMock.workspace.getConfiguration = originalGetConfiguration;
+    restoreExtensionMocks();
   });
 
   setup(() => {
@@ -229,12 +286,12 @@ suite("checkProviderReadiness – wrong-provider", () => {
 suite("checkProviderReadiness – ready (none)", () => {
   suiteSetup(() => {
     originalGetExtension = vscodeMock.extensions.getExtension as GetExtensionFn;
+    originalExtensionsAll = vscodeMock.extensions.all;
     originalGetConfiguration = vscodeMock.workspace.getConfiguration as GetConfigurationFn;
   });
 
   suiteTeardown(() => {
-    vscodeMock.extensions.getExtension = originalGetExtension;
-    vscodeMock.workspace.getConfiguration = originalGetConfiguration;
+    restoreExtensionMocks();
   });
 
   test("warningState is 'none' when provider is set to cepetr.tf-tools", () => {
@@ -329,12 +386,12 @@ suite("applyProviderSettingFix", () => {
   });
 
   test("calls getConfiguration with 'C_Cpp' section", async () => {
-    await applyProviderSettingFix(fakeFolder, () => {});
+    await applyProviderSettingFix(fakeFolder, () => { });
     assert.strictEqual(getConfigSectionArg, "C_Cpp");
   });
 
   test("updates PROVIDER_SETTING_FIX.key to PROVIDER_SETTING_FIX.correctValue", async () => {
-    await applyProviderSettingFix(fakeFolder, () => {});
+    await applyProviderSettingFix(fakeFolder, () => { });
     assert.ok(updateCalls.length > 0, "expected at least one update call");
     const call = updateCalls[0];
     assert.strictEqual(call.key, PROVIDER_SETTING_FIX.key);
@@ -342,7 +399,7 @@ suite("applyProviderSettingFix", () => {
   });
 
   test("uses WorkspaceFolder configuration scope (target = 3)", async () => {
-    await applyProviderSettingFix(fakeFolder, () => {});
+    await applyProviderSettingFix(fakeFolder, () => { });
     assert.strictEqual(updateCalls[0].target, vscodeMock.ConfigurationTarget.WorkspaceFolder);
   });
 
@@ -363,7 +420,7 @@ suite("applyProviderSettingFix", () => {
   });
 
   test("produces exactly one update call per invocation", async () => {
-    await applyProviderSettingFix(fakeFolder, () => {});
+    await applyProviderSettingFix(fakeFolder, () => { });
     assert.strictEqual(updateCalls.length, 1);
   });
 });

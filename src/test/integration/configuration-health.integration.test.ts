@@ -10,7 +10,7 @@ import * as os from "os";
 import { ManifestService } from "../../manifest/manifest-service";
 import { ManifestState, ManifestStateLoaded } from "../../manifest/manifest-types";
 import { resolveActiveArtifact, buildResolutionInputs, deriveArtifactPath } from "../../intellisense/artifact-resolution";
-import { checkProviderReadiness } from "../../intellisense/cpptools-provider";
+import { checkProviderReadiness } from "../../intellisense/intellisense-backend";
 import { IntelliSenseService } from "../../intellisense/intellisense-service";
 import { ActiveConfig } from "../../configuration/active-config";
 import { SectionItem, SectionId, ConfigurationTreeProvider } from "../../ui/configuration-tree";
@@ -352,8 +352,9 @@ suite("checkProviderReadiness – integration", () => {
     // In the integration test environment, ms-vscode.cpptools is not installed.
     // This test validates the detection path works correctly in the host.
     const cpptoolsExt = vscode.extensions.getExtension("ms-vscode.cpptools");
+    const clangdExt = vscode.extensions.getExtension("llvm-vs-code-extensions.vscode-clangd");
     const result = checkProviderReadiness();
-    if (!cpptoolsExt) {
+    if (!cpptoolsExt && !clangdExt) {
       assert.strictEqual(result.providerInstalled, false);
       assert.strictEqual(result.warningState, "missing-provider");
     }
@@ -541,8 +542,9 @@ suite("IntelliSenseService – provider warning flows", () => {
   test("missing-provider warningState persists when cpptools is absent", async () => {
     // In the integration test host, ms-vscode.cpptools is not installed.
     const cpptoolsExt = vscode.extensions.getExtension("ms-vscode.cpptools");
-    if (cpptoolsExt) {
-      // Skip: can't isolate missing-provider when cpptools is present
+    const clangdExt = vscode.extensions.getExtension("llvm-vs-code-extensions.vscode-clangd");
+    if (cpptoolsExt || clangdExt) {
+      // Skip: can't isolate missing-provider when an IntelliSense backend is present
       return;
     }
     const svc = new IntelliSenseService();

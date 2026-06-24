@@ -245,10 +245,8 @@ suite("Debug Launch – no launch.json persistence", () => {
 
     const manifest = makeExeManifest();
     const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: new Date().toISOString() };
-    const artifactsRoot = debugLaunchValidWorkspaceRoot();
-    const templatesRoot = debugLaunchValidTemplatesRoot();
 
-    await executeDebugLaunch(workspaceFolder, manifest, config, artifactsRoot, templatesRoot).catch(() => undefined);
+    await executeDebugLaunch(workspaceFolder, manifest, config).catch(() => undefined);
 
     const existsAfter = fs.existsSync(launchJson);
     if (!existed) {

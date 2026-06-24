@@ -1,11 +1,11 @@
 import * as vscode from "vscode";
-import { IntelliSenseProviderReadiness, ProviderPayload, ProviderSettingFix } from "./intellisense-types";
+import { ProviderPayload, ProviderSettingFix } from "./intellisense-types";
 
 // ---------------------------------------------------------------------------
 // Microsoft C/C++ extension ID and provider constants
 // ---------------------------------------------------------------------------
 
-const CPPTOOLS_EXTENSION_ID = "ms-vscode.cpptools";
+export const CPPTOOLS_EXTENSION_ID = "ms-vscode.cpptools";
 const TF_TOOLS_PROVIDER_ID = "cepetr.tf-tools";
 const CPPTOOLS_API_VERSION_LATEST = 7;
 
@@ -65,41 +65,31 @@ export interface CpptoolsCustomConfigurationProvider {
 }
 
 // ---------------------------------------------------------------------------
-// Provider readiness check
+// Cpptools readiness evaluation
 // ---------------------------------------------------------------------------
 
+export type CpptoolsReadinessResult =
+  | { readonly status: "ready" }
+  | { readonly status: "absent" }
+  | { readonly status: "unsupported"; readonly extensionId: string }
+  | { readonly status: "wrong-provider"; readonly message: string };
+
 /**
- * Evaluates whether the cpptools provider prerequisites are currently satisfied.
+ * Evaluates whether cpptools can serve IntelliSense through tf-tools.
  *
- * - `missing-provider`: ms-vscode.cpptools is not installed or not enabled.
- * - `wrong-provider`: cpptools is present but the workspace
- *   `C_Cpp.default.configurationProvider` does not point to tf-tools.
- * - `none`: both prerequisites are satisfied.
- *
- * Pure, synchronous, side-effect-free — safe to call from the serialized refresh path.
+ * Returns `unsupported` when a known C/C++ extension is installed but does not
+ * expose the supported custom-configuration API.
  */
-export function checkProviderReadiness(): IntelliSenseProviderReadiness {
+export function evaluateCpptoolsReadiness(): CpptoolsReadinessResult {
   const ext = vscode.extensions.getExtension(CPPTOOLS_EXTENSION_ID);
 
   if (!ext) {
-    return {
-      providerInstalled: false,
-      providerConfigured: false,
-      warningState: "missing-provider",
-      lastWarningMessage:
-        "IntelliSense integration is unavailable: Microsoft C/C++ extension (ms-vscode.cpptools) is not installed or is disabled.",
-    };
+    return { status: "absent" };
   }
 
   const apiState = getCpptoolsApiStateSafely(ext);
   if (apiState === "unsupported") {
-    return {
-      providerInstalled: false,
-      providerConfigured: false,
-      warningState: "missing-provider",
-      lastWarningMessage:
-        "IntelliSense integration is unavailable: installed Microsoft C/C++ extension does not expose the supported v7 custom-configuration API.",
-    };
+    return { status: "unsupported", extensionId: ext.id };
   }
 
   const cfg = vscode.workspace.getConfiguration("C_Cpp");
@@ -107,7 +97,6 @@ export function checkProviderReadiness(): IntelliSenseProviderReadiness {
     "default.configurationProvider"
   );
 
-  // Provider must be explicitly set to tf-tools — empty/unset is NOT acceptable.
   const isConfigured =
     typeof configuredProvider === "string" &&
     configuredProvider.toLowerCase() === TF_TOOLS_PROVIDER_ID.toLowerCase();
@@ -115,21 +104,15 @@ export function checkProviderReadiness(): IntelliSenseProviderReadiness {
   if (!isConfigured) {
     const currentValue = configuredProvider ?? "(unset)";
     return {
-      providerInstalled: true,
-      providerConfigured: false,
-      warningState: "wrong-provider",
-      lastWarningMessage:
+      status: "wrong-provider",
+      message:
         `IntelliSense integration unavailable: the workspace C_Cpp.default.configurationProvider is ` +
         `"${currentValue}" instead of Trezor Firmware Tools. ` +
         `Update the setting to "cepetr.tf-tools" or use the workspace fix to let tf-tools provide IntelliSense.`,
     };
   }
 
-  return {
-    providerInstalled: true,
-    providerConfigured: true,
-    warningState: "none",
-  };
+  return { status: "ready" };
 }
 
 // ---------------------------------------------------------------------------

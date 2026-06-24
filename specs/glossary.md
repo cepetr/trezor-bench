@@ -83,8 +83,10 @@ This glossary defines the preferred product and documentation terms used by the 
 | --- | --- | --- |
 | **IntelliSense** | The editor assistance aligned to the active compile database and delivered through the configured C/C++ provider. | Keep the VS Code spelling and capitalization. |
 | **compile database** | The parsed compile-commands data used to derive per-file C/C++ configuration. | Product-facing equivalent of the compile commands artifact contents. |
-| **configuration provider** | The C/C++ IntelliSense provider that tf-tools integrates with. | In this product, this means the cpptools custom configuration provider contract. |
-| **provider readiness** | Whether the required C/C++ provider is installed and configured for tf-tools. | Use when describing prerequisite warnings. |
+| **configuration provider** | The C/C++ IntelliSense provider that tf-tools integrates with. | In this product, this is either the cpptools custom configuration provider contract or the clangd language server driven through a managed compile database. |
+| **IntelliSense backend** | The C/C++ tooling tf-tools drives to deliver IntelliSense: either Microsoft C/C++ (`cpptools`) or clangd (`llvm-vs-code-extensions.vscode-clangd`). | cpptools is preferred; clangd is the fallback used when cpptools cannot be used and the clangd extension is installed. |
+| **managed compile database** | The `.tf-tools/compile_commands.json` link maintained in the workspace root that points the clangd backend at the active compile-commands artifact. | Use when describing how the clangd backend discovers the active compile database. |
+| **provider readiness** | Whether a supported IntelliSense backend is installed and usable for tf-tools: cpptools configured with `cepetr.tf-tools` as the provider, or the clangd extension installed. | Use when describing prerequisite warnings. |
 | **excluded file** | A file that falls within excluded-file scope but is not included in the active compile database. | Preferred user-facing term for the feature. |
 | **excluded-file scope** | The combination of configured filename patterns and folder globs that limits where excluded-file marking applies. | Prefer this term over "rules" when describing the overall scope behavior. |
 | **Explorer badge** | The exclusion marker shown in the VS Code Explorer for excluded files. | Use for the explorer surface specifically. |

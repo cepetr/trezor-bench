@@ -49,4 +49,5 @@ TypeScript 5.x targeting VS Code 1.105+ desktop extension host: Follow standard 
 <!-- MANUAL ADDITIONS START -->
 - String-based tf-tools settings support configuration variable references such as `${workspaceFolder}` and `${env:NAME}`; see `Extension Configuration` in `specs/product-spec.md`.
 - Workflow tasks merge `tfTools.taskExtraEnv` on top of the VS Code session environment; see `workflow task environment` in `specs/glossary.md`.
+- IntelliSense has two backends: Microsoft C/C++ (`cpptools`, preferred) and clangd (`llvm-vs-code-extensions.vscode-clangd`, fallback when cpptools cannot be used). The clangd backend maintains a managed compile database at `.tf-tools/compile_commands.json` plus a managed `.clangd` config and restarts clangd; see `IntelliSense` in `specs/product-spec.md` and `IntelliSense backend` / `managed compile database` in `specs/glossary.md`.
 <!-- MANUAL ADDITIONS END -->
