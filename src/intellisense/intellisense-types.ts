@@ -60,7 +60,7 @@ export type ProviderWarningState = "none" | "missing-provider" | "wrong-provider
 export interface IntelliSenseProviderReadiness {
   /** Whether a compatible IntelliSense backend is installed and enabled. */
   readonly providerInstalled: boolean;
-  /** Whether tf-tools is the active configuration provider in the workspace. */
+  /** Whether tf-tools has configured IntelliSense in the workspace (either as the active cpptools provider, or via managed clangd configuration). */
   readonly providerConfigured: boolean;
   /** Current warning condition, if any. */
   readonly warningState: ProviderWarningState;
