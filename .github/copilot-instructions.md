@@ -14,7 +14,7 @@ Auto-generated from all feature plans. Last updated: 2026-04-11
 - TypeScript 5.x targeting VS Code 1.105+ desktop extension host + VS Code Extension API, existing IntelliSense payload parser and service, existing manifest/settings helpers, Node.js `path` APIs, `minimatch` for constrained glob evaluation, Mocha test runner, `@vscode/test-electron` integration harness (004-excluded-file-visibility)
 - Resource-scoped VS Code settings for `tfTools.excludedFiles.grayInTree`, `tfTools.excludedFiles.showEditorOverlay`, `tfTools.excludedFiles.fileNamePatterns`, and `tfTools.excludedFiles.folderGlobs`; existing active compile-database payload held in extension memory; no new persisted workspace state (004-excluded-file-visibility)
 - TypeScript 5.x targeting VS Code 1.105+ desktop extension host + VS Code Extension API, existing manifest parser and when-expression evaluator, existing task-execution helpers, existing artifact-resolution helper module, Node.js `fs` and `path` APIs, Mocha test runner, `@vscode/test-electron` integration harness (005-flash-upload-actions)
-- Existing manifest file and resource-scoped settings (`tfTools.artifactsPath`, `tfTools.manifestPath`, `tfTools.cargoWorkspacePath`), existing workspace-state active configuration, and extension-memory artifact/action state; no new persisted workspace state required (005-flash-upload-actions)
+- Existing manifest file and resource-scoped settings (`tfTools.artifactsPath`, `tfTools.manifestPath`, `tfTools.cargoWorkspacePath`, `tfTools.taskExtraEnv`), existing workspace-state active configuration, and extension-memory artifact/action state; no new persisted workspace state required (005-flash-upload-actions)
 - TypeScript 5.x targeting VS Code 1.105+ desktop extension host + VS Code Extension API, existing `yaml`-backed manifest parser and `when` evaluator, existing artifact-resolution and log-channel helpers, Node.js `fs` and `path` APIs, `jsonc-parser` for debugger template files, Mocha test runner, `@vscode/test-electron` integration harness (006-debug-launch)
 - Existing manifest file plus new `debug` entries, existing workspace-state active model/target/component selection, resource-scoped VS Code settings for `tfTools.manifestPath`, `tfTools.artifactsPath`, and `tfTools.debug.templatesPath`, and extension-memory debug availability and artifact state; no new persisted workspace state required (006-debug-launch)
 - TypeScript 5.x targeting VS Code 1.105+ desktop extension host + VS Code Extension API, existing `yaml` parser, existing `when` parser and evaluator, Node.js `fs` and `path` APIs, `jsonc-parser`, Mocha test runner, `@vscode/test-electron` (006-debug-launch)
@@ -40,10 +40,13 @@ npm test && npm run lint
 TypeScript 5.x targeting VS Code 1.105+ desktop extension host: Follow standard conventions
 
 ## Recent Changes
+- task-extra-env: Added `tfTools.taskExtraEnv` for workflow task environment overrides and configuration variable resolution for string-based tf-tools settings (`src/workspace/configuration-variables.ts`, `specs/product-spec.md`)
 - 007-run-debug-integration: Added TypeScript 5.x targeting VS Code 1.105+ + VS Code Extension API, existing `yaml` parser-backed manifest model, existing `jsonc-parser` template loader, Node.js `fs`/`path` APIs, existing output-channel logging helpers
 - 006-debug-launch: Added TypeScript 5.x targeting VS Code 1.105+ desktop extension host + VS Code Extension API, existing `yaml` parser, existing `when` parser and evaluator, Node.js `fs` and `path` APIs, `jsonc-parser`, Mocha test runner, `@vscode/test-electron`
 - 006-debug-launch: Added TypeScript 5.x targeting VS Code 1.105+ desktop extension host + VS Code Extension API, existing `yaml`-backed manifest parser and `when` evaluator, existing artifact-resolution and log-channel helpers, Node.js `fs` and `path` APIs, `jsonc-parser` for debugger template files, Mocha test runner, `@vscode/test-electron` integration harness
 
 
 <!-- MANUAL ADDITIONS START -->
+- String-based tf-tools settings support configuration variable references such as `${workspaceFolder}` and `${env:NAME}`; see `Extension Configuration` in `specs/product-spec.md`.
+- Workflow tasks merge `tfTools.taskExtraEnv` on top of the VS Code session environment; see `workflow task environment` in `specs/glossary.md`.
 <!-- MANUAL ADDITIONS END -->

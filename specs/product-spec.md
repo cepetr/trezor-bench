@@ -1,7 +1,7 @@
 # Product Specification: Trezor Firmware Tools
 
 **Status**: Draft baseline
-**Last Updated**: 2026-04-06
+**Last Updated**: 2026-06-23
 
 ## Purpose
 
@@ -344,20 +344,44 @@ When excluded-file input data becomes unavailable, excluded-file badges and over
 
 ## Extension Configuration
 
-The extension exposes workspace-scoped VS Code settings under the `tfTools` namespace. These settings let a workspace maintainer point the extension at the correct manifest, cargo workspace, artifacts directory, and debug-template directory, and they also control optional UI behavior.
+The extension exposes workspace-scoped VS Code settings under the `tfTools` namespace. These settings let a workspace maintainer point the extension at the correct manifest, cargo workspace, artifacts directory, and debug-template directory, configure workflow task environment, and control optional UI behavior.
 
-At a high level, the settings fall into three groups:
+At a high level, the settings fall into four groups:
 
 - **Workspace paths**: Control where the extension looks for the manifest file, the cargo workspace, build artifacts, and debug templates.
+- **Task environment**: Control extra environment variables merged into workflow task processes.
 - **Visibility settings**: Control whether the active build context is shown in the status bar and how excluded files are marked in the Explorer and editors.
 - **Excluded-file scope settings**: Control which files are eligible to be marked as excluded from the active build configuration.
 
+### Configuration Variable References
+
+String values in tf-tools resource-scoped settings support a subset of VS Code variable references from the editor variables reference. VS Code does not expand these references when settings are read through the Extension API, so the extension resolves them when consuming affected settings.
+
+Supported references include:
+
+- `${workspaceFolder}` and the deprecated `${workspaceRoot}` alias
+- `${workspaceFolderBasename}`
+- `${env:NAME}`
+- `${config:section.key}`
+- `${pathSeparator}`, `${userHome}`, `${execPath}`, and `${cwd}`
+- active-editor variables such as `${file}` when an editor is open
+
+Unsupported or context-dependent references such as `${command:...}` and `${input:...}` are left unchanged.
+
+Variable substitution is single-pass. Substituted values are not re-expanded.
+
+This applies to path settings, `tfTools.taskExtraEnv`, and excluded-file glob settings. Boolean settings are not subject to variable expansion.
+
 ### Workspace Path Settings
 
-- `tfTools.manifestPath`: string, default `core/embed/xtask/tf-tools/manifest.yaml`. Path to the manifest file, relative to the workspace root.
-- `tfTools.cargoWorkspacePath`: string, default `core/embed`. Path to the cargo workspace used for build-related tasks, relative to the workspace root. If the setting is cleared, the workspace root is used.
-- `tfTools.artifactsPath`: string, default `core/build-xtask/artifacts`. Absolute or workspace-relative path to the build artifacts directory. If the setting is cleared, artifact-based IntelliSense resolution is disabled.
-- `tfTools.debug.templatesPath`: string, default `core/embed/xtask/tf-tools/debug`. Path to the directory that contains debug template files, relative to the workspace root unless given as an absolute path.
+- `tfTools.manifestPath`: string, default `core/embed/xtask/tf-tools/manifest.yaml`. Path to the manifest file, relative to the workspace root unless given as an absolute path or expanded to one through configuration variable references.
+- `tfTools.cargoWorkspacePath`: string, default `core/embed`. Path to the cargo workspace used for build-related tasks, relative to the workspace root unless given as an absolute path or expanded to one through configuration variable references. If the setting is cleared, the workspace root is used.
+- `tfTools.artifactsPath`: string, default `core/build-xtask/artifacts`. Absolute or workspace-relative path to the build artifacts directory. If the setting is cleared, artifact-based IntelliSense resolution is disabled. Supports configuration variable references.
+- `tfTools.debug.templatesPath`: string, default `core/embed/xtask/tf-tools/debug`. Path to the directory that contains debug template files, relative to the workspace root unless given as an absolute path or expanded to one through configuration variable references.
+
+### Task Environment Settings
+
+- `tfTools.taskExtraEnv`: object with string keys and string values, default `{}`. Extra environment variables merged into tf-tools workflow task processes on top of the VS Code session environment. Applies to `Build`, `Clippy`, `Check`, `Clean`, `Flash to Device`, and `Upload to Device` tasks launched by the extension. Keys and values support configuration variable references as described above.
 
 ### Visibility Settings
 
@@ -367,8 +391,8 @@ At a high level, the settings fall into three groups:
 
 ### Excluded-File Scope Settings
 
-- `tfTools.excludedFiles.fileNamePatterns`: array of strings, default `['*.c']`. Basename-only, case-sensitive glob patterns that define which file names are eligible for excluded-file marking.
-- `tfTools.excludedFiles.folderGlobs`: array of strings, default `['core/embed/**', 'core/vendor/**']`. Absolute or workspace-relative folder globs that define where excluded-file marking applies, including recursive matches with `**`.
+- `tfTools.excludedFiles.fileNamePatterns`: array of strings, default `['*.c']`. Basename-only, case-sensitive glob patterns that define which file names are eligible for excluded-file marking. Supports configuration variable references in each pattern string.
+- `tfTools.excludedFiles.folderGlobs`: array of strings, default `['core/embed/**', 'core/vendor/**']`. Absolute or workspace-relative folder globs that define where excluded-file marking applies, including recursive matches with `**`. Supports configuration variable references in each pattern string.
 
 These settings are intended to be adjusted at the workspace level so the extension behaves consistently for all users working in the same repository.
 
@@ -416,6 +440,7 @@ The extension reacts to changes in relevant `tfTools` settings without requiring
 - If `tfTools.artifactsPath` changes, the extension updates artifact resolution immediately, refreshes build-artifact rows, recomputes artifact-dependent action state, and refreshes IntelliSense.
 - If `tfTools.debug.templatesPath` changes, the extension refreshes debug-related availability state so subsequent debug launches use the new templates location.
 - If `tfTools.showConfigurationInStatusBar` changes, the status bar is updated immediately.
+- If `tfTools.taskExtraEnv` changes, subsequent workflow task launches use the updated environment. Existing running tasks are not restarted.
 - If any excluded-file visibility or scope setting changes, the extension refreshes excluded-file evaluation so Explorer decorations and editor overlays match the new settings.
 
 ### Active Build Context Change
@@ -531,7 +556,7 @@ In general:
 
 This section documents the user-facing commands, where they appear, and the rules that govern their availability and execution.
 
-Workflow actions that launch `cargo xtask` run `cargo` directly from the configured cargo workspace path and inherit the VS Code session environment. They avoid shell-mediated startup so user shell scripts cannot unexpectedly replace toolchain-related environment variables such as `PATH` or `VIRTUAL_ENV`.
+Workflow actions that launch `cargo xtask` run `cargo` directly from the configured cargo workspace path using `ProcessExecution`. They inherit the VS Code session environment and merge any entries from `tfTools.taskExtraEnv` after resolving configuration variable references in that setting. They avoid shell-mediated startup so user shell scripts cannot unexpectedly replace toolchain-related environment variables such as `PATH` or `VIRTUAL_ENV`.
 
 ### Build
 
@@ -571,7 +596,7 @@ In practice, `Build` requires:
 
 The command always uses the currently active model, target, and component selection together with the currently effective build-option selections.
 
-When launched, `Build` runs from the cargo workspace path configured through `tfTools.cargoWorkspacePath`.
+When launched, `Build` runs from the cargo workspace path configured through `tfTools.cargoWorkspacePath` and uses the workflow task environment described above.
 
 The task invokes `cargo xtask build` for the active build context.
 
@@ -632,7 +657,7 @@ When shown through the VS Code task system, both tasks use the shared display co
 
 Like `Build`, they require a supported workspace, a present and valid manifest, a resolved active build context, and no workflow-blocking manifest issues.
 
-They also use the cargo workspace path configured through `tfTools.cargoWorkspacePath`.
+They also use the cargo workspace path configured through `tfTools.cargoWorkspacePath` and the workflow task environment described above.
 
 Their command-line shape follows the same argument mapping as `Build`, but with a different xtask subcommand:
 
@@ -679,7 +704,7 @@ When shown through the VS Code task system, `Clean` is the only workflow task th
 
 `Clean` follows the same shared workflow blocking rules as `Build`, `Clippy`, and `Check`.
 
-It requires a supported workspace, a present and valid manifest, a resolved workflow state, and no workflow-blocking manifest issues. It also runs from the cargo workspace path configured through `tfTools.cargoWorkspacePath`.
+It requires a supported workspace, a present and valid manifest, a resolved workflow state, and no workflow-blocking manifest issues. It also runs from the cargo workspace path configured through `tfTools.cargoWorkspacePath` and uses the workflow task environment described above.
 
 Its invocation differs from the other workflow tasks because it does not use active-build-context-derived arguments:
 
@@ -740,7 +765,7 @@ Applicability is controlled separately for the two actions:
 
 If the selected component does not define the corresponding rule, that action is unavailable for that context.
 
-When launched, both actions run from the cargo workspace path configured through `tfTools.cargoWorkspacePath`.
+When launched, both actions run from the cargo workspace path configured through `tfTools.cargoWorkspacePath` and use the workflow task environment described above.
 
 Their command-line shapes are:
 

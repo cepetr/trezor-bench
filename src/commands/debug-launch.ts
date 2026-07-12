@@ -633,6 +633,13 @@ export async function executeDebugLaunch(
   const model = manifest.models.find((m) => m.id === config.modelId);
 
   if (!component || !target || !model) {
+    logDebugLaunchFailure("unknown-config", {
+      modelId: config.modelId,
+      targetId: config.targetId,
+      componentId: config.componentId,
+      detail:
+        "active configuration references an unknown component, target, or model",
+    });
     revealLogs();
     void vscode.window.showErrorMessage(
       "Cannot start debugging: active configuration references an unknown component, target, or model."
@@ -688,6 +695,12 @@ export async function executeDebugLaunch(
   );
 
   if (!launched) {
+    logDebugLaunchFailure("start-failed", {
+      modelId: config.modelId,
+      targetId: config.targetId,
+      componentId: config.componentId,
+    });
+    revealLogs();
     void vscode.window.showErrorMessage("Debugging failed to start.");
     return;
   }

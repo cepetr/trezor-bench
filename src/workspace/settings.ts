@@ -1,5 +1,29 @@
 import * as vscode from "vscode";
 import * as path from "path";
+import {
+  resolveConfigurationVariables,
+  resolveConfigurationVariablesDeep,
+} from "./configuration-variables";
+
+/**
+ * Expands configuration variables and resolves the result to an absolute path.
+ * Relative paths are joined to the workspace folder root.
+ */
+function resolveConfiguredPath(
+  raw: string | undefined,
+  workspaceFolder: vscode.WorkspaceFolder,
+  defaultRelative?: string
+): string {
+  const source = raw?.trim() || defaultRelative?.trim() || "";
+  const expanded = resolveConfigurationVariables(source, workspaceFolder).trim();
+  if (!expanded) {
+    return workspaceFolder.uri.fsPath;
+  }
+  if (path.isAbsolute(expanded)) {
+    return expanded;
+  }
+  return path.resolve(workspaceFolder.uri.fsPath, expanded);
+}
 
 /**
  * Returns the manifest path setting for the given workspace folder, resolved
@@ -10,8 +34,10 @@ export function resolveManifestUri(
   workspaceFolder: vscode.WorkspaceFolder
 ): vscode.Uri {
   const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
-  const relative: string = cfg.get<string>("manifestPath") || "core/embed/xtask/tf-tools/manifest.yaml";
-  return vscode.Uri.joinPath(workspaceFolder.uri, relative);
+  const relative: string | undefined = cfg.get<string>("manifestPath");
+  return vscode.Uri.file(
+    resolveConfiguredPath(relative, workspaceFolder, "core/embed/xtask/tf-tools/manifest.yaml")
+  );
 }
 
 /**
@@ -34,10 +60,40 @@ export function resolveCargoWorkspacePath(
 ): string {
   const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
   const relative: string | undefined = cfg.get<string>("cargoWorkspacePath");
-  if (relative && relative.trim()) {
-    return vscode.Uri.joinPath(workspaceFolder.uri, relative.trim()).fsPath;
+  if (!relative?.trim()) {
+    return workspaceFolder.uri.fsPath;
   }
-  return workspaceFolder.uri.fsPath;
+  return resolveConfiguredPath(relative, workspaceFolder);
+}
+
+/**
+ * Returns extra environment variables to merge into tf-tools task processes.
+ * Uses `tfTools.taskExtraEnv` when set; returns an empty object when absent.
+ * String keys and values support VS Code variable references.
+ */
+export function readTaskExtraEnv(
+  workspaceFolder: vscode.WorkspaceFolder
+): Readonly<Record<string, string>> {
+  const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
+  const raw = cfg.get<unknown>("taskExtraEnv") ?? {};
+
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+    return {};
+  }
+
+  const resolved = resolveConfigurationVariablesDeep(
+    raw as Record<string, unknown>,
+    workspaceFolder
+  ) as Record<string, unknown>;
+
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(resolved)) {
+    if (typeof value === "string") {
+      env[key] = value;
+    }
+  }
+
+  return env;
 }
 
 /**
@@ -50,14 +106,10 @@ export function resolveArtifactsPath(
 ): string {
   const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
   const value: string | undefined = cfg.get<string>("artifactsPath");
-  if (!value || !value.trim()) {
+  if (!value?.trim()) {
     return "";
   }
-  const trimmed = value.trim();
-  if (path.isAbsolute(trimmed)) {
-    return trimmed;
-  }
-  return vscode.Uri.joinPath(workspaceFolder.uri, trimmed).fsPath;
+  return resolveConfiguredPath(value, workspaceFolder);
 }
 
 // ---------------------------------------------------------------------------
@@ -98,8 +150,14 @@ export function readExcludedFilesSettings(
   return {
     grayInTree: cfg.get<boolean>("excludedFiles.grayInTree") ?? true,
     showEditorOverlay: cfg.get<boolean>("excludedFiles.showEditorOverlay") ?? true,
-    fileNamePatterns: cfg.get<string[]>("excludedFiles.fileNamePatterns") ?? ["*.c"],
-    folderGlobs: cfg.get<string[]>("excludedFiles.folderGlobs") ?? ["core/embed/**", "core/vendor/**"],
+    fileNamePatterns: resolveConfigurationVariablesDeep(
+      cfg.get<string[]>("excludedFiles.fileNamePatterns") ?? ["*.c"],
+      workspaceFolder
+    ),
+    folderGlobs: resolveConfigurationVariablesDeep(
+      cfg.get<string[]>("excludedFiles.folderGlobs") ?? ["core/embed/**", "core/vendor/**"],
+      workspaceFolder
+    ),
   };
 }
 
@@ -118,11 +176,7 @@ export function resolveDebugTemplatesPath(
 ): string {
   const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
   const value: string | undefined = cfg.get<string>("debug.templatesPath");
-  const relative = value && value.trim() ? value.trim() : "core/embed/xtask/tf-tools/debug";
-  if (path.isAbsolute(relative)) {
-    return relative;
-  }
-  return vscode.Uri.joinPath(workspaceFolder.uri, relative).fsPath;
+  return resolveConfiguredPath(value, workspaceFolder, "core/embed/xtask/tf-tools/debug");
 }
 
 /**

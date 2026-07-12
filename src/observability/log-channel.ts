@@ -15,6 +15,14 @@ export function getLogChannel(): vscode.OutputChannel {
 }
 
 /**
+ * Creates the output channel and writes an activation marker.
+ * Call once at the start of extension activation.
+ */
+export function initLogChannel(): void {
+  log("Trezor Firmware Tools extension activated.");
+}
+
+/**
  * Appends a timestamped log line to the output channel.
  */
 export function log(message: string): void {
@@ -73,12 +81,12 @@ export function logManifestState(state: ManifestState): void {
       );
       break;
     case "missing":
-      log(`Manifest missing: ${path}`);
+      log(`[WARN] Manifest missing: ${path}`);
       break;
     case "invalid": {
       const issues = (state as Extract<ManifestState, { status: "invalid" }>)
         .validationIssues;
-      log(`Manifest invalid: ${path} — ${issues.length} issue(s)`);
+      log(`[ERROR] Manifest invalid: ${path} — ${issues.length} issue(s)`);
       for (const issue of issues) {
         log(`  [${issue.severity}] ${issue.message} (${issue.code})`);
       }
@@ -96,6 +104,13 @@ export function logManifestState(state: ManifestState): void {
  */
 export function logWorkflowFailure(kind: string, message: string): void {
   log(`[ERROR] Workflow ${kind} blocked/failed: ${message}`);
+}
+
+/**
+ * Logs a persistent failure record for a blocked Flash or Upload action.
+ */
+export function logArtifactActionBlocked(actionName: string, detail: string): void {
+  log(`[ERROR] ${actionName} blocked — ${detail}`);
 }
 
 // ---------------------------------------------------------------------------

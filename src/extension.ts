@@ -4,7 +4,14 @@ import { resolveManifestUri, isStatusBarEnabled, resolveArtifactsPath, resolveDe
 import { ManifestService } from "./manifest/manifest-service";
 import { ConfigurationTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/configuration-tree";
 import { StatusBarPresenter } from "./ui/status-bar";
-import { disposeLogChannel, revealLogs, logManifestState } from "./observability/log-channel";
+import {
+  disposeLogChannel,
+  initLogChannel,
+  logWarning,
+  logError,
+  revealLogs,
+  logManifestState,
+} from "./observability/log-channel";
 import { disposeDiagnostics, handleManifestStateDiagnostics } from "./observability/diagnostics";
 import {
   restoreActiveConfig,
@@ -331,6 +338,8 @@ function registerUnsupportedWorkspaceCommands(
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  initLogChannel();
+
   // --- Scope guard: verify no unrelated commands are registered. ---
   assertNoUnauthorizedContributions(context);
 
@@ -384,9 +393,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   if (!hasSupportedWorkspace()) {
     registerUnsupportedWorkspaceCommands(context);
     // Extension activated without a workspace — show a visible warning and bail.
-    vscode.window.showWarningMessage(
-      "Trezor Firmware Tools requires an open workspace folder."
-    );
+    const noWorkspaceMsg =
+      "Trezor Firmware Tools requires an open workspace folder.";
+    logWarning(noWorkspaceMsg);
     // Mark workflow as blocked (workspace unsupported) so header actions are disabled.
     vscode.commands.executeCommand("setContext", "tfTools.workflowBlocked", true);
     return;
@@ -573,9 +582,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
         _manifestService.start().catch((err) => {
           const detail = err instanceof Error ? err.message : String(err);
-          void vscode.window.showErrorMessage(
-            `[tf-tools] Failed to start manifest service after path change: ${detail}`
-          );
+          const message = `Failed to start manifest service after path change: ${detail}`;
+          logError(`[tf-tools] ${message}`);
         });
       }
     })
