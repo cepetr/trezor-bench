@@ -206,7 +206,7 @@ The action is enabled only when the active map file artifact exists. If the `Map
 
 When the action succeeds, the extension opens the resolved map file in an editor.
 
-If invocation is attempted without a valid map-file path, the action returns without opening anything. If opening the file fails after a path has been resolved, the extension shows a user-visible error.
+If invocation is attempted without a valid map-file path, the action returns without opening anything. If opening the file fails after a path has been resolved, the extension shows a user-visible error and records the failure in log output.
 
 ## Configuration View Iconography
 
@@ -365,6 +365,7 @@ Supported references include:
 - `${config:section.key}`
 - `${userHome}` and `${cwd}`
 
+Other VS Code variable forms are left unchanged, including editor, selection, command, input, executable-path, and path-separator references.
 
 Variable substitution is single-pass. Substituted values are not re-expanded.
 
@@ -379,7 +380,7 @@ This applies to path settings, `tfTools.taskExtraEnv`, and excluded-file glob se
 
 ### Task Environment Settings
 
-- `tfTools.taskExtraEnv`: object with string keys and string values, default `{}`. Extra environment variables merged into tf-tools workflow task processes on top of the VS Code session environment. Applies to `Build`, `Clippy`, `Check`, `Clean`, `Flash to Device`, and `Upload to Device` tasks launched by the extension. Keys and values support configuration variable references as described above.
+- `tfTools.taskExtraEnv`: object with string keys and string values, default `{}`. Extra environment variables merged into tf-tools workflow task processes on top of the VS Code session environment. Applies to `Build`, `Clippy`, `Check`, `Clean`, `Flash to Device`, and `Upload to Device` tasks launched by the extension. Keys and values support configuration variable references as described above. Non-object values and non-string entries are ignored.
 
 ### Visibility Settings
 
@@ -400,7 +401,7 @@ The extension keeps the tree view, status bar, IntelliSense integration, artifac
 
 ### Activation
 
-When the extension activates, it always registers the configuration tree view so the side-bar surface is available immediately.
+When the extension activates, it always registers the configuration tree view and initializes the dedicated log output so the side-bar surface and persistent failure trail are available immediately.
 
 If the workspace is unsupported or no workspace folder is open, the extension shows a warning, keeps workflow actions blocked, and does not attempt to load workspace-specific manifest, artifact, or IntelliSense state.
 
@@ -428,7 +429,7 @@ When the manifest changes:
 - Workflow blocked state, artifact-action applicability, and debugging availability are recomputed.
 - IntelliSense is updated with the new manifest state and refreshed so compile-commands and excluded-file state follow the new configuration.
 
-If the manifest becomes missing or invalid, the extension keeps the UI available but shows the failure through warnings, diagnostics, log output, and blocked workflow state.
+If the manifest becomes missing or invalid, the extension keeps the UI available but shows the failure through warnings, diagnostics, log output, and blocked workflow state. Missing manifests are warning-level log records; invalid manifests are error-level log records.
 
 ### Setting Change
 
@@ -793,7 +794,7 @@ These actions follow the same general blocked-behavior model as other commands, 
 
 If an action is not applicable for the current build context, it is not offered on context-sensitive surfaces. If it is applicable but the binary artifact is missing, the action remains visible where appropriate but is disabled.
 
-If invocation is attempted while the action is blocked, the extension shows a user-visible error explaining whether the failure is due to unsupported workspace state, missing or invalid manifest, inapplicable action, or missing binary artifact.
+If invocation is attempted while the action is blocked, the extension shows a user-visible error explaining whether the failure is due to unsupported workspace state, missing or invalid manifest, inapplicable action, or missing binary artifact, and records the blocked attempt in log output.
 
 If task launch fails after preconditions are satisfied, the extension reports that startup failure through an error message and the log output.
 
