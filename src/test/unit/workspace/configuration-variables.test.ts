@@ -47,9 +47,23 @@ suite("resolveConfigurationVariables", () => {
     }
   });
 
+  test("expands userHome", () => {
+    const value = resolveConfigurationVariables("${userHome}/.cache", MOCK_WORKSPACE_FOLDER);
+    assert.ok(value.endsWith("/.cache"));
+    assert.notStrictEqual(value, "${userHome}/.cache");
+  });
+
   test("leaves unknown variables unchanged", () => {
     const value = resolveConfigurationVariables("${command:pickFolder}/build", MOCK_WORKSPACE_FOLDER);
     assert.strictEqual(value, "${command:pickFolder}/build");
+  });
+
+  test("leaves context-dependent and unsupported variables unchanged", () => {
+    const value = resolveConfigurationVariables(
+      "${file}:${selectedText}:${lineNumber}:${execPath}:${pathSeparator}",
+      MOCK_WORKSPACE_FOLDER
+    );
+    assert.strictEqual(value, "${file}:${selectedText}:${lineNumber}:${execPath}:${pathSeparator}");
   });
 
   test("does not re-expand substituted values", () => {

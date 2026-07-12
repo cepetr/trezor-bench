@@ -363,10 +363,8 @@ Supported references include:
 - `${workspaceFolderBasename}`
 - `${env:NAME}`
 - `${config:section.key}`
-- `${pathSeparator}`, `${userHome}`, `${execPath}`, and `${cwd}`
-- active-editor variables such as `${file}` when an editor is open
+- `${userHome}` and `${cwd}`
 
-Unsupported or context-dependent references such as `${command:...}` and `${input:...}` are left unchanged.
 
 Variable substitution is single-pass. Substituted values are not re-expanded.
 

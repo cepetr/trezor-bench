@@ -10,11 +10,10 @@ const VARIABLE_RE = /\$\{([^}:]+)(?::([^}]*))?\}/g;
  *
  * VS Code does not expand variables returned by `WorkspaceConfiguration.get()`.
  * This helper implements the subset used by tf-tools settings:
- * workspace folder, environment, config, path separator, user home, exec path,
- * cwd, and active-editor file variables when an editor is open.
+ * workspace folder, environment, config, user home, and cwd.
  *
- * Unrecognized or context-dependent variables that cannot be resolved are left
- * unchanged. Replacement is single-pass; substituted values are not re-expanded.
+ * Unrecognized or context-dependent variables are left unchanged. Replacement
+ * is single-pass; substituted values are not re-expanded.
  */
 export function resolveConfigurationVariables(
   value: string,
@@ -61,12 +60,8 @@ function resolveVariable(
       return workspaceFolder.uri.fsPath;
     case "workspaceFolderBasename":
       return path.basename(workspaceFolder.uri.fsPath);
-    case "pathSeparator":
-      return path.sep;
     case "userHome":
       return os.homedir();
-    case "execPath":
-      return process.execPath;
     case "cwd":
       return workspaceFolder.uri.fsPath;
     case "env":
@@ -74,7 +69,7 @@ function resolveVariable(
     case "config":
       return resolveConfigVariable(argument, workspaceFolder);
     default:
-      return resolveEditorVariable(name, workspaceFolder);
+      return undefined;
   }
 }
 
@@ -94,46 +89,4 @@ function resolveConfigVariable(
     return undefined;
   }
   return String(value);
-}
-
-function resolveEditorVariable(
-  name: string,
-  _workspaceFolder: vscode.WorkspaceFolder
-): string | undefined {
-  const editor = vscode.window.activeTextEditor;
-  if (!editor) {
-    return undefined;
-  }
-
-  const filePath = editor.document.uri.fsPath;
-  const parsed = path.parse(filePath);
-
-  switch (name) {
-    case "file":
-      return filePath;
-    case "fileDirname":
-      return parsed.dir;
-    case "fileBasename":
-      return parsed.base;
-    case "fileBasenameNoExtension":
-      return parsed.name;
-    case "fileExtname":
-      return parsed.ext;
-    case "relativeFile":
-      return vscode.workspace.asRelativePath(editor.document.uri, false);
-    case "relativeFileDirname": {
-      const relative = vscode.workspace.asRelativePath(editor.document.uri, false);
-      return path.dirname(relative);
-    }
-    case "fileWorkspaceFolder": {
-      const folder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
-      return folder?.uri.fsPath;
-    }
-    case "lineNumber":
-      return String(editor.selection.active.line + 1);
-    case "selectedText":
-      return editor.document.getText(editor.selection);
-    default:
-      return undefined;
-  }
 }
