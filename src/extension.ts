@@ -544,6 +544,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   // Initialize artifactsRoot from current settings
+  _intelliSenseService.setWorkspaceFolder(workspaceFolder);
   _intelliSenseService.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
 
   // Watch for tfTools.artifactsPath AND tfTools.manifestPath configuration changes
@@ -714,13 +715,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         void vscode.window.showErrorMessage("Cannot start debugging: manifest not loaded.");
         return;
       }
-      await executeDebugLaunch(
-        workspaceFolder,
-        loaded,
-        config,
-        resolveArtifactsPath(workspaceFolder),
-        resolveDebugTemplatesPath(workspaceFolder)
-      );
+      await executeDebugLaunch(workspaceFolder, loaded, config);
     })
   );
 

@@ -11,7 +11,9 @@ import {
   resolveActiveArtifact,
   makeContextKey,
 } from "./artifact-resolution";
-import { checkProviderReadiness, CpptoolsProviderAdapter } from "./cpptools-provider";
+import { checkProviderReadiness, resolveIntelliSenseBackend } from "./intellisense-backend";
+import { CpptoolsProviderAdapter } from "./cpptools-provider";
+import { ClangdProviderAdapter } from "./clangd-provider";
 import { parseCompileCommandsFile } from "./compile-commands-parser";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
@@ -44,13 +46,14 @@ export type IntelliSenseRefreshCallback = (
  *  - Resolve the active compile-commands artifact (no fallback).
  *  - Eagerly parse the active `.cc.json` before applying provider state.
  *  - Check provider readiness and emit persistent warnings via the log channel.
- *  - Apply or clear IntelliSense configuration through the cpptools adapter.
+ *  - Apply or clear IntelliSense configuration through cpptools or clangd.
  *  - Publish updated artifact and readiness state to registered callbacks.
  */
 export class IntelliSenseService {
   private _manifest: ManifestStateLoaded | undefined;
   private _activeConfig: ActiveConfig | undefined;
   private _artifactsRoot: string = "";
+  private _workspaceFolder: vscode.WorkspaceFolder | undefined;
 
   private _lastRuntimeState: IntelliSenseRuntimeState = {
     appliedArtifactPath: null,
@@ -92,10 +95,15 @@ export class IntelliSenseService {
   readonly onDidRefreshPayload: vscode.Event<ProviderPayload | null> =
     this._onDidRefreshPayload.event;
 
-  private readonly _adapter: CpptoolsProviderAdapter;
+  private readonly _cpptoolsAdapter: CpptoolsProviderAdapter;
+  private readonly _clangdAdapter: ClangdProviderAdapter;
 
-  constructor(adapter?: CpptoolsProviderAdapter) {
-    this._adapter = adapter ?? new CpptoolsProviderAdapter();
+  constructor(
+    cpptoolsAdapter?: CpptoolsProviderAdapter,
+    clangdAdapter?: ClangdProviderAdapter
+  ) {
+    this._cpptoolsAdapter = cpptoolsAdapter ?? new CpptoolsProviderAdapter();
+    this._clangdAdapter = clangdAdapter ?? new ClangdProviderAdapter();
   }
 
   // ---------------------------------------------------------------------------
@@ -112,6 +120,10 @@ export class IntelliSenseService {
 
   setArtifactsRoot(root: string): void {
     this._artifactsRoot = root;
+  }
+
+  setWorkspaceFolder(folder: vscode.WorkspaceFolder | undefined): void {
+    this._workspaceFolder = folder;
   }
 
   // ---------------------------------------------------------------------------
@@ -158,9 +170,10 @@ export class IntelliSenseService {
   private async _doRefresh(trigger: RefreshTrigger): Promise<void> {
     log(`[IntelliSense] Refresh triggered by: ${trigger}`);
 
-    // Ensure the adapter is registered with cpptools. Safe to call multiple times —
-    // the adapter guards against double-registration.
-    void this._adapter.activate();
+    // Ensure cpptools registration is attempted when that backend is active.
+    if (resolveIntelliSenseBackend() === "cpptools") {
+      void this._cpptoolsAdapter.activate();
+    }
 
     const readiness = checkProviderReadiness();
     this._lastReadiness = readiness;
@@ -189,7 +202,7 @@ export class IntelliSenseService {
 
     if (!manifest || !config) {
       // No active context — clear any previously applied state.
-      this._clearProviderState();
+      await this._clearProviderState();
       this._lastArtifact = null;
       this._lastPayload = null;
       this._onDidRefresh.fire([null, readiness]);
@@ -212,13 +225,13 @@ export class IntelliSenseService {
 
     if (artifact.status === "missing") {
       logMissingArtifact(artifact.path || "(unknown)", artifact.contextKey);
-      this._clearProviderState();
+      await this._clearProviderState();
       this._lastPayload = null;
     } else if (readiness.warningState === "none") {
-      this._applyProviderState(artifact.path, artifact.contextKey);
+      await this._applyProviderState(artifact.path, artifact.contextKey);
     } else {
       // Provider not ready even though artifact exists — clear stale state.
-      this._clearProviderState();
+      await this._clearProviderState();
       this._lastPayload = null;
     }
 
@@ -230,21 +243,45 @@ export class IntelliSenseService {
   // Provider state management
   // ---------------------------------------------------------------------------
 
-  private _applyProviderState(
+  private async _applyProviderState(
     artifactPath: string,
     contextKey: string
-  ): void {
-    // Eagerly parse the active compile database before applying provider state.
+  ): Promise<void> {
     const payload = parseCompileCommandsFile(artifactPath, contextKey);
 
     if (!payload) {
       log(`[IntelliSense] Failed to parse compile-commands: ${artifactPath}`);
-      this._clearProviderState();
+      await this._clearProviderState();
       this._lastPayload = null;
       return;
     }
 
-    this._adapter.applyPayload(payload);
+    const backend = resolveIntelliSenseBackend();
+    if (backend === "clangd") {
+      const workspaceFolder = this._workspaceFolder;
+      if (!workspaceFolder) {
+        log("[IntelliSense] Cannot apply clangd compile database: workspace folder unavailable.");
+        await this._clearProviderState();
+        this._lastPayload = null;
+        return;
+      }
+
+      try {
+        await this._clangdAdapter.applyArtifact(workspaceFolder, artifactPath);
+      } catch (error) {
+        log(
+          `[IntelliSense] Failed to apply clangd compile database: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        await this._clearProviderState();
+        this._lastPayload = null;
+        return;
+      }
+    } else {
+      this._cpptoolsAdapter.applyPayload(payload);
+    }
+
     this._lastPayload = payload;
     this._lastRuntimeState = {
       appliedArtifactPath: artifactPath,
@@ -253,20 +290,44 @@ export class IntelliSenseService {
       providerState: "applied",
     };
     log(
-      `[IntelliSense] Applied compile-commands: ${artifactPath} ` +
+      `[IntelliSense] Applied compile-commands (${backend ?? "unknown"}): ${artifactPath} ` +
       `(${payload.entriesByFile.size} entries)`
     );
   }
 
-  private _clearProviderState(): void {
+  private async _clearProviderState(): Promise<void> {
+    const workspaceFolder = this._workspaceFolder;
+
+    // clangd state can outlive the in-memory adapter: a managed compile-database
+    // link left on disk by a previous session must still be cleared, even though
+    // `getLinkedArtifactPath()` is undefined right after activation.
+    const clangdHasState =
+      this._clangdAdapter.getLinkedArtifactPath() !== undefined ||
+      (workspaceFolder !== undefined &&
+        this._clangdAdapter.hasManagedCompileDatabase(workspaceFolder));
+
     if (
       this._lastRuntimeState.providerState === "inactive" &&
-      this._adapter.getLastPayload() === undefined
+      this._cpptoolsAdapter.getLastPayload() === undefined &&
+      !clangdHasState
     ) {
-      // Nothing was ever applied — nothing to clear.
       return;
     }
-    this._adapter.clearPayload();
+
+    this._cpptoolsAdapter.clearPayload();
+
+    if (workspaceFolder && clangdHasState) {
+      try {
+        await this._clangdAdapter.clear(workspaceFolder);
+      } catch (error) {
+        log(
+          `[IntelliSense] Failed to clear clangd compile database: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
+
     this._lastRuntimeState = {
       appliedArtifactPath: null,
       appliedContextKey: null,
@@ -279,7 +340,7 @@ export class IntelliSenseService {
   dispose(): void {
     this._onDidRefresh.dispose();
     this._onDidRefreshPayload.dispose();
-    this._adapter.dispose();
+    this._cpptoolsAdapter.dispose();
     this._pendingRefresh = null;
   }
 }

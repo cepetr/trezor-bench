@@ -31,7 +31,6 @@ import {
   makeComponentDebugProfile,
   makeDebugTargetWithExtension,
   makeIntelliSenseLoadedState,
-  debugLaunchValidTemplatesRoot,
   debugLaunchFailuresWorkspaceRoot,
 } from "../unit/workflow-test-helpers";
 import { ManifestStateLoaded, ManifestComponentDebugProfile } from "../../manifest/manifest-types";
@@ -135,7 +134,7 @@ suite("QS1 – Unique matching profile", () => {
 
     // Launch may fail (no real debugger in CI), but it must not throw an error
     await assert.doesNotReject(
-      () => executeDebugLaunch(workspaceFolder, manifest, config, tmpDir, debugLaunchValidTemplatesRoot()),
+      () => executeDebugLaunch(workspaceFolder, manifest, config),
       "expected executeDebugLaunch to resolve without throwing for fully valid scenario"
     );
   });
@@ -223,7 +222,7 @@ suite("QS3 – Unmatched contexts remain discoverable but blocked", () => {
     });
     await assert.doesNotReject(
       () => executeDebugLaunch(workspaceFolder, makeExeManifest([entry]),
-        makeConfig("T2T1"), "/artifacts", "/templates"),
+        makeConfig("T2T1")),
       "no-match must resolve without throwing"
     );
   });
@@ -363,7 +362,7 @@ suite("QS5 – Template failures at invocation time", () => {
     const manifest = makeExeManifest([entry]);
 
     await assert.doesNotReject(
-      () => executeDebugLaunch(workspaceFolder, manifest, makeConfig("T2T1"), tmpDir, failuresTemplatesRoot),
+      () => executeDebugLaunch(workspaceFolder, manifest, makeConfig("T2T1")),
       "missing template must resolve without throwing"
     );
   });
@@ -483,7 +482,7 @@ suite("QS7 – Template-root traversal rejection", () => {
       const manifest = makeExeManifest([entry]);
 
       await assert.doesNotReject(
-        () => executeDebugLaunch(workspaceFolder, manifest, makeConfig("T2T1"), tmpDir, tmpDir),
+        () => executeDebugLaunch(workspaceFolder, manifest, makeConfig("T2T1")),
         "traversal attempt must resolve without throwing"
       );
     } finally {

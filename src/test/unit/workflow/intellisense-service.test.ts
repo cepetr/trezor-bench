@@ -12,7 +12,10 @@
  */
 
 import * as assert from "assert";
+import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
+import * as vscode from "vscode";
 import { IntelliSenseService } from "../../../intellisense/intellisense-service";
 import {
   ActiveCompileCommandsArtifact,
@@ -20,8 +23,12 @@ import {
   ProviderPayload,
 } from "../../../intellisense/intellisense-types";
 import { CpptoolsProviderAdapter } from "../../../intellisense/cpptools-provider";
+import { ClangdProviderAdapter, CLANGD_EXTENSION_ID } from "../../../intellisense/clangd-provider";
 import { makeIntelliSenseLoadedState, primaryCoreFixturePath } from "../workflow-test-helpers";
 import { ActiveConfig } from "../../../configuration/active-config";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const vscodeMock = require("vscode");
 
 /**
  * Returns the absolute path to the `artifacts/` directory in the
@@ -61,6 +68,43 @@ class StubAdapter extends CpptoolsProviderAdapter {
   override getLastPayload(): ProviderPayload | undefined {
     return this._lastPayload;
   }
+}
+
+class StubClangdAdapter extends ClangdProviderAdapter {
+  public appliedPaths: string[] = [];
+  public clearCount = 0;
+
+  constructor() {
+    super(async () => {});
+  }
+
+  override async applyArtifact(
+    _workspaceFolder: vscode.WorkspaceFolder,
+    artifactPath: string
+  ): Promise<void> {
+    this.appliedPaths.push(artifactPath);
+  }
+
+  override async clear(_workspaceFolder: vscode.WorkspaceFolder): Promise<void> {
+    this.clearCount++;
+  }
+}
+
+function intellisenseValidWorkspaceFolder(): vscode.WorkspaceFolder {
+  return {
+    uri: vscodeMock.Uri.file(
+      path.resolve(__dirname, "../../../test-fixtures/workspaces/intellisense-valid")
+    ),
+    name: "intellisense-valid",
+    index: 0,
+  };
+}
+
+function stubClangdOnlyBackend(): void {
+  const clangdExtension = { id: CLANGD_EXTENSION_ID, isActive: true };
+  vscodeMock.extensions.getExtension = (id: string) =>
+    id === CLANGD_EXTENSION_ID ? clangdExtension : undefined;
+  vscodeMock.extensions.all = [clangdExtension];
 }
 
 // ---------------------------------------------------------------------------
@@ -390,5 +434,85 @@ suite("IntelliSenseService — latest-refresh-wins serialization", () => {
     // The last refresh uses the second config
     assert.strictEqual(artifact?.contextKey, "T3W1::emu::prodtest");
     svc.dispose();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// clangd backend
+// ---------------------------------------------------------------------------
+
+suite("IntelliSenseService — clangd backend", () => {
+  let originalGetExtension: (id: string) => unknown;
+  let originalExtensionsAll: unknown[];
+
+  suiteSetup(() => {
+    originalGetExtension = vscodeMock.extensions.getExtension;
+    originalExtensionsAll = vscodeMock.extensions.all;
+  });
+
+  suiteTeardown(() => {
+    vscodeMock.extensions.getExtension = originalGetExtension;
+    vscodeMock.extensions.all = originalExtensionsAll;
+  });
+
+  test("applies compile database through clangd when cpptools is unavailable", async () => {
+    stubClangdOnlyBackend();
+
+    const cpptoolsAdapter = new StubAdapter();
+    const clangdAdapter = new StubClangdAdapter();
+    const svc = new IntelliSenseService(cpptoolsAdapter, clangdAdapter);
+
+    svc.setWorkspaceFolder(intellisenseValidWorkspaceFolder());
+    svc.setManifest(makeIntelliSenseLoadedState());
+    svc.setActiveConfig(makeConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" }));
+    svc.setArtifactsRoot(intellisenseValidArtifactsRoot());
+
+    const p = awaitRefresh(svc);
+    svc.scheduleRefresh("activation");
+    const [artifact, readiness] = await p;
+
+    assert.strictEqual(readiness.warningState, "none");
+    assert.strictEqual(artifact?.status, "valid");
+    assert.strictEqual(cpptoolsAdapter.payloadsApplied.length, 0);
+    assert.strictEqual(clangdAdapter.appliedPaths.length, 1);
+    assert.strictEqual(clangdAdapter.appliedPaths[0], artifact?.path);
+    assert.ok(svc.getLastPayload());
+    svc.dispose();
+  });
+
+  test("clears a stale clangd compile database left on disk by a previous session", async () => {
+    stubClangdOnlyBackend();
+
+    // Simulate a workspace where a previous session left a managed compile
+    // database link behind; the freshly constructed adapter has no in-memory
+    // record of it.
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-clangd-stale-"));
+    try {
+      const linkDir = path.join(tmpRoot, ".tf-tools");
+      fs.mkdirSync(linkDir, { recursive: true });
+      fs.symlinkSync(
+        path.join(tmpRoot, "gone", "compile_commands.json"),
+        path.join(linkDir, "compile_commands.json"),
+        "file"
+      );
+
+      const clangdAdapter = new StubClangdAdapter();
+      const svc = new IntelliSenseService(new StubAdapter(), clangdAdapter);
+      svc.setWorkspaceFolder({
+        uri: vscodeMock.Uri.file(tmpRoot),
+        name: path.basename(tmpRoot),
+        index: 0,
+      });
+      // No manifest/config → no active context → state must be cleared.
+
+      const p = awaitRefresh(svc);
+      svc.scheduleRefresh("activation");
+      await p;
+
+      assert.strictEqual(clangdAdapter.clearCount, 1);
+      svc.dispose();
+    } finally {
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
   });
 });

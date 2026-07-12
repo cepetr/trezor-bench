@@ -336,7 +336,7 @@ suite("Debug Launch – command registration", () => {
       const manifest = makeExeManifest([entry]);
       const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
 
-      await executeDebugLaunch(workspaceFolder, manifest, config, tmpDir, debugLaunchValidTemplatesRoot());
+      await executeDebugLaunch(workspaceFolder, manifest, config);
 
       assert.ok(invokedCommands.includes("workbench.view.debug"));
     } finally {

@@ -473,7 +473,7 @@ suite("executeDebugLaunch – multi-profile selection", () => {
         return true;
       };
 
-      await executeDebugLaunch(folder, manifest, config, tmpDir, debugLaunchValidTemplatesRoot());
+      await executeDebugLaunch(folder, manifest, config);
 
       assert.strictEqual(pickerShown, false);
       assert.strictEqual(launchCount, 1);
@@ -507,7 +507,7 @@ suite("executeDebugLaunch – multi-profile selection", () => {
         return true;
       };
 
-      await executeDebugLaunch(folder, manifest, config, tmpDir, debugLaunchValidTemplatesRoot());
+      await executeDebugLaunch(folder, manifest, config);
 
       assert.strictEqual(pickedLabel, "Profile B");
       assert.ok(launchedConfig, "expected selected profile to be launched");
@@ -537,7 +537,7 @@ suite("executeDebugLaunch – multi-profile selection", () => {
       ) as unknown) as typeof vscode.window.showQuickPick;
       (vscode.debug as { startDebugging: typeof vscode.debug.startDebugging }).startDebugging = async () => true;
 
-      await executeDebugLaunch(folder, manifest, config, tmpDir, debugLaunchValidTemplatesRoot());
+      await executeDebugLaunch(folder, manifest, config);
 
       assert.strictEqual(capturedItems.length, 2);
       assert.ok(capturedItems.every((item) => item.description === undefined));
@@ -563,7 +563,7 @@ suite("executeDebugLaunch – multi-profile selection", () => {
         return true;
       };
 
-      await executeDebugLaunch(folder, manifest, config, tmpDir, debugLaunchValidTemplatesRoot());
+      await executeDebugLaunch(folder, manifest, config);
 
       assert.strictEqual(launchCount, 0);
     } finally {

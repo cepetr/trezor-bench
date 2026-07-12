@@ -59,8 +59,10 @@ NOTE: `IS_RUST_ANALYZER` is not required by the extension. It is recommended bec
 - Exposes device actions such as `Flash to Device` and `Upload to Device` when they are available.
 - Starts a debug session for the active configuration when debugging is supported.
 - Shows build artifacts such as compile commands, binary, map file, and executable.
-- Refreshes C/C++ IntelliSense from the active compile database.
+- Refreshes C/C++ IntelliSense from the active compile database, using either the Microsoft C/C++ (`cpptools`) extension or the clangd extension.
 - Marks files that are outside the active build configuration.
+
+NOTE: When the Microsoft C/C++ extension is unavailable (for example in editors that ship a different C/C++ fork) and the clangd extension (`llvm-vs-code-extensions.vscode-clangd`) is installed, the extension drives clangd instead. To do so it creates a managed `.tf-tools/compile_commands.json` link and a managed `.clangd` file in the workspace root and restarts clangd when the active build context changes. These files are generated and not meant to be committed; add `.tf-tools/` and `.clangd` to your local Git ignore (for example in `.git/info/exclude`) if they show up as untracked changes. If you already maintain your own `.clangd`, the extension leaves it untouched and logs a warning instead.
 
 ## How To Use
 

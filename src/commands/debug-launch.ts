@@ -611,11 +611,11 @@ function reportDebugLaunchFailure(
  *
  * On each invocation:
  *  1. Validates manifest debug state and resolves the selected debug profile.
- *  2. Derives and verifies the executable artifact path.
- *  3. Loads and parses the JSONC debug template from `templatesRoot`.
- *  4. Starts the selected tf-tools proxy configuration via `vscode.debug.startDebugging`.
- *     The registered tf-tools debug provider materializes the real debugger
- *     configuration so VS Code can keep the selected Run and Debug entry in sync.
+ *  2. Builds a tf-tools proxy debug configuration for the selected profile.
+ *  3. Starts it via `vscode.debug.startDebugging`. The registered tf-tools debug
+ *     provider materializes the real debugger configuration — resolving the
+ *     executable artifact and debug template — so VS Code can keep the selected
+ *     Run and Debug entry in sync.
  *
  * All blocked states (no-match, missing executable, template
  * errors, variable errors) surface an error message and return early.
@@ -624,9 +624,7 @@ function reportDebugLaunchFailure(
 export async function executeDebugLaunch(
   workspaceFolder: vscode.WorkspaceFolder,
   manifest: ManifestStateLoaded,
-  config: ActiveConfig,
-  _artifactsRoot: string,
-  _templatesRoot: string
+  config: ActiveConfig
 ): Promise<void> {
   // 1. Validate manifest debug state
   if (manifest.hasDebugBlockingIssues) {
