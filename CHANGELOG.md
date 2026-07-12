@@ -11,6 +11,7 @@
 ## 0.1.3 - 2026-07-12
 ### Added
 - Added configuration variable expansion for tf-tools path settings, excluded-file scope settings, and task environment settings.
+- Added clangd IntelliSense backend support when cpptools is unavailable.
 - Added `tfTools.taskExtraEnv` for extra environment variables passed to Build, Clippy, Check, Clean, Flash, and Upload workflow tasks.
 - Added persistent log output for extension activation and key failure paths, including manifest load failures, blocked Flash/Upload actions, map-file open failures, and debug launch failures.
 
