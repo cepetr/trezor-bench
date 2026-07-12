@@ -77,8 +77,8 @@ export class ClangdProviderAdapter {
    */
   hasManagedCompileDatabase(workspaceFolder: vscode.WorkspaceFolder): boolean {
     try {
-      fs.lstatSync(getClangdCompileCommandsLinkPath(workspaceFolder));
-      return true;
+      const stat = fs.lstatSync(getClangdCompileCommandsLinkPath(workspaceFolder));
+      return stat.isSymbolicLink();
     } catch {
       return false;
     }
@@ -177,10 +177,9 @@ function updateCompileCommandsSymlink(
 
 function removeCompileCommandsSymlink(workspaceFolder: vscode.WorkspaceFolder): void {
   const linkPath = getClangdCompileCommandsLinkPath(workspaceFolder);
-
   try {
     const stat = fs.lstatSync(linkPath);
-    if (stat.isSymbolicLink() || stat.isFile()) {
+    if (stat.isSymbolicLink()) {
       fs.unlinkSync(linkPath);
     }
   } catch (error) {
