@@ -586,6 +586,22 @@ function buildTfToolsProxyDebugConfiguration(
   };
 }
 
+function reportDebugLaunchFailure(
+  reason: Parameters<typeof logDebugLaunchFailure>[0],
+  config: ActiveConfig,
+  message: string,
+  detail?: string
+): void {
+  logDebugLaunchFailure(reason, {
+    modelId: config.modelId,
+    targetId: config.targetId,
+    componentId: config.componentId,
+    ...(detail === undefined ? {} : { detail }),
+  });
+  revealLogs();
+  void vscode.window.showErrorMessage(message);
+}
+
 // ---------------------------------------------------------------------------
 // Command handler
 // ---------------------------------------------------------------------------
@@ -609,20 +625,16 @@ export async function executeDebugLaunch(
   workspaceFolder: vscode.WorkspaceFolder,
   manifest: ManifestStateLoaded,
   config: ActiveConfig,
-  artifactsRoot: string,
-  templatesRoot: string
+  _artifactsRoot: string,
+  _templatesRoot: string
 ): Promise<void> {
   // 1. Validate manifest debug state
   if (manifest.hasDebugBlockingIssues) {
-    logDebugLaunchFailure("manifest-invalid", {
-      modelId: config.modelId,
-      targetId: config.targetId,
-      componentId: config.componentId,
-      detail: "manifest has debug profile validation errors",
-    });
-    revealLogs();
-    void vscode.window.showErrorMessage(
-      "Cannot start debugging: the manifest has debug profile validation errors."
+    reportDebugLaunchFailure(
+      "manifest-invalid",
+      config,
+      "Cannot start debugging: the manifest has debug profile validation errors.",
+      "manifest has debug profile validation errors"
     );
     return;
   }
@@ -633,16 +645,11 @@ export async function executeDebugLaunch(
   const model = manifest.models.find((m) => m.id === config.modelId);
 
   if (!component || !target || !model) {
-    logDebugLaunchFailure("unknown-config", {
-      modelId: config.modelId,
-      targetId: config.targetId,
-      componentId: config.componentId,
-      detail:
-        "active configuration references an unknown component, target, or model",
-    });
-    revealLogs();
-    void vscode.window.showErrorMessage(
-      "Cannot start debugging: active configuration references an unknown component, target, or model."
+    reportDebugLaunchFailure(
+      "unknown-active-config",
+      config,
+      "Cannot start debugging: active configuration references an unknown component, target, or model.",
+      "active configuration references an unknown component, target, or model"
     );
     return;
   }
@@ -657,13 +664,9 @@ export async function executeDebugLaunch(
   const matchingSet = resolveMatchingDebugProfiles(profiles, evalCtx);
 
   if (!matchingSet.defaultProfile) {
-    logDebugLaunchFailure("no-match", {
-      modelId: config.modelId,
-      targetId: config.targetId,
-      componentId: config.componentId,
-    });
-    revealLogs();
-    void vscode.window.showErrorMessage(
+    reportDebugLaunchFailure(
+      "no-match",
+      config,
       "Cannot start debugging: no debug profile matches the active build context."
     );
     return;
@@ -695,13 +698,11 @@ export async function executeDebugLaunch(
   );
 
   if (!launched) {
-    logDebugLaunchFailure("start-failed", {
-      modelId: config.modelId,
-      targetId: config.targetId,
-      componentId: config.componentId,
-    });
-    revealLogs();
-    void vscode.window.showErrorMessage("Debugging failed to start.");
+    reportDebugLaunchFailure(
+      "start-failed",
+      config,
+      "Debugging failed to start."
+    );
     return;
   }
 
