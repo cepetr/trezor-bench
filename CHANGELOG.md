@@ -8,7 +8,7 @@
 ### Changed
 - Changed the default manifest and debug templates location to core/embed/xtask/tf-tools
 
-## 0.1.3 - 2026-07-12
+## 0.2.0 - 2026-07-19
 ### Added
 - Added configuration variable expansion for tf-tools path settings, excluded-file scope settings, and task environment settings.
 - Added clangd IntelliSense backend support when cpptools is unavailable.

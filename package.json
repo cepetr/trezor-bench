@@ -2,7 +2,7 @@
   "name": "tf-tools",
   "displayName": "Trezor Firmware Tools",
   "description": "Manage build configurations, artifacts, IntelliSense, and debugging in trezor-firmware.",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "publisher": "cepetr",
   "repository": {
     "type": "git",
