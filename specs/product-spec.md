@@ -186,7 +186,7 @@ Each artifact row uses its row description to show the current availability stat
 
 Each artifact row also shows a tooltip containing the resolved artifact path for the active build context. When the artifact is missing, the tooltip must make clear that the artifact is missing and still show the resolved path that was checked.
 
-Build-artifact state is refreshed when the active build context changes, when relevant workspace settings change, and when the expected artifact files for the active build context are created, updated, or deleted on disk. This keeps the `Build Artifacts` section aligned even when artifact-producing tools are run outside extension-managed tasks.
+Build-artifact state is refreshed when the active build context changes, when relevant workspace settings change, and when the expected artifact files for the active build context are created, updated, or deleted on disk. The extension reconciles the expected artifact files on a one-second interval while an active context is available, so this remains reliable even when an external tool does not produce a filesystem watcher event. This keeps the `Build Artifacts` section aligned when artifact-producing tools are run outside extension-managed tasks.
 
 ### Artifact Row Actions
 
@@ -738,9 +738,7 @@ If task launch fails after preconditions are satisfied, the extension reports th
 
 #### Successful Result
 
-When `Clean` starts successfully, the extension launches the corresponding workspace task.
-
-Unlike `Build`, successful completion of `Clean` does not itself trigger artifact or IntelliSense refresh behavior in the extension. Its successful result is completion of the clean workflow, after which subsequent workflow and artifact state continue to follow the normal refresh rules described elsewhere in this document.
+When `Clean` starts successfully, the extension launches the corresponding workspace task. After successful completion, the extension refreshes the active artifact and IntelliSense state so deleted build outputs are immediately reflected in the Configuration view and workflow command availability.
 
 ### Flash And Upload
 

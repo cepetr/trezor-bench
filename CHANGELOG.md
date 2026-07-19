@@ -14,6 +14,7 @@
 - Added clangd IntelliSense backend support when cpptools is unavailable.
 - Added `tfTools.taskExtraEnv` for extra environment variables passed to Build, Clippy, Check, Clean, Flash, and Upload workflow tasks.
 - Added persistent log output for extension activation and key failure paths, including manifest load failures, blocked Flash/Upload actions, map-file open failures, and debug launch failures.
-
 ### Changed
 - Workflow tasks now launch `cargo xtask` through `ProcessExecution`, inheriting the VS Code session environment without shell-mediated startup.
+### Fixed
+- Build artifact status and related actions now refresh after running `cargo xtask build` or `cargo xtask clean` outside the extension.

@@ -98,6 +98,7 @@ export type RefreshTrigger =
   | "provider-change"
   | "manifest-change"
   | "artifacts-path-change"
+  | "workflow-task-complete"
   | "workspace-change"
   | "excluded-files-setting-change";
 

@@ -97,6 +97,29 @@ let _lastShownProviderFixState: string = "none";
 let _binaryArtifact: ActiveBinaryArtifact | undefined;
 let _mapArtifact: ActiveMapArtifact | undefined;
 
+export interface TaskProcessEndLike {
+  readonly exitCode?: number;
+  readonly execution: {
+    readonly task: {
+      readonly definition: { readonly type?: string; readonly kind?: string };
+      readonly name: string;
+    };
+  };
+}
+
+export function isSuccessfulArtifactRefreshTaskProcess(
+  event: TaskProcessEndLike
+): boolean {
+  if (event.exitCode !== 0 || event.execution.task.definition.type !== TASK_TYPE) {
+    return false;
+  }
+
+  const kind = event.execution.task.definition.kind;
+  return kind === "Build" || kind === "Clean" ||
+    event.execution.task.name.startsWith("Build ") ||
+    event.execution.task.name === "Clean";
+}
+
 // ---------------------------------------------------------------------------
 // Scope guard for the supported command surface, now expanded for
 // Build Workflow, IntelliSense, Flash/Upload, and Debug Launch.
@@ -885,6 +908,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     getWorkspaceFolder: () => workspaceFolder,
   });
   context.subscriptions.push(vscode.tasks.registerTaskProvider(TASK_TYPE, taskProvider));
+
+  context.subscriptions.push(
+    vscode.tasks.onDidEndTaskProcess((event) => {
+      if (isSuccessfulArtifactRefreshTaskProcess(event)) {
+        refreshBuildArtifacts("workflow-task-complete");
+      }
+    })
+  );
 
   // Trigger IntelliSense refresh when workspace folders change so excluded-file
   // candidate paths are re-evaluated against the updated workspace root.

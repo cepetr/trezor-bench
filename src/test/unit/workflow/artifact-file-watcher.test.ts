@@ -141,7 +141,7 @@ async function flushMicrotasks(): Promise<void> {
 }
 
 suite("ActiveArtifactFileWatcher", () => {
-  test("resolveArtifactWatchScopes includes compile, binary, map, and executable files", () => {
+  test("resolveArtifactWatchScopes watches the parent of the artifacts root", () => {
     const scopes = resolveArtifactWatchScopes(
       makeManifest(),
       makeConfig(),
@@ -149,12 +149,12 @@ suite("ActiveArtifactFileWatcher", () => {
     );
 
     assert.strictEqual(scopes.length, 1);
-    assert.strictEqual(scopes[0].folderPath, path.join("/tmp", "artifacts", "model-a-out"));
-    assert.deepStrictEqual(Array.from(scopes[0].fileNames).sort(), [
-      "component-a-target-a.bin",
-      "component-a-target-a.cc.json",
-      "component-a-target-a.elf",
-      "component-a-target-a.map",
+    assert.strictEqual(scopes[0].folderPath, "/tmp");
+    assert.deepStrictEqual(Array.from(scopes[0].relativePaths).sort(), [
+      path.join("artifacts", "model-a-out", "component-a-target-a.bin"),
+      path.join("artifacts", "model-a-out", "component-a-target-a.cc.json"),
+      path.join("artifacts", "model-a-out", "component-a-target-a.elf"),
+      path.join("artifacts", "model-a-out", "component-a-target-a.map"),
     ]);
   });
 
@@ -229,9 +229,34 @@ suite("ActiveArtifactFileWatcher", () => {
       path.join("/tmp", "artifacts")
     );
 
-    assert.strictEqual(createdWatchers.length, 2);
-    assert.strictEqual(createdWatchers[0].disposed, true);
-    assert.strictEqual(createdWatchers[1].disposed, false);
+    assert.strictEqual(createdWatchers.length, 8);
+    assert.ok(createdWatchers.slice(0, 4).every((watcher) => watcher.disposed));
+    assert.ok(createdWatchers.slice(4).every((watcher) => !watcher.disposed));
+    watcher.dispose();
+  });
+
+  test("refreshes when an artifact file is recreated after its model folder is removed", async () => {
+    const createdWatchers: FakeWatcher[] = [];
+    let refreshCount = 0;
+
+    const watcher = new ActiveArtifactFileWatcher(
+      () => {
+        refreshCount++;
+      },
+      () => {
+        const fakeWatcher = new FakeWatcher();
+        createdWatchers.push(fakeWatcher);
+        return fakeWatcher;
+      }
+    );
+
+    watcher.update(makeManifest(), makeConfig(), path.join("/tmp", "artifacts"));
+    createdWatchers[0].emitCreate(
+      path.join("/tmp", "artifacts", "model-a-out", "component-a-target-a.bin")
+    );
+    await flushMicrotasks();
+
+    assert.strictEqual(refreshCount, 1);
     watcher.dispose();
   });
 
