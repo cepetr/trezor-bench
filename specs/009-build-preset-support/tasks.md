@@ -27,13 +27,13 @@ description: "Task list for Build Preset Support"
 
 **Purpose**: Add the one new runtime dependency and the fixture workspaces every later phase reads.
 
-- [ ] T001 Add `"smol-toml": "^1.7.1"` to the `dependencies` block of `package.json`, run `npm install`, and confirm both `npm run compile` (CommonJS `tsc`) and the esbuild bundle resolve it without config changes (research Decision 1)
-- [ ] T002 [P] Create fixture `test-fixtures/workspaces/preset-valid/` with `tf-tools-manifest.yaml` (at least one checkbox option and one multistate option, the multistate declaring a `value: null` state), `.vscode/settings.json`, `xtask/tf-tools/presets.toml` containing two `[[defaults]]` fragments, a `[[test]]` fragment with no `when`, and a context-restricted `[[dev]]` fragment, plus `xtask/tf-tools/user-presets.toml` adding a user-only preset and re-declaring `test`
-- [ ] T003 [P] Create fixture `test-fixtures/workspaces/preset-no-defaults/` with `tf-tools-manifest.yaml`, `.vscode/settings.json`, and `xtask/tf-tools/presets.toml` declaring named presets but no `[[defaults]]` fragment (Acceptance Scenario 1.2)
-- [ ] T004 [P] Create fixture `test-fixtures/workspaces/preset-missing-shared/` with `tf-tools-manifest.yaml`, `.vscode/settings.json`, and only `xtask/tf-tools/user-presets.toml` — no `presets.toml` (FR-027)
-- [ ] T005 [P] Create fixture `test-fixtures/workspaces/preset-malformed-shared/` with `tf-tools-manifest.yaml`, `.vscode/settings.json`, and `xtask/tf-tools/presets.toml` containing a TOML syntax error (FR-028)
-- [ ] T006 [P] Create fixture `test-fixtures/workspaces/preset-invalid-user/` with `tf-tools-manifest.yaml`, `.vscode/settings.json`, a valid `xtask/tf-tools/presets.toml`, and `xtask/tf-tools/user-presets.toml` whose fragment carries an unknown `when` field (FR-030)
-- [ ] T007 [P] Create fixture `test-fixtures/workspaces/preset-value-mismatch/` with `tf-tools-manifest.yaml`, `.vscode/settings.json`, and `xtask/tf-tools/presets.toml` setting a multistate option to a value no manifest state declares (research Decision 10, option-level tier)
+- [X] T001 Add `"smol-toml": "^1.7.1"` to the `dependencies` block of `package.json`, run `npm install`, and confirm both `npm run compile` (CommonJS `tsc`) and the esbuild bundle resolve it without config changes (research Decision 1)
+- [X] T002 [P] Create fixture `test-fixtures/workspaces/preset-valid/` with `tf-tools-manifest.yaml` (at least one checkbox option and one multistate option, the multistate declaring a `value: null` state), `.vscode/settings.json`, `xtask/tf-tools/presets.toml` containing two `[[defaults]]` fragments, a `[[test]]` fragment with no `when`, and a context-restricted `[[dev]]` fragment, plus `xtask/tf-tools/user-presets.toml` adding a user-only preset and re-declaring `test`
+- [X] T003 [P] Create fixture `test-fixtures/workspaces/preset-no-defaults/` with `tf-tools-manifest.yaml`, `.vscode/settings.json`, and `xtask/tf-tools/presets.toml` declaring named presets but no `[[defaults]]` fragment (Acceptance Scenario 1.2)
+- [X] T004 [P] Create fixture `test-fixtures/workspaces/preset-missing-shared/` with `tf-tools-manifest.yaml`, `.vscode/settings.json`, and only `xtask/tf-tools/user-presets.toml` — no `presets.toml` (FR-027)
+- [X] T005 [P] Create fixture `test-fixtures/workspaces/preset-malformed-shared/` with `tf-tools-manifest.yaml`, `.vscode/settings.json`, and `xtask/tf-tools/presets.toml` containing a TOML syntax error (FR-028)
+- [X] T006 [P] Create fixture `test-fixtures/workspaces/preset-invalid-user/` with `tf-tools-manifest.yaml`, `.vscode/settings.json`, a valid `xtask/tf-tools/presets.toml`, and `xtask/tf-tools/user-presets.toml` whose fragment carries an unknown `when` field (FR-030)
+- [X] T007 [P] Create fixture `test-fixtures/workspaces/preset-value-mismatch/` with `tf-tools-manifest.yaml`, `.vscode/settings.json`, and `xtask/tf-tools/presets.toml` setting a multistate option to a value no manifest state declares (research Decision 10, option-level tier)
 
 **Checkpoint**: `smol-toml` resolves in both build paths and all six fixture workspaces exist.
 
