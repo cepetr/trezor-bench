@@ -130,6 +130,18 @@ export function logPresetState(state: PresetState): void {
   }
 }
 
+/**
+ * Logs an active-preset normalization: the saved preset id changed because
+ * it became unavailable for the active build context or preset data
+ * changed (spec `Failure Modes & Diagnostics`).
+ */
+export function logPresetNormalization(previousPresetId: string, normalizedPresetId: string): void {
+  log(
+    `Active preset normalized from "${previousPresetId}" to "${normalizedPresetId}": ` +
+      `it is no longer available for the active build context, or preset data changed.`
+  );
+}
+
 /** Keys already logged as unknown-to-the-manifest, to avoid repeat entries. */
 const _loggedUnknownPresetKeys = new Set<string>();
 

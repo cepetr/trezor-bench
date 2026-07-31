@@ -15,6 +15,7 @@ import {
   revealLogs,
   logManifestState,
   logPresetState,
+  logPresetNormalization,
 } from "./observability/log-channel";
 import {
   disposeDiagnostics,
@@ -240,12 +241,18 @@ async function refreshPresetsAndActiveConfig(
     availableIds = new Set(available.map((p) => p.id));
   }
 
+  const previousPresetId = _activeConfig ? activePresetId(_activeConfig) : undefined;
   const normalizedConfig = await restoreActiveConfig(context, loaded, availableIds);
+  const newPresetId = activePresetId(normalizedConfig);
+  if (previousPresetId !== undefined && previousPresetId !== newPresetId) {
+    logPresetNormalization(previousPresetId, newPresetId);
+  }
+
   _activeConfig = normalizedConfig;
   _resolvedOptions = computeResolvedOptions(loaded, normalizedConfig, context);
 
   _treeProvider?.update(loaded, normalizedConfig, _resolvedOptions);
-  _treeProvider?.updatePresets(_presetState, activePresetId(normalizedConfig), available);
+  _treeProvider?.updatePresets(_presetState, newPresetId, available);
 }
 
 /**

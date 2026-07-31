@@ -88,7 +88,7 @@ description: "Task list for Build Preset Support"
 - [X] T027 [US1] Add `normalizePresetId(savedId, availableIds)` to `src/configuration/normalize-config.ts` implementing the three branches from `specs/009-build-preset-support/data-model.md` §3, leaving `normalizeActiveConfig` and `isConfigValid` behavior for the manifest axes untouched
 - [X] T028 [US1] Extend `src/ui/configuration-tree.ts` with `SelectorKind` member `"preset"`, `SELECTOR_ICONS.preset = "layers"`, `SELECT_COMMANDS.preset = "tfTools.selectPreset"`, the fourth `Build Selection` child below `Component`, the active-preset description, and the loading / invalid-error / loaded-choices expanded states per `specs/009-build-preset-support/data-model.md` §6
 - [X] T029 [US1] Register the `tfTools.selectPreset` handler in `src/extension.ts` (no new `package.json` contributed command), and refresh available presets plus preset normalization on activation, preset-state change, manifest-state change, and active model/target/component change (FR-009)
-- [ ] T030 [US1] Log preset normalization in `src/observability/log-channel.ts` when a saved preset is normalized to `default` because of changed or invalid preset data (spec `Failure Modes & Diagnostics`)
+- [X] T030 [US1] Log preset normalization in `src/observability/log-channel.ts` when a saved preset is normalized to `default` because of changed or invalid preset data (spec `Failure Modes & Diagnostics`)
 
 **Checkpoint**: Preset selection works end to end — listed, selectable, persisted, restored, normalized — and no display surface mentions the preset. US1 is independently demoable.
 
