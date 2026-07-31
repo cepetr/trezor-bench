@@ -105,8 +105,17 @@ let _manifestService: ManifestService | undefined;
 let _presetService: PresetService | undefined;
 let _presetState: PresetState | undefined;
 let _presetEffectiveValues: ReadonlyMap<string, PresetEffectiveValue> = new Map();
-/** Backs the `tfTools.presetBlocked` context key (file-level invalidity or any available-option mismatch). */
+/**
+ * Backs the `tfTools.presetBlocked` context key (an absent shared
+ * `presets.toml`, file-level invalidity, or any available-option mismatch).
+ */
 let _presetBlocked = false;
+/**
+ * True only for the absent shared `presets.toml` (FR-027). Tracked separately
+ * from `_presetBlocked` so the launch path can report the more specific
+ * `presets-unavailable` reason; it always implies `_presetBlocked`.
+ */
+let _presetsUnavailable = false;
 let _presetStateSubscription: vscode.Disposable | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
 let _configurationTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
@@ -256,6 +265,7 @@ async function refreshPresetsAndActiveConfig(
   if (!manifestState || manifestState.status !== "loaded") {
     _presetEffectiveValues = new Map();
     _presetBlocked = false;
+    _presetsUnavailable = false;
     vscode.commands.executeCommand("setContext", "tfTools.presetBlocked", false);
     _treeProvider?.updatePresets(_presetState, undefined, []);
     return;
@@ -330,7 +340,9 @@ async function refreshPresetsAndActiveConfig(
   _presetContext = presetCtx;
   _resolvedOptions = computeResolvedOptions(loaded, normalizedConfig, context, _presetEffectiveValues);
 
+  _presetsUnavailable = currentPresetState?.status === "unavailable";
   _presetBlocked =
+    _presetsUnavailable ||
     currentPresetState?.status === "invalid" ||
     _resolvedOptions.some((r) => r.available && r.presetState === "mismatch");
   vscode.commands.executeCommand("setContext", "tfTools.presetBlocked", _presetBlocked);
@@ -1033,6 +1045,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         manifestStatus: state?.status ?? "missing",
         hasWorkflowBlockingIssues: loaded?.hasWorkflowBlockingIssues ?? false,
         workspaceSupported: isWorkflowWorkspaceSupported(),
+        presetsUnavailable: kind !== "Clean" && _presetsUnavailable,
         presetsInvalid: kind !== "Clean" && _presetBlocked,
       });
 

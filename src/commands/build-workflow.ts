@@ -23,6 +23,7 @@ export type WorkflowBlockReason =
   | "workspace-unsupported"
   | "manifest-missing"
   | "manifest-invalid"
+  | "presets-unavailable"
   | "presets-invalid";
 
 /** Minimal context needed for task label formatting and arg derivation. */
@@ -42,6 +43,13 @@ export interface PreconditionInputs {
   readonly manifestStatus: ManifestState["status"];
   readonly hasWorkflowBlockingIssues: boolean;
   readonly workspaceSupported: boolean;
+  /**
+   * True when the shared `presets.toml` does not exist, so the workspace's
+   * `xtask` does not support presets (FR-027). Reported ahead of
+   * `presetsInvalid`, which it also implies. Callers pass `false` (or omit)
+   * for `Clean`, which is exempt (research Decision 11).
+   */
+  readonly presetsUnavailable?: boolean;
   /**
    * True when preset data is file-level invalid or an available option
    * mismatches. Callers pass `false` (or omit) for `Clean`, which is exempt
@@ -147,7 +155,8 @@ export function deriveCleanArguments(_ctx: {
  * Evaluates whether the workflow action can start.
  * Returns the first blocking reason found, or "no-block" if all clear.
  *
- * Priority order: workspace-unsupported > manifest-missing > manifest-invalid > presets-invalid
+ * Priority order: workspace-unsupported > manifest-missing > manifest-invalid >
+ * presets-unavailable > presets-invalid
  */
 export function evaluateWorkflowPreconditions(
   inputs: PreconditionInputs
@@ -160,6 +169,9 @@ export function evaluateWorkflowPreconditions(
   }
   if (inputs.manifestStatus === "invalid" || inputs.hasWorkflowBlockingIssues) {
     return "manifest-invalid";
+  }
+  if (inputs.presetsUnavailable) {
+    return "presets-unavailable";
   }
   if (inputs.presetsInvalid) {
     return "presets-invalid";
@@ -178,6 +190,8 @@ export function blockReasonMessage(reason: WorkflowBlockReason): string {
       return "Build Workflow is blocked: the manifest file (tf-tools.yaml) was not found. Create or restore it to enable build actions.";
     case "manifest-invalid":
       return "Build Workflow is blocked: the manifest has validation errors or invalid availability rules. Check the Problems view and fix all errors to enable build actions.";
+    case "presets-unavailable":
+      return "Build Workflow is blocked: presets.toml is unavailable under the configured cargo workspace. This repository's xtask does not support build presets — open a revision that provides xtask/tf-tools/presets.toml to enable build actions.";
     case "presets-invalid":
       return "Build Workflow is blocked: preset data is invalid or a preset value cannot be represented by a build option. Check the Problems view and fix all errors to enable build actions.";
     case "no-block":

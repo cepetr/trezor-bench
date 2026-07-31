@@ -33,7 +33,7 @@ Under `test-fixtures/workspaces/`, mirroring the existing fixture-workspace conv
 | --- | --- | --- |
 | `preset-valid/` | manifest with checkbox + multistate options, `xtask/tf-tools/presets.toml` with `[[defaults]]`, `[[test]]`, and a context-restricted `[[dev]]`, plus `xtask/tf-tools/user-presets.toml` adding a local preset and re-declaring `test` | US1, US2, US3 |
 | `preset-no-defaults/` | `presets.toml` with named presets but no `[[defaults]]` fragment | Acceptance Scenario 1.2 |
-| `preset-missing-shared/` | `user-presets.toml` only, no `presets.toml` | FR-027 |
+| `preset-missing-shared/` | `user-presets.toml` only, no `presets.toml` | FR-027 (the unavailable state) |
 | `preset-malformed-shared/` | `presets.toml` with a TOML syntax error | FR-028 |
 | `preset-invalid-user/` | valid `presets.toml`, `user-presets.toml` with an unknown `when` field | FR-030 |
 | `preset-value-mismatch/` | `presets.toml` setting a multistate option to a value no manifest state declares | option-level mismatch failure mode |
@@ -82,7 +82,7 @@ Inspect the launched command through `vscode.tasks.fetchTasks({ type: "tfTools" 
 
 ### Failure and refresh checks
 
-1. `preset-missing-shared/` → user presets remain selectable, no missing-file warning appears.
+1. `preset-missing-shared/` → the `Preset` header stays visible, its choices are replaced by a `presets.toml is unavailable` row explaining that the repository's `xtask` does not support presets, the cause appears in the `Trezor Firmware Tools` log channel with no diagnostic in the Problems view, `Build`/`Clippy`/`Check` are disabled, and `Clean` stays enabled. Not even `Default` or the presets declared by that fixture's `user-presets.toml` are offered.
 2. Delete `user-presets.toml` from `preset-valid/` at runtime → shared presets keep working, no warning.
 3. `preset-malformed-shared/` → the `Preset` header stays visible, its choices are replaced by an error row, details appear in the `Trezor Firmware Tools` log channel and as a diagnostic on `presets.toml`, `Build`/`Clippy`/`Check` are blocked, `Clean` is not.
 4. `preset-invalid-user/` → same outcome, attributed to `user-presets.toml`.

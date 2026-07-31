@@ -104,7 +104,7 @@ When the manifest file is invalid, the section stays visible and shows a warning
 
 The `Preset` selector follows the same expand, collapse, active-choice, loading, and refresh conventions as the model, target, and component selectors. Its choices always begin with the synthetic `Default` choice, which represents defaults-only behavior rather than a named preset, followed by every named preset declared in either preset input, listed once and independently of the active model, target, and component. Any listed preset can be selected; when none of a preset's fragments apply to the active build context, it contributes no fragment values — the preset-file defaults alone calculate the option values — and it is still sent to the launched command. The active preset id is persisted in the same workspace-scoped active-configuration record as the selected model, target, and component (see `Persistence And Defaults`), but it is never shown in the shared build-context display, status bar, task labels, or command names — it affects only preset-relative build-option values and the arguments described under `Build` and `Clippy And Check`.
 
-When preset data is still loading, the `Preset` selector shows a loading placeholder. When either preset input is invalid, the selector's choices are replaced by a warning row naming the failing file, together with a prompt to check the Problems view for details; `Build`, `Clippy`, and `Check` are blocked while `Clean` remains available (see `Availability And Blocking Model`).
+When preset data is still loading, the `Preset` selector shows a loading placeholder. When either preset input is invalid, the selector's choices are replaced by a warning row naming the failing file, together with a prompt to check the Problems view for details. When the shared `presets.toml` does not exist at all, the choices are replaced instead by a row reporting that `presets.toml` is unavailable, together with the cause: the open repository's `xtask` does not support build presets. In both cases no preset choice is offered — not even `Default` — and `Build`, `Clippy`, and `Check` are blocked while `Clean` remains available (see `Availability And Blocking Model`).
 
 ### Build Option Management
 
@@ -472,7 +472,7 @@ When either preset input changes:
 - Preset-effective build-option values are recalculated, and Build Options are refreshed to show the new values, emphasis, mismatch, and unresolved states.
 - The `Preset` selector, its choices, and workflow blocking state are refreshed.
 
-An absent `presets.toml` is treated exactly like an empty shared preset file and is never reported as a failure; an absent `user-presets.toml` is likewise never reported. If either present file is unreadable, malformed, or contains validation errors, the extension keeps the UI available but replaces the `Preset` choices with a warning row, shows the failure through diagnostics and log output, and blocks `Build`, `Clippy`, and `Check` while leaving `Clean` available, without using stale or guessed preset data.
+The shared `presets.toml` is required. It ships with the `xtask` that accepts preset arguments, so its absence means the open repository predates preset support rather than that no presets are defined: the extension reports the shared input as unavailable, offers no preset choices, writes the cause to log output, and blocks `Build`, `Clippy`, and `Check` while leaving `Clean` available. No diagnostic is produced for the absence, since there is no file content to attribute one to. An absent `user-presets.toml` is the genuinely optional case and is never reported. If either present file is unreadable, malformed, or contains validation errors, the extension keeps the UI available but replaces the `Preset` choices with a warning row, shows the failure through diagnostics and log output, and blocks `Build`, `Clippy`, and `Check` while leaving `Clean` available, without using stale or guessed preset data.
 
 ### Setting Change
 
@@ -582,7 +582,7 @@ Commands may be blocked when:
 - the active build context is incomplete or unresolved
 - a command depends on an artifact that does not exist
 - a command is defined only for contexts where a manifest rule, such as `when`, `flashWhen`, or `uploadWhen`, matches the current selection, and that rule does not match
-- either preset input is invalid, or an available build option's calculated preset-effective value cannot be represented — this preset-blocking condition applies only to `Build`, `Clippy`, and `Check`; `Clean`, `Flash to Device`, `Upload to Device`, and `Start Debugging` are never blocked by preset state
+- the shared `presets.toml` does not exist, either preset input is invalid, or an available build option's calculated preset-effective value cannot be represented — this preset-blocking condition applies only to `Build`, `Clippy`, and `Check`; `Clean`, `Flash to Device`, `Upload to Device`, and `Start Debugging` are never blocked by preset state
 
 Some commands also have command-specific blocking conditions. These are documented in the relevant command sections below.
 
@@ -641,7 +641,7 @@ In practice, `Build` requires:
 - a manifest that is present and valid
 - an active build context that resolves to current manifest entries
 - no workflow-blocking manifest issues
-- both preset inputs valid, and no available build option reporting a preset-effective value mismatch
+- a present shared `presets.toml`, both preset inputs valid, and no available build option reporting a preset-effective value mismatch
 
 `Build` does not require pre-existing output artifacts, because producing build output is the purpose of the command.
 
@@ -709,7 +709,7 @@ When shown through the VS Code task system, both tasks use the shared display co
 
 `Clippy` and `Check` follow the same workflow preconditions and shared blocking rules as `Build`.
 
-Like `Build`, they require a supported workspace, a present and valid manifest, a resolved active build context, no workflow-blocking manifest issues, and both preset inputs valid with no available build option reporting a preset-effective value mismatch. Like `Build`, they reload both preset inputs and recalculate available presets and preset-effective build-option values before deriving arguments.
+Like `Build`, they require a supported workspace, a present and valid manifest, a resolved active build context, no workflow-blocking manifest issues, and a present shared `presets.toml` with both preset inputs valid and no available build option reporting a preset-effective value mismatch. Like `Build`, they reload both preset inputs and recalculate available presets and preset-effective build-option values before deriving arguments.
 
 They also use the cargo workspace path configured through `tfTools.cargoWorkspacePath` and the workflow task environment described above.
 
@@ -756,9 +756,9 @@ When shown through the VS Code task system, `Clean` is the only workflow task th
 
 #### Preconditions
 
-`Clean` follows the same shared workflow blocking rules as `Build`, `Clippy`, and `Check`, with one exception: `Clean` is never blocked by preset invalidity or a preset-effective value mismatch. It requires a supported workspace, a present and valid manifest, a resolved workflow state, and no workflow-blocking manifest issues. It also runs from the cargo workspace path configured through `tfTools.cargoWorkspacePath` and uses the workflow task environment described above.
+`Clean` follows the same shared workflow blocking rules as `Build`, `Clippy`, and `Check`, with one exception: `Clean` is never blocked by an unavailable `presets.toml`, preset invalidity, or a preset-effective value mismatch. It requires a supported workspace, a present and valid manifest, a resolved workflow state, and no workflow-blocking manifest issues. It also runs from the cargo workspace path configured through `tfTools.cargoWorkspacePath` and uses the workflow task environment described above.
 
-`Clean` stays available and continues to launch with the same fixed arguments even when a preset file is invalid or an option reports a preset-effective value mismatch, since it never uses preset or build-option data.
+`Clean` stays available and continues to launch with the same fixed arguments even when `presets.toml` is absent, a preset file is invalid, or an option reports a preset-effective value mismatch, since it never uses preset or build-option data.
 
 Its invocation differs from the other workflow tasks because it does not use active-build-context-derived arguments:
 

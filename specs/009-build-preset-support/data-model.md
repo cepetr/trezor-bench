@@ -53,7 +53,7 @@ One `[[name]]` table.
 | --- | --- | --- |
 | `source` | `PresetSource` | |
 | `uri` | `vscode.Uri` | Used for diagnostics. |
-| `present` | `boolean` | `false` when the file does not exist. An absent file is equivalent to an empty file (FR-027) and never an error. |
+| `present` | `boolean` | `false` when the file does not exist. For the user input that is equivalent to an empty file and never an error; for the shared input it is a terminal failure — the whole state becomes `unavailable` (FR-027). |
 | `names` | `ReadonlyArray<string>` | Group names in first-declaration order, excluding `defaults`. Includes a reserved `default` group only for issue reporting; it is filtered out of choices. |
 | `fragments` | `ReadonlyArray<PresetFragment>` | All fragments across all groups, in file order. |
 | `issues` | `ReadonlyArray<ValidationIssue>` | Reuses the existing `ValidationIssue` type from `src/manifest/manifest-types.ts`. |
@@ -64,8 +64,9 @@ Published by `PresetService`, mirroring the `ManifestState` discriminated-union 
 
 | Variant | Fields | Meaning |
 | --- | --- | --- |
-| `{ status: "loaded" }` | `shared: PresetFile`, `user: PresetFile`, `loadedAt: Date`, `validationIssues` | Both inputs parsed. Either or both may be absent-and-empty. May carry warning-severity issues (e.g. reserved `default` name). |
-| `{ status: "invalid" }` | `shared`, `user`, `validationIssues`, `loadedAt` | At least one input is unreadable or has an error-severity issue. Preset choices are replaced by an error row; Build/Clippy/Check are blocked; the saved preset id is preserved unresolved. |
+| `{ status: "loaded" }` | `shared: PresetFile`, `user: PresetFile`, `loadedAt: Date`, `validationIssues` | Both inputs parsed; the shared input is present. The user input may be absent-and-empty. May carry warning-severity issues (e.g. reserved `default` name). |
+| `{ status: "unavailable" }` | `shared`, `user`, `validationIssues`, `loadedAt` | The shared `presets.toml` does not exist, so the repository's `xtask` does not support presets (FR-027). Takes precedence over `invalid`. No preset choices are offered at all; Build/Clippy/Check are blocked; the saved preset id is preserved unresolved. No diagnostic is published — there is no file to anchor one to. |
+| `{ status: "invalid" }` | `shared`, `user`, `validationIssues`, `loadedAt` | Both files exist but at least one is unreadable or has an error-severity issue. Preset choices are replaced by an error row; Build/Clippy/Check are blocked; the saved preset id is preserved unresolved. |
 
 `PresetState` is `undefined` before the first load; the `Preset` selector shows the loading placeholder in that window.
 

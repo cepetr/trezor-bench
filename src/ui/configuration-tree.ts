@@ -579,9 +579,14 @@ export class ConfigurationTreeProvider
 
   /**
    * The active preset's label for the `Preset` selector description.
-   * `undefined` renders as `—` (nothing has resolved yet).
+   * `undefined` renders as `—` (nothing has resolved yet). An absent
+   * `presets.toml` reads `Unavailable`, since there is no preset to name and
+   * the collapsed row is where that is first visible (FR-027).
    */
   private _presetDisplayValue(): string | undefined {
+    if (this._presetState?.status === "unavailable") {
+      return "Unavailable";
+    }
     if (this._activePresetId === undefined) {
       return undefined;
     }
@@ -623,15 +628,24 @@ export class ConfigurationTreeProvider
 
   /**
    * Expanded content for the `Preset` selector: a loading placeholder
-   * before the first load, an error row replacing all choices when preset
-   * state is invalid (FR-028, FR-030), or one selectable choice per declared
-   * preset — the list never depends on the active build context (FR-006).
+   * before the first load, a row reporting the absent shared file when preset
+   * state is unavailable (FR-027), an error row replacing all choices when
+   * preset state is invalid (FR-028, FR-030), or one selectable choice per
+   * declared preset — the list never depends on the active build context
+   * (FR-006).
    */
   private _presetSelectorChoices(): vscode.TreeItem[] {
     const state = this._presetState;
 
     if (!state) {
       return [new PlaceholderItem("Loading…")];
+    }
+
+    if (state.status === "unavailable") {
+      return [
+        new WarningItem(`${path.basename(state.shared.uri.fsPath)} is unavailable`),
+        new PlaceholderItem("This repository's xtask does not support build presets"),
+      ];
     }
 
     if (state.status === "invalid") {

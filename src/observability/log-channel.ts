@@ -103,7 +103,8 @@ export function logManifestState(state: ManifestState): void {
 
 /**
  * Logs a human-readable description of the new preset state: load results
- * for a `loaded` state, or the offending file(s) and issues for `invalid`.
+ * for a `loaded` state, the expected shared path and its cause for
+ * `unavailable`, or the offending file(s) and issues for `invalid`.
  */
 export function logPresetState(state: PresetState): void {
   const describe = (label: string, file: PresetState["shared"]): string =>
@@ -115,6 +116,13 @@ export function logPresetState(state: PresetState): void {
       for (const issue of state.validationIssues) {
         log(`  [${issue.severity}] ${issue.message} (${issue.code})`);
       }
+      break;
+    case "unavailable":
+      log(
+        `[ERROR] Presets unavailable: ${state.shared.uri.fsPath} does not exist — ` +
+          `this repository's xtask does not support build presets. Build, Clippy, ` +
+          `and Check are blocked until it is present; Clean is unaffected.`
+      );
       break;
     case "invalid": {
       const offending = [state.shared, state.user]

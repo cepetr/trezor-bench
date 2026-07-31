@@ -59,16 +59,21 @@ suite("PresetService – load states", () => {
     }
   });
 
-  test("preset-missing-shared loads without any missing-file signal (FR-027)", async () => {
+  test("preset-missing-shared publishes 'unavailable' (FR-027)", async () => {
     const { shared, user } = fixtureUris("preset-missing-shared");
     const service = new PresetService(shared, user);
     const state = await service.start();
     service.dispose();
 
-    assert.strictEqual(state.status, "loaded");
-    if (state.status === "loaded") {
+    assert.strictEqual(state.status, "unavailable");
+    if (state.status === "unavailable") {
       assert.strictEqual(state.shared.present, false);
+      // Absence itself carries no issue — the state, not a diagnostic, is the
+      // signal, since there is no file content to attribute one to.
       assert.strictEqual(state.shared.issues.length, 0);
+      assert.strictEqual(state.validationIssues.length, 0);
+      // The user file is still read; it simply contributes no choices while
+      // the shared input is unavailable.
       assert.strictEqual(state.user.present, true);
     }
   });
@@ -159,6 +164,50 @@ suite("PresetService – watching and reload", () => {
     }
 
     service.dispose();
+  });
+
+  test("deleting and recreating presets.toml moves the state loaded → unavailable → loaded, no window reload (FR-027, FR-026)", async () => {
+    const sharedPath = path.join(tmpDir, "presets.toml");
+    const userPath = path.join(tmpDir, "user-presets.toml");
+    await fs.writeFile(sharedPath, "[[test]]\nfrozen = true\n", "utf-8");
+
+    const service = new PresetService(vscode.Uri.file(sharedPath), vscode.Uri.file(userPath));
+    const initial = await service.start();
+    assert.strictEqual(initial.status, "loaded");
+
+    const states: PresetState[] = [];
+    service.onDidChangeState((s) => states.push(s));
+
+    await fs.rm(sharedPath);
+    await waitUntil(() => states.some((s) => s.status === "unavailable"), 8000);
+    let last = states[states.length - 1];
+    assert.strictEqual(last.status, "unavailable", "deleting presets.toml must publish unavailable");
+    assert.strictEqual(last.shared.present, false);
+
+    states.length = 0;
+    await fs.writeFile(sharedPath, "[[test]]\nfrozen = false\n", "utf-8");
+    await waitUntil(() => states.some((s) => s.status === "loaded"), 8000);
+    last = states[states.length - 1];
+    assert.strictEqual(last.status, "loaded", "restoring presets.toml must publish loaded again");
+    if (last.status === "loaded") {
+      assert.deepStrictEqual(last.shared.names, ["test"]);
+    }
+
+    service.dispose();
+  });
+
+  test("an absent shared file outranks an invalid user file (FR-027)", async () => {
+    const sharedPath = path.join(tmpDir, "presets.toml");
+    const userPath = path.join(tmpDir, "user-presets.toml");
+    // No presets.toml at all, and a user file that would otherwise be a
+    // file-level error: the more fundamental condition is reported.
+    await fs.writeFile(userPath, "[[local]] frozen = = true\n", "utf-8");
+
+    const service = new PresetService(vscode.Uri.file(sharedPath), vscode.Uri.file(userPath));
+    const state = await service.start();
+    service.dispose();
+
+    assert.strictEqual(state.status, "unavailable");
   });
 
   test("reload() forces an immediate re-read from disk", async () => {

@@ -18,7 +18,7 @@
   - The tree always shows a synthetic `Default` choice, including when neither preset file defines any `[[defaults]]` fragments. It represents defaults-only behavior rather than a named preset and never emits a preset argument.
   - The selected preset id is retained in the same workspace-scoped active-configuration record and follows the same save, restore, normalization, and refresh lifecycle as the selected model, component/project, and target/emulator, while remaining excluded from build-context display text.
   - Available named presets and preset-effective values come from both the shared `presets.toml` file and optional `user-presets.toml` file.
-  - An absent `presets.toml` contributes no shared fragments and is treated exactly like an empty file; it is not an error.
+  - An absent `presets.toml` is an error, not an empty file: its absence means the open repository's `xtask` predates preset support, so the `Preset` selector reports the file as unavailable and Build, Clippy, and Check are blocked. An absent `user-presets.toml` remains optional and is never an error.
   - A malformed `presets.toml`, or one containing validation errors, replaces the preset choices under `Preset` with an error message and records the details in log output.
   - Effective values follow upstream precedence: shared defaults, user defaults, shared selected-preset fragments, user selected-preset fragments, then explicit build-option overrides.
   - Matching preset fragments retain file order; later matching fragments replace earlier values for the same option, while omitted options retain their prior effective values.
@@ -99,7 +99,7 @@ As a firmware developer, I can run Build, Clippy, or Check and have the extensio
 
 - `user-presets.toml` is absent: shared presets remain available and no warning is shown for the intentionally optional file.
 - `user-presets.toml` is malformed, unreadable, or contains validation errors: stale preset and preset-effective state is not used; the saved preset id is preserved without being resolved, an error message replaces the choices under `Preset`, details are logged, and Build, Clippy, and Check are blocked until the file is fixed.
-- `presets.toml` is absent: it contributes no shared fragments and behaves exactly like an empty file; `default` and any presets contributed by `user-presets.toml` remain available, with no missing-file warning.
+- `presets.toml` is absent: the shared input is unavailable rather than empty, because the file ships with the `xtask` that understands preset arguments. No preset choices are offered — not even `Default` or presets declared by `user-presets.toml` — the saved preset id is preserved without being resolved, the `Preset` selector reports the file as unavailable, the details are logged, and Build, Clippy, and Check are blocked while Clean stays available.
 - `presets.toml` is malformed or contains validation errors: stale preset and preset-effective state is not used; the saved preset id is preserved without being resolved, an error message appears under the `Preset` selector in place of the preset choices, details are logged, and preset-aware Build, Clippy, and Check execution is blocked.
 - The two files define the same named preset: the UI lists the name once and effective-value calculation applies shared fragments before user fragments.
 - A file contains multiple fragments for one preset: every matching fragment is applied in declaration order, and nonmatching fragments contribute no values.
@@ -141,7 +141,7 @@ As a firmware developer, I can run Build, Clippy, or Check and have the extensio
 - **FR-024**: The active preset MUST NOT alter the shared build-context display, status-bar configuration item, task labels, command names, artifact paths, IntelliSense context, debug context, or flash/upload applicability.
 - **FR-025**: Clean, Flash to Device, Upload to Device, and Start Debugging MUST retain their pre-feature command argument behavior and MUST NOT receive a preset argument solely because a preset is selected.
 - **FR-026**: The extension MUST watch both preset inputs for creation, change, and deletion and refresh preset-dependent UI and workflow readiness without requiring a window reload.
-- **FR-027**: When `presets.toml` is absent, the extension MUST treat it exactly as an empty shared preset file, continue processing `user-presets.toml` when present, and MUST NOT report the absence as an error.
+- **FR-027**: When `presets.toml` is absent, the extension MUST treat the shared preset input as unavailable rather than empty — the absence indicates a repository whose `xtask` does not support presets — and MUST replace the preset choices under the `Preset` selector with a message reporting that `presets.toml` is unavailable, write the cause to log output, offer no preset choices from `user-presets.toml`, and block Build, Clippy, and Check while leaving Clean available. An absent `user-presets.toml` MUST NOT be reported as an error.
 - **FR-028**: When `presets.toml` is malformed, unreadable, or contains validation errors, the extension MUST replace the preset choices under the `Preset` selector with an error message, MUST write the error details to log output, and MUST prevent stale or guessed preset-effective values from being used for Build, Clippy, or Check.
 - **FR-029**: Implementation of this feature MUST update `specs/product-spec.md` and `specs/glossary.md` to incorporate preset behavior and remove conflicting manifest-default and three-selector-only statements.
 - **FR-030**: When `user-presets.toml` is malformed, unreadable, contains validation errors, or supplies unsupported preset values, the extension MUST replace the preset choices under the `Preset` selector with an error message, MUST write the error details to log output, MUST report file-backed syntax or semantic issues as diagnostics, and MUST block Build, Clippy, and Check until the file is valid.
@@ -167,8 +167,8 @@ As a firmware developer, I can run Build, Clippy, or Check and have the extensio
 ## Failure Modes & Diagnostics *(mandatory)*
 
 - **Trigger**: `presets.toml` is absent.
-  - **User-visible response**: The extension behaves as though the shared file were empty. `default` and presets from a valid `user-presets.toml` remain selectable, and no missing-file warning is shown.
-  - **Persistent signal**: No failure signal is produced for absence alone.
+  - **User-visible response**: The `Preset` selector remains visible, but a message reporting that `presets.toml` is unavailable replaces its preset choices, including `Default` and any presets declared by `user-presets.toml`. Build, Clippy, and Check are unavailable until the file is present; Clean is unaffected, and the saved preset id is not changed by the error state.
+  - **Persistent signal**: The absence and its cause — a repository whose `xtask` does not support presets — are written to log output. No diagnostic is produced, because there is no file content to attribute one to.
 - **Trigger**: `presets.toml` is unreadable, malformed, or contains validation errors.
   - **User-visible response**: The `Preset` selector remains visible, but an error message replaces its preset choices. Build, Clippy, and Check are unavailable until valid preset data is restored; the saved preset id is not changed by the error state.
   - **Persistent signal**: Error details are written to log output; syntax and semantic issues tied to file content are also reported as diagnostics.
@@ -201,7 +201,7 @@ As a firmware developer, I can run Build, Clippy, or Check and have the extensio
 
 ## Assumptions
 
-- `presets.toml` is the shared source and `user-presets.toml` is an optional, personal override source colocated with it under the workspace's xtask tf-tools configuration location. Either file may be absent; an absent file contributes no fragments, while malformed or invalid content is an error.
+- `presets.toml` is the shared source and `user-presets.toml` is an optional, personal override source colocated with it under the workspace's xtask tf-tools configuration location. `presets.toml` ships with the `xtask` that supports preset arguments, so it is required: its absence identifies a repository without preset support and is an error, exactly like malformed or invalid content. `user-presets.toml` may be absent and then contributes no fragments.
 - The special upstream `[[defaults]]` fragments are not a selectable named preset; the user-facing `Default` choice means defaults-only behavior and maps to omission of `-p`. The extension never emits `-p default`.
 - A named preset's fragments apply to a build context when at least one of its shared or user fragments matches that context. Applicability governs which values the preset calculates, not whether it is listed: every declared preset is always offered, and one with no matching fragment contributes nothing beyond the `[[defaults]]` layer.
 - Target selection supplies the emulator boolean used by upstream preset filters; model and component ids map to upstream model and project filter values.

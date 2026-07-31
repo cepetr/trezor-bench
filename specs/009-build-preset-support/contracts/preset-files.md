@@ -10,7 +10,7 @@ This contract defines the external file format the extension consumes. It is own
 
 | Input | Path | Required |
 | --- | --- | --- |
-| Shared presets | `<cargo-workspace>/xtask/tf-tools/presets.toml` | No — an absent file is treated exactly as an empty file (FR-027) |
+| Shared presets | `<cargo-workspace>/xtask/tf-tools/presets.toml` | Yes — the file ships with the `xtask` that supports preset arguments, so its absence means the repository has no preset support and is a terminal error (FR-027) |
 | User presets | `<cargo-workspace>/xtask/tf-tools/user-presets.toml` | No — optional personal overrides, git-ignored upstream |
 
 `<cargo-workspace>` is the resolved `tfTools.cargoWorkspacePath` setting (default `core/embed`), so the default locations are `core/embed/xtask/tf-tools/presets.toml` and `core/embed/xtask/tf-tools/user-presets.toml`. The shared file is always processed before the user file.
@@ -72,7 +72,8 @@ Within any layer a later matching fragment replaces an earlier value for the sam
 
 | Condition | Severity | Effect |
 | --- | --- | --- |
-| File absent | none | Treated as empty. No warning. |
+| `user-presets.toml` absent | none | Treated as empty. No warning. |
+| `presets.toml` absent | error | Preset state unavailable: no preset choices at all, Build/Clippy/Check blocked, cause logged, no diagnostic (there is no file to anchor one to). |
 | File unreadable | error | File-level invalid. |
 | TOML syntax error | error | File-level invalid. Diagnostic at the reported line/column. |
 | Top-level value that is not an array of tables | error | File-level invalid. |

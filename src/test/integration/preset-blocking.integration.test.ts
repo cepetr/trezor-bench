@@ -66,6 +66,22 @@ const BUILD_OPTIONS: BuildOption[] = [
 const BUILD_CONTEXT_ADAPTER = { modelId: "T2T1", targetId: "hw", componentId: "firmware" };
 const PRESET_CTX = { modelId: "T2T1", projectId: "firmware", emulator: false };
 
+/**
+ * Mirrors extension.ts's `tfTools.presetBlocked` / `_presetsUnavailable`
+ * computation: an absent shared file blocks and is reported specifically,
+ * and it also implies the general preset-blocked flag.
+ */
+async function computePresetBlocking(
+  fixtureName: string
+): Promise<{ presetsInvalid: boolean; presetsUnavailable: boolean }> {
+  const presetsInvalid = await computePresetsInvalid(fixtureName);
+  const { shared, user } = fixtureUris(fixtureName);
+  const service = new PresetService(shared, user);
+  const state = await service.start();
+  service.dispose();
+  return { presetsInvalid, presetsUnavailable: state.status === "unavailable" };
+}
+
 /** Mirrors extension.ts's tfTools.presetBlocked computation. */
 async function computePresetsInvalid(fixtureName: string): Promise<boolean> {
   const { shared, user } = fixtureUris(fixtureName);
@@ -73,7 +89,7 @@ async function computePresetsInvalid(fixtureName: string): Promise<boolean> {
   const state = await service.start();
   service.dispose();
 
-  if (state.status === "invalid") {
+  if (state.status === "invalid" || state.status === "unavailable") {
     return true;
   }
   const effective = computePresetEffectiveValues(
@@ -87,12 +103,13 @@ async function computePresetsInvalid(fixtureName: string): Promise<boolean> {
   return resolved.some((r) => r.available && r.presetState === "mismatch");
 }
 
-function evaluateFor(kind: WorkflowKind, presetsInvalid: boolean) {
+function evaluateFor(kind: WorkflowKind, presetsInvalid: boolean, presetsUnavailable = false) {
   return evaluateWorkflowPreconditions({
     manifestStatus: "loaded",
     hasWorkflowBlockingIssues: false,
     workspaceSupported: true,
     // Clean is exempt from preset blocking (research Decision 11).
+    presetsUnavailable: kind !== "Clean" && presetsUnavailable,
     presetsInvalid: kind !== "Clean" && presetsInvalid,
   });
 }
@@ -134,3 +151,29 @@ for (const fixtureName of BROKEN_FIXTURES) {
     });
   });
 }
+
+// ---------------------------------------------------------------------------
+// An absent shared presets.toml: blocked with its own reason (FR-027)
+// ---------------------------------------------------------------------------
+
+suite("Preset blocking – preset-missing-shared", () => {
+  test("Build, Clippy, and Check are blocked with the presets-unavailable reason", async () => {
+    const { presetsInvalid, presetsUnavailable } = await computePresetBlocking("preset-missing-shared");
+    assert.strictEqual(presetsUnavailable, true, "expected the absent shared file to be reported");
+    assert.strictEqual(presetsInvalid, true, "unavailable must also set the general preset-blocked flag");
+
+    for (const kind of ["Build", "Clippy", "Check"] as WorkflowKind[]) {
+      const reason = evaluateFor(kind, presetsInvalid, presetsUnavailable);
+      assert.strictEqual(reason, "presets-unavailable", `expected ${kind} to be blocked`);
+      const msg = blockReasonMessage(reason);
+      assert.ok(msg.includes("presets.toml"), "the visible message must name the missing file");
+    }
+  });
+
+  test("Clean stays enabled and still launches with no arguments (FR-025)", async () => {
+    const { presetsInvalid, presetsUnavailable } = await computePresetBlocking("preset-missing-shared");
+    const reason = evaluateFor("Clean", presetsInvalid, presetsUnavailable);
+    assert.strictEqual(reason, "no-block", "Clean must not be blocked by an absent presets.toml");
+    assert.deepStrictEqual(deriveCleanArguments({ modelId: "T2T1", targetId: "hw", componentId: "firmware" }), []);
+  });
+});

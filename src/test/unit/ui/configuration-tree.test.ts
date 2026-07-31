@@ -1108,6 +1108,51 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
     assert.ok(children[1] instanceof PlaceholderItem);
   });
 
+  test("preset state unavailable replaces all choices with a presets.toml-is-unavailable row (FR-027)", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const unavailableState: PresetState = {
+      status: "unavailable",
+      // The shared file does not exist; the user file may or may not.
+      shared: makePresetFile({ source: "shared", present: false }),
+      user: makePresetFile({ source: "user", names: ["local"] }),
+      loadedAt: new Date(),
+      validationIssues: [],
+    };
+    provider.updatePresets(unavailableState, "default", []);
+    provider.setExpandedSelector("preset");
+    const children = provider.getChildren(
+      new SelectorHeaderItem("preset", "Preset", undefined, true)
+    );
+    assert.strictEqual(children.length, 2, "no preset choice is offered, not even Default");
+    assert.ok(children[0] instanceof WarningItem);
+    assert.ok(
+      String(children[0].label).includes("presets.toml") &&
+        String(children[0].label).includes("unavailable"),
+      `expected the warning to report presets.toml as unavailable, got: ${children[0].label}`
+    );
+    assert.ok(children[1] instanceof PlaceholderItem);
+    assert.ok(
+      String(children[1].label).includes("xtask"),
+      `expected the placeholder to name the cause, got: ${children[1].label}`
+    );
+  });
+
+  test("description reads 'Unavailable' while presets.toml is absent (FR-027)", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const unavailableState: PresetState = {
+      status: "unavailable",
+      shared: makePresetFile({ source: "shared", present: false }),
+      user: makePresetFile({ source: "user" }),
+      loadedAt: new Date(),
+      validationIssues: [],
+    };
+    // The saved id is preserved unresolved (FR-031), so it must not be shown
+    // as though that preset were in effect.
+    provider.updatePresets(unavailableState, "test", []);
+    const children = buildContextChildren() as SelectorHeaderItem[];
+    assert.strictEqual(children[3].description, "Unavailable");
+  });
+
   test("preset state loaded lists Default first, then named presets, with the active one marked", () => {
     provider.update(makeManifestState(), makeActiveConfig(), []);
     const available: PresetChoice[] = [

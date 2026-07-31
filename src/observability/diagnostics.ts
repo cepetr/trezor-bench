@@ -99,8 +99,17 @@ export function handleManifestStateDiagnostics(state: ManifestState): void {
  * `headerLine`-anchored range attached at parse time when present, and
  * `publishDiagnostics` already falls back to `Range(0,0,0,0)` otherwise
  * (research Decision 15).
+ *
+ * `unavailable` clears both instead: the shared file does not exist, so there
+ * is no content to anchor a diagnostic to. That state is communicated through
+ * the `Preset` selector and log output, mirroring `manifest-missing` (FR-027).
  */
 export function handlePresetStateDiagnostics(state: PresetState): void {
+  if (state.status === "unavailable") {
+    clearDiagnostics(state.shared.uri);
+    clearDiagnostics(state.user.uri);
+    return;
+  }
   publishDiagnostics(state.shared.uri, state.shared.issues);
   publishDiagnostics(state.user.uri, state.user.issues);
 }

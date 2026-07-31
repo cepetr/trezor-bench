@@ -21,9 +21,16 @@ function inputs(
   manifestStatus: "loaded" | "missing" | "invalid",
   hasWorkflowBlockingIssues: boolean,
   workspaceSupported: boolean,
-  presetsInvalid: boolean = false
+  presetsInvalid: boolean = false,
+  presetsUnavailable: boolean = false
 ): PreconditionInputs {
-  return { manifestStatus, hasWorkflowBlockingIssues, workspaceSupported, presetsInvalid };
+  return {
+    manifestStatus,
+    hasWorkflowBlockingIssues,
+    workspaceSupported,
+    presetsInvalid,
+    presetsUnavailable,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +133,55 @@ suite("evaluateWorkflowPreconditions – blocking logic", () => {
     );
   });
 
+  // -------------------------------------------------------------------------
+  // presets-unavailable (FR-027, evaluated after manifest-invalid and before
+  // presets-invalid)
+  // -------------------------------------------------------------------------
+
+  test("presets-unavailable blocks when the shared presets.toml does not exist", () => {
+    assert.strictEqual(
+      evaluateWorkflowPreconditions(inputs("loaded", false, true, false, true)),
+      "presets-unavailable"
+    );
+  });
+
+  test("presets-unavailable takes priority over presets-invalid, which it also implies", () => {
+    // extension.ts sets both flags for an absent shared file, since the
+    // unavailable state is preset-blocking too — the more specific reason wins.
+    assert.strictEqual(
+      evaluateWorkflowPreconditions(inputs("loaded", false, true, true, true)),
+      "presets-unavailable"
+    );
+  });
+
+  test("manifest-invalid takes priority over presets-unavailable", () => {
+    assert.strictEqual(
+      evaluateWorkflowPreconditions(inputs("invalid", false, true, false, true)),
+      "manifest-invalid"
+    );
+  });
+
+  test("manifest-missing takes priority over presets-unavailable", () => {
+    assert.strictEqual(
+      evaluateWorkflowPreconditions(inputs("missing", false, true, false, true)),
+      "manifest-missing"
+    );
+  });
+
+  test("workspace-unsupported takes priority over presets-unavailable", () => {
+    assert.strictEqual(
+      evaluateWorkflowPreconditions(inputs("loaded", false, false, false, true)),
+      "workspace-unsupported"
+    );
+  });
+
+  test("presets-unavailable does not block when the shared file is present", () => {
+    assert.strictEqual(
+      evaluateWorkflowPreconditions(inputs("loaded", false, true, false, false)),
+      "no-block"
+    );
+  });
+
   test("every existing reason and priority is unchanged when presets are valid", () => {
     assert.strictEqual(evaluateWorkflowPreconditions(inputs("loaded", false, true, false)), "no-block");
     assert.strictEqual(evaluateWorkflowPreconditions(inputs("missing", false, true, false)), "manifest-missing");
@@ -143,6 +199,7 @@ suite("blockReasonMessage – user-facing failure text", () => {
     "workspace-unsupported",
     "manifest-missing",
     "manifest-invalid",
+    "presets-unavailable",
     "presets-invalid",
   ];
 
@@ -183,6 +240,16 @@ suite("blockReasonMessage – user-facing failure text", () => {
     const msg = blockReasonMessage("presets-invalid");
     assert.ok(msg.toLowerCase().includes("preset"), "message should mention presets");
     assert.notStrictEqual(msg, blockReasonMessage("manifest-invalid"));
+  });
+
+  test("presets-unavailable message names presets.toml and is distinct from presets-invalid's (FR-027)", () => {
+    const msg = blockReasonMessage("presets-unavailable");
+    assert.ok(msg.includes("presets.toml"), "message should name the missing file");
+    assert.ok(
+      msg.toLowerCase().includes("xtask"),
+      "message should explain the cause: the repository's xtask has no preset support"
+    );
+    assert.notStrictEqual(msg, blockReasonMessage("presets-invalid"));
   });
 
   test("no-block returns an empty string", () => {
