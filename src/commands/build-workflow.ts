@@ -22,7 +22,8 @@ export type WorkflowBlockReason =
   | "no-block"
   | "workspace-unsupported"
   | "manifest-missing"
-  | "manifest-invalid";
+  | "manifest-invalid"
+  | "presets-invalid";
 
 /** Minimal context needed for task label formatting and arg derivation. */
 export interface WorkflowContext {
@@ -41,6 +42,12 @@ export interface PreconditionInputs {
   readonly manifestStatus: ManifestState["status"];
   readonly hasWorkflowBlockingIssues: boolean;
   readonly workspaceSupported: boolean;
+  /**
+   * True when preset data is file-level invalid or an available option
+   * mismatches. Callers pass `false` (or omit) for `Clean`, which is exempt
+   * (research Decision 11).
+   */
+  readonly presetsInvalid?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -140,7 +147,7 @@ export function deriveCleanArguments(_ctx: {
  * Evaluates whether the workflow action can start.
  * Returns the first blocking reason found, or "no-block" if all clear.
  *
- * Priority order: workspace-unsupported > manifest-missing > manifest-invalid
+ * Priority order: workspace-unsupported > manifest-missing > manifest-invalid > presets-invalid
  */
 export function evaluateWorkflowPreconditions(
   inputs: PreconditionInputs
@@ -153,6 +160,9 @@ export function evaluateWorkflowPreconditions(
   }
   if (inputs.manifestStatus === "invalid" || inputs.hasWorkflowBlockingIssues) {
     return "manifest-invalid";
+  }
+  if (inputs.presetsInvalid) {
+    return "presets-invalid";
   }
   return "no-block";
 }
@@ -168,6 +178,8 @@ export function blockReasonMessage(reason: WorkflowBlockReason): string {
       return "Build Workflow is blocked: the manifest file (tf-tools.yaml) was not found. Create or restore it to enable build actions.";
     case "manifest-invalid":
       return "Build Workflow is blocked: the manifest has validation errors or invalid availability rules. Check the Problems view and fix all errors to enable build actions.";
+    case "presets-invalid":
+      return "Build Workflow is blocked: preset data is invalid or a preset value cannot be represented by a build option. Check the Problems view and fix all errors to enable build actions.";
     case "no-block":
       return "";
   }
