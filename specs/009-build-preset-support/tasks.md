@@ -151,7 +151,7 @@ description: "Task list for Build Preset Support"
 - [X] T049 [P] Update `specs/glossary.md` to add `preset`, `active preset`, `default preset`, `preset-effective value`, and `build-option override`, extend `active configuration` to carry the preset id, and revise `default state` for the null-valued-state rules — without changing any other existing definition (FR-029)
 - [X] T050 Run the regression suites named in `specs/009-build-preset-support/quickstart.md` under `Regression checks` — `src/test/unit/ui/status-bar.test.ts`, `src/test/unit/workflow/task-labels.test.ts`, `src/test/unit/workflow/build-arguments.test.ts`, `src/test/unit/workflow/preconditions.test.ts`, `src/test/integration/persistence-status-bar.integration.test.ts`, `src/test/integration/build-workflow.integration.test.ts`, `src/test/integration/flash-upload-actions.integration.test.ts`, `src/test/integration/debug-launch.integration.test.ts` — and confirm no behavior change where the feature must be invisible (SC-005)
 - [X] T051 Run `npm run lint`, `npm run compile`, and `npm run test:unit` from the repository root and resolve every failure
-- [ ] T052 Run `npm test` (the `@vscode/test-electron` integration harness) from the repository root and resolve every failure
+- [X] T052 Run `npm test` (the `@vscode/test-electron` integration harness) from the repository root and resolve every failure
 - [ ] T053 Walk the manual checks in `specs/009-build-preset-support/quickstart.md` — `US1`, `US2`, `US3`, and `Failure and refresh checks` — confirming in particular that preset-file and build-context changes land within two seconds and with no window reload (SC-004)
 - [ ] T054 Run `npm run smoke:package` and confirm the packaged artifact bundles `smol-toml` and activates cleanly
 
