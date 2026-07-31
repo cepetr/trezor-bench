@@ -5,6 +5,8 @@ import { ActiveConfig } from "../configuration/active-config";
 import { ResolvedOption } from "../configuration/build-options";
 import { ActiveCompileCommandsArtifact } from "../intellisense/intellisense-types";
 import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../intellisense/artifact-resolution";
+import { PresetState } from "../presets/preset-types";
+import { AvailablePreset } from "../presets/preset-resolution";
 
 // ---------------------------------------------------------------------------
 // Tree item types
@@ -144,12 +146,13 @@ export class ExecutableArtifactItem extends vscode.TreeItem {
   }
 }
 
-export type SelectorKind = "model" | "target" | "component";
+export type SelectorKind = "model" | "target" | "component" | "preset";
 
 const SELECTOR_ICONS: Readonly<Record<SelectorKind, string>> = {
   model: "circuit-board",
   target: "target",
   component: "extensions",
+  preset: "layers",
 };
 
 const INACTIVE_CHOICE_ICON = vscode.Uri.file(
@@ -185,6 +188,7 @@ export const SELECT_COMMANDS: Readonly<Record<SelectorKind, string>> = {
   model: "tfTools.selectModel",
   target: "tfTools.selectTarget",
   component: "tfTools.selectComponent",
+  preset: "tfTools.selectPreset",
 };
 
 // ---------------------------------------------------------------------------
@@ -325,6 +329,9 @@ export class ConfigurationTreeProvider
   private _expandedMultistateKey: string | undefined;
   private _collapsedGroups = new Set<string>();
   private _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
+  private _presetState: PresetState | undefined;
+  private _activePresetId: string | undefined;
+  private _availablePresets: ReadonlyArray<AvailablePreset> = [];
   private _artifact: ActiveCompileCommandsArtifact | null = null;
   private _binaryArtifact: ActiveBinaryArtifact | null = null;
   private _mapArtifact: ActiveMapArtifact | null = null;
@@ -350,6 +357,21 @@ export class ConfigurationTreeProvider
       this._expandedMultistateKey = undefined;
       this._collapsedGroups.clear();
     }
+    this._onDidChangeTreeData.fire(undefined);
+  }
+
+  /**
+   * Updates the preset state, active preset id, and available preset
+   * choices, and refreshes the `Presets` selector.
+   */
+  updatePresets(
+    state: PresetState | undefined,
+    activePresetId: string | undefined,
+    available: ReadonlyArray<AvailablePreset>
+  ): void {
+    this._presetState = state;
+    this._activePresetId = activePresetId;
+    this._availablePresets = available;
     this._onDidChangeTreeData.fire(undefined);
   }
 
@@ -507,7 +529,7 @@ export class ConfigurationTreeProvider
 
     const loaded = state as ManifestStateLoaded;
 
-    // Loaded state: show model, target, component selector headers
+    // Loaded state: show model, target, component, and preset selector headers
     return [
       new SelectorHeaderItem(
         "model",
@@ -527,7 +549,24 @@ export class ConfigurationTreeProvider
         this._selectedDisplayValue(loaded, "component"),
         this._expandedSelector === "component"
       ),
+      new SelectorHeaderItem(
+        "preset",
+        "Presets",
+        this._presetDisplayValue(),
+        this._expandedSelector === "preset"
+      ),
     ];
+  }
+
+  /**
+   * The active preset's label for the `Presets` selector description.
+   * `undefined` renders as `—` (nothing has resolved yet).
+   */
+  private _presetDisplayValue(): string | undefined {
+    if (this._activePresetId === undefined) {
+      return undefined;
+    }
+    return this._availablePresets.find((p) => p.id === this._activePresetId)?.label;
   }
 
   // -------------------------------------------------------------------------
@@ -535,6 +574,10 @@ export class ConfigurationTreeProvider
   // -------------------------------------------------------------------------
 
   private _selectorChoices(kind: SelectorKind): vscode.TreeItem[] {
+    if (kind === "preset") {
+      return this._presetSelectorChoices();
+    }
+
     if (!this._state || this._state.status !== "loaded") {
       return [];
     }
@@ -556,6 +599,34 @@ export class ConfigurationTreeProvider
 
     return entries.map(
       (e) => new SelectorChoiceItem(kind, e.id, e.name, e.id === activeId)
+    );
+  }
+
+  /**
+   * Expanded content for the `Presets` selector: a loading placeholder
+   * before the first load, an error row replacing all choices when preset
+   * state is invalid (FR-028, FR-030), or one choice per available preset.
+   */
+  private _presetSelectorChoices(): vscode.TreeItem[] {
+    const state = this._presetState;
+
+    if (!state) {
+      return [new PlaceholderItem("Loading…")];
+    }
+
+    if (state.status === "invalid") {
+      const offending = [state.shared, state.user].find((f) =>
+        f.issues.some((i) => i.severity === "error")
+      );
+      const fileName = offending ? path.basename(offending.uri.fsPath) : "preset file";
+      return [
+        new WarningItem(`${fileName} is invalid`),
+        new PlaceholderItem("Check the Problems view for details"),
+      ];
+    }
+
+    return this._availablePresets.map(
+      (p) => new SelectorChoiceItem("preset", p.id, p.label, p.id === this._activePresetId)
     );
   }
 
