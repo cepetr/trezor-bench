@@ -179,6 +179,30 @@ export function resolveDebugTemplatesPath(
   return resolveConfiguredPath(value, workspaceFolder, "core/embed/xtask/tf-tools/debug");
 }
 
+// ---------------------------------------------------------------------------
+// Preset input path resolution (feature 009)
+// ---------------------------------------------------------------------------
+
+/** Resolved locations of the two preset TOML inputs for a workspace folder. */
+export interface PresetUris {
+  readonly shared: vscode.Uri;
+  readonly user: vscode.Uri;
+}
+
+/**
+ * Resolves both preset input URIs as `<resolveCargoWorkspacePath(folder)>/xtask/tf-tools/presets.toml`
+ * and `.../user-presets.toml`. Deliberately derived from `tfTools.cargoWorkspacePath` — the same
+ * directory `xtask` itself reads — never from `tfTools.manifestPath` (research Decision 2).
+ */
+export function resolvePresetUris(workspaceFolder: vscode.WorkspaceFolder): PresetUris {
+  const cargoWorkspacePath = resolveCargoWorkspacePath(workspaceFolder);
+  const presetsDir = path.join(cargoWorkspacePath, "xtask", "tf-tools");
+  return {
+    shared: vscode.Uri.file(path.join(presetsDir, "presets.toml")),
+    user: vscode.Uri.file(path.join(presetsDir, "user-presets.toml")),
+  };
+}
+
 /**
  * Returns true when a configuration change event affects any of the four
  * excluded-file settings for the given workspace folder.
