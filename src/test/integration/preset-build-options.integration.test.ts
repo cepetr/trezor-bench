@@ -81,8 +81,6 @@ const BUILD_OPTIONS: BuildOption[] = [
   },
 ];
 
-const HW_CONTEXT = { modelId: "T2T1", projectId: "firmware", emulator: false };
-
 function manifest(): ManifestStateLoaded {
   return {
     status: "loaded",
