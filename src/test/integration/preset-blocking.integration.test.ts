@@ -11,7 +11,7 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import * as path from "path";
 import { PresetService } from "../../presets/preset-service";
-import { derivePresetContext, computePresetEffectiveValues } from "../../presets/preset-resolution";
+import { computePresetEffectiveValues } from "../../presets/preset-resolution";
 import { normalizeBuildOptions } from "../../configuration/build-options";
 import {
   evaluateWorkflowPreconditions,
@@ -19,7 +19,7 @@ import {
   deriveCleanArguments,
   WorkflowKind,
 } from "../../commands/build-workflow";
-import { BuildOption, ManifestStateLoaded } from "../../manifest/manifest-types";
+import { BuildOption } from "../../manifest/manifest-types";
 import { DEFAULT_PRESET_ID } from "../../presets/preset-types";
 
 // ---------------------------------------------------------------------------
@@ -62,21 +62,6 @@ const BUILD_OPTIONS: BuildOption[] = [
     ],
   },
 ];
-
-function manifest(): ManifestStateLoaded {
-  return {
-    status: "loaded",
-    manifestUri: vscode.Uri.file("/workspace/tf-tools-manifest.yaml"),
-    models: [{ kind: "model", id: "T2T1", name: "Trezor Model T" }],
-    targets: [{ kind: "target", id: "hw", name: "Hardware", shortName: "HW", flag: null }],
-    components: [{ kind: "component", id: "firmware", name: "Firmware" }],
-    buildOptions: BUILD_OPTIONS,
-    hasWorkflowBlockingIssues: false,
-    hasDebugBlockingIssues: false,
-    validationIssues: [],
-    loadedAt: new Date(),
-  };
-}
 
 const BUILD_CONTEXT_ADAPTER = { modelId: "T2T1", targetId: "hw", componentId: "firmware" };
 const PRESET_CTX = { modelId: "T2T1", projectId: "firmware", emulator: false };
