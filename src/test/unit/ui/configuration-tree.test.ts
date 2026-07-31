@@ -14,9 +14,16 @@ import {
   BinaryArtifactItem,
   MapArtifactItem,
   ExecutableArtifactItem,
+  PlaceholderItem,
+  WarningItem,
 } from "../../../ui/configuration-tree";
 import { ActiveCompileCommandsArtifact } from "../../../intellisense/intellisense-types";
 import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../../../intellisense/artifact-resolution";
+import { ManifestStateLoaded, BuildOption } from "../../../manifest/manifest-types";
+import { ActiveConfig } from "../../../configuration/active-config";
+import { PresetFile, PresetState } from "../../../presets/preset-types";
+import { PresetChoice } from "../../../presets/preset-resolution";
+import { ResolvedOption } from "../../../configuration/build-options";
 
 // ---------------------------------------------------------------------------
 // Regression target: Build Selection and Build Artifacts default to Expanded,
@@ -66,6 +73,16 @@ suite("SelectorHeaderItem icons", () => {
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "extensions");
   });
 
+  test("uses the layers icon for preset (research Decision 16)", () => {
+    const item = new SelectorHeaderItem("preset", "Preset", "Default", false);
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "layers");
+  });
+
+  test("preset selector description falls back to '—' when nothing has resolved yet", () => {
+    const item = new SelectorHeaderItem("preset", "Preset", undefined, false);
+    assert.strictEqual(item.description, "—");
+  });
+
   test("uses expanded collapsible state when the selector is open", () => {
     const item = new SelectorHeaderItem("model", "Model", "T2T1", true);
     assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
@@ -89,6 +106,11 @@ suite("SelectorChoiceItem icons", () => {
     const item = new SelectorChoiceItem("model", "T3W1", "Trezor Model T3", false);
     assert.ok(item.iconPath instanceof vscode.Uri);
     assert.ok((item.iconPath as vscode.Uri).fsPath.endsWith("images/blank-tree-icon.svg"));
+  });
+
+  test("selects tfTools.selectPreset as the command for a preset choice", () => {
+    const item = new SelectorChoiceItem("preset", "test", "test", false);
+    assert.strictEqual(item.command?.command, "tfTools.selectPreset");
   });
 });
 
@@ -125,12 +147,17 @@ suite("BuildOptionMultistateHeaderItem accordion", () => {
 });
 
 suite("BuildOptionCheckboxItem bold label", () => {
-  test("label has highlights when checked (non-default state)", () => {
-    const item = new BuildOptionCheckboxItem("verbose", "Verbose", true);
+  test("label has highlights when isOverride = true, regardless of checked state (FR-015, replacing _isNonDefault)", () => {
+    const item = new BuildOptionCheckboxItem("verbose", "Verbose", true, true);
     assert.deepStrictEqual(item.label, { label: "Verbose", highlights: [[0, 7]] });
   });
 
-  test("label is plain string when unchecked (default state)", () => {
+  test("label is plain string when isOverride = false, even if checked", () => {
+    const item = new BuildOptionCheckboxItem("verbose", "Verbose", true, false);
+    assert.strictEqual(item.label, "Verbose");
+  });
+
+  test("label is plain string when isOverride is omitted (defaults to false)", () => {
     const item = new BuildOptionCheckboxItem("verbose", "Verbose", false);
     assert.strictEqual(item.label, "Verbose");
   });
@@ -195,7 +222,7 @@ suite("BuildOptionGroupItem bold label", () => {
 
 suite("BuildOptionCheckboxItem tooltip", () => {
   test("tooltip is set when description is provided", () => {
-    const item = new BuildOptionCheckboxItem("opt", "Verbose", false, "Enables verbose output");
+    const item = new BuildOptionCheckboxItem("opt", "Verbose", false, false, "Enables verbose output");
     assert.strictEqual(item.tooltip, "Enables verbose output");
   });
 
@@ -226,6 +253,59 @@ suite("BuildOptionStateItem tooltip", () => {
   test("tooltip is undefined when state description is omitted", () => {
     const item = new BuildOptionStateItem("opt", "swo", "SWO", false);
     assert.strictEqual(item.tooltip, undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Preset-relative mismatch/unresolved rendering (feature 009, US2)
+// ---------------------------------------------------------------------------
+
+suite("BuildOptionCheckboxItem mismatch rendering", () => {
+  test("renders the warning icon and names the unrepresentable value when mismatched", () => {
+    const item = new BuildOptionCheckboxItem("frozen", "Frozen", false, false, undefined, { rawValue: "yes" });
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "warning");
+    assert.ok(String(item.description).includes("yes"));
+  });
+
+  test("has no mismatch icon or description when not mismatched", () => {
+    const item = new BuildOptionCheckboxItem("frozen", "Frozen", true, true);
+    assert.strictEqual(item.iconPath, undefined);
+    assert.strictEqual(item.description, undefined);
+  });
+});
+
+suite("BuildOptionMultistateHeaderItem mismatch rendering", () => {
+  test("renders the warning icon and names the unrepresentable value when mismatched", () => {
+    const item = new BuildOptionMultistateHeaderItem(
+      "dbg-console",
+      "Debug Console",
+      "SWO",
+      [],
+      false,
+      false,
+      undefined,
+      { rawValue: "uart" }
+    );
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "warning");
+    assert.ok(String(item.description).includes("uart"));
+  });
+
+  test("uses the list-selection icon and the active state label when not mismatched", () => {
+    const item = new BuildOptionMultistateHeaderItem("dbg-console", "Debug Console", "SWO", [], false);
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "list-selection");
+    assert.strictEqual(item.description, "SWO");
+  });
+});
+
+suite("BuildOptionStateItem selectability", () => {
+  test("has a select command by default", () => {
+    const item = new BuildOptionStateItem("opt", "swo", "SWO", false);
+    assert.strictEqual(item.command?.command, "tfTools.selectBuildOptionState");
+  });
+
+  test("omits the select command when not selectable (unresolved option, Edge Cases)", () => {
+    const item = new BuildOptionStateItem("opt", "swo", "SWO", false, undefined, false);
+    assert.strictEqual(item.command, undefined);
   });
 });
 
@@ -881,5 +961,402 @@ suite("ConfigurationTreeProvider – Executable row", () => {
       String(execItem.tooltip).includes("/custom/path/to/firmware.elf"),
       `expected tooltip to include the path, got: ${execItem.tooltip}`
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ConfigurationTreeProvider – Preset selector (feature 009, US1)
+// ---------------------------------------------------------------------------
+
+function makeManifestState(): ManifestStateLoaded {
+  return {
+    status: "loaded",
+    manifestUri: vscode.Uri.file("/workspace/tf-tools-manifest.yaml"),
+    models: [{ kind: "model", id: "T2T1", name: "Trezor Model T" }],
+    targets: [{ kind: "target", id: "hw", name: "Hardware", shortName: "HW" }],
+    components: [{ kind: "component", id: "firmware", name: "Firmware" }],
+    buildOptions: [],
+    hasWorkflowBlockingIssues: false,
+    hasDebugBlockingIssues: false,
+    validationIssues: [],
+    loadedAt: new Date(),
+  };
+}
+
+function makeActiveConfig(): ActiveConfig {
+  return {
+    modelId: "T2T1",
+    targetId: "hw",
+    componentId: "firmware",
+    persistedAt: new Date().toISOString(),
+  };
+}
+
+function makePresetFile(overrides: Partial<PresetFile> & Pick<PresetFile, "source">): PresetFile {
+  return {
+    uri: vscode.Uri.file(`/workspace/xtask/tf-tools/${overrides.source === "user" ? "user-presets.toml" : "presets.toml"}`),
+    present: true,
+    names: [],
+    fragments: [],
+    issues: [],
+    ...overrides,
+  };
+}
+
+function makeLoadedPresetState(available: PresetChoice[]): { state: PresetState; available: PresetChoice[] } {
+  return {
+    state: {
+      status: "loaded",
+      shared: makePresetFile({ source: "shared", names: available.filter((p) => !p.isDefault).map((p) => p.id) }),
+      user: makePresetFile({ source: "user" }),
+      loadedAt: new Date(),
+      validationIssues: [],
+    },
+    available,
+  };
+}
+
+const DEFAULT_ONLY: PresetChoice[] = [{ id: "default", label: "Default", isDefault: true }];
+
+suite("ConfigurationTreeProvider – Preset selector", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    provider.dispose();
+  });
+
+  function buildContextChildren(): vscode.TreeItem[] {
+    return provider.getChildren(new SectionItem("build-context", "Build Selection"));
+  }
+
+  test("Preset is the fourth Build Selection child, directly below Component (FR-001)", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const children = buildContextChildren() as SelectorHeaderItem[];
+    assert.strictEqual(children.length, 4);
+    assert.deepStrictEqual(
+      children.map((c) => c.selectorKind),
+      ["model", "target", "component", "preset"]
+    );
+    assert.deepStrictEqual(
+      children.map((c) => c.label),
+      ["Model", "Target", "Component", "Preset"]
+    );
+  });
+
+  test("description shows '—' before preset state has resolved", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const children = buildContextChildren() as SelectorHeaderItem[];
+    assert.strictEqual(children[3].description, "—");
+  });
+
+  test("description shows 'Default' for the synthetic choice", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const { state } = makeLoadedPresetState(DEFAULT_ONLY);
+    provider.updatePresets(state, "default", DEFAULT_ONLY);
+    const children = buildContextChildren() as SelectorHeaderItem[];
+    assert.strictEqual(children[3].description, "Default");
+  });
+
+  test("description shows the active named preset's label", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const available: PresetChoice[] = [
+      { id: "default", label: "Default", isDefault: true },
+      { id: "test", label: "test", isDefault: false },
+    ];
+    const { state } = makeLoadedPresetState(available);
+    provider.updatePresets(state, "test", available);
+    const children = buildContextChildren() as SelectorHeaderItem[];
+    assert.strictEqual(children[3].description, "test");
+  });
+
+  test("preset state undefined renders the loading placeholder when expanded", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    provider.setExpandedSelector("preset");
+    const children = provider.getChildren(
+      new SelectorHeaderItem("preset", "Preset", undefined, true)
+    );
+    assert.strictEqual(children.length, 1);
+    assert.ok(children[0] instanceof PlaceholderItem);
+  });
+
+  test("preset state invalid replaces all choices with a warning row naming the failing file", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const invalidState: PresetState = {
+      status: "invalid",
+      shared: makePresetFile({
+        source: "shared",
+        issues: [{ severity: "error", code: "toml-parse", message: "bad syntax" }],
+      }),
+      user: makePresetFile({ source: "user" }),
+      loadedAt: new Date(),
+      validationIssues: [{ severity: "error", code: "toml-parse", message: "bad syntax" }],
+    };
+    provider.updatePresets(invalidState, "default", []);
+    provider.setExpandedSelector("preset");
+    const children = provider.getChildren(
+      new SelectorHeaderItem("preset", "Preset", undefined, true)
+    );
+    assert.ok(children[0] instanceof WarningItem);
+    assert.ok(
+      String(children[0].label).includes("presets.toml"),
+      `expected the warning to name the failing file, got: ${children[0].label}`
+    );
+    assert.ok(children[1] instanceof PlaceholderItem);
+  });
+
+  test("preset state unavailable replaces all choices with a presets.toml-is-unavailable row (FR-027)", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const unavailableState: PresetState = {
+      status: "unavailable",
+      // The shared file does not exist; the user file may or may not.
+      shared: makePresetFile({ source: "shared", present: false }),
+      user: makePresetFile({ source: "user", names: ["local"] }),
+      loadedAt: new Date(),
+      validationIssues: [],
+    };
+    provider.updatePresets(unavailableState, "default", []);
+    provider.setExpandedSelector("preset");
+    const children = provider.getChildren(
+      new SelectorHeaderItem("preset", "Preset", undefined, true)
+    );
+    assert.strictEqual(children.length, 2, "no preset choice is offered, not even Default");
+    assert.ok(children[0] instanceof WarningItem);
+    assert.ok(
+      String(children[0].label).includes("presets.toml") &&
+        String(children[0].label).includes("unavailable"),
+      `expected the warning to report presets.toml as unavailable, got: ${children[0].label}`
+    );
+    assert.ok(children[1] instanceof PlaceholderItem);
+    assert.ok(
+      String(children[1].label).includes("xtask"),
+      `expected the placeholder to name the cause, got: ${children[1].label}`
+    );
+  });
+
+  test("description reads 'Unavailable' while presets.toml is absent (FR-027)", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const unavailableState: PresetState = {
+      status: "unavailable",
+      shared: makePresetFile({ source: "shared", present: false }),
+      user: makePresetFile({ source: "user" }),
+      loadedAt: new Date(),
+      validationIssues: [],
+    };
+    // The saved id is preserved unresolved (FR-031), so it must not be shown
+    // as though that preset were in effect.
+    provider.updatePresets(unavailableState, "test", []);
+    const children = buildContextChildren() as SelectorHeaderItem[];
+    assert.strictEqual(children[3].description, "Unavailable");
+  });
+
+  test("preset state loaded lists Default first, then named presets, with the active one marked", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const available: PresetChoice[] = [
+      { id: "default", label: "Default", isDefault: true },
+      { id: "test", label: "test", isDefault: false },
+    ];
+    const { state } = makeLoadedPresetState(available);
+    provider.updatePresets(state, "test", available);
+    provider.setExpandedSelector("preset");
+    const children = provider.getChildren(
+      new SelectorHeaderItem("preset", "Preset", undefined, true)
+    ) as SelectorChoiceItem[];
+    assert.strictEqual(children.length, 2);
+    assert.strictEqual(children[0].entryId, "default");
+    assert.strictEqual(children[1].entryId, "test");
+    assert.strictEqual(children[1].description, "active");
+    assert.strictEqual(children[0].description, undefined);
+  });
+
+  test("every listed preset renders as a plain selectable row, whatever the build context (FR-006)", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    // The provider is handed the full declared list, including presets no
+    // fragment of which applies here; none of them is marked or disabled.
+    const available: PresetChoice[] = [
+      { id: "default", label: "Default", isDefault: true },
+      { id: "test", label: "test", isDefault: false },
+      { id: "prodtest", label: "prodtest", isDefault: false },
+    ];
+    const { state } = makeLoadedPresetState(available);
+    provider.updatePresets(state, "default", available);
+    provider.setExpandedSelector("preset");
+    const children = provider.getChildren(
+      new SelectorHeaderItem("preset", "Preset", undefined, true)
+    ) as SelectorChoiceItem[];
+    assert.deepStrictEqual(
+      children.map((c) => c.entryId),
+      ["default", "test", "prodtest"]
+    );
+    for (const child of children.slice(1)) {
+      assert.strictEqual(child.command?.command, "tfTools.selectPreset");
+      assert.strictEqual(child.description, undefined);
+      assert.strictEqual(child.resourceUri, undefined);
+    }
+  });
+
+  test("only one selector expands at a time; expanding preset collapses model (FR-002)", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    provider.setExpandedSelector("model");
+    assert.strictEqual(provider.getExpandedSelector(), "model");
+    provider.setExpandedSelector("preset");
+    assert.strictEqual(provider.getExpandedSelector(), "preset");
+
+    const modelChildren = provider.getChildren(
+      new SelectorHeaderItem("model", "Model", undefined, false)
+    );
+    assert.strictEqual(modelChildren.length, 0, "model choices should not render while collapsed");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ConfigurationTreeProvider – Build Options preset-relative emphasis (US2)
+// ---------------------------------------------------------------------------
+
+function checkboxOption(key: string, flag: string, group?: string): BuildOption {
+  return { key, label: key, flag, kind: "checkbox", group };
+}
+
+function multistateOption(
+  key: string,
+  flag: string,
+  states: Array<{ id: string; label: string; flag: string }>
+): BuildOption {
+  return { key, label: key, flag, kind: "multistate", states };
+}
+
+function resolved(
+  option: BuildOption,
+  overrides: Partial<Omit<ResolvedOption, "option">> = {}
+): ResolvedOption {
+  return {
+    option,
+    available: true,
+    value: option.kind === "checkbox" ? false : (option.states?.[0]?.id ?? ""),
+    presetState: "unresolved",
+    isOverride: false,
+    ...overrides,
+  };
+}
+
+function getBuildOptionsChildren(provider: ConfigurationTreeProvider): vscode.TreeItem[] {
+  const top = provider.getChildren() as vscode.TreeItem[];
+  const section = top.find(
+    (i) => i instanceof SectionItem && (i as SectionItem).sectionId === "build-options"
+  ) as SectionItem;
+  assert.ok(section, "build-options section not found");
+  return provider.getChildren(section) as vscode.TreeItem[];
+}
+
+suite("ConfigurationTreeProvider – Build Options preset-relative emphasis", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    provider.dispose();
+  });
+
+  test("checkbox row is emphasized only when isOverride is true", () => {
+    const opt = checkboxOption("frozen", "--frozen");
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [resolved(opt, { value: false, presetState: "resolved", isOverride: true })]
+    );
+    const [item] = getBuildOptionsChildren(provider) as BuildOptionCheckboxItem[];
+    assert.deepStrictEqual(item.label, { label: "frozen", highlights: [[0, 6]] });
+  });
+
+  test("checkbox row is not emphasized when isOverride is false, even if value is true", () => {
+    const opt = checkboxOption("frozen", "--frozen");
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [resolved(opt, { value: true, presetState: "resolved", isOverride: false })]
+    );
+    const [item] = getBuildOptionsChildren(provider) as BuildOptionCheckboxItem[];
+    assert.strictEqual(item.label, "frozen");
+  });
+
+  test("multistate row is emphasized only when isOverride is true", () => {
+    const states = [
+      { id: "null", label: "Default", flag: "" },
+      { id: "swo", label: "SWO", flag: "--dbg-console=swo" },
+    ];
+    const opt = multistateOption("dbg-console", "--dbg-console", states);
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [resolved(opt, { value: "swo", presetState: "resolved", presetValue: "null", isOverride: true })]
+    );
+    const [item] = getBuildOptionsChildren(provider) as BuildOptionMultistateHeaderItem[];
+    assert.deepStrictEqual(item.label, { label: "dbg-console", highlights: [[0, 11]] });
+  });
+
+  test("multistate row is not emphasized when isOverride is false, regardless of which state is active", () => {
+    const states = [
+      { id: "null", label: "Default", flag: "" },
+      { id: "swo", label: "SWO", flag: "--dbg-console=swo" },
+    ];
+    const opt = multistateOption("dbg-console", "--dbg-console", states);
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [resolved(opt, { value: "swo", presetState: "resolved", presetValue: "swo", isOverride: false })]
+    );
+    const [item] = getBuildOptionsChildren(provider) as BuildOptionMultistateHeaderItem[];
+    assert.strictEqual(item.label, "dbg-console");
+  });
+
+  test("collapsed group header is emphasized when any member has isOverride true", () => {
+    const optA = checkboxOption("alpha", "--alpha", "Group");
+    const optB = checkboxOption("beta", "--beta", "Group");
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [
+        resolved(optA, { value: false, presetState: "resolved", isOverride: false }),
+        resolved(optB, { value: true, presetState: "resolved", isOverride: true }),
+      ]
+    );
+    provider.setGroupCollapsed("Group", true);
+    const [group] = getBuildOptionsChildren(provider) as BuildOptionGroupItem[];
+    assert.deepStrictEqual(group.label, { label: "Group", highlights: [[0, 5]] });
+  });
+
+  test("mismatch checkbox row shows the warning icon and names the unrepresentable value", () => {
+    const opt = checkboxOption("frozen", "--frozen");
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [resolved(opt, { presetState: "mismatch", isOverride: false })]
+    );
+    const [item] = getBuildOptionsChildren(provider) as BuildOptionCheckboxItem[];
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "warning");
+  });
+
+  test("unresolved multistate row renders with non-selectable state children", () => {
+    const states = [
+      { id: "true", label: "Enabled", flag: "--pyopt=true" },
+      { id: "false", label: "Disabled", flag: "--pyopt=false" },
+    ];
+    const opt = multistateOption("pyopt", "--pyopt", states);
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [resolved(opt, { value: "true", presetState: "unresolved", isOverride: false })]
+    );
+    provider.setExpandedMultistateKey("pyopt");
+    const [item] = getBuildOptionsChildren(provider) as BuildOptionMultistateHeaderItem[];
+    assert.ok(item.stateChildren.length > 0);
+    for (const stateChild of item.stateChildren) {
+      assert.strictEqual(stateChild.command, undefined, "unresolved state children must not be selectable");
+    }
   });
 });

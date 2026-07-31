@@ -151,7 +151,7 @@
           "command": "tfTools.build",
           "when": "view == tfTools.configuration",
           "group": "navigation@1",
-          "enablement": "!tfTools.workflowBlocked"
+          "enablement": "!tfTools.workflowBlocked && !tfTools.presetBlocked"
         },
         {
           "command": "tfTools.startDebugging",
@@ -163,19 +163,19 @@
           "command": "tfTools.build",
           "when": "view == tfTools.configuration",
           "group": "overflow@1",
-          "enablement": "!tfTools.workflowBlocked"
+          "enablement": "!tfTools.workflowBlocked && !tfTools.presetBlocked"
         },
         {
           "command": "tfTools.clippy",
           "when": "view == tfTools.configuration",
           "group": "overflow@2",
-          "enablement": "!tfTools.workflowBlocked"
+          "enablement": "!tfTools.workflowBlocked && !tfTools.presetBlocked"
         },
         {
           "command": "tfTools.check",
           "when": "view == tfTools.configuration",
           "group": "overflow@3",
-          "enablement": "!tfTools.workflowBlocked"
+          "enablement": "!tfTools.workflowBlocked && !tfTools.presetBlocked"
         },
         {
           "command": "tfTools.clean",
@@ -357,6 +357,7 @@
   "dependencies": {
     "jsonc-parser": "^3.3.1",
     "minimatch": "^10.2.5",
+    "smol-toml": "^1.7.1",
     "yaml": "^2.7.1"
   },
   "devDependencies": {

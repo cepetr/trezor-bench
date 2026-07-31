@@ -73,6 +73,7 @@ suite("Scope guard — no cross-slice commands", () => {
       "tfTools.selectModel",
       "tfTools.selectTarget",
       "tfTools.selectComponent",
+      "tfTools.selectPreset",
       "tfTools.build",
       "tfTools.clippy",
       "tfTools.check",

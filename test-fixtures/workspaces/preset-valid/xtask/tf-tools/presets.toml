@@ -1,0 +1,17 @@
+[[defaults]]
+when = { emulator = true }
+dbg-console = "swo"
+
+[[defaults]]
+when = { emulator = false }
+frozen = true
+pyopt = true
+
+[[test]]
+btc-only = true
+pyopt = true
+
+[[dev]]
+when = { emulator = false, project = ["firmware"] }
+dbg-console = "swo"
+pyopt = false

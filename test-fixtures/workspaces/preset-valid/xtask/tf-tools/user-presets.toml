@@ -1,0 +1,5 @@
+[[local]]
+btc-only = false
+
+[[test]]
+frozen = false

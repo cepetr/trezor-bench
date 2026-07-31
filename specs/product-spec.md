@@ -58,7 +58,7 @@ The core capabilities below describe what this side-bar experience enables for t
 
 The extension provides a clear way to choose, review, and keep track of the active build context through the `Build Selection` part of the tree view.
 
-The `Build Selection` section is structured around three selectors: model, target, and component.
+The `Build Selection` section is structured around four selectors, in order: model, target, component, and preset.
 
 The `Build Selection` section remains present in the tree view and is expanded by default.
 
@@ -85,10 +85,14 @@ Build Selection
 │   ├── Hardware
 │   ├── Emulator
 │   └── ...
-└── Component
-	├── Firmware
-	├── Prodtest
-	├── Bootloader
+├── Component
+│   ├── Firmware
+│   ├── Prodtest
+│   ├── Bootloader
+│   └── ...
+└── Presets
+	├── Default
+	├── test
 	└── ...
 ```
 
@@ -97,6 +101,10 @@ When the manifest is still loading, the section stays visible and shows a loadin
 When the manifest file is missing, the section stays visible and shows a warning that the manifest file was not found together with the expected manifest path.
 
 When the manifest file is invalid, the section stays visible and shows a warning summary of the validation error count together with a prompt to check the Problems view for details.
+
+The `Preset` selector follows the same expand, collapse, active-choice, loading, and refresh conventions as the model, target, and component selectors. Its choices always begin with the synthetic `Default` choice, which represents defaults-only behavior rather than a named preset, followed by every named preset declared in either preset input, listed once and independently of the active model, target, and component. Any listed preset can be selected; when none of a preset's fragments apply to the active build context, it contributes no fragment values — the preset-file defaults alone calculate the option values — and it is still sent to the launched command. The active preset id is persisted in the same workspace-scoped active-configuration record as the selected model, target, and component (see `Persistence And Defaults`), but it is never shown in the shared build-context display, status bar, task labels, or command names — it affects only preset-relative build-option values and the arguments described under `Build` and `Clippy And Check`.
+
+When preset data is still loading, the `Preset` selector shows a loading placeholder. When either preset input is invalid, the selector's choices are replaced by a warning row naming the failing file, together with a prompt to check the Problems view for details. When the shared `presets.toml` does not exist at all, the choices are replaced instead by a row reporting that `presets.toml` is unavailable, together with the cause: the open repository's `xtask` does not support build presets. In both cases no preset choice is offered — not even `Default` — and `Build`, `Clippy`, and `Check` are blocked while `Clean` remains available (see `Availability And Blocking Model`).
 
 ### Build Option Management
 
@@ -117,7 +125,11 @@ Multistate options are shown as header rows whose descriptions show the currentl
 
 Grouped options are shown under group headers, while ungrouped options appear directly in the section. Grouping follows manifest declaration order, so grouped and ungrouped options can be interleaved in one section rather than being reordered into separate blocks.
 
-Non-default selections are visually emphasized so users can distinguish changed values from the effective defaults at a glance. Option descriptions and multistate state descriptions are available as tooltips on the corresponding rows.
+Every available build option displays its preset-effective value — the value calculated from the active preset's matching shared and user preset fragments — when no explicit override is stored for that option. Only values that differ from the active preset's calculated effective value are visually emphasized; a stored selection that matches the active preset's effective value is not emphasized and does not produce an explicit build-option argument, even though it remains stored. Switching the active preset recalculates every option's preset-effective value and then discards the stored overrides on options the new preset calculates differently, while keeping those on options it calculates identically: an override is authored against one option's calculated value, so it is retired exactly when that value moves. Changing the active build context is examined the same way whenever it changes which preset fragments apply — that is, when the selected model or component changes, or when the target changes between an emulator target and a hardware one — because preset fragments can be restricted by model, project, and emulator, so the same option can calculate to a different value in a different context. Immediately after such a change, every option whose calculated value moved shows that new value unemphasized, and every override that still stands remains in place and emphasized. Overrides also survive edits to the preset inputs and a target change that keeps the same emulator-ness. Option descriptions and multistate state descriptions are available as tooltips on the corresponding rows.
+
+A build option whose calculated preset-effective value cannot be represented by that option — for example a checkbox given a non-boolean value, or a multistate option given a value that matches none of its declared states — reports the mismatch directly on its row using the `warning` icon and a description naming the unrepresentable value, instead of guessing a value. `Build`, `Clippy`, and `Check` are blocked while any available option reports a mismatch (see `Availability And Blocking Model`).
+
+A multistate option whose active preset supplies no value for it, and which declares no state with a `null` value, is shown as unresolved: it renders normally but its state choices are not selectable and it contributes no build-option argument until a resolvable value is available. A multistate option's states no longer need to include a manifest-authored default state for this display and persistence model to work — see `Persistence And Defaults`.
 
 At a high level, this part of the tree view is organized like this:
 
@@ -215,7 +227,7 @@ The `Trezor` activity-bar container and the `Configuration` view use the shared 
 - Activity-bar container icon: `images/tf-tools.svg`
 - Configuration view icon: `images/tf-tools.svg`
 - Top-level section icons: none for `Build Selection`, `Build Options`, and `Build Artifacts`
-- `Build Selection` selector icons: `circuit-board` for `Model`, `target` for `Target`, `extensions` for `Component`
+- `Build Selection` selector icons: `circuit-board` for `Model`, `target` for `Target`, `extensions` for `Component`, `layers` for `Preset`
 - Active selector-choice icon: `check`
 - Inactive selector-choice spacer: `images/blank-tree-icon.svg`
 - Multistate build-option header icon: `list-selection`
@@ -424,10 +436,12 @@ If the workspace is supported, the extension:
 
 - Resolves the configured manifest path, artifacts path, cargo workspace path, and debug templates path.
 - Starts the manifest service and begins watching the configured manifest file.
+- Starts the preset service and begins watching both preset inputs at `<cargo workspace path>/xtask/tf-tools/presets.toml` and `.../user-presets.toml`.
 - Initializes the status-bar presenter, IntelliSense service, and excluded-file visibility services.
 - Restores the persisted active build context when possible and normalizes it against the loaded manifest if previously saved values are no longer valid.
-- Restores persisted build-option selections and resolves them against the active build context.
-- Updates the tree view, status bar, diagnostics, log output, workflow blocking state, artifact rows, and action enablement from the loaded state.
+- Recomputes the declared preset list, restores the persisted active preset id when the preset inputs still declare it, and normalizes it to the synthetic `Default` choice otherwise.
+- Restores persisted build-option selections and resolves them against the active build context and the active preset's calculated effective values.
+- Updates the tree view, status bar, diagnostics, log output, workflow blocking state, preset blocking state, artifact rows, and action enablement from the loaded state.
 - Schedules an initial IntelliSense refresh.
 
 ### Manifest Change
@@ -446,11 +460,26 @@ When the manifest changes:
 
 If the manifest becomes missing or invalid, the extension keeps the UI available but shows the failure through warnings, diagnostics, log output, and blocked workflow state. Missing manifests are warning-level log records; invalid manifests are error-level log records.
 
+### Preset Change
+
+The extension watches both preset inputs — the shared `presets.toml` and the optional `user-presets.toml`, both resolved under `<cargo workspace path>/xtask/tf-tools/` — for create, change, and delete events, and reloads them with the same debounce behavior used for the manifest. The extension also reconciles both preset files on a one-second interval, the same reconciliation approach used for build artifacts, so preset changes remain reliable even when a filesystem watcher does not report an event for a given create, change, or delete.
+
+When either preset input changes:
+
+- Both preset inputs are re-read and re-validated.
+- Diagnostics and log output are refreshed to reflect the new preset state, attributed to whichever file produced an issue.
+- The declared preset list is recomputed, and the active preset id is restored if the inputs still declare it or normalized to the synthetic `Default` choice otherwise.
+- Preset-effective build-option values are recalculated, and Build Options are refreshed to show the new values, emphasis, mismatch, and unresolved states.
+- The `Preset` selector, its choices, and workflow blocking state are refreshed.
+
+The shared `presets.toml` is required. It ships with the `xtask` that accepts preset arguments, so its absence means the open repository predates preset support rather than that no presets are defined: the extension reports the shared input as unavailable, offers no preset choices, writes the cause to log output, and blocks `Build`, `Clippy`, and `Check` while leaving `Clean` available. No diagnostic is produced for the absence, since there is no file content to attribute one to. An absent `user-presets.toml` is the genuinely optional case and is never reported. If either present file is unreadable, malformed, or contains validation errors, the extension keeps the UI available but replaces the `Preset` choices with a warning row, shows the failure through diagnostics and log output, and blocks `Build`, `Clippy`, and `Check` while leaving `Clean` available, without using stale or guessed preset data.
+
 ### Setting Change
 
 The extension reacts to changes in relevant `tfTools` settings without requiring a window reload.
 
 - If `tfTools.manifestPath` changes, the extension restarts the manifest service for the newly resolved file path and then follows the normal manifest-change flow.
+- If `tfTools.cargoWorkspacePath` changes, the extension restarts the preset service against the newly resolved `xtask/tf-tools` directory and then follows the normal preset-change flow.
 - If `tfTools.artifactsPath` changes, the extension updates artifact resolution immediately, refreshes build-artifact rows, recomputes artifact-dependent action state, and refreshes IntelliSense.
 - If `tfTools.debug.templatesPath` changes, the extension refreshes debug-related availability state so subsequent debug launches use the new templates location.
 - If `tfTools.showConfigurationInStatusBar` changes, the status bar is updated immediately.
@@ -459,10 +488,12 @@ The extension reacts to changes in relevant `tfTools` settings without requiring
 
 ### Active Build Context Change
 
-When the user changes the active model, target, or component from the tree view, the extension persists the new active build context and refreshes dependent state immediately.
+When the user changes the active model, target, component, or preset from the tree view, the extension persists the new active build context and refreshes dependent state immediately.
 
-- The selected model, target, or component is written to workspace state.
+- The selected model, target, component, or preset is written to workspace state.
 - The resulting build context is normalized so the saved combination always resolves to valid manifest entries.
+- The listed presets and the active preset id are left alone: neither depends on the model, target, or component.
+- Preset-effective build-option values are recalculated for the (possibly new) active preset.
 - Build options are re-resolved for the new context, so context-specific options may appear, disappear, or change availability.
 - The tree view is refreshed to show the new active selection, updated option state, and updated artifact rows.
 - The status bar is refreshed to show the new active configuration when enabled.
@@ -481,11 +512,13 @@ The extension remembers the active build context and build-option selections in 
 
 ### Active Build Context Persistence
 
-The extension persists the selected model, target, and component as the active build context.
+The extension persists the selected model, target, component, and active preset id together in the same workspace-scoped active-configuration record.
 
 When the workspace is opened again and the manifest loads successfully, the extension restores that saved build context if the saved ids still resolve to manifest entries.
 
 If a saved model, target, or component id no longer exists after a manifest change, the extension normalizes that part of the saved build context to a valid entry from the current manifest. The extension uses the first available entry of that kind when a saved value is missing or stale.
+
+The active-configuration record's preset id follows the same save, restore, and normalization lifecycle: a saved preset id is restored whenever the preset inputs still declare that preset — whatever the active model, target, and component — and is otherwise normalized to the synthetic `Default` choice. Records persisted before preset support was added have no preset id; they are read as the `Default` choice and are not rewritten merely for that reason. While either preset input is invalid, the saved preset id is preserved without being resolved or replaced, and is only restored or normalized once valid preset data returns.
 
 This normalization behavior is also part of the refresh flow described in the `Startup And Refresh Behavior` section.
 
@@ -498,25 +531,27 @@ The extension persists build-option selections separately from the active model,
 
 When the extension restores build-option selections, it resolves them against the current active build context and current manifest.
 
-If an option is temporarily unavailable in the current context, its saved value is preserved but does not affect the visible UI or emitted build arguments until the option becomes available again.
+If an option is temporarily unavailable in the current context, its saved value is preserved but does not affect the visible UI or emitted build arguments until the option becomes available again — unless a change to the active preset or to the applicable preset fragments changes that option's calculated value, which discards the saved value as described in `Build Option Management`.
 
 ### Default Values
 
-When no active build context has been saved yet, the extension defaults to the first available model, first available target, and first available component from the loaded manifest.
+When no active build context has been saved yet, the extension defaults to the first available model, first available target, and first available component from the loaded manifest, and the synthetic `Default` preset choice.
 
-When no explicit build-option value has been saved yet:
+When no explicit build-option value has been saved yet, the displayed and emitted value is the option's preset-effective value — the value calculated from the active preset's matching shared and user preset fragments — rather than a manifest-authored default:
 
-- Checkbox options default to disabled.
-- Multistate options default to the manifest-defined default state.
-- If no multistate state is marked as default, the first state in the manifest-defined order becomes the effective default.
+- Checkbox options preset-effective to disabled when no applicable preset fragment sets them (the upstream implicit-disabled value).
+- Multistate options preset-effective to the state whose manifest-declared value is `null`, when the option declares such a state, whenever no applicable preset fragment sets them.
+- A multistate option that declares no `null`-valued state and receives no value from any applicable preset fragment has no resolvable effective value; it is shown as unresolved (see `Build Option Management`) instead of falling back to the first declared state.
+
+Explicitly selecting a multistate option's `null`-valued state clears any stored override for that option — the row then follows the active preset again, the same as if no selection had ever been made. A value stored before this behavior existed that happens to equal that `null`-valued state's id is treated the same way.
 
 ### Invalid Saved State After Manifest Change
 
 If the manifest changes and previously saved state no longer matches the current manifest:
 
 - Saved model, target, and component ids are replaced with valid current entries, as described above.
-- Saved multistate selections that no longer match any current state fall back to the option's effective default selection.
-- Saved values for options that are merely unavailable in the current context are preserved and may become active again if the context changes back.
+- Saved multistate selections that no longer match any current state are discarded, and the option's value falls back to its preset-effective value as described above.
+- Saved values for options that are merely unavailable in the current context are preserved and may become active again if the context changes back, except where a change of the active preset or of the applicable preset fragments changed that option's calculated value — a saved value authored against a calculation that no longer holds is discarded, and one whose calculation is unchanged is kept.
 
 This behavior ensures that the extension restores as much prior workspace state as possible while keeping the active UI and emitted build arguments consistent with the current manifest.
 
@@ -547,6 +582,7 @@ Commands may be blocked when:
 - the active build context is incomplete or unresolved
 - a command depends on an artifact that does not exist
 - a command is defined only for contexts where a manifest rule, such as `when`, `flashWhen`, or `uploadWhen`, matches the current selection, and that rule does not match
+- the shared `presets.toml` does not exist, either preset input is invalid, or an available build option's calculated preset-effective value cannot be represented — this preset-blocking condition applies only to `Build`, `Clippy`, and `Check`; `Clean`, `Flash to Device`, `Upload to Device`, and `Start Debugging` are never blocked by preset state
 
 Some commands also have command-specific blocking conditions. These are documented in the relevant command sections below.
 
@@ -605,10 +641,13 @@ In practice, `Build` requires:
 - a manifest that is present and valid
 - an active build context that resolves to current manifest entries
 - no workflow-blocking manifest issues
+- a present shared `presets.toml`, both preset inputs valid, and no available build option reporting a preset-effective value mismatch
 
 `Build` does not require pre-existing output artifacts, because producing build output is the purpose of the command.
 
-The command always uses the currently active model, target, and component selection together with the currently effective build-option selections.
+The command always uses the currently active model, target, component, and preset selection together with the currently effective build-option overrides.
+
+Before deriving arguments, `Build` reloads both preset inputs from disk and recalculates the declared preset list and the preset-effective build-option values from that fresh state, so the launched command always reflects the current preset files rather than a possibly stale cached state.
 
 When launched, `Build` runs from the cargo workspace path configured through `tfTools.cargoWorkspacePath` and uses the workflow task environment described above.
 
@@ -617,13 +656,14 @@ The task invokes `cargo xtask build` for the active build context.
 At a high level, the command-line shape is:
 
 ```text
-cargo xtask build <component-id> -m <model-id> [target flag] [effective build-option flags]
+cargo xtask build <component-id> -m <model-id> [target flag] [-p <preset-id>] [override flags]
 ```
 
 - `<component-id>` comes from the active component selection.
 - `<model-id>` comes from the active model selection.
 - `[target flag]` is included only when the selected target defines one in the manifest.
-- `[effective build-option flags]` are derived from the build options that are currently available and selected for the active build context.
+- `[-p <preset-id>]` is included exactly once, only when a named preset is active. The synthetic `Default` choice never emits a preset argument — `-p default` is never sent, and `xtask` applies its own matching preset-file defaults for that case.
+- `[override flags]` are derived only from build options whose selected value differs from the active preset's calculated effective value — options whose selection matches the effective value emit nothing. A checkbox override emits its bare flag when turned on and `<flag>=false` when turned off; a multistate override emits the selected state's existing `<flag>=<value>` form, unchanged.
 
 #### Blocked Behavior
 
@@ -669,18 +709,18 @@ When shown through the VS Code task system, both tasks use the shared display co
 
 `Clippy` and `Check` follow the same workflow preconditions and shared blocking rules as `Build`.
 
-Like `Build`, they require a supported workspace, a present and valid manifest, a resolved active build context, and no workflow-blocking manifest issues.
+Like `Build`, they require a supported workspace, a present and valid manifest, a resolved active build context, no workflow-blocking manifest issues, and a present shared `presets.toml` with both preset inputs valid and no available build option reporting a preset-effective value mismatch. Like `Build`, they reload both preset inputs and recalculate available presets and preset-effective build-option values before deriving arguments.
 
 They also use the cargo workspace path configured through `tfTools.cargoWorkspacePath` and the workflow task environment described above.
 
 Their command-line shape follows the same argument mapping as `Build`, but with a different xtask subcommand:
 
 ```text
-cargo xtask clippy <component-id> -m <model-id> [target flag] [effective build-option flags]
-cargo xtask check <component-id> -m <model-id> [target flag] [effective build-option flags]
+cargo xtask clippy <component-id> -m <model-id> [target flag] [-p <preset-id>] [override flags]
+cargo xtask check <component-id> -m <model-id> [target flag] [-p <preset-id>] [override flags]
 ```
 
-That means both commands use the active component selection, active model selection, optional target flag, and effective build-option flags in the same way as `Build`.
+That means both commands use the active component selection, active model selection, optional target flag, optional preset argument, and override-only build-option flags in the same way as `Build`.
 
 #### Blocked Behavior
 
@@ -716,9 +756,9 @@ When shown through the VS Code task system, `Clean` is the only workflow task th
 
 #### Preconditions
 
-`Clean` follows the same shared workflow blocking rules as `Build`, `Clippy`, and `Check`.
+`Clean` follows the same shared workflow blocking rules as `Build`, `Clippy`, and `Check`, with one exception: `Clean` is never blocked by an unavailable `presets.toml`, preset invalidity, or a preset-effective value mismatch. It requires a supported workspace, a present and valid manifest, a resolved workflow state, and no workflow-blocking manifest issues. It also runs from the cargo workspace path configured through `tfTools.cargoWorkspacePath` and uses the workflow task environment described above.
 
-It requires a supported workspace, a present and valid manifest, a resolved workflow state, and no workflow-blocking manifest issues. It also runs from the cargo workspace path configured through `tfTools.cargoWorkspacePath` and uses the workflow task environment described above.
+`Clean` stays available and continues to launch with the same fixed arguments even when `presets.toml` is absent, a preset file is invalid, or an option reports a preset-effective value mismatch, since it never uses preset or build-option data.
 
 Its invocation differs from the other workflow tasks because it does not use active-build-context-derived arguments:
 
@@ -1163,7 +1203,7 @@ options
 
 Authored fields:
 
-- `id`: string, optional. Stable option identifier. When `flag` is omitted, the effective flag defaults to a long-form flag derived from `id`.
+- `id`: string, optional. Stable option identifier. When `flag` is omitted, the effective flag defaults to a long-form flag derived from `id`. Also used to match this option against preset-file keys; when omitted, preset matching falls back to `flag` with leading dashes stripped.
 - `flag`: string, optional. CLI flag string passed to `xtask` when the option is active. If omitted, the effective flag defaults to `--<id>`.
 - `name`: string, required. User-facing option label shown in the UI.
 - `description`: string, optional. Explanatory text shown for the option.

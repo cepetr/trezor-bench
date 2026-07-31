@@ -21,6 +21,7 @@ import {
 import { ResolvedOption } from "../configuration/build-options";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
+import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 import { createCargoTaskExecution } from "./xtask-execution";
 
 // ---------------------------------------------------------------------------
@@ -85,9 +86,10 @@ export function resolveWorkflowContext(
 function buildShellArgs(
   kind: Exclude<WorkflowKind, "Clean">,
   ctx: WorkflowContext,
-  resolved: ReadonlyArray<ResolvedOption>
+  resolved: ReadonlyArray<ResolvedOption>,
+  presetId: string
 ): string[] {
-  return deriveWorkflowArguments(kind, ctx, resolved);
+  return deriveWorkflowArguments(kind, ctx, resolved, presetId);
 }
 
 function cleanShellArgs(ctx: WorkflowContext): string[] {
@@ -95,18 +97,20 @@ function cleanShellArgs(ctx: WorkflowContext): string[] {
 }
 
 /**
- * Creates a VS Code `Task` for the given workflow kind.
+ * Creates a VS Code `Task` for the given workflow kind. `presetId` is
+ * ignored for `Clean`, which never receives a preset argument (FR-025).
  */
 export function createWorkflowTask(
   kind: WorkflowKind,
   ctx: WorkflowContext,
   workspaceFolder: vscode.WorkspaceFolder,
-  resolved: ReadonlyArray<ResolvedOption>
+  resolved: ReadonlyArray<ResolvedOption>,
+  presetId: string = DEFAULT_PRESET_ID
 ): vscode.Task {
   const args =
     kind === "Clean"
       ? cleanShellArgs(ctx)
-      : buildShellArgs(kind as Exclude<WorkflowKind, "Clean">, ctx, resolved);
+      : buildShellArgs(kind as Exclude<WorkflowKind, "Clean">, ctx, resolved, presetId);
 
   const subcommand = kind.toLowerCase();
   const execution = createCargoTaskExecution(subcommand, args, workspaceFolder);
@@ -136,6 +140,7 @@ export interface BuildTaskProviderDependencies {
   getManifestState: () => ManifestStateLoaded | undefined;
   getActiveConfig: () => ActiveConfig | undefined;
   getResolvedOptions: () => ReadonlyArray<ResolvedOption>;
+  getActivePresetId: () => string;
   getWorkspaceFolder: () => vscode.WorkspaceFolder | undefined;
 }
 
@@ -165,10 +170,11 @@ export class BuildTaskProvider implements vscode.TaskProvider {
     }
 
     const resolved = this._deps.getResolvedOptions();
+    const presetId = this._deps.getActivePresetId();
     const kinds: WorkflowKind[] = ["Build", "Clippy", "Check", "Clean"];
 
     return kinds.map((kind) =>
-      createWorkflowTask(kind, wfCtx, workspaceFolder, resolved)
+      createWorkflowTask(kind, wfCtx, workspaceFolder, resolved, presetId)
     );
   }
 

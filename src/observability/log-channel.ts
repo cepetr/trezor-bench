@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
 import { ManifestState } from "../manifest/manifest-types";
+import { PresetState } from "../presets/preset-types";
+import { PresetContext } from "../presets/preset-resolution";
 
 const CHANNEL_NAME = "Trezor Firmware Tools";
 let _channel: vscode.OutputChannel | undefined;
@@ -93,6 +95,145 @@ export function logManifestState(state: ManifestState): void {
       break;
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Preset state logging (feature 009)
+// ---------------------------------------------------------------------------
+
+/**
+ * Logs a human-readable description of the new preset state: load results
+ * for a `loaded` state, the expected shared path and its cause for
+ * `unavailable`, or the offending file(s) and issues for `invalid`.
+ */
+export function logPresetState(state: PresetState): void {
+  const describe = (label: string, file: PresetState["shared"]): string =>
+    file.present ? `${label}=${file.uri.fsPath} (${file.names.length} preset(s))` : `${label}=(absent)`;
+
+  switch (state.status) {
+    case "loaded":
+      log(`Presets loaded: ${describe("shared", state.shared)}, ${describe("user", state.user)}`);
+      for (const issue of state.validationIssues) {
+        log(`  [${issue.severity}] ${issue.message} (${issue.code})`);
+      }
+      break;
+    case "unavailable":
+      log(
+        `[ERROR] Presets unavailable: ${state.shared.uri.fsPath} does not exist — ` +
+          `this repository's xtask does not support build presets. Build, Clippy, ` +
+          `and Check are blocked until it is present; Clean is unaffected.`
+      );
+      break;
+    case "invalid": {
+      const offending = [state.shared, state.user]
+        .filter((f) => f.issues.some((i) => i.severity === "error"))
+        .map((f) => f.uri.fsPath);
+      log(
+        `[ERROR] Presets invalid: ${offending.join(", ")} — ${state.validationIssues.length} issue(s)`
+      );
+      for (const issue of state.validationIssues) {
+        log(`  [${issue.severity}] ${issue.message} (${issue.code})`);
+      }
+      break;
+    }
+  }
+}
+
+/**
+ * Logs an active-preset normalization: the saved preset id changed because
+ * it became unavailable for the active build context or preset data
+ * changed (spec `Failure Modes & Diagnostics`).
+ */
+export function logPresetNormalization(previousPresetId: string, normalizedPresetId: string): void {
+  log(
+    `Active preset normalized from "${previousPresetId}" to "${normalizedPresetId}": ` +
+      `it is no longer available for the active build context, or preset data changed.`
+  );
+}
+
+/** Renders the outcome of one override prune, or `undefined` when there was none. */
+function formatPrune(
+  droppedKeys: ReadonlyArray<string>,
+  keptKeys: ReadonlyArray<string>
+): string | undefined {
+  const parts: string[] = [];
+  if (droppedKeys.length > 0) {
+    parts.push(
+      `dropped ${droppedKeys.length} build-option override(s) whose calculated ` +
+        `value moved — ${droppedKeys.join(", ")}`
+    );
+  }
+  if (keptKeys.length > 0) {
+    parts.push(
+      `kept ${keptKeys.length} stored selection(s) whose calculated value is ` +
+        `unchanged — ${keptKeys.join(", ")}`
+    );
+  }
+  return parts.length > 0 ? `${parts.join("; ")}.` : undefined;
+}
+
+/**
+ * Logs the per-option override prune that follows an active-preset change
+ * (FR-017). Always paired with a visible Build Options refresh, so the log is
+ * the persistent record of a visible action, and it names both halves of the
+ * decision so a surviving emphasis is explainable.
+ */
+export function logOverridesPrunedForPreset(
+  previousPresetId: string,
+  newPresetId: string,
+  droppedKeys: ReadonlyArray<string>,
+  keptKeys: ReadonlyArray<string>
+): void {
+  const outcome = formatPrune(droppedKeys, keptKeys);
+  if (!outcome) {
+    return;
+  }
+  log(`Active preset changed from "${previousPresetId}" to "${newPresetId}": ${outcome}`);
+}
+
+/** Renders a preset context the way `when` filters name its fields. */
+function formatPresetContext(context: PresetContext): string {
+  return `model=${context.modelId}, project=${context.projectId}, emulator=${context.emulator}`;
+}
+
+/**
+ * Logs the per-option override prune that follows a preset-context change — a
+ * new model, component, or emulator-ness, any of which can select different
+ * preset fragments and so calculate different values (FR-017). The sibling of
+ * `logOverridesPrunedForPreset` for the other half of the pair an override is
+ * authored against.
+ */
+export function logOverridesPrunedForContext(
+  previousContext: PresetContext,
+  newContext: PresetContext,
+  droppedKeys: ReadonlyArray<string>,
+  keptKeys: ReadonlyArray<string>
+): void {
+  const outcome = formatPrune(droppedKeys, keptKeys);
+  if (!outcome) {
+    return;
+  }
+  log(
+    `Build context changed from (${formatPresetContext(previousContext)}) to ` +
+      `(${formatPresetContext(newContext)}): ${outcome}`
+  );
+}
+
+/** Keys already logged as unknown-to-the-manifest, to avoid repeat entries. */
+const _loggedUnknownPresetKeys = new Set<string>();
+
+/**
+ * Logs, once per key, an informational entry for a preset option key that no
+ * manifest build option claims (research Decision 5). Never blocks and never
+ * produces a diagnostic — this is observability only.
+ */
+export function logUnknownPresetKeys(keys: ReadonlyArray<string>): void {
+  const fresh = keys.filter((k) => !_loggedUnknownPresetKeys.has(k));
+  if (fresh.length === 0) {
+    return;
+  }
+  fresh.forEach((k) => _loggedUnknownPresetKeys.add(k));
+  log(`Preset option key(s) not recognized by the manifest (ignored): ${fresh.join(", ")}`);
 }
 
 // ---------------------------------------------------------------------------

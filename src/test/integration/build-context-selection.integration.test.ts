@@ -84,15 +84,16 @@ suite("ConfigurationTreeProvider – selector rendering", () => {
     provider.dispose();
   });
 
-  test("build-context shows three SelectorHeaderItems when manifest is loaded", () => {
+  test("build-context shows four SelectorHeaderItems when manifest is loaded", () => {
     const config = activeConfig("T2T1", "hw", "core");
     provider.update(makeLoadedState(), config);
 
     const children = getBuildContextChildren(provider);
-    assert.strictEqual(children.length, 3, "expected model, target, component headers");
+    assert.strictEqual(children.length, 4, "expected model, target, component, and preset headers");
     assert.ok(children[0] instanceof SelectorHeaderItem);
     assert.ok(children[1] instanceof SelectorHeaderItem);
     assert.ok(children[2] instanceof SelectorHeaderItem);
+    assert.ok(children[3] instanceof SelectorHeaderItem);
   });
 
   test("SelectorHeaderItems have correct selectorKind values", () => {

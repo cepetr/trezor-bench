@@ -734,6 +734,57 @@ options:
 });
 
 // ---------------------------------------------------------------------------
+// options[].id carried through to BuildOption.id (research Decision 4)
+// ---------------------------------------------------------------------------
+
+suite("parseManifest – options[].id", () => {
+  function baseManifest(optionsBlock: string): string {
+    return `
+models:
+  - id: t2t1
+    name: T2T1
+targets:
+  - id: hardware
+    name: Hardware
+components:
+  - id: firmware
+    name: Firmware
+${optionsBlock}
+`.trim();
+  }
+
+  test("carries options[].id through to BuildOption.id", () => {
+    const source = baseManifest(`
+options:
+  - id: btc-only
+    name: BTC Only
+    type: checkbox
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    assert.strictEqual(result.buildOptions[0].id, "btc-only");
+  });
+
+  test("leaves BuildOption.id undefined when the manifest entry omits id", () => {
+    const source = baseManifest(`
+options:
+  - name: Debug Console
+    flag: "--dbg-console"
+    type: multistate
+    states:
+      - value: null
+        name: Default
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    const opt = result.buildOptions[0];
+    assert.strictEqual(opt.id, undefined);
+    // Fallback preset match key: the flag with leading dashes stripped.
+    assert.strictEqual(opt.flag.replace(/^-+/, ""), "dbg-console");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // IntelliSense artifact field tests
 // ---------------------------------------------------------------------------
 

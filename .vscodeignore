@@ -15,3 +15,11 @@ tsconfig.json
 specs/**
 launch.json
 scripts/**
+coverage/**
+.claude/**
+.kilo/**
+.devcontainer/**
+.idea/**
+secrets/**
+secrets
+.env*

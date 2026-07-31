@@ -1,0 +1,55 @@
+models:
+  - id: T2T1
+    name: Trezor Model T
+  - id: T3W1
+    name: Trezor Model T3
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+  - id: emu
+    name: Emulator
+    shortName: EMU
+    flag: "--emulator"
+
+components:
+  - id: firmware
+    name: Firmware
+  - id: bootloader
+    name: Bootloader
+
+options:
+  - id: frozen
+    name: "Frozen"
+    flag: "--frozen"
+    type: checkbox
+
+  - id: btc-only
+    name: "BTC Only"
+    flag: "--btc-only"
+    type: checkbox
+
+  - id: dbg-console
+    name: "Debug Console"
+    flag: "--dbg-console"
+    type: multistate
+    states:
+      - value: null
+        name: "Default"
+      - value: "swo"
+        name: "SWO"
+      - value: "vcp"
+        name: "VCP"
+
+  - id: pyopt
+    name: "Python Optimization"
+    flag: "--pyopt"
+    type: multistate
+    states:
+      - value: null
+        name: "Default"
+      - value: "true"
+        name: "Enabled"
+      - value: "false"
+        name: "Disabled"

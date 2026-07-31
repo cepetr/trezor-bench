@@ -15,6 +15,7 @@
 import * as vscode from "vscode";
 import { BuildOption } from "../manifest/manifest-types";
 import { evaluateWhenExpression } from "../manifest/when-expressions";
+import { PresetEffectiveValue } from "../presets/preset-resolution";
 
 // ---------------------------------------------------------------------------
 // Storage
@@ -62,6 +63,47 @@ export async function writeBuildOption(
   return state;
 }
 
+/**
+ * Drops the persisted selections for `keys`, so those options fall back to
+ * their preset-effective values and are no longer reported as overrides.
+ * Returns the keys it actually removed, for the log record; keys with nothing
+ * stored are ignored, and when none of them was stored no write happens.
+ *
+ * Called when the active preset or the preset context changes (FR-017), with
+ * the keys whose calculated value moved across the two `(preset, context)`
+ * pairs. An override is authored against one calculated value, so it stands
+ * only while that value does: where it moved, carrying the override across
+ * would silently shadow the new calculation — and for a checkbox there would
+ * be no way to tell, since unchecking persists `false` rather than "unset".
+ * Where the calculation is identical, the override still expresses exactly
+ * what the user asked for and is kept.
+ *
+ * Not limited to the currently available options: selections held for options
+ * that are hidden in the active context were authored against the same moving
+ * baseline.
+ */
+export async function dropBuildOptionOverrides(
+  context: vscode.ExtensionContext,
+  keys: ReadonlyArray<string>
+): Promise<string[]> {
+  const stored = readBuildOptions(context);
+  const values = stored?.values ?? {};
+  const dropped = keys.filter((key) => key in values);
+  if (dropped.length === 0) {
+    return [];
+  }
+  const remaining: Record<string, boolean | string | null> = { ...values };
+  for (const key of dropped) {
+    delete remaining[key];
+  }
+  const state: BuildOptionsState = {
+    values: remaining,
+    persistedAt: new Date().toISOString(),
+  };
+  await context.workspaceState.update(BUILD_OPTIONS_KEY, state);
+  return dropped;
+}
+
 // ---------------------------------------------------------------------------
 // Context evaluation
 // ---------------------------------------------------------------------------
@@ -85,11 +127,27 @@ export interface ResolvedOption {
    */
   readonly available: boolean;
   /**
-   * The effective value for the current context:
+   * The value the UI shows and commands consider:
    *   - checkbox: `true` / `false`
    *   - multistate: state id string
+   * Falls back to the preset-effective value when no explicit override
+   * survives normalization.
    */
   readonly value: boolean | string;
+  /** The preset-effective value, present only when `presetState === "resolved"`. */
+  readonly presetValue?: boolean | string;
+  /** Mirrors `PresetEffectiveValue.state`. */
+  readonly presetState: "resolved" | "unresolved" | "mismatch";
+  /**
+   * `true` only when an explicit stored selection differs from `presetValue`.
+   * Drives visual emphasis (FR-015) and argument emission (FR-022). Forced
+   * `false` when `presetState` is `"unresolved"` or `"mismatch"`.
+   */
+  readonly isOverride: boolean;
+  /** The unrepresentable raw value, present only when `presetState === "mismatch"`. */
+  readonly rawValue?: PresetEffectiveValue["rawValue"];
+  /** File that supplied the mismatching value, present only when `presetState === "mismatch"`. */
+  readonly sourceUri?: PresetEffectiveValue["sourceUri"];
 }
 
 // ---------------------------------------------------------------------------
@@ -97,41 +155,98 @@ export interface ResolvedOption {
 // ---------------------------------------------------------------------------
 
 /**
- * Resolves each build option in `options` against the active `context` and
- * the persisted `saved` selections. Returns a `ResolvedOption` for every
- * option (including unavailable ones, flagged with `available: false`) so
- * that callers can preserve hidden values while hiding them from the UI.
+ * Resolves each build option in `options` against the active `context`, the
+ * persisted `saved` selections, and `presetEffectiveValues` (the calculated
+ * preset-relative value for each option, keyed by `BuildOption.key`).
+ *
+ * Returns a `ResolvedOption` for every option (including unavailable ones,
+ * flagged with `available: false`) so that callers can preserve hidden
+ * values while hiding them from the UI.
+ *
+ * Value resolution order (specs/009-build-preset-support/data-model.md §4):
+ * 1. Read the stored selection.
+ * 2. Discard it when null, matching no current state id, or equal to the
+ *    null-valued state's id (research Decision 8, rule 3).
+ * 3. A surviving selection becomes `value`; `isOverride = value !== presetValue`.
+ * 4. Otherwise `value = presetValue`, `isOverride = false`.
+ * 5. When `presetState === "unresolved"`, `value` is the null-valued state id
+ *    if one exists, else the first state id; `isOverride` is forced `false`.
+ * 6. When `presetState === "mismatch"`, `isOverride` is forced `false`.
  *
  * Invalid/unknown keys in `saved` are quietly ignored (not written back here).
  */
 export function normalizeBuildOptions(
   options: ReadonlyArray<BuildOption>,
   saved: BuildOptionsState | undefined,
-  context: BuildContext
+  context: BuildContext,
+  presetEffectiveValues: ReadonlyMap<string, PresetEffectiveValue> = new Map()
 ): ResolvedOption[] {
   const savedValues = saved?.values ?? {};
   return options.map((option) => {
-    // Evaluate availability
     const available = option.when
       ? evaluateWhenExpression(option.when, context)
       : true;
 
-    // Determine the effective value
-    let value: boolean | string;
-    if (option.kind === "checkbox") {
-      const stored = savedValues[option.key];
-      value = typeof stored === "boolean" ? stored : false;
+    const effective = presetEffectiveValues.get(option.key);
+    let presetState: "resolved" | "unresolved" | "mismatch";
+    let presetValue: boolean | string | undefined;
+    if (effective) {
+      presetState = effective.state;
+      presetValue = effective.state === "resolved" ? effective.value : undefined;
+    } else if (option.kind === "checkbox") {
+      // No preset-effective value was computed for this key: mirrors the
+      // "absent" row of the raw-value table (upstream implicit disabled).
+      presetState = "resolved";
+      presetValue = false;
+    } else if (option.states?.some((s) => s.id === "null")) {
+      presetState = "resolved";
+      presetValue = "null";
     } else {
-      // multistate
-      const stored = savedValues[option.key];
-      if (typeof stored === "string" && option.states?.some((s) => s.id === stored)) {
-        value = stored;
-      } else {
-        value = option.defaultState ?? option.states?.[0]?.id ?? "";
-      }
+      presetState = "unresolved";
     }
 
-    return { option, available, value };
+    const storedRaw = savedValues[option.key];
+    let stored: boolean | string | undefined;
+    if (option.kind === "checkbox") {
+      stored = typeof storedRaw === "boolean" ? storedRaw : undefined;
+    } else if (
+      typeof storedRaw === "string" &&
+      storedRaw !== "null" &&
+      option.states?.some((s) => s.id === storedRaw)
+    ) {
+      stored = storedRaw;
+    } else {
+      stored = undefined;
+    }
+
+    let value: boolean | string;
+    let isOverride: boolean;
+
+    if (presetState === "unresolved") {
+      const nullState = option.states?.find((s) => s.id === "null");
+      value = nullState ? "null" : (option.states?.[0]?.id ?? "");
+      isOverride = false;
+    } else if (presetState === "mismatch") {
+      value = stored ?? (option.kind === "checkbox" ? false : (option.states?.[0]?.id ?? ""));
+      isOverride = false;
+    } else if (stored !== undefined) {
+      value = stored;
+      isOverride = value !== presetValue;
+    } else {
+      value = presetValue!;
+      isOverride = false;
+    }
+
+    return {
+      option,
+      available,
+      value,
+      presetValue,
+      presetState,
+      isOverride,
+      rawValue: presetState === "mismatch" ? effective?.rawValue : undefined,
+      sourceUri: presetState === "mismatch" ? effective?.sourceUri : undefined,
+    };
   });
 }
 

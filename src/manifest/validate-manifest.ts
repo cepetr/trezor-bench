@@ -595,6 +595,14 @@ function validateBuildOptions(
       continue;
     }
 
+    // Optional: id — carried through to BuildOption.id for preset-fragment matching
+    // (research Decision 4). Also used to derive "flag" as --{id} when "flag" is absent.
+    const idNode = item.get("id", true);
+    const id =
+      idNode instanceof Scalar && typeof idNode.value === "string" && idNode.value.trim()
+        ? idNode.value
+        : undefined;
+
     // Required: flag — use explicit "flag" when present; otherwise derive from "id" as --{id}
     let flag: string | undefined;
     const explicitFlagNode = item.get("flag", true);
@@ -604,15 +612,12 @@ function validateBuildOptions(
       explicitFlagNode.value.trim()
     ) {
       flag = explicitFlagNode.value;
+    } else if (id) {
+      flag = `--${id}`;
     } else {
-      const idNode = item.get("id", true);
-      if (idNode instanceof Scalar && typeof idNode.value === "string" && idNode.value.trim()) {
-        flag = `--${idNode.value}`;
-      } else {
-        // Neither flag nor id — report as missing
-        validateStringField(item, "flag", lineCounter, issues, `options entry "${label}"`);
-        continue;
-      }
+      // Neither flag nor id — report as missing
+      validateStringField(item, "flag", lineCounter, issues, `options entry "${label}"`);
+      continue;
     }
 
     // Duplicate flag check
@@ -726,6 +731,7 @@ function validateBuildOptions(
     const key = buildOptionKey(flag);
     options.push({
       key,
+      id,
       label,
       flag,
       kind: kind!,
