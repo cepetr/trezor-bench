@@ -70,3 +70,9 @@ export interface PresetStateInvalid {
 
 /** `undefined` before the first load; the `Presets` selector shows a loading placeholder in that window. */
 export type PresetState = PresetStateLoaded | PresetStateInvalid;
+
+/**
+ * Reserved id for the synthetic `Default` choice. The only preset id that
+ * suppresses `-p` (FR-004, FR-021). Re-exported from `configuration/active-config.ts`.
+ */
+export const DEFAULT_PRESET_ID = "default";

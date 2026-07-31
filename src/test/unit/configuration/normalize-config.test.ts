@@ -1,7 +1,8 @@
 import * as assert from "assert";
-import { normalizeActiveConfig } from "../../../configuration/normalize-config";
+import { normalizeActiveConfig, normalizePresetId } from "../../../configuration/normalize-config";
 import { ManifestStateLoaded } from "../../../manifest/manifest-types";
 import { ActiveConfig } from "../../../configuration/active-config";
+import { DEFAULT_PRESET_ID } from "../../../presets/preset-types";
 import * as vscode from "vscode";
 
 // ---------------------------------------------------------------------------
@@ -132,5 +133,40 @@ suite("normalizeActiveConfig – saved config fully stale", () => {
     assert.strictEqual(result.modelId, "T2T1");
     assert.strictEqual(result.targetId, "hw");
     assert.strictEqual(result.componentId, "core");
+  });
+
+  test("normalizeActiveConfig behavior for the manifest axes is unaffected by presetId (unchanged)", () => {
+    const saved = makeConfig({ modelId: "T3W1", targetId: "emu", componentId: "prodtest" });
+    const result = normalizeActiveConfig(makeManifest(), saved);
+    assert.strictEqual(result.modelId, "T3W1");
+    assert.strictEqual(result.targetId, "emu");
+    assert.strictEqual(result.componentId, "prodtest");
+    assert.ok(!("presetId" in result), "normalizeActiveConfig must not touch presetId");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// normalizePresetId (feature 009)
+// ---------------------------------------------------------------------------
+
+suite("normalizePresetId", () => {
+  test("returns the saved id unchanged when availableIds is undefined (preset state invalid, FR-031)", () => {
+    assert.strictEqual(normalizePresetId("test", undefined), "test");
+    assert.strictEqual(normalizePresetId(DEFAULT_PRESET_ID, undefined), DEFAULT_PRESET_ID);
+  });
+
+  test("keeps a saved id present in availableIds (FR-008, Scenario 1.6)", () => {
+    const availableIds = new Set(["default", "test", "dev"]);
+    assert.strictEqual(normalizePresetId("dev", availableIds), "dev");
+  });
+
+  test("normalizes any other saved id to DEFAULT_PRESET_ID (FR-008, Scenario 1.4)", () => {
+    const availableIds = new Set(["default", "test"]);
+    assert.strictEqual(normalizePresetId("removed-preset", availableIds), DEFAULT_PRESET_ID);
+  });
+
+  test("keeps DEFAULT_PRESET_ID when it is itself the saved id and available", () => {
+    const availableIds = new Set(["default", "test"]);
+    assert.strictEqual(normalizePresetId(DEFAULT_PRESET_ID, availableIds), DEFAULT_PRESET_ID);
   });
 });
