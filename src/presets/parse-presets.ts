@@ -48,17 +48,27 @@ function findHeaderLines(source: string, groupName: string): number[] {
   return result;
 }
 
+/** Turns a 0-based header line into a zero-width Range anchoring a diagnostic to it. */
+function headerRange(headerLine: number | undefined): vscode.Range | undefined {
+  if (headerLine === undefined) {
+    return undefined;
+  }
+  const pos = new vscode.Position(headerLine, 0);
+  return new vscode.Range(pos, pos);
+}
+
 function parseFilter(
   groupName: string,
   when: unknown,
-  issues: ValidationIssue[]
+  issues: ValidationIssue[],
+  range: vscode.Range | undefined
 ): PresetFilter {
   if (when === undefined) {
     return {};
   }
 
   if (!isPlainObject(when)) {
-    issues.push(issue("error", "invalid-filter", `"${groupName}": "when" must be a table`));
+    issues.push(issue("error", "invalid-filter", `"${groupName}": "when" must be a table`, range));
     return {};
   }
 
@@ -67,7 +77,7 @@ function parseFilter(
   for (const key of Object.keys(when)) {
     if (!ALLOWED_WHEN_FIELDS.has(key)) {
       issues.push(
-        issue("error", "invalid-filter", `"${groupName}": "when" has unknown field "${key}"`)
+        issue("error", "invalid-filter", `"${groupName}": "when" has unknown field "${key}"`, range)
       );
     }
   }
@@ -78,7 +88,12 @@ function parseFilter(
       filter.models = v as string[];
     } else {
       issues.push(
-        issue("error", "invalid-filter", `"${groupName}": "when.model" must be an array of strings`)
+        issue(
+          "error",
+          "invalid-filter",
+          `"${groupName}": "when.model" must be an array of strings`,
+          range
+        )
       );
     }
   }
@@ -89,7 +104,12 @@ function parseFilter(
       filter.projects = v as string[];
     } else {
       issues.push(
-        issue("error", "invalid-filter", `"${groupName}": "when.project" must be an array of strings`)
+        issue(
+          "error",
+          "invalid-filter",
+          `"${groupName}": "when.project" must be an array of strings`,
+          range
+        )
       );
     }
   }
@@ -100,7 +120,7 @@ function parseFilter(
       filter.emulator = v;
     } else {
       issues.push(
-        issue("error", "invalid-filter", `"${groupName}": "when.emulator" must be a boolean`)
+        issue("error", "invalid-filter", `"${groupName}": "when.emulator" must be a boolean`, range)
       );
     }
   }
@@ -141,12 +161,15 @@ export function parsePresetFile(source: string, presetSource: PresetSource): Par
   const fragments: PresetFragment[] = [];
 
   for (const [groupName, groupValue] of Object.entries(parsed)) {
+    const headerLines = findHeaderLines(source, groupName);
+
     if (!Array.isArray(groupValue)) {
       issues.push(
         issue(
           "error",
           "invalid-filter",
-          `"${groupName}" must be an array of tables (use [[${groupName}]])`
+          `"${groupName}" must be an array of tables (use [[${groupName}]])`,
+          headerRange(headerLines[0])
         )
       );
       continue;
@@ -157,25 +180,26 @@ export function parsePresetFile(source: string, presetSource: PresetSource): Par
         issue(
           "warning",
           "reserved-preset-name",
-          `"default" is a reserved preset name; this group is excluded from the Presets choice list.`
+          `"default" is a reserved preset name; this group is excluded from the Presets choice list.`,
+          headerRange(headerLines[0])
         )
       );
     } else if (groupName !== "defaults") {
       names.push(groupName);
     }
 
-    const headerLines = findHeaderLines(source, groupName);
-
     groupValue.forEach((item, order) => {
+      const range = headerRange(headerLines[order]);
+
       if (!isPlainObject(item)) {
         issues.push(
-          issue("error", "invalid-filter", `"${groupName}" entry ${order} must be a table`)
+          issue("error", "invalid-filter", `"${groupName}" entry ${order} must be a table`, range)
         );
         return;
       }
 
       const { when, ...rest } = item;
-      const filter = parseFilter(groupName, when, issues);
+      const filter = parseFilter(groupName, when, issues, range);
 
       const values: Record<string, PresetRawValue> = {};
       for (const [key, value] of Object.entries(rest)) {

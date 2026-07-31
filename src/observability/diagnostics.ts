@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { ValidationIssue, ManifestState } from "../manifest/manifest-types";
+import { PresetState } from "../presets/preset-types";
 
 // ---------------------------------------------------------------------------
 // Diagnostic collection
@@ -86,4 +87,20 @@ export function handleManifestStateDiagnostics(state: ManifestState): void {
       clearDiagnostics(state.manifestUri);
       break;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Preset state → diagnostics
+// ---------------------------------------------------------------------------
+
+/**
+ * Translates a `PresetState` to VS Code diagnostics, attributed to the URI
+ * of the file that produced each issue (shared vs. user). Ranges use the
+ * `headerLine`-anchored range attached at parse time when present, and
+ * `publishDiagnostics` already falls back to `Range(0,0,0,0)` otherwise
+ * (research Decision 15).
+ */
+export function handlePresetStateDiagnostics(state: PresetState): void {
+  publishDiagnostics(state.shared.uri, state.shared.issues);
+  publishDiagnostics(state.user.uri, state.user.issues);
 }
