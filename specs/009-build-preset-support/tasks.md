@@ -55,7 +55,7 @@ description: "Task list for Build Preset Support"
 ### Implementation for Foundational
 
 - [X] T012 Create `src/presets/preset-types.ts` declaring `PresetSource`, `PresetRawValue`, `PresetFilter`, `PresetFragment`, `PresetFile`, and the `PresetState` discriminated union (`loaded` | `invalid`), per `specs/009-build-preset-support/data-model.md` §1
-- [ ] T013 Add `readonly id?: string` to `BuildOption` and the `toml-parse`, `invalid-filter`, `reserved-preset-name`, and `preset-value-mismatch` members to `ValidationCode` in `src/manifest/manifest-types.ts`
+- [X] T013 Add `readonly id?: string` to `BuildOption` and the `toml-parse`, `invalid-filter`, `reserved-preset-name`, and `preset-value-mismatch` members to `ValidationCode` in `src/manifest/manifest-types.ts`
 - [ ] T014 Carry `options[].id` through the parser into `BuildOption.id` in `src/manifest/validate-manifest.ts`, leaving every existing validation code and message unchanged
 - [ ] T015 Implement the pure parser/validator in `src/presets/parse-presets.ts`: `smol-toml` parse → `PresetFile` + `ValidationIssue[]`, key-insertion order for `names`, per-group fragment `order`, `when` shape validation per research Decision 6, reserved-name warning per Decision 7, unknown option keys retained without issue per Decision 5, and `headerLine` located by a single regex scan of the raw text per Decision 15
 - [ ] T016 Add preset-input path resolution to `src/workspace/settings.ts` returning both URIs under `<resolveCargoWorkspacePath(folder)>/xtask/tf-tools/`, with no new user-facing setting

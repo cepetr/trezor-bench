@@ -89,7 +89,11 @@ export type ValidationCode =
   | "invalid-type"
   | "empty-collection"
   | "duplicate-flag"
-  | "invalid-when";
+  | "invalid-when"
+  | "toml-parse"
+  | "invalid-filter"
+  | "reserved-preset-name"
+  | "preset-value-mismatch";
 
 export interface ValidationIssue {
   readonly severity: ValidationSeverity;
@@ -141,6 +145,12 @@ export interface BuildOptionState {
 export interface BuildOption {
   /** Deterministic internal key used for workspace-state persistence. */
   readonly key: string;
+  /**
+   * Manifest `options[].id`, when declared. Used to match preset fragment
+   * keys against this option (research Decision 4). When absent, the
+   * fallback match key is `flag` with leading dashes stripped.
+   */
+  readonly id?: string;
   readonly label: string;
   /** Command-line flag emitted when this option is active. */
   readonly flag: string;
