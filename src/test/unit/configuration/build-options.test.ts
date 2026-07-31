@@ -8,7 +8,7 @@ import {
   BuildOptionsState,
   readBuildOptions,
   writeBuildOption,
-  discardBuildOptionOverrides,
+  dropBuildOptionOverrides,
 } from "../../../configuration/build-options";
 import { BuildOption } from "../../../manifest/manifest-types";
 import { PresetEffectiveValue } from "../../../presets/preset-resolution";
@@ -121,32 +121,51 @@ suite("readBuildOptions / writeBuildOption", () => {
 });
 
 // ---------------------------------------------------------------------------
-// clearBuildOptions — the FR-017 preset-change discard
+// dropBuildOptionOverrides — the FR-017 per-option prune
 // ---------------------------------------------------------------------------
 
-suite("discardBuildOptionOverrides (FR-017)", () => {
-  test("discards every stored selection so all options fall back to preset-effective values", async () => {
+suite("dropBuildOptionOverrides (FR-017)", () => {
+  test("drops only the named keys, so an override whose baseline held survives", async () => {
     const extCtx = makeExtContext();
     await writeBuildOption(extCtx, "frozen", false);
     await writeBuildOption(extCtx, "pyopt", "false");
-    assert.deepStrictEqual(readBuildOptions(extCtx)!.values, { frozen: false, pyopt: "false" });
 
-    const cleared = await discardBuildOptionOverrides(extCtx);
-    assert.deepStrictEqual(cleared.sort(), ["frozen", "pyopt"], "returns the discarded keys for the log record");
-    assert.deepStrictEqual(readBuildOptions(extCtx)!.values, {});
+    // Only pyopt's calculated value moved with the new (preset, context) pair.
+    const dropped = await dropBuildOptionOverrides(extCtx, ["pyopt"]);
+    assert.deepStrictEqual(dropped, ["pyopt"], "returns the dropped keys for the log record");
+    assert.deepStrictEqual(readBuildOptions(extCtx)!.values, { frozen: false });
 
-    // Resolution now follows the preset with nothing emphasized.
-    const opts = [checkbox("frozen", "--frozen")];
-    const presets = new Map([["frozen", resolvedPreset("frozen", true)]]);
+    // The dropped option follows the preset again; the kept one still overrides.
+    const opts = [checkbox("frozen", "--frozen"), multistate("pyopt", "--pyopt", [
+      { id: "true", label: "Enabled", flag: "--pyopt=true" },
+      { id: "false", label: "Disabled", flag: "--pyopt=false" },
+    ])];
+    const presets = new Map([
+      ["frozen", resolvedPreset("frozen", true)],
+      ["pyopt", resolvedPreset("pyopt", "true")],
+    ]);
     const resolved = normalizeBuildOptions(opts, readBuildOptions(extCtx), ctx, presets);
-    assert.strictEqual(resolved[0].value, true, "follows the preset-effective value again");
-    assert.strictEqual(resolved[0].isOverride, false);
+    assert.strictEqual(resolved[0].value, false, "the surviving override still wins");
+    assert.strictEqual(resolved[0].isOverride, true);
+    assert.strictEqual(resolved[1].value, "true", "the dropped one follows the preset-effective value");
+    assert.strictEqual(resolved[1].isOverride, false);
   });
 
-  test("clears a stale pre-feature checkbox false that was shadowing a [[defaults]] value", async () => {
-    // The reported defect: before presets existed, unchecking a checkbox
+  test("drops every override when every calculated value moved", async () => {
+    const extCtx = makeExtContext();
+    await writeBuildOption(extCtx, "frozen", false);
+    await writeBuildOption(extCtx, "pyopt", "false");
+    const dropped = await dropBuildOptionOverrides(extCtx, ["frozen", "pyopt"]);
+    assert.deepStrictEqual(dropped, ["frozen", "pyopt"]);
+    assert.deepStrictEqual(readBuildOptions(extCtx)!.values, {});
+  });
+
+  test("clears a stale pre-feature checkbox false once that option's baseline moves", async () => {
+    // The Phase 7 defect: before presets existed, unchecking a checkbox
     // persisted `false`, which now reads as an override and suppresses the
-    // defaults layer with no way to undo it.
+    // defaults layer with no way to undo it. It is still cleared here, because
+    // an option whose newly calculated value the stored value would shadow is
+    // by definition an option whose value moved.
     const extCtx = makeExtContext({
       [BUILD_OPTIONS_KEY]: { values: { pyopt: false }, persistedAt: "legacy" },
     });
@@ -157,34 +176,46 @@ suite("discardBuildOptionOverrides (FR-017)", () => {
     assert.strictEqual(before[0].value, false);
     assert.strictEqual(before[0].isOverride, true, "the stale value shadows the [[defaults]] value");
 
-    await discardBuildOptionOverrides(extCtx);
+    await dropBuildOptionOverrides(extCtx, ["pyopt"]);
     const after = normalizeBuildOptions(opts, readBuildOptions(extCtx), ctx, presets);
     assert.strictEqual(after[0].value, true);
     assert.strictEqual(after[0].isOverride, false);
   });
 
-  test("clears selections held for other build contexts too, since the active preset is workspace-scoped", async () => {
+  test("drops selections held for options hidden in the active context", async () => {
     const extCtx = makeExtContext();
-    // An option that is unavailable in the current context still holds a value
-    // that is just as stale for the newly active preset.
+    // An unavailable option still holds a value authored against the same
+    // moving baseline, so it is pruned on the same rule as a visible one.
     await writeBuildOption(extCtx, "storage_insecure_testing_mode", true);
-    const cleared = await discardBuildOptionOverrides(extCtx);
-    assert.deepStrictEqual(cleared, ["storage_insecure_testing_mode"]);
+    const dropped = await dropBuildOptionOverrides(extCtx, ["storage_insecure_testing_mode"]);
+    assert.deepStrictEqual(dropped, ["storage_insecure_testing_mode"]);
     assert.deepStrictEqual(readBuildOptions(extCtx)!.values, {});
   });
 
-  test("writes nothing on a workspace that never stored a selection", async () => {
+  test("ignores keys with nothing stored and writes nothing when none of them is", async () => {
     const extCtx = makeExtContext();
-    const cleared = await discardBuildOptionOverrides(extCtx);
-    assert.deepStrictEqual(cleared, []);
+    assert.deepStrictEqual(await dropBuildOptionOverrides(extCtx, ["frozen"]), []);
     assert.strictEqual(readBuildOptions(extCtx), undefined, "no empty record is created");
+
+    await writeBuildOption(extCtx, "frozen", false);
+    const stored = readBuildOptions(extCtx)!;
+    assert.deepStrictEqual(await dropBuildOptionOverrides(extCtx, ["pyopt", "btc_only"]), []);
+    assert.strictEqual(readBuildOptions(extCtx), stored, "the record is left untouched");
+  });
+
+  test("writes nothing when the key list is empty", async () => {
+    const extCtx = makeExtContext();
+    await writeBuildOption(extCtx, "frozen", false);
+    const stored = readBuildOptions(extCtx)!;
+    assert.deepStrictEqual(await dropBuildOptionOverrides(extCtx, []), []);
+    assert.strictEqual(readBuildOptions(extCtx), stored);
   });
 
   test("sets persistedAt timestamp", async () => {
     const before = new Date().toISOString();
     const extCtx = makeExtContext();
     await writeBuildOption(extCtx, "debug", true);
-    await discardBuildOptionOverrides(extCtx);
+    await dropBuildOptionOverrides(extCtx, ["debug"]);
     assert.ok(readBuildOptions(extCtx)!.persistedAt >= before);
   });
 });
@@ -357,9 +388,9 @@ suite("normalizeBuildOptions – presetValue, presetState, isOverride", () => {
     assert.strictEqual(firstResolved[0].value, "false");
     assert.strictEqual(firstResolved[0].isOverride, true);
 
-    // A different presetValue re-runs the comparison. Discarding overrides on a
-    // preset change is the refresh seam's job (FR-017, see the clearBuildOptions
-    // suite below); normalizeBuildOptions itself never writes.
+    // A different presetValue re-runs the comparison. Pruning the overrides
+    // whose baseline moved is the refresh seam's job (FR-017, see the
+    // dropBuildOptionOverrides suite above); normalizeBuildOptions never writes.
     const secondPreset = new Map([["pyopt", resolvedPreset("pyopt", "false")]]);
     const secondResolved = normalizeBuildOptions(opts, saved, ctx, secondPreset);
     assert.strictEqual(secondResolved[0].value, "false");

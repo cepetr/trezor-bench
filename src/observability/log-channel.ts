@@ -143,24 +143,44 @@ export function logPresetNormalization(previousPresetId: string, normalizedPrese
   );
 }
 
+/** Renders the outcome of one override prune, or `undefined` when there was none. */
+function formatPrune(
+  droppedKeys: ReadonlyArray<string>,
+  keptKeys: ReadonlyArray<string>
+): string | undefined {
+  const parts: string[] = [];
+  if (droppedKeys.length > 0) {
+    parts.push(
+      `dropped ${droppedKeys.length} build-option override(s) whose calculated ` +
+        `value moved — ${droppedKeys.join(", ")}`
+    );
+  }
+  if (keptKeys.length > 0) {
+    parts.push(
+      `kept ${keptKeys.length} stored selection(s) whose calculated value is ` +
+        `unchanged — ${keptKeys.join(", ")}`
+    );
+  }
+  return parts.length > 0 ? `${parts.join("; ")}.` : undefined;
+}
+
 /**
- * Logs the discarding of explicit build-option overrides that follows an
- * active-preset change (FR-017). Always paired with a visible Build Options
- * refresh, so the log is the persistent record of a visible action.
+ * Logs the per-option override prune that follows an active-preset change
+ * (FR-017). Always paired with a visible Build Options refresh, so the log is
+ * the persistent record of a visible action, and it names both halves of the
+ * decision so a surviving emphasis is explainable.
  */
-export function logOverridesClearedForPreset(
+export function logOverridesPrunedForPreset(
   previousPresetId: string,
   newPresetId: string,
-  clearedKeys: ReadonlyArray<string>
+  droppedKeys: ReadonlyArray<string>,
+  keptKeys: ReadonlyArray<string>
 ): void {
-  if (clearedKeys.length === 0) {
+  const outcome = formatPrune(droppedKeys, keptKeys);
+  if (!outcome) {
     return;
   }
-  log(
-    `Active preset changed from "${previousPresetId}" to "${newPresetId}": ` +
-      `discarded ${clearedKeys.length} build-option override(s) — ${clearedKeys.join(", ")}. ` +
-      `Build Options now show the new preset's calculated values.`
-  );
+  log(`Active preset changed from "${previousPresetId}" to "${newPresetId}": ${outcome}`);
 }
 
 /** Renders a preset context the way `when` filters name its fields. */
@@ -169,25 +189,25 @@ function formatPresetContext(context: PresetContext): string {
 }
 
 /**
- * Logs the discarding of explicit build-option overrides that follows a
- * preset-context change — a new model, component, or emulator-ness, any of
- * which can select different preset fragments and so calculate different
- * values (FR-017). The sibling of `logOverridesClearedForPreset` for the
- * other half of the pair an override is authored against.
+ * Logs the per-option override prune that follows a preset-context change — a
+ * new model, component, or emulator-ness, any of which can select different
+ * preset fragments and so calculate different values (FR-017). The sibling of
+ * `logOverridesPrunedForPreset` for the other half of the pair an override is
+ * authored against.
  */
-export function logOverridesClearedForContext(
+export function logOverridesPrunedForContext(
   previousContext: PresetContext,
   newContext: PresetContext,
-  clearedKeys: ReadonlyArray<string>
+  droppedKeys: ReadonlyArray<string>,
+  keptKeys: ReadonlyArray<string>
 ): void {
-  if (clearedKeys.length === 0) {
+  const outcome = formatPrune(droppedKeys, keptKeys);
+  if (!outcome) {
     return;
   }
   log(
     `Build context changed from (${formatPresetContext(previousContext)}) to ` +
-      `(${formatPresetContext(newContext)}): discarded ${clearedKeys.length} ` +
-      `build-option override(s) — ${clearedKeys.join(", ")}. Build Options now show ` +
-      `the values calculated for the new context.`
+      `(${formatPresetContext(newContext)}): ${outcome}`
   );
 }
 

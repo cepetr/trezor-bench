@@ -7,6 +7,7 @@ import { PresetState } from "./presets/preset-types";
 import {
   derivePresetContext,
   samePresetContext,
+  shiftedPresetOptionKeys,
   listAvailablePresets,
   computePresetEffectiveValues,
   AvailablePreset,
@@ -24,8 +25,8 @@ import {
   logManifestState,
   logPresetState,
   logPresetNormalization,
-  logOverridesClearedForPreset,
-  logOverridesClearedForContext,
+  logOverridesPrunedForPreset,
+  logOverridesPrunedForContext,
 } from "./observability/log-channel";
 import {
   disposeDiagnostics,
@@ -46,7 +47,7 @@ import { normalizeActiveConfig } from "./configuration/normalize-config";
 import {
   readBuildOptions,
   writeBuildOption,
-  discardBuildOptionOverrides,
+  dropBuildOptionOverrides,
   normalizeBuildOptions,
   ResolvedOption,
 } from "./configuration/build-options";
@@ -240,9 +241,9 @@ function computeResolvedOptions(
 /**
  * Recomputes available presets and preset-effective build-option values
  * against the current manifest, active build context, and preset state;
- * normalizes and persists the active preset id when it changed; discards
- * explicit build-option overrides when the active preset or the preset
- * context changed (FR-017);
+ * normalizes and persists the active preset id when it changed; drops, when
+ * the active preset or the preset context changed, exactly those explicit
+ * build-option overrides whose calculated value moved with it (FR-017);
  * and refreshes the `Presets` selector and Build Options (FR-009, FR-013,
  * FR-017, SC-004). The single entry point for every preset-relevant
  * trigger: activation, preset-state change, manifest-state change, and
@@ -264,10 +265,13 @@ async function refreshPresetsAndActiveConfig(
   const savedAxes = normalizeActiveConfig(loaded, readActiveConfig(context));
   const presetCtx = derivePresetContext(loaded, savedAxes);
 
+  const currentPresetState = _presetState;
+  const presets = currentPresetState?.status === "loaded" ? currentPresetState : undefined;
+
   let available: AvailablePreset[] = [];
   let availableIds: Set<string> | undefined;
-  if (_presetState && _presetState.status === "loaded") {
-    available = listAvailablePresets(_presetState.shared, _presetState.user, presetCtx);
+  if (presets) {
+    available = listAvailablePresets(presets.shared, presets.user, presetCtx);
     availableIds = new Set(available.map((p) => p.id));
   }
 
@@ -283,40 +287,53 @@ async function refreshPresetsAndActiveConfig(
   if (presetIdChanged) {
     logPresetNormalization(previousPresetId!, newPresetId);
   }
-  if (presetIdChanged || presetContextChanged) {
+
+  _presetEffectiveValues = presets
+    ? computePresetEffectiveValues(loaded.buildOptions, presets.shared, presets.user, newPresetId, presetCtx)
+    : new Map();
+
+  if (presets && (presetIdChanged || presetContextChanged)) {
     // An override is authored against a calculated value, and that value is a
     // function of the (active preset, preset context) pair: fragments carry
     // `when = { model, project, emulator }` filters, so both the [[defaults]]
     // layer and the named-preset layer can calculate differently in a
-    // different context. A change to either half therefore makes every stored
-    // override stale, and carrying one across would silently shadow the new
-    // calculation with no way to clear it for a checkbox (FR-017). Discard
-    // before resolving below, so Build Options show the new values with
-    // nothing emphasized. Both guards require a known previous half, which is
-    // what keeps activation from wiping the selections it just restored.
-    const cleared = await discardBuildOptionOverrides(context);
+    // different context. So a change to either half is where overrides have to
+    // be re-examined — but only per option, and against the same preset files:
+    // recalculate what the previous pair produced, and drop exactly the
+    // overrides whose value moved. Those would otherwise silently shadow the
+    // new calculation, with no way to clear it for a checkbox; the rest still
+    // say what the user asked for and are kept (FR-017). Both change guards
+    // require a known previous half, which is what keeps activation from
+    // pruning the selections it just restored, and an unloaded preset state
+    // never prunes because it can calculate neither side.
+    const previousEffective = computePresetEffectiveValues(
+      loaded.buildOptions,
+      presets.shared,
+      presets.user,
+      previousPresetId ?? newPresetId,
+      previousPresetContext ?? presetCtx
+    );
+    const shifted = shiftedPresetOptionKeys(previousEffective, _presetEffectiveValues);
+    const dropped = await dropBuildOptionOverrides(context, shifted);
+    const kept = Object.keys(readBuildOptions(context)?.values ?? {});
     if (presetIdChanged) {
-      logOverridesClearedForPreset(previousPresetId!, newPresetId, cleared);
+      logOverridesPrunedForPreset(previousPresetId!, newPresetId, dropped, kept);
     } else {
-      logOverridesClearedForContext(previousPresetContext!, presetCtx, cleared);
+      logOverridesPrunedForContext(previousPresetContext!, presetCtx, dropped, kept);
     }
   }
 
   _activeConfig = normalizedConfig;
   _presetContext = presetCtx;
-  _presetEffectiveValues =
-    _presetState && _presetState.status === "loaded"
-      ? computePresetEffectiveValues(loaded.buildOptions, _presetState.shared, _presetState.user, newPresetId, presetCtx)
-      : new Map();
   _resolvedOptions = computeResolvedOptions(loaded, normalizedConfig, context, _presetEffectiveValues);
 
   _presetBlocked =
-    _presetState?.status === "invalid" ||
+    currentPresetState?.status === "invalid" ||
     _resolvedOptions.some((r) => r.available && r.presetState === "mismatch");
   vscode.commands.executeCommand("setContext", "tfTools.presetBlocked", _presetBlocked);
 
   _treeProvider?.update(loaded, normalizedConfig, _resolvedOptions);
-  _treeProvider?.updatePresets(_presetState, newPresetId, available);
+  _treeProvider?.updatePresets(currentPresetState, newPresetId, available);
 }
 
 /**

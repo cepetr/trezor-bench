@@ -64,36 +64,44 @@ export async function writeBuildOption(
 }
 
 /**
- * Discards every persisted build-option selection, so that all options fall
- * back to their preset-effective values and nothing is reported as an
- * override. Returns the keys that were discarded, for the log record, or an
- * empty array when nothing was stored (in which case no write happens).
+ * Drops the persisted selections for `keys`, so those options fall back to
+ * their preset-effective values and are no longer reported as overrides.
+ * Returns the keys it actually removed, for the log record; keys with nothing
+ * stored are ignored, and when none of them was stored no write happens.
  *
- * Called when the active preset changes (FR-017): an override is authored
- * against one preset's calculated values, so a preset change retires all of
- * them rather than re-comparing stale selections against a different preset's
- * values. Without this, a stored value silently suppresses the new preset's
- * — and the `[[defaults]]` layer's — value, and a checkbox override can never
- * be undone at all, since unchecking persists `false` rather than "unset".
+ * Called when the active preset or the preset context changes (FR-017), with
+ * the keys whose calculated value moved across the two `(preset, context)`
+ * pairs. An override is authored against one calculated value, so it stands
+ * only while that value does: where it moved, carrying the override across
+ * would silently shadow the new calculation — and for a checkbox there would
+ * be no way to tell, since unchecking persists `false` rather than "unset".
+ * Where the calculation is identical, the override still expresses exactly
+ * what the user asked for and is kept.
  *
- * Clears the whole map, not just the currently available options: the active
- * preset is workspace-scoped, so selections held for other model/target/
- * component contexts are equally stale for the new preset.
+ * Not limited to the currently available options: selections held for options
+ * that are hidden in the active context were authored against the same moving
+ * baseline.
  */
-export async function discardBuildOptionOverrides(
-  context: vscode.ExtensionContext
+export async function dropBuildOptionOverrides(
+  context: vscode.ExtensionContext,
+  keys: ReadonlyArray<string>
 ): Promise<string[]> {
   const stored = readBuildOptions(context);
-  const keys = Object.keys(stored?.values ?? {});
-  if (keys.length === 0) {
+  const values = stored?.values ?? {};
+  const dropped = keys.filter((key) => key in values);
+  if (dropped.length === 0) {
     return [];
   }
+  const remaining: Record<string, boolean | string | null> = { ...values };
+  for (const key of dropped) {
+    delete remaining[key];
+  }
   const state: BuildOptionsState = {
-    values: {},
+    values: remaining,
     persistedAt: new Date().toISOString(),
   };
   await context.workspaceState.update(BUILD_OPTIONS_KEY, state);
-  return keys;
+  return dropped;
 }
 
 // ---------------------------------------------------------------------------

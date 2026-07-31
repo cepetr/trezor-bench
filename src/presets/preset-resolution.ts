@@ -54,8 +54,8 @@ export function derivePresetContext(
  * exactly the three fields a `when` filter can restrict on, so a target switch
  * between two hardware targets — which changes `targetId` but not `emulator` —
  * is correctly not a preset-context change. Used by the refresh seam to decide
- * whether the calculated values every override was authored against still hold
- * (FR-017).
+ * whether the calculated values overrides were authored against need
+ * re-checking at all (FR-017).
  */
 export function samePresetContext(a: PresetContext, b: PresetContext): boolean {
   return a.modelId === b.modelId && a.projectId === b.projectId && a.emulator === b.emulator;
@@ -123,6 +123,51 @@ export interface PresetEffectiveValue {
   readonly rawValue?: PresetRawValue;
   /** File that supplied the mismatching value. */
   readonly sourceUri?: vscode.Uri;
+}
+
+/**
+ * True when two calculations produced the same baseline for one option.
+ * `resolved` compares the value, `mismatch` compares the unrepresentable raw
+ * value, and two `unresolved` calculations are equal; a present/absent pair
+ * never is. Used to decide whether a stored override still stands against the
+ * value it was authored over (FR-017).
+ */
+export function samePresetEffectiveValue(
+  a: PresetEffectiveValue | undefined,
+  b: PresetEffectiveValue | undefined
+): boolean {
+  if (a === undefined || b === undefined) {
+    return a === b;
+  }
+  if (a.state !== b.state) {
+    return false;
+  }
+  if (a.state === "resolved") {
+    return a.value === b.value;
+  }
+  if (a.state === "mismatch") {
+    return a.rawValue === b.rawValue;
+  }
+  return true;
+}
+
+/**
+ * The option keys whose preset-effective value moved between two
+ * calculations — the overrides that no longer stand and must be dropped
+ * (FR-017). Keys are returned in `before` order followed by keys only `after`
+ * has, so the log record is deterministic.
+ */
+export function shiftedPresetOptionKeys(
+  before: ReadonlyMap<string, PresetEffectiveValue>,
+  after: ReadonlyMap<string, PresetEffectiveValue>
+): string[] {
+  const shifted: string[] = [];
+  for (const key of new Set([...before.keys(), ...after.keys()])) {
+    if (!samePresetEffectiveValue(before.get(key), after.get(key))) {
+      shifted.push(key);
+    }
+  }
+  return shifted;
 }
 
 interface OverlayEntry {

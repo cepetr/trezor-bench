@@ -13,12 +13,14 @@ import {
   derivePresetContext,
   samePresetContext,
   computePresetEffectiveValues,
+  shiftedPresetOptionKeys,
 } from "../../presets/preset-resolution";
+import { PresetStateLoaded } from "../../presets/preset-types";
 import {
   normalizeBuildOptions,
   readBuildOptions,
   writeBuildOption,
-  discardBuildOptionOverrides,
+  dropBuildOptionOverrides,
   ResolvedOption,
 } from "../../configuration/build-options";
 import { BuildOption } from "../../manifest/manifest-types";
@@ -120,20 +122,45 @@ function activeConfig(overrides: Partial<ActiveConfig> = {}): ActiveConfig {
   };
 }
 
+async function loadPresets(fixtureName: string): Promise<PresetStateLoaded> {
+  const { shared, user } = fixtureUris(fixtureName);
+  const service = new PresetService(shared, user);
+  const state = await service.start();
+  service.dispose();
+  assert.strictEqual(state.status, "loaded", `${fixtureName} should load`);
+  return state as PresetStateLoaded;
+}
+
+/**
+ * The option keys whose calculated value moves between two `(preset, context)`
+ * pairs — what the refresh seam feeds to `dropBuildOptionOverrides` (FR-017).
+ */
+async function shiftedFor(
+  fixtureName: string,
+  fromPresetId: string,
+  toPresetId: string,
+  fromConfig: ActiveConfig = activeConfig(),
+  toConfig: ActiveConfig = fromConfig
+): Promise<string[]> {
+  const state = await loadPresets(fixtureName);
+  const effective = (presetId: string, config: ActiveConfig) =>
+    computePresetEffectiveValues(
+      BUILD_OPTIONS,
+      state.shared,
+      state.user,
+      presetId,
+      derivePresetContext(manifest(), config)
+    );
+  return shiftedPresetOptionKeys(effective(fromPresetId, fromConfig), effective(toPresetId, toConfig));
+}
+
 async function resolveFor(
   fixtureName: string,
   activePresetId: string,
   context: vscode.ExtensionContext,
   config: ActiveConfig = activeConfig()
 ): Promise<ResolvedOption[]> {
-  const { shared, user } = fixtureUris(fixtureName);
-  const service = new PresetService(shared, user);
-  const state = await service.start();
-  service.dispose();
-  assert.strictEqual(state.status, "loaded");
-  if (state.status !== "loaded") {
-    return [];
-  }
+  const state = await loadPresets(fixtureName);
   const presetCtx = derivePresetContext(manifest(), config);
   const effective = computePresetEffectiveValues(BUILD_OPTIONS, state.shared, state.user, activePresetId, presetCtx);
   // normalizeBuildOptions's BuildContext shape (modelId/targetId/componentId) —
@@ -214,47 +241,67 @@ suite("Preset-relative Build Options – override emphasis round-trip", () => {
     assert.strictEqual(readBuildOptions(context)?.values.frozen, false, "resolution does not rewrite the map");
   });
 
-  test("changing the active preset discards the override, so the new preset's values show with nothing emphasized (FR-017)", async () => {
+  test("changing the active preset drops only the overrides whose calculated value moved (FR-017)", async () => {
     const context = createFakeContext();
 
-    // Default's effective frozen is true; override it to false and confirm it
-    // shadows the [[defaults]] value.
+    // Under Default: frozen calculates true and pyopt calculates "true".
+    // Override both. Switching to dev moves pyopt (to "false") but leaves
+    // frozen where the [[defaults]] layer put it.
     await writeBuildOption(context, "frozen", false);
+    await writeBuildOption(context, "pyopt", "false");
     const beforeSwitch = await resolveFor("preset-valid", "default", context);
     assert.strictEqual(findResolved(beforeSwitch, "frozen").isOverride, true);
+    assert.strictEqual(findResolved(beforeSwitch, "pyopt").isOverride, true);
 
-    // The refresh seam runs this whenever the active preset id changes.
-    const cleared = await discardBuildOptionOverrides(context);
-    assert.deepStrictEqual(cleared, ["frozen"]);
-    assert.deepStrictEqual(readBuildOptions(context)?.values, {}, "the persisted map is emptied");
+    const shifted = await shiftedFor("preset-valid", "default", "dev");
+    assert.deepStrictEqual(shifted, ["dbg_console", "pyopt"], "only these calculate differently under dev");
+    const dropped = await dropBuildOptionOverrides(context, shifted);
+    assert.deepStrictEqual(dropped, ["pyopt"], "only the stored override whose baseline moved");
+    assert.deepStrictEqual(readBuildOptions(context)?.values, { frozen: false }, "the rest of the map survives");
 
     const afterSwitch = await resolveFor("preset-valid", "dev", context);
-    assert.strictEqual(findResolved(afterSwitch, "frozen").value, true, "follows dev's calculated value");
-    for (const r of afterSwitch) {
-      assert.strictEqual(r.isOverride, false, `${r.option.key} should not be emphasized after a preset change`);
-    }
+    assert.strictEqual(findResolved(afterSwitch, "pyopt").value, "false", "follows dev's calculated value");
+    assert.strictEqual(findResolved(afterSwitch, "pyopt").isOverride, false, "and is no longer emphasized");
+    assert.strictEqual(findResolved(afterSwitch, "frozen").value, false, "the preserved override still applies");
+    assert.strictEqual(findResolved(afterSwitch, "frozen").isOverride, true, "and is still emphasized");
+  });
 
-    // Switching back does not resurrect it.
-    const backToDefault = await resolveFor("preset-valid", "default", context);
-    assert.strictEqual(findResolved(backToDefault, "frozen").value, true);
-    assert.strictEqual(findResolved(backToDefault, "frozen").isOverride, false);
+  test("a preset change that moves nothing preserves every override (FR-017)", async () => {
+    // [[local]] only sets btc-only = false, which is already the calculated
+    // value, so no option's baseline moves and nothing is pruned.
+    const context = createFakeContext();
+    await writeBuildOption(context, "frozen", false);
+    await writeBuildOption(context, "dbg_console", "vcp");
+
+    const shifted = await shiftedFor("preset-valid", "default", "local");
+    assert.deepStrictEqual(shifted, [], "local calculates the same values as Default here");
+    assert.deepStrictEqual(await dropBuildOptionOverrides(context, shifted), []);
+    assert.deepStrictEqual(readBuildOptions(context)?.values, { frozen: false, dbg_console: "vcp" });
+
+    const afterSwitch = await resolveFor("preset-valid", "local", context);
+    assert.strictEqual(findResolved(afterSwitch, "frozen").isOverride, true);
+    assert.strictEqual(findResolved(afterSwitch, "dbg_console").value, "vcp");
+    assert.strictEqual(findResolved(afterSwitch, "dbg_console").isOverride, true);
   });
 
   test("a stale pre-feature checkbox false stops shadowing its [[defaults]] value after one preset change", async () => {
-    // The reported defect, end to end: a workspace whose build-option record
+    // The Phase 7 defect, end to end: a workspace whose build-option record
     // predates presets stores `false` for an option that [[defaults]] sets to
-    // true, which reads as an override no checkbox interaction can undo.
+    // true, which reads as an override no checkbox interaction can undo. The
+    // per-option prune still clears it, because a stored value can only shadow
+    // a newly calculated value when that value moved.
     const context = createFakeContext();
-    await writeBuildOption(context, "frozen", false);
+    await writeBuildOption(context, "pyopt", "false");
 
     const onLoad = await resolveFor("preset-valid", "default", context);
-    assert.strictEqual(findResolved(onLoad, "frozen").value, false);
-    assert.strictEqual(findResolved(onLoad, "frozen").isOverride, true, "stale value shadows [[defaults]]");
+    assert.strictEqual(findResolved(onLoad, "pyopt").value, "false");
+    assert.strictEqual(findResolved(onLoad, "pyopt").isOverride, true, "stale value shadows [[defaults]]");
 
-    await discardBuildOptionOverrides(context);
-    const afterFirstSwitch = await resolveFor("preset-valid", "default", context);
-    assert.strictEqual(findResolved(afterFirstSwitch, "frozen").value, true, "the [[defaults]] value is visible again");
-    assert.strictEqual(findResolved(afterFirstSwitch, "frozen").isOverride, false);
+    const shifted = await shiftedFor("preset-valid", "default", "dev");
+    assert.deepStrictEqual(await dropBuildOptionOverrides(context, shifted), ["pyopt"]);
+    const afterFirstSwitch = await resolveFor("preset-valid", "dev", context);
+    assert.strictEqual(findResolved(afterFirstSwitch, "pyopt").value, "false", "dev's calculated value is visible");
+    assert.strictEqual(findResolved(afterFirstSwitch, "pyopt").isOverride, false);
   });
 
   test("the tree row and its rendering reflect the override state", async () => {
@@ -278,17 +325,18 @@ suite("Preset-relative Build Options – override emphasis round-trip", () => {
 });
 
 // ---------------------------------------------------------------------------
-// A preset-context change retires overrides too (FR-017)
+// A preset-context change prunes overrides per option too (FR-017)
 //
 // preset-valid/presets.toml conditions its [[defaults]] fragments on
 // `emulator`, so the same option calculates differently across contexts even
-// with the preset id fixed — which is exactly why an override cannot survive
-// the change.
+// with the preset id fixed — which is exactly why an override over a moved
+// value cannot survive the change, while one over an unmoved value can.
 // ---------------------------------------------------------------------------
 
-suite("Preset-relative Build Options – preset-context change discards overrides", () => {
+suite("Preset-relative Build Options – preset-context change prunes overrides", () => {
   const HW = activeConfig({ targetId: "hw" });
   const EMU = activeConfig({ targetId: "emu" });
+  const OTHER_MODEL = activeConfig({ modelId: "T3W1" });
 
   test("the [[defaults]] layer calculates different values for the hardware and emulator contexts", async () => {
     const context = createFakeContext();
@@ -302,64 +350,85 @@ suite("Preset-relative Build Options – preset-context change discards override
     assert.strictEqual(findResolved(onEmu, "frozen").value, false, "the hardware-only fragment no longer applies");
   });
 
-  test("an override authored under the hardware context is discarded when the target becomes the emulator", async () => {
+  test("crossing the emulator boundary drops the overrides it moved and keeps the rest", async () => {
     const context = createFakeContext();
 
-    // Hardware context calculates dbg-console to its null state; override it.
+    // Hardware calculates dbg-console to its null state and btc-only to false;
+    // override both. Only dbg-console's value moves in the emulator context.
     await writeBuildOption(context, "dbg_console", "vcp");
+    await writeBuildOption(context, "btc_only", true);
     const beforeSwitch = await resolveFor("preset-valid", "default", context, HW);
-    assert.strictEqual(findResolved(beforeSwitch, "dbg_console").value, "vcp");
     assert.strictEqual(findResolved(beforeSwitch, "dbg_console").isOverride, true);
+    assert.strictEqual(findResolved(beforeSwitch, "btc_only").isOverride, true);
 
-    // The refresh seam sees a changed preset context and clears the map.
+    // The refresh seam sees a changed preset context and prunes per option.
     assert.strictEqual(
       samePresetContext(derivePresetContext(manifest(), HW), derivePresetContext(manifest(), EMU)),
       false,
       "crossing the emulator boundary is a preset-context change"
     );
-    const cleared = await discardBuildOptionOverrides(context);
-    assert.deepStrictEqual(cleared, ["dbg_console"]);
+    const shifted = await shiftedFor("preset-valid", "default", "default", HW, EMU);
+    assert.deepStrictEqual(shifted, ["frozen", "dbg_console", "pyopt"]);
+    assert.deepStrictEqual(await dropBuildOptionOverrides(context, shifted), ["dbg_console"]);
+    assert.deepStrictEqual(readBuildOptions(context)?.values, { btc_only: true });
 
     const afterSwitch = await resolveFor("preset-valid", "default", context, EMU);
     assert.strictEqual(findResolved(afterSwitch, "dbg_console").value, "swo", "follows the emulator [[defaults]] value");
-    for (const r of afterSwitch) {
-      assert.strictEqual(r.isOverride, false, `${r.option.key} should not be emphasized after a context change`);
-    }
+    assert.strictEqual(findResolved(afterSwitch, "dbg_console").isOverride, false);
+    assert.strictEqual(findResolved(afterSwitch, "btc_only").value, true, "the unmoved override is preserved");
+    assert.strictEqual(findResolved(afterSwitch, "btc_only").isOverride, true);
 
-    // Switching back does not resurrect it.
+    // Switching back does not resurrect the dropped one.
     const backToHw = await resolveFor("preset-valid", "default", context, HW);
     assert.strictEqual(findResolved(backToHw, "dbg_console").value, "null");
     assert.strictEqual(findResolved(backToHw, "dbg_console").isOverride, false);
   });
 
-  test("a model or component change is a preset-context change even when the calculated values are identical", async () => {
-    // The discard is unconditional on the pair changing, not scoped to the
-    // options whose value moved: overrides are held workspace-wide, so a
-    // context they were not authored under must not inherit them.
+  test("a model or component change preserves every override when no fragment filters on it", async () => {
+    // The prune is per option, not per pair change: a context change that moves
+    // no calculated value leaves the whole map in place.
     const context = createFakeContext();
     const base = derivePresetContext(manifest(), HW);
 
-    assert.strictEqual(
-      samePresetContext(base, derivePresetContext(manifest(), activeConfig({ modelId: "T3W1" }))),
-      false
-    );
+    assert.strictEqual(samePresetContext(base, derivePresetContext(manifest(), OTHER_MODEL)), false);
     assert.strictEqual(
       samePresetContext(base, derivePresetContext(manifest(), activeConfig({ componentId: "bootloader" }))),
       false
     );
 
     await writeBuildOption(context, "frozen", false);
-    const onOtherModel = await resolveFor("preset-valid", "default", context, activeConfig({ modelId: "T3W1" }));
+    const onOtherModel = await resolveFor("preset-valid", "default", context, OTHER_MODEL);
     assert.strictEqual(
       findResolved(onOtherModel, "frozen").presetValue,
       true,
       "no fragment restricts on model, so the calculated value is unchanged"
     );
 
-    assert.deepStrictEqual(await discardBuildOptionOverrides(context), ["frozen"]);
-    const afterDiscard = await resolveFor("preset-valid", "default", context, activeConfig({ modelId: "T3W1" }));
-    assert.strictEqual(findResolved(afterDiscard, "frozen").value, true);
-    assert.strictEqual(findResolved(afterDiscard, "frozen").isOverride, false);
+    const shifted = await shiftedFor("preset-valid", "default", "default", HW, OTHER_MODEL);
+    assert.deepStrictEqual(shifted, [], "nothing moved, so nothing is pruned");
+    assert.deepStrictEqual(await dropBuildOptionOverrides(context, shifted), []);
+
+    const afterPrune = await resolveFor("preset-valid", "default", context, OTHER_MODEL);
+    assert.strictEqual(findResolved(afterPrune, "frozen").value, false, "the override survives the model change");
+    assert.strictEqual(findResolved(afterPrune, "frozen").isOverride, true);
+  });
+
+  test("a component change that moves a value still drops that option's override", async () => {
+    // [[dev]] is restricted to project = ["firmware"], so switching Component
+    // to bootloader moves dbg-console and pyopt back to the [[defaults]] layer —
+    // and normalizes the active preset to `default`, since dev is no longer
+    // available there.
+    const context = createFakeContext();
+    const bootloader = activeConfig({ componentId: "bootloader" });
+
+    await writeBuildOption(context, "dbg_console", "vcp");
+    const shifted = await shiftedFor("preset-valid", "dev", "default", HW, bootloader);
+    assert.deepStrictEqual(shifted, ["dbg_console", "pyopt"]);
+    assert.deepStrictEqual(await dropBuildOptionOverrides(context, shifted), ["dbg_console"]);
+
+    const afterSwitch = await resolveFor("preset-valid", "default", context, bootloader);
+    assert.strictEqual(findResolved(afterSwitch, "dbg_console").value, "null", "the [[dev]] fragment no longer applies");
+    assert.strictEqual(findResolved(afterSwitch, "dbg_console").isOverride, false);
   });
 });
 

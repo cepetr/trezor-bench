@@ -11,6 +11,9 @@ import {
   computePresetEffectiveValue,
   computePresetEffectiveValues,
   presetMatchKey,
+  samePresetEffectiveValue,
+  shiftedPresetOptionKeys,
+  PresetEffectiveValue,
 } from "../../../presets/preset-resolution";
 import { PresetFile, PresetFragment } from "../../../presets/preset-types";
 import { BuildOption } from "../../../manifest/manifest-types";
@@ -244,5 +247,154 @@ suite("computePresetEffectiveValues – unknown keys contribute nothing", () => 
     assert.strictEqual(result.get("frozen")?.state, "resolved");
     assert.strictEqual(result.get("frozen")?.value, true);
     assert.strictEqual(result.size, 1, "only known options produce an entry");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// samePresetEffectiveValue / shiftedPresetOptionKeys (FR-017)
+//
+// The per-option override prune: an override survives a (preset, context)
+// change exactly when its calculated baseline did not move.
+// ---------------------------------------------------------------------------
+
+suite("samePresetEffectiveValue (FR-017)", () => {
+  const resolved = (value: boolean | string): PresetEffectiveValue => ({
+    optionKey: "frozen",
+    state: "resolved",
+    value,
+  });
+
+  test("two resolved calculations are equal only when the value is equal", () => {
+    assert.strictEqual(samePresetEffectiveValue(resolved(true), resolved(true)), true);
+    assert.strictEqual(samePresetEffectiveValue(resolved(true), resolved(false)), false);
+    assert.strictEqual(samePresetEffectiveValue(resolved("swo"), resolved("swo")), true);
+    assert.strictEqual(samePresetEffectiveValue(resolved("swo"), resolved("vcp")), false);
+  });
+
+  test("a resolved false and a resolved 'false' are different calculations", () => {
+    assert.strictEqual(samePresetEffectiveValue(resolved(false), resolved("false")), false);
+  });
+
+  test("differing states are never equal, even when neither carries a value", () => {
+    const unresolved: PresetEffectiveValue = { optionKey: "pyopt", state: "unresolved" };
+    const mismatch: PresetEffectiveValue = { optionKey: "pyopt", state: "mismatch", rawValue: "nope" };
+    assert.strictEqual(samePresetEffectiveValue(unresolved, mismatch), false);
+    assert.strictEqual(samePresetEffectiveValue(unresolved, resolved("true")), false);
+  });
+
+  test("two unresolved calculations are equal", () => {
+    assert.strictEqual(
+      samePresetEffectiveValue(
+        { optionKey: "pyopt", state: "unresolved" },
+        { optionKey: "pyopt", state: "unresolved" }
+      ),
+      true
+    );
+  });
+
+  test("two mismatches are equal only when the unrepresentable raw value is equal", () => {
+    const a: PresetEffectiveValue = { optionKey: "dbg_console", state: "mismatch", rawValue: "nope" };
+    const b: PresetEffectiveValue = { optionKey: "dbg_console", state: "mismatch", rawValue: "nope" };
+    const c: PresetEffectiveValue = { optionKey: "dbg_console", state: "mismatch", rawValue: "other" };
+    assert.strictEqual(samePresetEffectiveValue(a, b), true);
+    assert.strictEqual(samePresetEffectiveValue(a, c), false);
+  });
+
+  test("a present/absent pair is never equal, and two absents are", () => {
+    assert.strictEqual(samePresetEffectiveValue(resolved(true), undefined), false);
+    assert.strictEqual(samePresetEffectiveValue(undefined, resolved(true)), false);
+    assert.strictEqual(samePresetEffectiveValue(undefined, undefined), true);
+  });
+});
+
+suite("shiftedPresetOptionKeys (FR-017)", () => {
+  // Mirrors test-fixtures/workspaces/preset-valid/: the [[defaults]] fragments
+  // are conditioned on `emulator`, `[[dev]]` moves dbg-console and pyopt, and
+  // `[[local]]` touches only btc-only — so the same options move or hold
+  // depending on which half of the pair changed.
+  const OPTIONS = [
+    checkboxOption("frozen"),
+    checkboxOption("btc-only"),
+    multistateOption("dbg-console", DBG_CONSOLE_STATES),
+    multistateOption("pyopt", [
+      { id: "null", label: "Default", flag: "" },
+      ...PYOPT_STATES_NO_NULL,
+    ]),
+  ];
+
+  const SHARED = presetFile({
+    source: "shared",
+    names: ["test", "dev"],
+    fragments: [
+      fragment({ name: "defaults", source: "shared", filter: { emulator: true }, values: { "dbg-console": "swo" } }),
+      fragment({ name: "defaults", source: "shared", filter: { emulator: false }, values: { frozen: true, pyopt: true } }),
+      fragment({ name: "test", source: "shared", values: { "btc-only": true, pyopt: true } }),
+      fragment({
+        name: "dev",
+        source: "shared",
+        filter: { emulator: false, projects: ["firmware"] },
+        values: { "dbg-console": "swo", pyopt: false },
+      }),
+    ],
+  });
+  const USER = presetFile({
+    source: "user",
+    names: ["local", "test"],
+    fragments: [
+      fragment({ name: "local", source: "user", values: { "btc-only": false } }),
+      fragment({ name: "test", source: "user", values: { frozen: false } }),
+    ],
+  });
+
+  const EMU_CTX = { ...CTX, emulator: true };
+
+  function effective(presetId: string, context = CTX): ReadonlyMap<string, PresetEffectiveValue> {
+    return computePresetEffectiveValues(OPTIONS, SHARED, USER, presetId, context);
+  }
+
+  test("returns nothing when neither half of the pair moved a value", () => {
+    assert.deepStrictEqual(shiftedPresetOptionKeys(effective("default"), effective("default")), []);
+  });
+
+  test("returns only the options the new preset calculates differently", () => {
+    // default -> dev moves dbg-console (null -> swo) and pyopt (true -> false)
+    // but leaves frozen and btc-only where the [[defaults]] layer put them.
+    assert.deepStrictEqual(shiftedPresetOptionKeys(effective("default"), effective("dev")), [
+      "dbg_console",
+      "pyopt",
+    ]);
+  });
+
+  test("returns nothing for a preset whose fragments calculate the same values", () => {
+    // [[local]] sets btc-only = false, which is already the absent-checkbox value.
+    assert.deepStrictEqual(shiftedPresetOptionKeys(effective("default"), effective("local")), []);
+  });
+
+  test("returns the options a context change moved, with the preset id fixed", () => {
+    // Crossing the emulator boundary swaps which [[defaults]] fragment applies:
+    // frozen true -> false, pyopt "true" -> "null", dbg-console "null" -> "swo".
+    assert.deepStrictEqual(shiftedPresetOptionKeys(effective("default"), effective("default", EMU_CTX)), [
+      "frozen",
+      "dbg_console",
+      "pyopt",
+    ]);
+  });
+
+  test("returns nothing for a context change no fragment filters on", () => {
+    const otherModel = { ...CTX, modelId: "T3W1" };
+    assert.deepStrictEqual(shiftedPresetOptionKeys(effective("default"), effective("default", otherModel)), []);
+  });
+
+  test("keys are reported in before-then-after order", () => {
+    const before = new Map<string, PresetEffectiveValue>([
+      ["a", { optionKey: "a", state: "resolved", value: true }],
+      ["b", { optionKey: "b", state: "resolved", value: true }],
+    ]);
+    const after = new Map<string, PresetEffectiveValue>([
+      ["b", { optionKey: "b", state: "resolved", value: false }],
+      ["c", { optionKey: "c", state: "resolved", value: true }],
+    ]);
+    // `a` vanished, `b` moved, `c` appeared — all three no longer stand.
+    assert.deepStrictEqual(shiftedPresetOptionKeys(before, after), ["a", "b", "c"]);
   });
 });
