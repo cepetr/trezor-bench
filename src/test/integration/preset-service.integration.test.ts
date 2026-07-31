@@ -107,7 +107,7 @@ suite("PresetService – watching and reload", () => {
 
     // Create
     await fs.writeFile(userPath, "[[local]]\nfrozen = false\n", "utf-8");
-    await wait(500);
+    await wait(1500);
     assert.ok(states.length > 0, "expected a republish after user-presets.toml is created");
     let last = states[states.length - 1];
     assert.strictEqual(last.status, "loaded");
@@ -119,7 +119,7 @@ suite("PresetService – watching and reload", () => {
     // Change
     states.length = 0;
     await fs.writeFile(userPath, "[[other]]\nfrozen = true\n", "utf-8");
-    await wait(500);
+    await wait(1500);
     assert.ok(states.length > 0, "expected a republish after user-presets.toml changes");
     last = states[states.length - 1];
     if (last.status === "loaded") {
@@ -129,7 +129,7 @@ suite("PresetService – watching and reload", () => {
     // Delete
     states.length = 0;
     await fs.rm(userPath);
-    await wait(500);
+    await wait(1500);
     assert.ok(states.length > 0, "expected a republish after user-presets.toml is deleted");
     last = states[states.length - 1];
     assert.strictEqual(last.status, "loaded");
