@@ -123,15 +123,26 @@ export class PresetService implements vscode.Disposable {
   }
 
   private _watch(uri: vscode.Uri): vscode.FileSystemWatcher {
+    // Watch the containing directory with a wildcard rather than the exact
+    // filename: for a path outside any open workspace folder, VS Code
+    // resolves a literal (non-glob) RelativePattern to watching that exact
+    // file path, which never establishes when the target does not yet
+    // exist — exactly user-presets.toml's common case. Filtering by exact
+    // path below keeps behavior scoped to this one file.
     const pattern = new vscode.RelativePattern(
       vscode.Uri.file(path.dirname(uri.fsPath)),
-      path.basename(uri.fsPath)
+      "*"
     );
+    const targetFsPath = uri.fsPath;
 
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
     this._disposables.push(watcher);
 
-    const reload = () => this._scheduleReload();
+    const reload = (changedUri: vscode.Uri) => {
+      if (changedUri.fsPath === targetFsPath) {
+        this._scheduleReload();
+      }
+    };
     this._disposables.push(watcher.onDidCreate(reload));
     this._disposables.push(watcher.onDidChange(reload));
     this._disposables.push(watcher.onDidDelete(reload));
