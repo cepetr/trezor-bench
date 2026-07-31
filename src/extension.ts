@@ -4,7 +4,13 @@ import { resolveManifestUri, isStatusBarEnabled, resolveArtifactsPath, resolveDe
 import { ManifestService } from "./manifest/manifest-service";
 import { PresetService } from "./presets/preset-service";
 import { PresetState } from "./presets/preset-types";
-import { derivePresetContext, listAvailablePresets, AvailablePreset } from "./presets/preset-resolution";
+import {
+  derivePresetContext,
+  listAvailablePresets,
+  computePresetEffectiveValues,
+  AvailablePreset,
+  PresetEffectiveValue,
+} from "./presets/preset-resolution";
 import { ConfigurationTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/configuration-tree";
 import { StatusBarPresenter } from "./ui/status-bar";
 import {
@@ -92,6 +98,7 @@ import {
 let _manifestService: ManifestService | undefined;
 let _presetService: PresetService | undefined;
 let _presetState: PresetState | undefined;
+let _presetEffectiveValues: ReadonlyMap<string, PresetEffectiveValue> = new Map();
 let _presetStateSubscription: vscode.Disposable | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
 let _configurationTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
@@ -197,46 +204,50 @@ function assertNoUnauthorizedContributions(
 
 /**
  * Computes the resolved build options for the given manifest state, active
- * configuration, and current persisted selections. Returns an empty array
- * when the manifest is not loaded or no active configuration is available.
+ * configuration, current persisted selections, and preset-effective values.
+ * Returns an empty array when the manifest is not loaded or no active
+ * configuration is available.
  */
 function computeResolvedOptions(
   state: ManifestState,
   activeConfig: ActiveConfig | undefined,
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
+  presetEffectiveValues: ReadonlyMap<string, PresetEffectiveValue> = new Map()
 ): ResolvedOption[] {
   if (state.status !== "loaded" || !activeConfig) {
     return [];
   }
   const loaded = state as ManifestStateLoaded;
   const saved = readBuildOptions(context);
-  return normalizeBuildOptions(loaded.buildOptions, saved, activeConfig);
+  return normalizeBuildOptions(loaded.buildOptions, saved, activeConfig, presetEffectiveValues);
 }
 
 /**
- * Recomputes available presets against the current manifest, active build
- * context, and preset state; normalizes and persists the active preset id
- * when it changed; and refreshes the `Presets` selector and Build Options
- * (FR-009). The single entry point for every preset-relevant trigger:
- * activation, preset-state change, manifest-state change, and active
- * model/target/component change.
+ * Recomputes available presets and preset-effective build-option values
+ * against the current manifest, active build context, and preset state;
+ * normalizes and persists the active preset id when it changed; and
+ * refreshes the `Presets` selector and Build Options (FR-009, FR-013,
+ * FR-017, SC-004). The single entry point for every preset-relevant
+ * trigger: activation, preset-state change, manifest-state change, and
+ * active model/target/component change.
  */
 async function refreshPresetsAndActiveConfig(
   context: vscode.ExtensionContext
 ): Promise<void> {
   const manifestState = _manifestState;
   if (!manifestState || manifestState.status !== "loaded") {
+    _presetEffectiveValues = new Map();
     _treeProvider?.updatePresets(_presetState, undefined, []);
     return;
   }
   const loaded = manifestState as ManifestStateLoaded;
 
   const savedAxes = normalizeActiveConfig(loaded, readActiveConfig(context));
+  const presetCtx = derivePresetContext(loaded, savedAxes);
 
   let available: AvailablePreset[] = [];
   let availableIds: Set<string> | undefined;
   if (_presetState && _presetState.status === "loaded") {
-    const presetCtx = derivePresetContext(loaded, savedAxes);
     available = listAvailablePresets(_presetState.shared, _presetState.user, presetCtx);
     availableIds = new Set(available.map((p) => p.id));
   }
@@ -249,7 +260,11 @@ async function refreshPresetsAndActiveConfig(
   }
 
   _activeConfig = normalizedConfig;
-  _resolvedOptions = computeResolvedOptions(loaded, normalizedConfig, context);
+  _presetEffectiveValues =
+    _presetState && _presetState.status === "loaded"
+      ? computePresetEffectiveValues(loaded.buildOptions, _presetState.shared, _presetState.user, newPresetId, presetCtx)
+      : new Map();
+  _resolvedOptions = computeResolvedOptions(loaded, normalizedConfig, context, _presetEffectiveValues);
 
   _treeProvider?.update(loaded, normalizedConfig, _resolvedOptions);
   _treeProvider?.updatePresets(_presetState, newPresetId, available);
@@ -466,7 +481,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
       const manifestState = _manifestState;
       if (manifestState) {
-        _resolvedOptions = computeResolvedOptions(manifestState, _activeConfig, context);
+        _resolvedOptions = computeResolvedOptions(manifestState, _activeConfig, context, _presetEffectiveValues);
         _treeProvider?.update(manifestState, _activeConfig, _resolvedOptions);
       }
     })
@@ -979,7 +994,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await writeBuildOption(context, key, newValue);
       const state = _manifestState;
       if (state) {
-        _resolvedOptions = computeResolvedOptions(state, _activeConfig, context);
+        _resolvedOptions = computeResolvedOptions(state, _activeConfig, context, _presetEffectiveValues);
         _treeProvider?.update(state, _activeConfig, _resolvedOptions);
       }
     })
@@ -999,7 +1014,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         await writeBuildOption(context, key, stateId);
         const state = _manifestState;
         if (state) {
-          _resolvedOptions = computeResolvedOptions(state, _activeConfig, context);
+          _resolvedOptions = computeResolvedOptions(state, _activeConfig, context, _presetEffectiveValues);
           _treeProvider?.update(state, _activeConfig, _resolvedOptions);
         }
       }
