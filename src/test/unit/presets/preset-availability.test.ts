@@ -1,12 +1,13 @@
 /**
- * Unit tests for PresetContext derivation and AvailablePreset listing.
+ * Unit tests for PresetContext derivation and PresetChoice listing.
  *
- * Pure functions over PresetState (shared/user PresetFile) plus the active
- * build context. specs/009-build-preset-support/data-model.md §2.
+ * Pure functions over PresetState (shared/user PresetFile) plus, for the
+ * context derivation, the active build context. The choice list itself is a
+ * function of the two files alone. specs/009-build-preset-support/data-model.md §2.
  */
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { derivePresetContext, samePresetContext, listAvailablePresets } from "../../../presets/preset-resolution";
+import { derivePresetContext, samePresetContext, listPresetChoices } from "../../../presets/preset-resolution";
 import { PresetFile, PresetFragment } from "../../../presets/preset-types";
 import { ManifestStateLoaded } from "../../../manifest/manifest-types";
 import { ActiveConfig } from "../../../configuration/active-config";
@@ -150,16 +151,14 @@ suite("samePresetContext", () => {
 });
 
 // ---------------------------------------------------------------------------
-// AvailablePreset listing
+// PresetChoice listing
 // ---------------------------------------------------------------------------
 
-suite("listAvailablePresets", () => {
-  const ctx = { modelId: "T2T1", projectId: "firmware", emulator: false };
-
+suite("listPresetChoices", () => {
   test("Default is always first and always present, even with no [[defaults]] fragment", () => {
     const shared = presetFile({ source: "shared" });
     const user = presetFile({ source: "user" });
-    const result = listAvailablePresets(shared, user, ctx);
+    const result = listPresetChoices(shared, user);
     assert.strictEqual(result[0].id, "default");
     assert.strictEqual(result[0].label, "Default");
     assert.strictEqual(result[0].isDefault, true);
@@ -179,14 +178,14 @@ suite("listAvailablePresets", () => {
         fragment({ name: "local", source: "user" }),
       ],
     });
-    const result = listAvailablePresets(shared, user, ctx);
+    const result = listPresetChoices(shared, user);
     assert.deepStrictEqual(
       result.map((p) => p.id),
       ["default", "test", "local"]
     );
   });
 
-  test("a named preset is listed only when at least one fragment matches the context", () => {
+  test("a named preset whose only fragment filters to another context is still listed (FR-006)", () => {
     const shared = presetFile({
       source: "shared",
       names: ["dev"],
@@ -195,27 +194,33 @@ suite("listAvailablePresets", () => {
       ],
     });
     const user = presetFile({ source: "user" });
-    const result = listAvailablePresets(shared, user, ctx);
-    assert.ok(!result.some((p) => p.id === "dev"), "dev should not be listed: no fragment matches firmware");
+    const result = listPresetChoices(shared, user);
+    assert.ok(result.some((p) => p.id === "dev"), "dev must be listed even though no fragment matches firmware");
   });
 
-  test("a named preset is listed when a matching fragment exists in either file", () => {
+  test("a preset declared with no fragment at all is still listed", () => {
+    const shared = presetFile({ source: "shared", names: ["empty"], fragments: [] });
+    const user = presetFile({ source: "user" });
+    const result = listPresetChoices(shared, user);
+    assert.ok(result.some((p) => p.id === "empty"));
+  });
+
+  test("presets whose filters describe mutually exclusive contexts are listed together", () => {
+    // No single build context matches both fragments, so under the old
+    // context-filtered rule at most one of them could ever be offered.
     const shared = presetFile({
       source: "shared",
-      names: ["dev"],
+      names: ["hwonly", "emuonly"],
       fragments: [
-        fragment({ name: "dev", source: "shared", filter: { projects: ["bootloader"] } }),
+        fragment({ name: "hwonly", source: "shared", filter: { emulator: false } }),
+        fragment({ name: "emuonly", source: "shared", filter: { emulator: true } }),
       ],
     });
-    const user = presetFile({
-      source: "user",
-      names: ["dev"],
-      fragments: [
-        fragment({ name: "dev", source: "user", filter: { projects: ["firmware"] } }),
-      ],
-    });
-    const result = listAvailablePresets(shared, user, ctx);
-    assert.ok(result.some((p) => p.id === "dev"), "dev should be listed: the user fragment matches");
+    const user = presetFile({ source: "user" });
+    assert.deepStrictEqual(
+      listPresetChoices(shared, user).map((p) => p.id),
+      ["default", "hwonly", "emuonly"]
+    );
   });
 
   test("defaults is never listed as a named preset", () => {
@@ -225,7 +230,7 @@ suite("listAvailablePresets", () => {
       fragments: [fragment({ name: "defaults", source: "shared" })],
     });
     const user = presetFile({ source: "user" });
-    const result = listAvailablePresets(shared, user, ctx);
+    const result = listPresetChoices(shared, user);
     assert.ok(!result.some((p) => p.id === "defaults"));
   });
 
@@ -236,7 +241,7 @@ suite("listAvailablePresets", () => {
       fragments: [fragment({ name: "default", source: "shared" })],
     });
     const user = presetFile({ source: "user" });
-    const result = listAvailablePresets(shared, user, ctx);
+    const result = listPresetChoices(shared, user);
     assert.strictEqual(result.length, 1);
     assert.strictEqual(result[0].id, "default");
   });

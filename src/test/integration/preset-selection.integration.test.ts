@@ -1,5 +1,5 @@
 /**
- * Integration tests for User Story 1: selecting an available preset.
+ * Integration tests for User Story 1: selecting a preset.
  * Runs inside the VS Code extension host via @vscode/test-electron.
  *
  * Exercises the real preset-valid/preset-no-defaults fixtures through
@@ -10,8 +10,14 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import * as path from "path";
 import { PresetService } from "../../presets/preset-service";
-import { derivePresetContext, listAvailablePresets, AvailablePreset } from "../../presets/preset-resolution";
+import {
+  derivePresetContext,
+  listPresetChoices,
+  computePresetEffectiveValues,
+  PresetChoice,
+} from "../../presets/preset-resolution";
 import { PresetState } from "../../presets/preset-types";
+import { BuildOption } from "../../manifest/manifest-types";
 import {
   ActiveConfig,
   DEFAULT_PRESET_ID,
@@ -29,7 +35,7 @@ import {
   SelectorHeaderItem,
 } from "../../ui/configuration-tree";
 import { formatStatusBarText } from "../../ui/status-bar";
-import { formatTaskLabel } from "../../commands/build-workflow";
+import { deriveWorkflowArguments, formatTaskLabel } from "../../commands/build-workflow";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -98,7 +104,7 @@ function buildContextChildren(provider: ConfigurationTreeProvider): SelectorHead
 }
 
 // ---------------------------------------------------------------------------
-// preset-valid — four-selector order and availability
+// preset-valid — four-selector order and the declared preset list
 // ---------------------------------------------------------------------------
 
 suite("Preset selection – preset-valid fixture", () => {
@@ -114,8 +120,7 @@ suite("Preset selection – preset-valid fixture", () => {
 
     const manifest = makeManifest();
     const config = activeConfig();
-    const ctx = derivePresetContext(manifest, config);
-    const available = listAvailablePresets(state.shared, state.user, ctx);
+    const available = listPresetChoices(state.shared, state.user);
 
     assert.deepStrictEqual(
       available.map((p) => p.id),
@@ -152,10 +157,7 @@ suite("Preset selection – preset-no-defaults fixture", () => {
       return;
     }
 
-    const manifest = makeManifest();
-    const config = activeConfig();
-    const ctx = derivePresetContext(manifest, config);
-    const available = listAvailablePresets(state.shared, state.user, ctx);
+    const available = listPresetChoices(state.shared, state.user);
     assert.ok(available.some((p) => p.id === "default" && p.isDefault));
   });
 });
@@ -174,7 +176,7 @@ suite("Preset selection – select and persist", () => {
     assert.strictEqual(updated.presetId, "test");
     assert.strictEqual(readActiveConfig(context)?.presetId, "test");
 
-    const available: AvailablePreset[] = [
+    const available: PresetChoice[] = [
       { id: "default", label: "Default", isDefault: true },
       { id: "test", label: "test", isDefault: false },
     ];
@@ -235,11 +237,24 @@ suite("Preset selection – legacy record migration", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Normalization when the active build context changes (Scenario 1.4)
+// The listed presets and the active preset survive a build-context change
+// (FR-006, FR-008, FR-009, Scenario 1.4)
 // ---------------------------------------------------------------------------
 
-suite("Preset selection – normalization on build-context change", () => {
-  test("changing Component to one no fragment matches normalizes the active preset to default", async () => {
+/**
+ * The one option `[[dev]]` moves, enough to show what a non-matching preset
+ * calculates. Mirrors `test-fixtures/workspaces/preset-valid/tf-tools-manifest.yaml`.
+ */
+const PYOPT_OPTION: BuildOption = {
+  key: "pyopt",
+  id: "pyopt",
+  label: "Python Optimization",
+  flag: "--pyopt",
+  kind: "checkbox",
+};
+
+suite("Preset selection – build-context change keeps every preset", () => {
+  test("the same choices are listed for firmware and bootloader, and a non-matching preset stays selected", async () => {
     const { shared, user } = fixtureUris("preset-valid");
     const service = new PresetService(shared, user);
     const state = await service.start();
@@ -251,16 +266,60 @@ suite("Preset selection – normalization on build-context change", () => {
 
     const manifest = makeManifest();
 
+    // `[[dev]]` filters to `project = ["firmware"]`, so bootloader is the
+    // context where no fragment of it applies.
+    const available = listPresetChoices(state.shared, state.user);
+    assert.deepStrictEqual(
+      available.map((p) => p.id),
+      ["default", "test", "dev", "local"],
+      "the list is a function of the two files, not of the build context"
+    );
+
+    // Nothing normalizes it away: the id is still declared.
+    const knownIds = new Set(available.map((p) => p.id));
+    assert.strictEqual(normalizePresetId("dev", knownIds), "dev");
+
+    // Under firmware, `[[dev]]` applies and turns pyopt off against the
+    // `[[defaults]]` layer's `true`.
     const firmwareCtx = derivePresetContext(manifest, activeConfig({ componentId: "firmware" }));
-    const firmwareAvailable = listAvailablePresets(state.shared, state.user, firmwareCtx);
-    assert.ok(firmwareAvailable.some((p) => p.id === "dev"), "dev should be available for firmware");
+    const firmwareValues = computePresetEffectiveValues(
+      [PYOPT_OPTION],
+      state.shared,
+      state.user,
+      "dev",
+      firmwareCtx
+    );
+    assert.strictEqual(firmwareValues.get("pyopt")?.value, false);
 
+    // Under bootloader it applies to nothing, so the `[[defaults]]` layer
+    // alone calculates the option — exactly what `Default` would produce.
     const bootloaderCtx = derivePresetContext(manifest, activeConfig({ componentId: "bootloader" }));
-    const bootloaderAvailable = listAvailablePresets(state.shared, state.user, bootloaderCtx);
-    const bootloaderIds = new Set(bootloaderAvailable.map((p) => p.id));
-    assert.ok(!bootloaderIds.has("dev"), "dev must not be available for bootloader");
+    const bootloaderValues = computePresetEffectiveValues(
+      [PYOPT_OPTION],
+      state.shared,
+      state.user,
+      "dev",
+      bootloaderCtx
+    );
+    const defaultValues = computePresetEffectiveValues(
+      [PYOPT_OPTION],
+      state.shared,
+      state.user,
+      DEFAULT_PRESET_ID,
+      bootloaderCtx
+    );
+    assert.strictEqual(bootloaderValues.get("pyopt")?.value, true);
+    assert.strictEqual(defaultValues.get("pyopt")?.value, true);
+  });
 
-    assert.strictEqual(normalizePresetId("dev", bootloaderIds), DEFAULT_PRESET_ID);
+  test("a preset no fragment of which applies is still passed to the launched command", () => {
+    const args = deriveWorkflowArguments(
+      "Build",
+      { modelId: "T2T1", targetId: "hw", componentId: "bootloader", targetFlag: null },
+      [],
+      "dev"
+    );
+    assert.deepStrictEqual(args, ["bootloader", "-m", "T2T1", "-p", "dev"]);
   });
 });
 
@@ -269,20 +328,20 @@ suite("Preset selection – normalization on build-context change", () => {
 // ---------------------------------------------------------------------------
 
 suite("Preset selection – invalidity preserves and later resolves the saved id", () => {
-  test("saved preset id survives invalidity unresolved, then restores if available, else normalizes to default", async () => {
+  test("saved preset id survives invalidity unresolved, then restores if still declared, else normalizes to default", async () => {
     const context = createFakeContext();
     const manifest = makeManifest();
     await selectPreset(context, "test", manifest);
 
-    // Preset state invalid: availablePresetIds is undefined -> preserved unresolved.
+    // Preset state invalid: knownPresetIds is undefined -> preserved unresolved.
     const whileInvalid = await restoreActiveConfig(context, manifest, undefined);
     assert.strictEqual(activePresetId(whileInvalid), "test");
 
-    // Valid again, "test" still available -> restored.
+    // Valid again, the files still declare "test" -> restored.
     const whenAvailable = await restoreActiveConfig(context, manifest, new Set(["default", "test"]));
     assert.strictEqual(activePresetId(whenAvailable), "test");
 
-    // Valid again, "test" no longer available -> normalized to default.
+    // Valid again, no file declares "test" any more -> normalized to default.
     const whenUnavailable = await restoreActiveConfig(context, manifest, new Set(["default"]));
     assert.strictEqual(activePresetId(whenUnavailable), DEFAULT_PRESET_ID);
   });

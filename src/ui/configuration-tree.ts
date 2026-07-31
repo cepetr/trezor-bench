@@ -6,7 +6,7 @@ import { ResolvedOption } from "../configuration/build-options";
 import { ActiveCompileCommandsArtifact } from "../intellisense/intellisense-types";
 import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../intellisense/artifact-resolution";
 import { PresetState } from "../presets/preset-types";
-import { AvailablePreset } from "../presets/preset-resolution";
+import { PresetChoice } from "../presets/preset-resolution";
 
 // ---------------------------------------------------------------------------
 // Tree item types
@@ -350,7 +350,7 @@ export class ConfigurationTreeProvider
   private _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
   private _presetState: PresetState | undefined;
   private _activePresetId: string | undefined;
-  private _availablePresets: ReadonlyArray<AvailablePreset> = [];
+  private _presetChoices: ReadonlyArray<PresetChoice> = [];
   private _artifact: ActiveCompileCommandsArtifact | null = null;
   private _binaryArtifact: ActiveBinaryArtifact | null = null;
   private _mapArtifact: ActiveMapArtifact | null = null;
@@ -380,17 +380,17 @@ export class ConfigurationTreeProvider
   }
 
   /**
-   * Updates the preset state, active preset id, and available preset
-   * choices, and refreshes the `Preset` selector.
+   * Updates the preset state, active preset id, and the preset choices, and
+   * refreshes the `Preset` selector.
    */
   updatePresets(
     state: PresetState | undefined,
     activePresetId: string | undefined,
-    available: ReadonlyArray<AvailablePreset>
+    choices: ReadonlyArray<PresetChoice>
   ): void {
     this._presetState = state;
     this._activePresetId = activePresetId;
-    this._availablePresets = available;
+    this._presetChoices = choices;
     this._onDidChangeTreeData.fire(undefined);
   }
 
@@ -585,7 +585,7 @@ export class ConfigurationTreeProvider
     if (this._activePresetId === undefined) {
       return undefined;
     }
-    return this._availablePresets.find((p) => p.id === this._activePresetId)?.label;
+    return this._presetChoices.find((p) => p.id === this._activePresetId)?.label;
   }
 
   // -------------------------------------------------------------------------
@@ -624,7 +624,8 @@ export class ConfigurationTreeProvider
   /**
    * Expanded content for the `Preset` selector: a loading placeholder
    * before the first load, an error row replacing all choices when preset
-   * state is invalid (FR-028, FR-030), or one choice per available preset.
+   * state is invalid (FR-028, FR-030), or one selectable choice per declared
+   * preset — the list never depends on the active build context (FR-006).
    */
   private _presetSelectorChoices(): vscode.TreeItem[] {
     const state = this._presetState;
@@ -644,7 +645,7 @@ export class ConfigurationTreeProvider
       ];
     }
 
-    return this._availablePresets.map(
+    return this._presetChoices.map(
       (p) => new SelectorChoiceItem("preset", p.id, p.label, p.id === this._activePresetId)
     );
   }

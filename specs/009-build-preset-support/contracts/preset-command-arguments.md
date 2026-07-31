@@ -56,7 +56,7 @@ The bare-`<flag>` and `<flag>=<value>` forms are unchanged from the pre-feature 
 Before deriving arguments, each of `Build`, `Clippy`, and `Check`:
 
 1. reloads both preset inputs from disk;
-2. recomputes available presets for the active build context and normalizes the active preset;
+2. recomputes the declared preset list and normalizes the active preset against it — the list does not depend on the active build context, so this only retires an id the reloaded files no longer declare;
 3. recomputes preset-effective values for every available build option;
 4. derives the argument list from the fresh result.
 

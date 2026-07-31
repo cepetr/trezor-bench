@@ -29,7 +29,7 @@ when = { model = ["<model-id>", …], project = ["<component-id>", …], emulato
 - Each `[[<group-name>]]` table is one **preset fragment**. A group name may repeat; every repetition is an additional fragment for that name, retained in file order.
 - `defaults` is the reserved base-layer group name. Its matching fragments are applied to every build before any named preset and it is never offered as a selectable choice.
 - `default` is reserved by the extension for the synthetic `Default` choice. A group with that name is excluded from the choice list and reported as a warning.
-- Every other group name is a selectable named preset.
+- Every other group name is a selectable named preset. It is offered whatever the active build context, including when none of its fragments' `when` filters match: filters decide which values the preset contributes, not whether it is listed.
 
 ## The `when` filter
 

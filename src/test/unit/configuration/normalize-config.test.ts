@@ -150,23 +150,31 @@ suite("normalizeActiveConfig – saved config fully stale", () => {
 // ---------------------------------------------------------------------------
 
 suite("normalizePresetId", () => {
-  test("returns the saved id unchanged when availableIds is undefined (preset state invalid, FR-031)", () => {
+  test("returns the saved id unchanged when knownPresetIds is undefined (preset state invalid, FR-031)", () => {
     assert.strictEqual(normalizePresetId("test", undefined), "test");
     assert.strictEqual(normalizePresetId(DEFAULT_PRESET_ID, undefined), DEFAULT_PRESET_ID);
   });
 
-  test("keeps a saved id present in availableIds (FR-008, Scenario 1.6)", () => {
-    const availableIds = new Set(["default", "test", "dev"]);
-    assert.strictEqual(normalizePresetId("dev", availableIds), "dev");
+  test("keeps a saved id the preset files still declare (FR-008, Scenario 1.6)", () => {
+    const knownPresetIds = new Set(["default", "test", "dev"]);
+    assert.strictEqual(normalizePresetId("dev", knownPresetIds), "dev");
   });
 
-  test("normalizes any other saved id to DEFAULT_PRESET_ID (FR-008, Scenario 1.4)", () => {
-    const availableIds = new Set(["default", "test"]);
-    assert.strictEqual(normalizePresetId("removed-preset", availableIds), DEFAULT_PRESET_ID);
+  test("normalizes a saved id no preset file declares to DEFAULT_PRESET_ID (FR-008, Scenario 1.7)", () => {
+    const knownPresetIds = new Set(["default", "test"]);
+    assert.strictEqual(normalizePresetId("removed-preset", knownPresetIds), DEFAULT_PRESET_ID);
   });
 
-  test("keeps DEFAULT_PRESET_ID when it is itself the saved id and available", () => {
-    const availableIds = new Set(["default", "test"]);
-    assert.strictEqual(normalizePresetId(DEFAULT_PRESET_ID, availableIds), DEFAULT_PRESET_ID);
+  test("keeps DEFAULT_PRESET_ID when it is itself the saved id and declared", () => {
+    const knownPresetIds = new Set(["default", "test"]);
+    assert.strictEqual(normalizePresetId(DEFAULT_PRESET_ID, knownPresetIds), DEFAULT_PRESET_ID);
+  });
+
+  test("the declared set does not depend on the build context, so a preset with no matching fragment is kept (FR-006, Scenario 1.4)", () => {
+    // `listPresetChoices` derives this set from the two files alone: a preset
+    // whose fragments all filter to another model/component/emulator state is
+    // still declared, so a context change never normalizes it away.
+    const knownPresetIds = new Set(["default", "test", "dev"]);
+    assert.strictEqual(normalizePresetId("dev", knownPresetIds), "dev");
   });
 });

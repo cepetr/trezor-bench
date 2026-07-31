@@ -8,9 +8,9 @@ import {
   derivePresetContext,
   samePresetContext,
   shiftedPresetOptionKeys,
-  listAvailablePresets,
+  listPresetChoices,
   computePresetEffectiveValues,
-  AvailablePreset,
+  PresetChoice,
   PresetContext,
   PresetEffectiveValue,
 } from "./presets/preset-resolution";
@@ -239,7 +239,7 @@ function computeResolvedOptions(
 }
 
 /**
- * Recomputes available presets and preset-effective build-option values
+ * Recomputes the declared preset list and preset-effective build-option values
  * against the current manifest, active build context, and preset state;
  * normalizes and persists the active preset id when it changed; drops, when
  * the active preset or the preset context changed, exactly those explicit
@@ -268,16 +268,19 @@ async function refreshPresetsAndActiveConfig(
   const currentPresetState = _presetState;
   const presets = currentPresetState?.status === "loaded" ? currentPresetState : undefined;
 
-  let available: AvailablePreset[] = [];
-  let availableIds: Set<string> | undefined;
+  // The choice list depends on the two preset files alone: every declared
+  // preset is offered whatever the build context (FR-006), so `knownIds` only
+  // ever retires an id the files no longer declare.
+  let choices: PresetChoice[] = [];
+  let knownIds: Set<string> | undefined;
   if (presets) {
-    available = listAvailablePresets(presets.shared, presets.user, presetCtx);
-    availableIds = new Set(available.map((p) => p.id));
+    choices = listPresetChoices(presets.shared, presets.user);
+    knownIds = new Set(choices.map((p) => p.id));
   }
 
   const previousPresetId = _activeConfig ? activePresetId(_activeConfig) : undefined;
   const previousPresetContext = _presetContext;
-  const normalizedConfig = await restoreActiveConfig(context, loaded, availableIds);
+  const normalizedConfig = await restoreActiveConfig(context, loaded, knownIds);
   const newPresetId = activePresetId(normalizedConfig);
 
   const presetIdChanged = previousPresetId !== undefined && previousPresetId !== newPresetId;
@@ -333,7 +336,7 @@ async function refreshPresetsAndActiveConfig(
   vscode.commands.executeCommand("setContext", "tfTools.presetBlocked", _presetBlocked);
 
   _treeProvider?.update(loaded, normalizedConfig, _resolvedOptions);
-  _treeProvider?.updatePresets(currentPresetState, newPresetId, available);
+  _treeProvider?.updatePresets(currentPresetState, newPresetId, choices);
 }
 
 /**
@@ -815,7 +818,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   });
 
-  // Connect preset state changes to diagnostics, logs, and available-preset
+  // Connect preset state changes to diagnostics, logs, and preset-list
   // recomputation/normalization (FR-009).
   const onPresetStateChange = async (state: PresetState): Promise<void> => {
     _presetState = state;

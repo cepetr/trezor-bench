@@ -22,7 +22,7 @@ import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } fro
 import { ManifestStateLoaded, BuildOption } from "../../../manifest/manifest-types";
 import { ActiveConfig } from "../../../configuration/active-config";
 import { PresetFile, PresetState } from "../../../presets/preset-types";
-import { AvailablePreset } from "../../../presets/preset-resolution";
+import { PresetChoice } from "../../../presets/preset-resolution";
 import { ResolvedOption } from "../../../configuration/build-options";
 
 // ---------------------------------------------------------------------------
@@ -1003,7 +1003,7 @@ function makePresetFile(overrides: Partial<PresetFile> & Pick<PresetFile, "sourc
   };
 }
 
-function makeLoadedPresetState(available: AvailablePreset[]): { state: PresetState; available: AvailablePreset[] } {
+function makeLoadedPresetState(available: PresetChoice[]): { state: PresetState; available: PresetChoice[] } {
   return {
     state: {
       status: "loaded",
@@ -1016,7 +1016,7 @@ function makeLoadedPresetState(available: AvailablePreset[]): { state: PresetSta
   };
 }
 
-const DEFAULT_ONLY: AvailablePreset[] = [{ id: "default", label: "Default", isDefault: true }];
+const DEFAULT_ONLY: PresetChoice[] = [{ id: "default", label: "Default", isDefault: true }];
 
 suite("ConfigurationTreeProvider – Preset selector", () => {
   let provider: ConfigurationTreeProvider;
@@ -1063,7 +1063,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
 
   test("description shows the active named preset's label", () => {
     provider.update(makeManifestState(), makeActiveConfig(), []);
-    const available: AvailablePreset[] = [
+    const available: PresetChoice[] = [
       { id: "default", label: "Default", isDefault: true },
       { id: "test", label: "test", isDefault: false },
     ];
@@ -1110,7 +1110,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
 
   test("preset state loaded lists Default first, then named presets, with the active one marked", () => {
     provider.update(makeManifestState(), makeActiveConfig(), []);
-    const available: AvailablePreset[] = [
+    const available: PresetChoice[] = [
       { id: "default", label: "Default", isDefault: true },
       { id: "test", label: "test", isDefault: false },
     ];
@@ -1125,6 +1125,32 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
     assert.strictEqual(children[1].entryId, "test");
     assert.strictEqual(children[1].description, "active");
     assert.strictEqual(children[0].description, undefined);
+  });
+
+  test("every listed preset renders as a plain selectable row, whatever the build context (FR-006)", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    // The provider is handed the full declared list, including presets no
+    // fragment of which applies here; none of them is marked or disabled.
+    const available: PresetChoice[] = [
+      { id: "default", label: "Default", isDefault: true },
+      { id: "test", label: "test", isDefault: false },
+      { id: "prodtest", label: "prodtest", isDefault: false },
+    ];
+    const { state } = makeLoadedPresetState(available);
+    provider.updatePresets(state, "default", available);
+    provider.setExpandedSelector("preset");
+    const children = provider.getChildren(
+      new SelectorHeaderItem("preset", "Preset", undefined, true)
+    ) as SelectorChoiceItem[];
+    assert.deepStrictEqual(
+      children.map((c) => c.entryId),
+      ["default", "test", "prodtest"]
+    );
+    for (const child of children.slice(1)) {
+      assert.strictEqual(child.command?.command, "tfTools.selectPreset");
+      assert.strictEqual(child.description, undefined);
+      assert.strictEqual(child.resourceUri, undefined);
+    }
   });
 
   test("only one selector expands at a time; expanding preset collapses model (FR-002)", () => {

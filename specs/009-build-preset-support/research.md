@@ -211,7 +211,7 @@ Not errors: `when.model` or `when.project` values that do not correspond to any 
 
 ## Decision 13 — Recalculating before launch
 
-**Decision**: The Build/Clippy/Check command handlers `await presetService.reload()` before deriving arguments, then recompute available presets, normalize the active preset, and recompute preset-effective values from the fresh state. A reload that yields a file-level invalid state, or any option-level mismatch, blocks the launch with an explanatory error plus a log entry.
+**Decision**: The Build/Clippy/Check command handlers `await presetService.reload()` before deriving arguments, then recompute the declared preset list, normalize the active preset against it, and recompute preset-effective values from the fresh state. A reload that yields a file-level invalid state, or any option-level mismatch, blocks the launch with an explanatory error plus a log entry.
 
 **Rationale**: FR-020 requires recalculation from "current preset inputs", and the failure mode for "preset data changes between display and command invocation" requires a fresh calculation with a blocked launch on failure. The file watcher is debounced by 300 ms, so a cached state can legitimately be stale at invocation time. Two small file reads on an already-async command path is cheaper than a correctness gap, and the reload flows through the existing `onDidChangeState` refresh chain so the UI converges too.
 

@@ -7,7 +7,7 @@
 import * as vscode from "vscode";
 import { BuildOption } from "../manifest/manifest-types";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
-import { PresetFile, PresetFilter, PresetFragment, PresetRawValue, DEFAULT_PRESET_ID } from "./preset-types";
+import { PresetFile, PresetFilter, PresetRawValue, DEFAULT_PRESET_ID } from "./preset-types";
 
 /** The subset of the active build context PresetContext derivation needs. */
 export interface ActiveBuildContext {
@@ -24,7 +24,7 @@ export interface PresetContext {
 }
 
 /** One choice offered under the `Preset` selector. */
-export interface AvailablePreset {
+export interface PresetChoice {
   readonly id: string;
   readonly label: string;
   readonly isDefault: boolean;
@@ -81,18 +81,18 @@ export function matchesPresetFilter(filter: PresetFilter, context: PresetContext
 /**
  * Lists preset choices for the `Preset` selector: the synthetic `Default`
  * choice always first, then each named preset exactly once, at the position
- * of its first declaration scanning `shared.names` then `user.names`, and
- * only when at least one of its fragments — from either file — matches
- * `context` (FR-003, FR-004, FR-005, FR-006).
+ * of its first declaration scanning `shared.names` then `user.names`
+ * (FR-003, FR-004, FR-005).
+ *
+ * Every declared preset is listed and can be selected, whatever the active
+ * build context — the list is a function of the two files alone, which is why
+ * no `PresetContext` is taken (FR-006). Fragment filters still decide what a
+ * preset *calculates*: one with no matching fragment contributes nothing to
+ * the overlay, so its baseline is the `[[defaults]]` layer alone, and it is
+ * still emitted as `-p <name>`.
  */
-export function listAvailablePresets(
-  shared: PresetFile,
-  user: PresetFile,
-  context: PresetContext
-): AvailablePreset[] {
-  const result: AvailablePreset[] = [{ id: DEFAULT_PRESET_ID, label: "Default", isDefault: true }];
-
-  const allFragments: ReadonlyArray<PresetFragment> = [...shared.fragments, ...user.fragments];
+export function listPresetChoices(shared: PresetFile, user: PresetFile): PresetChoice[] {
+  const result: PresetChoice[] = [{ id: DEFAULT_PRESET_ID, label: "Default", isDefault: true }];
   const seen = new Set<string>([DEFAULT_PRESET_ID]);
 
   for (const name of [...shared.names, ...user.names]) {
@@ -100,10 +100,7 @@ export function listAvailablePresets(
       continue;
     }
     seen.add(name);
-    const matches = allFragments.some((f) => f.name === name && matchesPresetFilter(f.filter, context));
-    if (matches) {
-      result.push({ id: name, label: name, isDefault: false });
-    }
+    result.push({ id: name, label: name, isDefault: false });
   }
 
   return result;

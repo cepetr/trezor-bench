@@ -102,9 +102,9 @@ When the manifest file is missing, the section stays visible and shows a warning
 
 When the manifest file is invalid, the section stays visible and shows a warning summary of the validation error count together with a prompt to check the Problems view for details.
 
-The `Presets` selector follows the same expand, collapse, active-choice, loading, and refresh conventions as the model, target, and component selectors. Its available choices always begin with the synthetic `Default` choice, which represents defaults-only behavior rather than a named preset, followed by every named preset available for the active model, target, and component. The active preset id is persisted in the same workspace-scoped active-configuration record as the selected model, target, and component (see `Persistence And Defaults`), but it is never shown in the shared build-context display, status bar, task labels, or command names — it affects only preset-relative build-option values and the arguments described under `Build` and `Clippy And Check`.
+The `Preset` selector follows the same expand, collapse, active-choice, loading, and refresh conventions as the model, target, and component selectors. Its choices always begin with the synthetic `Default` choice, which represents defaults-only behavior rather than a named preset, followed by every named preset declared in either preset input, listed once and independently of the active model, target, and component. Any listed preset can be selected; when none of a preset's fragments apply to the active build context, it contributes no fragment values — the preset-file defaults alone calculate the option values — and it is still sent to the launched command. The active preset id is persisted in the same workspace-scoped active-configuration record as the selected model, target, and component (see `Persistence And Defaults`), but it is never shown in the shared build-context display, status bar, task labels, or command names — it affects only preset-relative build-option values and the arguments described under `Build` and `Clippy And Check`.
 
-When preset data is still loading, the `Presets` selector shows a loading placeholder. When either preset input is invalid, the selector's choices are replaced by a warning row naming the failing file, together with a prompt to check the Problems view for details; `Build`, `Clippy`, and `Check` are blocked while `Clean` remains available (see `Availability And Blocking Model`).
+When preset data is still loading, the `Preset` selector shows a loading placeholder. When either preset input is invalid, the selector's choices are replaced by a warning row naming the failing file, together with a prompt to check the Problems view for details; `Build`, `Clippy`, and `Check` are blocked while `Clean` remains available (see `Availability And Blocking Model`).
 
 ### Build Option Management
 
@@ -227,7 +227,7 @@ The `Trezor` activity-bar container and the `Configuration` view use the shared 
 - Activity-bar container icon: `images/tf-tools.svg`
 - Configuration view icon: `images/tf-tools.svg`
 - Top-level section icons: none for `Build Selection`, `Build Options`, and `Build Artifacts`
-- `Build Selection` selector icons: `circuit-board` for `Model`, `target` for `Target`, `extensions` for `Component`, `layers` for `Presets`
+- `Build Selection` selector icons: `circuit-board` for `Model`, `target` for `Target`, `extensions` for `Component`, `layers` for `Preset`
 - Active selector-choice icon: `check`
 - Inactive selector-choice spacer: `images/blank-tree-icon.svg`
 - Multistate build-option header icon: `list-selection`
@@ -439,7 +439,7 @@ If the workspace is supported, the extension:
 - Starts the preset service and begins watching both preset inputs at `<cargo workspace path>/xtask/tf-tools/presets.toml` and `.../user-presets.toml`.
 - Initializes the status-bar presenter, IntelliSense service, and excluded-file visibility services.
 - Restores the persisted active build context when possible and normalizes it against the loaded manifest if previously saved values are no longer valid.
-- Recomputes available presets for the active build context, restores the persisted active preset id when it remains available, and normalizes it to the synthetic `Default` choice otherwise.
+- Recomputes the declared preset list, restores the persisted active preset id when the preset inputs still declare it, and normalizes it to the synthetic `Default` choice otherwise.
 - Restores persisted build-option selections and resolves them against the active build context and the active preset's calculated effective values.
 - Updates the tree view, status bar, diagnostics, log output, workflow blocking state, preset blocking state, artifact rows, and action enablement from the loaded state.
 - Schedules an initial IntelliSense refresh.
@@ -468,11 +468,11 @@ When either preset input changes:
 
 - Both preset inputs are re-read and re-validated.
 - Diagnostics and log output are refreshed to reflect the new preset state, attributed to whichever file produced an issue.
-- Available presets are recomputed for the active build context, and the active preset id is restored if it remains available or normalized to the synthetic `Default` choice otherwise.
+- The declared preset list is recomputed, and the active preset id is restored if the inputs still declare it or normalized to the synthetic `Default` choice otherwise.
 - Preset-effective build-option values are recalculated, and Build Options are refreshed to show the new values, emphasis, mismatch, and unresolved states.
-- The `Presets` selector, its choices, and workflow blocking state are refreshed.
+- The `Preset` selector, its choices, and workflow blocking state are refreshed.
 
-An absent `presets.toml` is treated exactly like an empty shared preset file and is never reported as a failure; an absent `user-presets.toml` is likewise never reported. If either present file is unreadable, malformed, or contains validation errors, the extension keeps the UI available but replaces the `Presets` choices with a warning row, shows the failure through diagnostics and log output, and blocks `Build`, `Clippy`, and `Check` while leaving `Clean` available, without using stale or guessed preset data.
+An absent `presets.toml` is treated exactly like an empty shared preset file and is never reported as a failure; an absent `user-presets.toml` is likewise never reported. If either present file is unreadable, malformed, or contains validation errors, the extension keeps the UI available but replaces the `Preset` choices with a warning row, shows the failure through diagnostics and log output, and blocks `Build`, `Clippy`, and `Check` while leaving `Clean` available, without using stale or guessed preset data.
 
 ### Setting Change
 
@@ -492,7 +492,7 @@ When the user changes the active model, target, component, or preset from the tr
 
 - The selected model, target, component, or preset is written to workspace state.
 - The resulting build context is normalized so the saved combination always resolves to valid manifest entries.
-- Available presets are recomputed for the new model, target, and component, and the active preset id is normalized to the synthetic `Default` choice if it is no longer available.
+- The listed presets and the active preset id are left alone: neither depends on the model, target, or component.
 - Preset-effective build-option values are recalculated for the (possibly new) active preset.
 - Build options are re-resolved for the new context, so context-specific options may appear, disappear, or change availability.
 - The tree view is refreshed to show the new active selection, updated option state, and updated artifact rows.
@@ -518,7 +518,7 @@ When the workspace is opened again and the manifest loads successfully, the exte
 
 If a saved model, target, or component id no longer exists after a manifest change, the extension normalizes that part of the saved build context to a valid entry from the current manifest. The extension uses the first available entry of that kind when a saved value is missing or stale.
 
-The active-configuration record's preset id follows the same save, restore, and normalization lifecycle: a saved preset id is restored when it remains available for the active model, target, and component, and is otherwise normalized to the synthetic `Default` choice. Records persisted before preset support was added have no preset id; they are read as the `Default` choice and are not rewritten merely for that reason. While either preset input is invalid, the saved preset id is preserved without being resolved or replaced, and is only restored or normalized once valid preset data returns.
+The active-configuration record's preset id follows the same save, restore, and normalization lifecycle: a saved preset id is restored whenever the preset inputs still declare that preset — whatever the active model, target, and component — and is otherwise normalized to the synthetic `Default` choice. Records persisted before preset support was added have no preset id; they are read as the `Default` choice and are not rewritten merely for that reason. While either preset input is invalid, the saved preset id is preserved without being resolved or replaced, and is only restored or normalized once valid preset data returns.
 
 This normalization behavior is also part of the refresh flow described in the `Startup And Refresh Behavior` section.
 
@@ -647,7 +647,7 @@ In practice, `Build` requires:
 
 The command always uses the currently active model, target, component, and preset selection together with the currently effective build-option overrides.
 
-Before deriving arguments, `Build` reloads both preset inputs from disk and recalculates available presets and preset-effective build-option values from that fresh state, so the launched command always reflects the current preset files rather than a possibly stale cached state.
+Before deriving arguments, `Build` reloads both preset inputs from disk and recalculates the declared preset list and the preset-effective build-option values from that fresh state, so the launched command always reflects the current preset files rather than a possibly stale cached state.
 
 When launched, `Build` runs from the cargo workspace path configured through `tfTools.cargoWorkspacePath` and uses the workflow task environment described above.
 

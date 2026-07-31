@@ -40,16 +40,17 @@ Under `test-fixtures/workspaces/`, mirroring the existing fixture-workspace conv
 
 ## Scenario checks
 
-### US1 — Select an available preset
+### US1 — Select a preset
 
 1. Open `test-fixtures/workspaces/preset-valid/` and reveal the `Trezor` → `Configuration` view.
 2. Confirm `Build Selection` shows four selectors in order: `Model`, `Target`, `Component`, `Preset`.
-3. Expand `Preset`. **Expected**: `Default` first, then each named preset from `presets.toml` followed by user-only presets, each listed once, filtered to those with a fragment matching the active model/component/target.
+3. Expand `Preset`. **Expected**: `Default` first, then every named preset from `presets.toml` followed by user-only presets, each listed once — no preset is filtered out by the active model/component/target.
 4. Select a named preset. **Expected**: the `Preset` description and the `check` marker update immediately.
 5. Reload the window. **Expected**: the same preset is still active — it was saved into the same workspace-state record as model, target, and component.
-6. Change `Component` to one no fragment of the active preset matches. **Expected**: the active preset normalizes to `Default`.
-7. Confirm the status bar item, `Build`/`Clippy`/`Check` task labels, and command names contain no preset name.
-8. Open `test-fixtures/workspaces/preset-no-defaults/` and expand `Preset`. **Expected**: `Default` is still offered.
+6. Change `Component` to one no fragment of the active preset matches. **Expected**: the preset stays listed and selected, and `Build Options` shows the values calculated from the matching `[[defaults]]` fragments alone.
+7. Remove the active preset's name from both preset files. **Expected**: the active preset normalizes to `Default`.
+8. Confirm the status bar item, `Build`/`Clippy`/`Check` task labels, and command names contain no preset name.
+9. Open `test-fixtures/workspaces/preset-no-defaults/` and expand `Preset`. **Expected**: `Default` is still offered.
 
 ### US2 — Adjust preset-relative options
 
@@ -85,7 +86,7 @@ Inspect the launched command through `vscode.tasks.fetchTasks({ type: "tfTools" 
 2. Delete `user-presets.toml` from `preset-valid/` at runtime → shared presets keep working, no warning.
 3. `preset-malformed-shared/` → the `Preset` header stays visible, its choices are replaced by an error row, details appear in the `Trezor Firmware Tools` log channel and as a diagnostic on `presets.toml`, `Build`/`Clippy`/`Check` are blocked, `Clean` is not.
 4. `preset-invalid-user/` → same outcome, attributed to `user-presets.toml`.
-5. While a file is invalid with a named preset saved, fix the file → the saved preset is restored when it is still available, and normalizes to `Default` only when it is not.
+5. While a file is invalid with a named preset saved, fix the file → the saved preset is restored when the fixed files still declare it, and normalizes to `Default` only when they do not.
 6. Invoke `Build` from the Command Palette while a preset file is invalid → execution is rejected with a visible error plus a log entry, and no task starts.
 7. Create, edit, and delete `user-presets.toml` with the view open → the `Preset` choices, active preset, option values, emphasis, and workflow enablement all refresh within two seconds and without a window reload (SC-004).
 8. Change `tfTools.cargoWorkspacePath` → preset inputs are re-resolved from the new location.

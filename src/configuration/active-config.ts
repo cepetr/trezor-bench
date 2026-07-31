@@ -129,10 +129,10 @@ export async function selectPreset(
 
 /**
  * Reads the persisted active configuration, normalizes it against `manifest`
- * and, when known, `availablePresetIds`, writes back if anything was stale,
- * and returns the resulting valid config.
+ * and, when known, `knownPresetIds` — the ids the preset files declare —
+ * writes back if anything was stale, and returns the resulting valid config.
  *
- * `availablePresetIds` is `undefined` while preset state is invalid; in that
+ * `knownPresetIds` is `undefined` while preset state is invalid; in that
  * case the saved preset id is preserved unresolved (FR-031) and never
  * triggers a write on its own.
  *
@@ -142,12 +142,12 @@ export async function selectPreset(
 export async function restoreActiveConfig(
   context: vscode.ExtensionContext,
   manifest: ManifestStateLoaded,
-  availablePresetIds?: ReadonlySet<string>
+  knownPresetIds?: ReadonlySet<string>
 ): Promise<ActiveConfig> {
   const saved = readActiveConfig(context);
   const normalized = normalizeActiveConfig(manifest, saved);
   const savedPresetId = activePresetId(saved);
-  const normalizedPresetId = normalizePresetId(savedPresetId, availablePresetIds);
+  const normalizedPresetId = normalizePresetId(savedPresetId, knownPresetIds);
 
   const changed =
     !saved ||

@@ -87,7 +87,7 @@ The active build context expressed in upstream filter terms.
 | `projectId` | `string` | `ActiveConfig.componentId` — upstream `project` maps to the tf-tools component. |
 | `emulator` | `boolean` | `target.flag === "--emulator" \|\| target.flag === "-e"` for the active target. |
 
-### `AvailablePreset`
+### `PresetChoice`
 
 | Field | Type | Notes |
 | --- | --- | --- |
@@ -95,11 +95,11 @@ The active build context expressed in upstream filter terms.
 | `label` | `string` | `"Default"` for the synthetic choice; otherwise the preset name verbatim. |
 | `isDefault` | `boolean` | `true` only for the synthetic choice. |
 
-Availability rules:
+Listing rules:
 
 - The synthetic `Default` entry is **always** first and always present, including when neither file declares any `[[defaults]]` fragment (FR-004, Acceptance Scenario 1.2).
 - A named preset is listed exactly once, at the position of its first declaration, scanning the shared file's `names` then the user file's `names` (FR-003).
-- A named preset is listed only when at least one of its fragments — from either file — matches the `PresetContext` (FR-006).
+- Every declared named preset is listed, whatever the `PresetContext`, and any of them can be selected; the list is a pure function of the two files, so `listPresetChoices(shared, user)` takes no context (FR-006). A preset with no matching fragment contributes nothing to the overlay, so its option baseline is the `[[defaults]]` layer alone, and it is still emitted as `-p <name>`.
 - `defaults` is never listed (FR-005). A group named `default` is never listed (research Decision 7).
 
 ### `PresetEffectiveValue`
@@ -157,10 +157,10 @@ Lifecycle:
 
 - **Read**: `activePresetId(config)` returns `config?.presetId ?? DEFAULT_PRESET_ID`.
 - **Select**: `selectPreset(context, presetId, manifest)` mirrors `selectModel`/`selectTarget`/`selectComponent` — normalize the manifest axes, then write with the new `presetId`.
-- **Normalize** (`normalizePresetId` in `src/configuration/normalize-config.ts`): given the saved id and `availableIds: ReadonlySet<string> | undefined`:
-  - `availableIds === undefined` → return the saved id unchanged (preset state invalid; FR-031 forbids resolving it);
-  - saved id present in `availableIds` → keep it (FR-008, Acceptance Scenario 1.6);
-  - otherwise → `DEFAULT_PRESET_ID` (FR-008, Acceptance Scenario 1.4).
+- **Normalize** (`normalizePresetId` in `src/configuration/normalize-config.ts`): given the saved id and `knownPresetIds: ReadonlySet<string> | undefined` — the ids declared in the two preset files, which do not depend on the build context:
+  - `knownPresetIds === undefined` → return the saved id unchanged (preset state invalid; FR-031 forbids resolving it);
+  - saved id present in `knownPresetIds` → keep it, including when no fragment of that preset matches the active context (FR-008, Acceptance Scenarios 1.4 and 1.6);
+  - otherwise → `DEFAULT_PRESET_ID` (FR-008, Acceptance Scenario 1.7).
 - **Write-back**: only when normalization actually changed the id, matching the existing `restoreActiveConfig` behavior. While preset state is invalid no preset write ever occurs.
 - **Excluded from display**: the preset never enters the build-context display string, status bar, task labels, or command names (FR-024).
 
@@ -232,7 +232,7 @@ The prune covers stored keys for options that are not currently available: the m
 - Expanded children:
   - preset state `undefined` → `PlaceholderItem("Loading…")`;
   - preset state `invalid` → `WarningItem` naming the failing file plus `PlaceholderItem("Check the Problems view for details")`, replacing all choices (FR-028, FR-030);
-  - preset state `loaded` → one `SelectorChoiceItem` per `AvailablePreset`, `Default` first.
+  - preset state `loaded` → one `SelectorChoiceItem` per `PresetChoice`, `Default` first.
 - Only one selector expands at a time — the existing `_expandedSelector` single-value state already enforces this, so `"preset"` participates unchanged (FR-002).
 - `_isNonDefault` is replaced by `resolved.isOverride` for both the checkbox and multistate emphasis paths and for the group-header rollup (FR-015).
 - A `presetState === "mismatch"` option renders with the `warning` icon and a description naming the unrepresentable value; a `presetState === "unresolved"` option renders normally but with its state children non-selectable.
@@ -251,11 +251,10 @@ The prune covers stored keys for options that are not currently available: the m
 ## 8. Entity relationships
 
 ```text
-PresetService ──publishes──> PresetState
+PresetService ──publishes──> PresetState ──> PresetChoice[]  (Preset selector, context-independent)
                                │
    ManifestStateLoaded ────────┤
-   ActiveConfig ───────────────┼──> PresetContext ──> AvailablePreset[]        (Preset selector)
-                               │                 └──> PresetEffectiveValue[]  (per manifest option)
+   ActiveConfig ───────────────┼──> PresetContext ──> PresetEffectiveValue[]  (per manifest option)
                                                           │
    tfTools.buildOptions ──────────────────────────────────┼──> ResolvedOption[]
                                                                    │
