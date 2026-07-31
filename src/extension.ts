@@ -4,6 +4,7 @@ import { resolveManifestUri, isStatusBarEnabled, resolveArtifactsPath, resolveDe
 import { ManifestService } from "./manifest/manifest-service";
 import { PresetService } from "./presets/preset-service";
 import { PresetState } from "./presets/preset-types";
+import { derivePresetContext, listAvailablePresets, AvailablePreset } from "./presets/preset-resolution";
 import { ConfigurationTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/configuration-tree";
 import { StatusBarPresenter } from "./ui/status-bar";
 import {
@@ -22,11 +23,15 @@ import {
 } from "./observability/diagnostics";
 import {
   restoreActiveConfig,
+  readActiveConfig,
   selectModel,
   selectTarget,
   selectComponent,
+  selectPreset,
+  activePresetId,
   ActiveConfig,
 } from "./configuration/active-config";
+import { normalizeActiveConfig } from "./configuration/normalize-config";
 import {
   readBuildOptions,
   writeBuildOption,
@@ -85,6 +90,7 @@ import {
 
 let _manifestService: ManifestService | undefined;
 let _presetService: PresetService | undefined;
+let _presetState: PresetState | undefined;
 let _presetStateSubscription: vscode.Disposable | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
 let _configurationTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
@@ -204,6 +210,42 @@ function computeResolvedOptions(
   const loaded = state as ManifestStateLoaded;
   const saved = readBuildOptions(context);
   return normalizeBuildOptions(loaded.buildOptions, saved, activeConfig);
+}
+
+/**
+ * Recomputes available presets against the current manifest, active build
+ * context, and preset state; normalizes and persists the active preset id
+ * when it changed; and refreshes the `Presets` selector and Build Options
+ * (FR-009). The single entry point for every preset-relevant trigger:
+ * activation, preset-state change, manifest-state change, and active
+ * model/target/component change.
+ */
+async function refreshPresetsAndActiveConfig(
+  context: vscode.ExtensionContext
+): Promise<void> {
+  const manifestState = _manifestState;
+  if (!manifestState || manifestState.status !== "loaded") {
+    _treeProvider?.updatePresets(_presetState, undefined, []);
+    return;
+  }
+  const loaded = manifestState as ManifestStateLoaded;
+
+  const savedAxes = normalizeActiveConfig(loaded, readActiveConfig(context));
+
+  let available: AvailablePreset[] = [];
+  let availableIds: Set<string> | undefined;
+  if (_presetState && _presetState.status === "loaded") {
+    const presetCtx = derivePresetContext(loaded, savedAxes);
+    available = listAvailablePresets(_presetState.shared, _presetState.user, presetCtx);
+    availableIds = new Set(available.map((p) => p.id));
+  }
+
+  const normalizedConfig = await restoreActiveConfig(context, loaded, availableIds);
+  _activeConfig = normalizedConfig;
+  _resolvedOptions = computeResolvedOptions(loaded, normalizedConfig, context);
+
+  _treeProvider?.update(loaded, normalizedConfig, _resolvedOptions);
+  _treeProvider?.updatePresets(_presetState, activePresetId(normalizedConfig), available);
 }
 
 /**
@@ -364,6 +406,7 @@ function registerUnsupportedWorkspaceCommands(
     registerNoop("tfTools.selectModel"),
     registerNoop("tfTools.selectTarget"),
     registerNoop("tfTools.selectComponent"),
+    registerNoop("tfTools.selectPreset"),
     registerNoop("tfTools.toggleBuildOption"),
     registerNoop("tfTools.selectBuildOptionState")
   );
@@ -646,16 +689,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
 
   // Connect manifest state changes to the tree provider, diagnostics, and logs.
-  // On each state change, restore and normalize the active config.
+  // On each state change, restore and normalize the active config and the
+  // active preset together (FR-009).
   const onManifestStateChange = async (state: ManifestState): Promise<void> => {
     _manifestState = state;
-    let activeConfig: ActiveConfig | undefined;
     if (state.status === "loaded") {
-      activeConfig = await restoreActiveConfig(context, state);
+      await refreshPresetsAndActiveConfig(context);
+    } else {
+      _activeConfig = undefined;
+      _resolvedOptions = [];
+      _treeProvider?.update(state, undefined, []);
+      _treeProvider?.updatePresets(_presetState, undefined, []);
     }
-    _activeConfig = activeConfig;
-    _resolvedOptions = computeResolvedOptions(state, activeConfig, context);
-    _treeProvider?.update(state, activeConfig, _resolvedOptions);
     refreshStatusBar();
     handleManifestStateDiagnostics(state);
     logManifestState(state);
@@ -664,7 +709,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Update IntelliSense service with the new manifest state
     const loadedState = state.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
     _intelliSenseService?.setManifest(loadedState);
-    _intelliSenseService?.setActiveConfig(activeConfig);
+    _intelliSenseService?.setActiveConfig(_activeConfig);
     refreshArtifactFileWatcher();
     refreshBuildArtifacts("manifest-change");
   };
@@ -681,12 +726,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   });
 
-  // Connect preset state changes to diagnostics and logs. Available-preset
-  // computation, normalization, and tree/workflow refresh are wired in as
-  // later user-story tasks land (US1-US3).
-  const onPresetStateChange = (state: PresetState): void => {
+  // Connect preset state changes to diagnostics, logs, and available-preset
+  // recomputation/normalization (FR-009).
+  const onPresetStateChange = async (state: PresetState): Promise<void> => {
+    _presetState = state;
     handlePresetStateDiagnostics(state);
     logPresetState(state);
+    await refreshPresetsAndActiveConfig(context);
   };
 
   _presetStateSubscription = _presetService.onDidChangeState(onPresetStateChange);
@@ -822,16 +868,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   // --- Build-context selector commands. ---
+  // Each selection also re-normalizes the active preset against the new
+  // build context (FR-009), via refreshPresetsAndActiveConfig.
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.selectModel", async (modelId: string) => {
       const state = _manifestState;
       if (!state || state.status !== "loaded") { return; }
-      const config = await selectModel(context, modelId, state);
-      _activeConfig = config;
-      _resolvedOptions = computeResolvedOptions(state, config, context);
-      _treeProvider?.update(state, config, _resolvedOptions);
+      await selectModel(context, modelId, state);
+      await refreshPresetsAndActiveConfig(context);
       refreshStatusBar();
-      _intelliSenseService?.setActiveConfig(config);
+      _intelliSenseService?.setActiveConfig(_activeConfig);
       refreshArtifactFileWatcher();
       refreshBuildArtifacts("active-config-change");
     })
@@ -841,12 +887,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand("tfTools.selectTarget", async (targetId: string) => {
       const state = _manifestState;
       if (!state || state.status !== "loaded") { return; }
-      const config = await selectTarget(context, targetId, state);
-      _activeConfig = config;
-      _resolvedOptions = computeResolvedOptions(state, config, context);
-      _treeProvider?.update(state, config, _resolvedOptions);
+      await selectTarget(context, targetId, state);
+      await refreshPresetsAndActiveConfig(context);
       refreshStatusBar();
-      _intelliSenseService?.setActiveConfig(config);
+      _intelliSenseService?.setActiveConfig(_activeConfig);
       refreshArtifactFileWatcher();
       refreshBuildArtifacts("active-config-change");
     })
@@ -856,12 +900,25 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand("tfTools.selectComponent", async (componentId: string) => {
       const state = _manifestState;
       if (!state || state.status !== "loaded") { return; }
-      const config = await selectComponent(context, componentId, state);
-      _activeConfig = config;
-      _resolvedOptions = computeResolvedOptions(state, config, context);
-      _treeProvider?.update(state, config, _resolvedOptions);
+      await selectComponent(context, componentId, state);
+      await refreshPresetsAndActiveConfig(context);
       refreshStatusBar();
-      _intelliSenseService?.setActiveConfig(config);
+      _intelliSenseService?.setActiveConfig(_activeConfig);
+      refreshArtifactFileWatcher();
+      refreshBuildArtifacts("active-config-change");
+    })
+  );
+
+  // --- Preset selector command (feature 009). Not a contributed command —
+  // invoked only through the Presets selector's tree-item command binding. ---
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tfTools.selectPreset", async (presetId: string) => {
+      const state = _manifestState;
+      if (!state || state.status !== "loaded") { return; }
+      await selectPreset(context, presetId, state);
+      await refreshPresetsAndActiveConfig(context);
+      refreshStatusBar();
+      _intelliSenseService?.setActiveConfig(_activeConfig);
       refreshArtifactFileWatcher();
       refreshBuildArtifacts("active-config-change");
     })

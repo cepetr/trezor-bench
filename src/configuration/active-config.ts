@@ -76,8 +76,9 @@ export async function selectModel(
   modelId: string,
   manifest: ManifestStateLoaded
 ): Promise<ActiveConfig> {
-  const base = normalizeActiveConfig(manifest, readActiveConfig(context));
-  return writeActiveConfig(context, { ...base, modelId });
+  const saved = readActiveConfig(context);
+  const base = normalizeActiveConfig(manifest, saved);
+  return writeActiveConfig(context, { ...base, modelId, presetId: saved?.presetId });
 }
 
 /**
@@ -89,8 +90,9 @@ export async function selectTarget(
   targetId: string,
   manifest: ManifestStateLoaded
 ): Promise<ActiveConfig> {
-  const base = normalizeActiveConfig(manifest, readActiveConfig(context));
-  return writeActiveConfig(context, { ...base, targetId });
+  const saved = readActiveConfig(context);
+  const base = normalizeActiveConfig(manifest, saved);
+  return writeActiveConfig(context, { ...base, targetId, presetId: saved?.presetId });
 }
 
 /**
@@ -102,8 +104,9 @@ export async function selectComponent(
   componentId: string,
   manifest: ManifestStateLoaded
 ): Promise<ActiveConfig> {
-  const base = normalizeActiveConfig(manifest, readActiveConfig(context));
-  return writeActiveConfig(context, { ...base, componentId });
+  const saved = readActiveConfig(context);
+  const base = normalizeActiveConfig(manifest, saved);
+  return writeActiveConfig(context, { ...base, componentId, presetId: saved?.presetId });
 }
 
 /**

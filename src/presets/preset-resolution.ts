@@ -4,8 +4,14 @@
  * specs/009-build-preset-support/data-model.md §2
  */
 import { ManifestStateLoaded } from "../manifest/manifest-types";
-import { ActiveConfig } from "../configuration/active-config";
 import { PresetFile, PresetFilter, PresetFragment, DEFAULT_PRESET_ID } from "./preset-types";
+
+/** The subset of the active build context PresetContext derivation needs. */
+export interface ActiveBuildContext {
+  readonly modelId: string;
+  readonly targetId: string;
+  readonly componentId: string;
+}
 
 /** The active build context expressed in upstream filter terms. */
 export interface PresetContext {
@@ -29,7 +35,7 @@ export interface AvailablePreset {
  */
 export function derivePresetContext(
   manifest: ManifestStateLoaded,
-  activeConfig: ActiveConfig
+  activeConfig: ActiveBuildContext
 ): PresetContext {
   const target = manifest.targets.find((t) => t.id === activeConfig.targetId);
   const emulator = target?.flag === "--emulator" || target?.flag === "-e";
