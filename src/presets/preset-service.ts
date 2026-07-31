@@ -1,10 +1,12 @@
 import * as vscode from "vscode";
 import * as fs from "fs/promises";
+import * as fsSync from "fs";
 import * as path from "path";
 import { PresetFile, PresetSource, PresetState } from "./preset-types";
 import { parsePresetFile } from "./parse-presets";
 
 const DEBOUNCE_MS = 300;
+const POLL_INTERVAL_MS = 1_000;
 
 async function loadPresetFile(uri: vscode.Uri, source: PresetSource): Promise<PresetFile> {
   try {
@@ -50,6 +52,8 @@ export class PresetService implements vscode.Disposable {
   private _sharedWatcher: vscode.FileSystemWatcher | undefined;
   private _userWatcher: vscode.FileSystemWatcher | undefined;
   private _debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  private _poller: ReturnType<typeof setInterval> | undefined;
+  private _fileStates = new Map<string, string>();
   private readonly _disposables: vscode.Disposable[] = [];
 
   /** Fires whenever the combined preset state changes. */
@@ -71,7 +75,9 @@ export class PresetService implements vscode.Disposable {
    */
   async start(): Promise<PresetState> {
     this._startWatchers();
-    return this._load();
+    const state = await this._load();
+    this._startPolling();
+    return state;
   }
 
   /** Forces an immediate reload from disk (used before Build/Clippy/Check launch). */
@@ -83,6 +89,7 @@ export class PresetService implements vscode.Disposable {
     if (this._debounceTimer !== undefined) {
       clearTimeout(this._debounceTimer);
     }
+    this._stopPolling();
     this._sharedWatcher?.dispose();
     this._userWatcher?.dispose();
     this._onDidChangeState.dispose();
@@ -110,8 +117,53 @@ export class PresetService implements vscode.Disposable {
       : { status: "loaded", shared, user, loadedAt, validationIssues };
 
     this._state = newState;
+    this._fileStates = this._captureFileStates();
     this._onDidChangeState.fire(newState);
     return newState;
+  }
+
+  /**
+   * Periodic fallback alongside the file-system watchers below: VS Code's
+   * watcher for a path outside any open workspace folder is not always
+   * reliable for every create/change/delete transition. Mirrors
+   * `ActiveArtifactFileWatcher`'s one-second reconciliation so preset
+   * changes are still picked up when a watcher event does not fire.
+   */
+  private _startPolling(): void {
+    this._stopPolling();
+    this._poller = setInterval(() => this._pollForChanges(), POLL_INTERVAL_MS);
+  }
+
+  private _stopPolling(): void {
+    if (this._poller !== undefined) {
+      clearInterval(this._poller);
+      this._poller = undefined;
+    }
+  }
+
+  private _pollForChanges(): void {
+    const next = this._captureFileStates();
+    const changed = [...next.entries()].some(([filePath, state]) => this._fileStates.get(filePath) !== state);
+    if (!changed) {
+      return;
+    }
+    this._scheduleReload();
+  }
+
+  private _captureFileStates(): Map<string, string> {
+    return new Map([
+      [this.sharedUri.fsPath, this._getFileState(this.sharedUri.fsPath)],
+      [this.userUri.fsPath, this._getFileState(this.userUri.fsPath)],
+    ]);
+  }
+
+  private _getFileState(filePath: string): string {
+    try {
+      const stat = fsSync.statSync(filePath);
+      return `${stat.size}:${stat.mtimeMs}`;
+    } catch {
+      return "missing";
+    }
   }
 
   private _startWatchers(): void {
