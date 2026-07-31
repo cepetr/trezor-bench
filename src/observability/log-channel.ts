@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { ManifestState } from "../manifest/manifest-types";
 import { PresetState } from "../presets/preset-types";
+import { PresetContext } from "../presets/preset-resolution";
 
 const CHANNEL_NAME = "Trezor Firmware Tools";
 let _channel: vscode.OutputChannel | undefined;
@@ -159,6 +160,34 @@ export function logOverridesClearedForPreset(
     `Active preset changed from "${previousPresetId}" to "${newPresetId}": ` +
       `discarded ${clearedKeys.length} build-option override(s) — ${clearedKeys.join(", ")}. ` +
       `Build Options now show the new preset's calculated values.`
+  );
+}
+
+/** Renders a preset context the way `when` filters name its fields. */
+function formatPresetContext(context: PresetContext): string {
+  return `model=${context.modelId}, project=${context.projectId}, emulator=${context.emulator}`;
+}
+
+/**
+ * Logs the discarding of explicit build-option overrides that follows a
+ * preset-context change — a new model, component, or emulator-ness, any of
+ * which can select different preset fragments and so calculate different
+ * values (FR-017). The sibling of `logOverridesClearedForPreset` for the
+ * other half of the pair an override is authored against.
+ */
+export function logOverridesClearedForContext(
+  previousContext: PresetContext,
+  newContext: PresetContext,
+  clearedKeys: ReadonlyArray<string>
+): void {
+  if (clearedKeys.length === 0) {
+    return;
+  }
+  log(
+    `Build context changed from (${formatPresetContext(previousContext)}) to ` +
+      `(${formatPresetContext(newContext)}): discarded ${clearedKeys.length} ` +
+      `build-option override(s) — ${clearedKeys.join(", ")}. Build Options now show ` +
+      `the values calculated for the new context.`
   );
 }
 

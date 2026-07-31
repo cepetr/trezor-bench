@@ -125,7 +125,7 @@ Multistate options are shown as header rows whose descriptions show the currentl
 
 Grouped options are shown under group headers, while ungrouped options appear directly in the section. Grouping follows manifest declaration order, so grouped and ungrouped options can be interleaved in one section rather than being reordered into separate blocks.
 
-Every available build option displays its preset-effective value — the value calculated from the active preset's matching shared and user preset fragments — when no explicit override is stored for that option. Only values that differ from the active preset's calculated effective value are visually emphasized; a stored selection that matches the active preset's effective value is not emphasized and does not produce an explicit build-option argument, even though it remains stored. Switching the active preset recalculates every option's preset-effective value and discards every stored override: an override is authored against one preset's calculated values, so immediately after a preset change every option shows the newly active preset's value and no option is emphasized. Overrides do survive edits to the preset inputs and changes to the active build context. Option descriptions and multistate state descriptions are available as tooltips on the corresponding rows.
+Every available build option displays its preset-effective value — the value calculated from the active preset's matching shared and user preset fragments — when no explicit override is stored for that option. Only values that differ from the active preset's calculated effective value are visually emphasized; a stored selection that matches the active preset's effective value is not emphasized and does not produce an explicit build-option argument, even though it remains stored. Switching the active preset recalculates every option's preset-effective value and discards every stored override: an override is authored against one preset's calculated values, so immediately after a preset change every option shows the newly active preset's value and no option is emphasized. Changing the active build context does the same whenever it changes which preset fragments apply — that is, when the selected model or component changes, or when the target changes between an emulator target and a hardware one — because preset fragments can be restricted by model, project, and emulator, so the same option can calculate to a different value in a different context. Overrides do survive edits to the preset inputs and a target change that keeps the same emulator-ness. Option descriptions and multistate state descriptions are available as tooltips on the corresponding rows.
 
 A build option whose calculated preset-effective value cannot be represented by that option — for example a checkbox given a non-boolean value, or a multistate option given a value that matches none of its declared states — reports the mismatch directly on its row using the `warning` icon and a description naming the unrepresentable value, instead of guessing a value. `Build`, `Clippy`, and `Check` are blocked while any available option reports a mismatch (see `Availability And Blocking Model`).
 
@@ -531,7 +531,7 @@ The extension persists build-option selections separately from the active model,
 
 When the extension restores build-option selections, it resolves them against the current active build context and current manifest.
 
-If an option is temporarily unavailable in the current context, its saved value is preserved but does not affect the visible UI or emitted build arguments until the option becomes available again.
+If an option is temporarily unavailable in the current context, its saved value is preserved but does not affect the visible UI or emitted build arguments until the option becomes available again — until a change to the active preset or to the applicable preset fragments discards it along with every other stored override, as described in `Build Option Management`.
 
 ### Default Values
 
@@ -551,7 +551,7 @@ If the manifest changes and previously saved state no longer matches the current
 
 - Saved model, target, and component ids are replaced with valid current entries, as described above.
 - Saved multistate selections that no longer match any current state are discarded, and the option's value falls back to its preset-effective value as described above.
-- Saved values for options that are merely unavailable in the current context are preserved and may become active again if the context changes back.
+- Saved values for options that are merely unavailable in the current context are preserved and may become active again if the context changes back, unless the change of context also changed which preset fragments apply — in that case every stored override is discarded, because each was authored against a calculation that no longer holds.
 
 This behavior ensures that the extension restores as much prior workspace state as possible while keeping the active UI and emitted build arguments consistent with the current manifest.
 

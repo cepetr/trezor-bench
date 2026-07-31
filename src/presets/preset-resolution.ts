@@ -50,6 +50,18 @@ export function derivePresetContext(
 }
 
 /**
+ * True when two preset contexts select the same preset fragments. Compares
+ * exactly the three fields a `when` filter can restrict on, so a target switch
+ * between two hardware targets — which changes `targetId` but not `emulator` —
+ * is correctly not a preset-context change. Used by the refresh seam to decide
+ * whether the calculated values every override was authored against still hold
+ * (FR-017).
+ */
+export function samePresetContext(a: PresetContext, b: PresetContext): boolean {
+  return a.modelId === b.modelId && a.projectId === b.projectId && a.emulator === b.emulator;
+}
+
+/**
  * Matching rule (FR-012): fields present are combined with AND, values
  * inside one field are combined with OR, an absent field matches all.
  */

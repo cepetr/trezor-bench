@@ -192,9 +192,11 @@ Resolution order for `value`:
 
 FR-016 falls out of step 3: a stored selection equal to `presetValue` yields `isOverride === false`, so it is neither emphasized nor emitted.
 
-FR-017 is enforced one level up, not by these steps: `normalizeBuildOptions` stays a pure comparison that never writes, and the active-preset refresh seam clears the whole persisted selection map before resolving whenever the active preset id changed. So a preset change leaves every option at its recalculated `presetValue` with `isOverride === false`, and an override authored against the previous preset is never re-compared against the new one.
+FR-017 is enforced one level up, not by these steps: `normalizeBuildOptions` stays a pure comparison that never writes, and the preset refresh seam clears the whole persisted selection map before resolving whenever the active preset id **or** the `PresetContext` changed. Both halves matter because `presetValue` is a function of the pair: fragments carry `when = { model, project, emulator }` filters, so the same option resolves differently across contexts even with the preset id fixed. So either change leaves every option at its recalculated `presetValue` with `isOverride === false`, and an override authored against a previous calculation is never re-compared against a new one.
 
-Clearing is unconditional across contexts, not scoped to the currently available options: the active preset is workspace-scoped, so selections held for other model/target/component contexts are equally stale for the new preset. It is skipped when no previous preset id is known (activation), so restoring a session does not wipe the selections it just restored.
+The `PresetContext` half compares `modelId`, `projectId`, and `emulator` — the three fields fragments can filter on. A target switch that leaves `emulator` unchanged is therefore not a trigger, and neither is a preset-input edit: those keep overrides and only re-run the `isOverride` comparison (FR-016).
+
+Clearing is unconditional across contexts, not scoped to the currently available options: the active preset is workspace-scoped, so selections held for other model/target/component contexts are equally stale for the new preset and context. It is skipped when no previous preset id or context is known (activation), so restoring a session does not wipe the selections it just restored.
 
 `BuildOption` also gains `readonly id?: string` (research Decision 4).
 

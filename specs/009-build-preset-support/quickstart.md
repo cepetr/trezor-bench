@@ -62,6 +62,9 @@ Under `test-fixtures/workspaces/`, mirroring the existing fixture-workspace conv
 7. Select that multistate option's `Default` (null-valued) state. **Expected**: the override is cleared and the row follows the preset again.
 8. Open `preset-value-mismatch/`. **Expected**: the affected option row reports the unrepresentable value, a diagnostic appears in the Problems view against `presets.toml`, and `Build`, `Clippy`, and `Check` are disabled while `Clean` stays enabled.
 9. Regression for the reported defect: in a workspace whose `tfTools.buildOptions` was written before this feature (a checkbox stored `false` that a `[[defaults]]` fragment sets to `true`), confirm the row is unchecked and emphasized on load, then switch preset once. **Expected**: the stale selection is discarded, the row follows the `[[defaults]]` value, and the `Trezor Firmware Tools` channel records which overrides were dropped.
+10. With an override in place, change `Target` from `Hardware` to `Emulator`. **Expected**: the override is discarded and every option shows the value calculated for the emulator context — `preset-valid/` conditions its `[[defaults]]` fragments on `emulator`, so `Debug Console` becomes `SWO` and `Frozen` becomes unchecked, with no row emphasized and a channel entry naming the dropped overrides.
+11. Repeat with `Model` and with `Component`. **Expected**: the same discard, since preset fragments can be restricted by model and project too.
+12. In a manifest with two non-emulator targets, switch between them with an override in place. **Expected**: the override survives — the preset context is unchanged, so the calculated values it was authored against still hold.
 
 ### US3 — Run preset-aware workflows
 

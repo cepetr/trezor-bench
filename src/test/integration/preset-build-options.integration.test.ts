@@ -9,7 +9,11 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import * as path from "path";
 import { PresetService } from "../../presets/preset-service";
-import { derivePresetContext, computePresetEffectiveValues } from "../../presets/preset-resolution";
+import {
+  derivePresetContext,
+  samePresetContext,
+  computePresetEffectiveValues,
+} from "../../presets/preset-resolution";
 import {
   normalizeBuildOptions,
   readBuildOptions,
@@ -86,9 +90,18 @@ function manifest(): ManifestStateLoaded {
   return {
     status: "loaded",
     manifestUri: vscode.Uri.file("/workspace/tf-tools-manifest.yaml"),
-    models: [{ kind: "model", id: "T2T1", name: "Trezor Model T" }],
-    targets: [{ kind: "target", id: "hw", name: "Hardware", shortName: "HW", flag: null }],
-    components: [{ kind: "component", id: "firmware", name: "Firmware" }],
+    models: [
+      { kind: "model", id: "T2T1", name: "Trezor Model T" },
+      { kind: "model", id: "T3W1", name: "Trezor Model T3" },
+    ],
+    targets: [
+      { kind: "target", id: "hw", name: "Hardware", shortName: "HW", flag: null },
+      { kind: "target", id: "emu", name: "Emulator", shortName: "EMU", flag: "--emulator" },
+    ],
+    components: [
+      { kind: "component", id: "firmware", name: "Firmware" },
+      { kind: "component", id: "bootloader", name: "Bootloader" },
+    ],
     buildOptions: BUILD_OPTIONS,
     hasWorkflowBlockingIssues: false,
     hasDebugBlockingIssues: false,
@@ -110,7 +123,8 @@ function activeConfig(overrides: Partial<ActiveConfig> = {}): ActiveConfig {
 async function resolveFor(
   fixtureName: string,
   activePresetId: string,
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
+  config: ActiveConfig = activeConfig()
 ): Promise<ResolvedOption[]> {
   const { shared, user } = fixtureUris(fixtureName);
   const service = new PresetService(shared, user);
@@ -120,14 +134,17 @@ async function resolveFor(
   if (state.status !== "loaded") {
     return [];
   }
-  const presetCtx = derivePresetContext(manifest(), activeConfig());
+  const presetCtx = derivePresetContext(manifest(), config);
   const effective = computePresetEffectiveValues(BUILD_OPTIONS, state.shared, state.user, activePresetId, presetCtx);
-  return normalizeBuildOptions(BUILD_OPTIONS, readBuildOptions(context), HW_CONTEXT_ADAPTER, effective);
+  // normalizeBuildOptions's BuildContext shape (modelId/targetId/componentId) —
+  // distinct from PresetContext (modelId/projectId/emulator).
+  const buildCtx = {
+    modelId: config.modelId,
+    targetId: config.targetId,
+    componentId: config.componentId,
+  };
+  return normalizeBuildOptions(BUILD_OPTIONS, readBuildOptions(context), buildCtx, effective);
 }
-
-// normalizeBuildOptions's BuildContext shape (modelId/targetId/componentId) —
-// distinct from PresetContext (modelId/projectId/emulator).
-const HW_CONTEXT_ADAPTER = { modelId: "T2T1", targetId: "hw", componentId: "firmware" };
 
 function findResolved(resolved: ResolvedOption[], key: string): ResolvedOption {
   const found = resolved.find((r) => r.option.key === key);
@@ -257,6 +274,92 @@ suite("Preset-relative Build Options – override emphasis round-trip", () => {
     const frozenItem = children.find((c) => c instanceof BuildOptionCheckboxItem) as BuildOptionCheckboxItem;
     assert.ok(frozenItem, "expected a checkbox row for frozen");
     assert.deepStrictEqual(frozenItem.label, { label: "Frozen", highlights: [[0, 6]] });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A preset-context change retires overrides too (FR-017)
+//
+// preset-valid/presets.toml conditions its [[defaults]] fragments on
+// `emulator`, so the same option calculates differently across contexts even
+// with the preset id fixed — which is exactly why an override cannot survive
+// the change.
+// ---------------------------------------------------------------------------
+
+suite("Preset-relative Build Options – preset-context change discards overrides", () => {
+  const HW = activeConfig({ targetId: "hw" });
+  const EMU = activeConfig({ targetId: "emu" });
+
+  test("the [[defaults]] layer calculates different values for the hardware and emulator contexts", async () => {
+    const context = createFakeContext();
+
+    const onHw = await resolveFor("preset-valid", "default", context, HW);
+    assert.strictEqual(findResolved(onHw, "frozen").value, true, "when = { emulator = false } applies");
+    assert.strictEqual(findResolved(onHw, "dbg_console").value, "null");
+
+    const onEmu = await resolveFor("preset-valid", "default", context, EMU);
+    assert.strictEqual(findResolved(onEmu, "dbg_console").value, "swo", "when = { emulator = true } applies");
+    assert.strictEqual(findResolved(onEmu, "frozen").value, false, "the hardware-only fragment no longer applies");
+  });
+
+  test("an override authored under the hardware context is discarded when the target becomes the emulator", async () => {
+    const context = createFakeContext();
+
+    // Hardware context calculates dbg-console to its null state; override it.
+    await writeBuildOption(context, "dbg_console", "vcp");
+    const beforeSwitch = await resolveFor("preset-valid", "default", context, HW);
+    assert.strictEqual(findResolved(beforeSwitch, "dbg_console").value, "vcp");
+    assert.strictEqual(findResolved(beforeSwitch, "dbg_console").isOverride, true);
+
+    // The refresh seam sees a changed preset context and clears the map.
+    assert.strictEqual(
+      samePresetContext(derivePresetContext(manifest(), HW), derivePresetContext(manifest(), EMU)),
+      false,
+      "crossing the emulator boundary is a preset-context change"
+    );
+    const cleared = await discardBuildOptionOverrides(context);
+    assert.deepStrictEqual(cleared, ["dbg_console"]);
+
+    const afterSwitch = await resolveFor("preset-valid", "default", context, EMU);
+    assert.strictEqual(findResolved(afterSwitch, "dbg_console").value, "swo", "follows the emulator [[defaults]] value");
+    for (const r of afterSwitch) {
+      assert.strictEqual(r.isOverride, false, `${r.option.key} should not be emphasized after a context change`);
+    }
+
+    // Switching back does not resurrect it.
+    const backToHw = await resolveFor("preset-valid", "default", context, HW);
+    assert.strictEqual(findResolved(backToHw, "dbg_console").value, "null");
+    assert.strictEqual(findResolved(backToHw, "dbg_console").isOverride, false);
+  });
+
+  test("a model or component change is a preset-context change even when the calculated values are identical", async () => {
+    // The discard is unconditional on the pair changing, not scoped to the
+    // options whose value moved: overrides are held workspace-wide, so a
+    // context they were not authored under must not inherit them.
+    const context = createFakeContext();
+    const base = derivePresetContext(manifest(), HW);
+
+    assert.strictEqual(
+      samePresetContext(base, derivePresetContext(manifest(), activeConfig({ modelId: "T3W1" }))),
+      false
+    );
+    assert.strictEqual(
+      samePresetContext(base, derivePresetContext(manifest(), activeConfig({ componentId: "bootloader" }))),
+      false
+    );
+
+    await writeBuildOption(context, "frozen", false);
+    const onOtherModel = await resolveFor("preset-valid", "default", context, activeConfig({ modelId: "T3W1" }));
+    assert.strictEqual(
+      findResolved(onOtherModel, "frozen").presetValue,
+      true,
+      "no fragment restricts on model, so the calculated value is unchanged"
+    );
+
+    assert.deepStrictEqual(await discardBuildOptionOverrides(context), ["frozen"]);
+    const afterDiscard = await resolveFor("preset-valid", "default", context, activeConfig({ modelId: "T3W1" }));
+    assert.strictEqual(findResolved(afterDiscard, "frozen").value, true);
+    assert.strictEqual(findResolved(afterDiscard, "frozen").isOverride, false);
   });
 });
 

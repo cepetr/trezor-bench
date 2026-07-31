@@ -6,7 +6,7 @@
  */
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { derivePresetContext, listAvailablePresets } from "../../../presets/preset-resolution";
+import { derivePresetContext, samePresetContext, listAvailablePresets } from "../../../presets/preset-resolution";
 import { PresetFile, PresetFragment } from "../../../presets/preset-types";
 import { ManifestStateLoaded } from "../../../manifest/manifest-types";
 import { ActiveConfig } from "../../../configuration/active-config";
@@ -100,6 +100,52 @@ suite("derivePresetContext", () => {
     const m = manifest([{ kind: "target", id: "hw", name: "Hardware", flag: null }]);
     const ctx = derivePresetContext(m, config({ componentId: "firmware" }));
     assert.strictEqual(ctx.projectId, "firmware");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PresetContext comparison — the override-discard predicate (FR-017)
+// ---------------------------------------------------------------------------
+
+suite("samePresetContext", () => {
+  const base = { modelId: "T2T1", projectId: "firmware", emulator: false };
+
+  test("two contexts with the same three fields are the same context", () => {
+    assert.strictEqual(samePresetContext(base, { ...base }), true);
+  });
+
+  test("a different model is a different context", () => {
+    assert.strictEqual(samePresetContext(base, { ...base, modelId: "T3W1" }), false);
+  });
+
+  test("a different project is a different context", () => {
+    assert.strictEqual(samePresetContext(base, { ...base, projectId: "bootloader" }), false);
+  });
+
+  test("a different emulator flag is a different context", () => {
+    assert.strictEqual(samePresetContext(base, { ...base, emulator: true }), false);
+  });
+
+  test("switching between two hardware targets is not a preset-context change", () => {
+    // Only `emulator` reaches a `when` filter, so a target id change that does
+    // not cross the emulator boundary must not retire build-option overrides.
+    const m = manifest([
+      { kind: "target", id: "hw", name: "Hardware", flag: null },
+      { kind: "target", id: "hw-alt", name: "Hardware (alt)", flag: "--alt" },
+    ]);
+    const before = derivePresetContext(m, config({ targetId: "hw" }));
+    const after = derivePresetContext(m, config({ targetId: "hw-alt" }));
+    assert.strictEqual(samePresetContext(before, after), true);
+  });
+
+  test("switching from a hardware target to the emulator is a preset-context change", () => {
+    const m = manifest([
+      { kind: "target", id: "hw", name: "Hardware", flag: null },
+      { kind: "target", id: "emu", name: "Emulator", flag: "--emulator" },
+    ]);
+    const before = derivePresetContext(m, config({ targetId: "hw" }));
+    const after = derivePresetContext(m, config({ targetId: "emu" }));
+    assert.strictEqual(samePresetContext(before, after), false);
   });
 });
 
