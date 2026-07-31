@@ -99,6 +99,8 @@ let _manifestService: ManifestService | undefined;
 let _presetService: PresetService | undefined;
 let _presetState: PresetState | undefined;
 let _presetEffectiveValues: ReadonlyMap<string, PresetEffectiveValue> = new Map();
+/** Backs the `tfTools.presetBlocked` context key (file-level invalidity or any available-option mismatch). */
+let _presetBlocked = false;
 let _presetStateSubscription: vscode.Disposable | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
 let _configurationTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
@@ -237,6 +239,8 @@ async function refreshPresetsAndActiveConfig(
   const manifestState = _manifestState;
   if (!manifestState || manifestState.status !== "loaded") {
     _presetEffectiveValues = new Map();
+    _presetBlocked = false;
+    vscode.commands.executeCommand("setContext", "tfTools.presetBlocked", false);
     _treeProvider?.updatePresets(_presetState, undefined, []);
     return;
   }
@@ -265,6 +269,11 @@ async function refreshPresetsAndActiveConfig(
       ? computePresetEffectiveValues(loaded.buildOptions, _presetState.shared, _presetState.user, newPresetId, presetCtx)
       : new Map();
   _resolvedOptions = computeResolvedOptions(loaded, normalizedConfig, context, _presetEffectiveValues);
+
+  _presetBlocked =
+    _presetState?.status === "invalid" ||
+    _resolvedOptions.some((r) => r.available && r.presetState === "mismatch");
+  vscode.commands.executeCommand("setContext", "tfTools.presetBlocked", _presetBlocked);
 
   _treeProvider?.update(loaded, normalizedConfig, _resolvedOptions);
   _treeProvider?.updatePresets(_presetState, newPresetId, available);
@@ -947,14 +956,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   // --- Workflow commands: Build / Clippy / Check / Clean. ---
+  // Build/Clippy/Check reload preset inputs and recompute before deriving
+  // arguments (FR-020, research Decision 13); Clean is exempt from preset
+  // blocking entirely (FR-025, research Decision 11).
   const registerWorkflowCommand = (kind: WorkflowKind): vscode.Disposable =>
     vscode.commands.registerCommand(`tfTools.${kind.toLowerCase()}`, async () => {
+      if (kind !== "Clean") {
+        await _presetService?.reload();
+        await refreshPresetsAndActiveConfig(context);
+      }
+
       const state = _manifestState;
       const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
       const blockReason = evaluateWorkflowPreconditions({
         manifestStatus: state?.status ?? "missing",
         hasWorkflowBlockingIssues: loaded?.hasWorkflowBlockingIssues ?? false,
         workspaceSupported: isWorkflowWorkspaceSupported(),
+        presetsInvalid: kind !== "Clean" && _presetBlocked,
       });
 
       if (blockReason !== "no-block") {
@@ -972,7 +990,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return;
       }
 
-      const task = createWorkflowTask(kind, wfCtx, workspaceFolder, _resolvedOptions);
+      const task = createWorkflowTask(kind, wfCtx, workspaceFolder, _resolvedOptions, activePresetId(activeConfig));
       await executeWorkflowTask(task, kind);
     });
 
@@ -1027,6 +1045,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _manifestState?.status === "loaded" ? (_manifestState as ManifestStateLoaded) : undefined,
     getActiveConfig: () => _activeConfig,
     getResolvedOptions: () => _resolvedOptions,
+    getActivePresetId: () => activePresetId(_activeConfig),
     getWorkspaceFolder: () => workspaceFolder,
   });
   context.subscriptions.push(vscode.tasks.registerTaskProvider(TASK_TYPE, taskProvider));
