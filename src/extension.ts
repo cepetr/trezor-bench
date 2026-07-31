@@ -1,7 +1,9 @@
 import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder, isWorkflowWorkspaceSupported } from "./workspace/workspace-guard";
-import { resolveManifestUri, isStatusBarEnabled, resolveArtifactsPath, resolveDebugTemplatesPath } from "./workspace/settings";
+import { resolveManifestUri, isStatusBarEnabled, resolveArtifactsPath, resolveDebugTemplatesPath, resolvePresetUris } from "./workspace/settings";
 import { ManifestService } from "./manifest/manifest-service";
+import { PresetService } from "./presets/preset-service";
+import { PresetState } from "./presets/preset-types";
 import { ConfigurationTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/configuration-tree";
 import { StatusBarPresenter } from "./ui/status-bar";
 import {
@@ -11,8 +13,13 @@ import {
   logError,
   revealLogs,
   logManifestState,
+  logPresetState,
 } from "./observability/log-channel";
-import { disposeDiagnostics, handleManifestStateDiagnostics } from "./observability/diagnostics";
+import {
+  disposeDiagnostics,
+  handleManifestStateDiagnostics,
+  handlePresetStateDiagnostics,
+} from "./observability/diagnostics";
 import {
   restoreActiveConfig,
   selectModel,
@@ -77,6 +84,8 @@ import {
 } from "./debug/run-debug-provider";
 
 let _manifestService: ManifestService | undefined;
+let _presetService: PresetService | undefined;
+let _presetStateSubscription: vscode.Disposable | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
 let _configurationTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _statusBar: StatusBarPresenter | undefined;
@@ -610,6 +619,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           logError(`[tf-tools] ${message}`);
         });
       }
+      if (e.affectsConfiguration("tfTools.cargoWorkspacePath", workspaceFolder.uri)) {
+        // Restart the preset service against the newly resolved xtask/tf-tools
+        // directory (research Decision 2, Decision 14).
+        _presetStateSubscription?.dispose();
+        _presetService?.dispose();
+        const newPresetUris = resolvePresetUris(workspaceFolder);
+        _presetService = new PresetService(newPresetUris.shared, newPresetUris.user);
+        _presetStateSubscription = _presetService.onDidChangeState(onPresetStateChange);
+        _presetService.start().catch((err) => {
+          const detail = err instanceof Error ? err.message : String(err);
+          const message = `Failed to start preset service after cargo workspace path change: ${detail}`;
+          logError(`[tf-tools] ${message}`);
+        });
+      }
     })
   );
 
@@ -647,6 +670,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   };
 
   _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
+
+  // --- Preset service (feature 009) ---
+  const presetUris = resolvePresetUris(workspaceFolder);
+  _presetService = new PresetService(presetUris.shared, presetUris.user);
+  context.subscriptions.push({
+    dispose: () => {
+      _presetStateSubscription?.dispose();
+      _presetService?.dispose();
+    },
+  });
+
+  // Connect preset state changes to diagnostics and logs. Available-preset
+  // computation, normalization, and tree/workflow refresh are wired in as
+  // later user-story tasks land (US1-US3).
+  const onPresetStateChange = (state: PresetState): void => {
+    handlePresetStateDiagnostics(state);
+    logPresetState(state);
+  };
+
+  _presetStateSubscription = _presetService.onDidChangeState(onPresetStateChange);
 
   // --- Commands ---
   context.subscriptions.push(
@@ -925,8 +968,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  // --- Start manifest service (loads and begins watching) ---
+  // --- Start manifest and preset services (load and begin watching) ---
   await _manifestService.start();
+  await _presetService.start();
 
   // Schedule IntelliSense refresh on activation.
   refreshArtifactFileWatcher();
@@ -936,10 +980,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 export function deactivate(): void {
   _manifestStateSubscription?.dispose();
   _manifestStateSubscription = undefined;
+  _presetStateSubscription?.dispose();
+  _presetStateSubscription = undefined;
   _debugConfigProviderRegistration?.dispose();
   _debugConfigProviderRegistration = undefined;
   _manifestService?.dispose();
   _manifestService = undefined;
+  _presetService?.dispose();
+  _presetService = undefined;
   _treeProvider?.dispose();
   _treeProvider = undefined;
   _configurationTreeView?.dispose();
