@@ -142,6 +142,26 @@ export function logPresetNormalization(previousPresetId: string, normalizedPrese
   );
 }
 
+/**
+ * Logs the discarding of explicit build-option overrides that follows an
+ * active-preset change (FR-017). Always paired with a visible Build Options
+ * refresh, so the log is the persistent record of a visible action.
+ */
+export function logOverridesClearedForPreset(
+  previousPresetId: string,
+  newPresetId: string,
+  clearedKeys: ReadonlyArray<string>
+): void {
+  if (clearedKeys.length === 0) {
+    return;
+  }
+  log(
+    `Active preset changed from "${previousPresetId}" to "${newPresetId}": ` +
+      `discarded ${clearedKeys.length} build-option override(s) — ${clearedKeys.join(", ")}. ` +
+      `Build Options now show the new preset's calculated values.`
+  );
+}
+
 /** Keys already logged as unknown-to-the-manifest, to avoid repeat entries. */
 const _loggedUnknownPresetKeys = new Set<string>();
 

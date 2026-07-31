@@ -57,10 +57,11 @@ Under `test-fixtures/workspaces/`, mirroring the existing fixture-workspace conv
 2. Switch to a named preset that changes an option. **Expected**: that option's displayed value changes without any stored selection being written.
 3. Toggle a checkbox away from its preset-effective value. **Expected**: the row is emphasized and its group header is emphasized when collapsed.
 4. Toggle it back to match the preset-effective value. **Expected**: emphasis clears.
-5. Switch to a preset whose effective value equals a stored selection. **Expected**: emphasis clears without the stored selection being erased; switching back restores the emphasis.
+5. With that override still in place, switch to any other preset. **Expected**: the override is discarded — every option shows the new preset's calculated value and no row is emphasized. Switching back does not resurrect the override.
 6. On a multistate option with no manifest-authored default, with no stored selection. **Expected**: the active state is the one inferred from the preset-effective value.
 7. Select that multistate option's `Default` (null-valued) state. **Expected**: the override is cleared and the row follows the preset again.
 8. Open `preset-value-mismatch/`. **Expected**: the affected option row reports the unrepresentable value, a diagnostic appears in the Problems view against `presets.toml`, and `Build`, `Clippy`, and `Check` are disabled while `Clean` stays enabled.
+9. Regression for the reported defect: in a workspace whose `tfTools.buildOptions` was written before this feature (a checkbox stored `false` that a `[[defaults]]` fragment sets to `true`), confirm the row is unchecked and emphasized on load, then switch preset once. **Expected**: the stale selection is discarded, the row follows the `[[defaults]]` value, and the `Trezor Firmware Tools` channel records which overrides were dropped.
 
 ### US3 — Run preset-aware workflows
 

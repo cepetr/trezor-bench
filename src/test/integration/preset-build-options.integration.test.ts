@@ -14,6 +14,7 @@ import {
   normalizeBuildOptions,
   readBuildOptions,
   writeBuildOption,
+  discardBuildOptionOverrides,
   ResolvedOption,
 } from "../../configuration/build-options";
 import { BuildOption } from "../../manifest/manifest-types";
@@ -178,7 +179,7 @@ suite("Preset-relative Build Options – switching presets (Scenario 2.2)", () =
 // ---------------------------------------------------------------------------
 
 suite("Preset-relative Build Options – override emphasis round-trip", () => {
-  test("overriding emphasizes the row; switching to a preset with the same effective value clears emphasis without erasing the override", async () => {
+  test("an override is emphasized under the preset it was authored against, and clears once it matches", async () => {
     const context = createFakeContext();
 
     // Default's effective frozen is true; override it to false.
@@ -187,17 +188,56 @@ suite("Preset-relative Build Options – override emphasis round-trip", () => {
     assert.strictEqual(findResolved(underDefault, "frozen").value, false);
     assert.strictEqual(findResolved(underDefault, "frozen").isOverride, true);
 
-    // "test" also resolves frozen to false (user fragment overrides shared) — emphasis clears.
+    // Resolution against a preset that also resolves frozen to false (the user
+    // fragment overrides the shared one) clears the emphasis by comparison
+    // alone; resolution itself never writes.
     const underTest = await resolveFor("preset-valid", "test", context);
     assert.strictEqual(findResolved(underTest, "frozen").value, false);
     assert.strictEqual(findResolved(underTest, "frozen").isOverride, false, "matches test's effective value");
+    assert.strictEqual(readBuildOptions(context)?.values.frozen, false, "resolution does not rewrite the map");
+  });
 
-    // Switching back to Default (effective true again) restores the emphasis —
-    // the stored override was never erased.
+  test("changing the active preset discards the override, so the new preset's values show with nothing emphasized (FR-017)", async () => {
+    const context = createFakeContext();
+
+    // Default's effective frozen is true; override it to false and confirm it
+    // shadows the [[defaults]] value.
+    await writeBuildOption(context, "frozen", false);
+    const beforeSwitch = await resolveFor("preset-valid", "default", context);
+    assert.strictEqual(findResolved(beforeSwitch, "frozen").isOverride, true);
+
+    // The refresh seam runs this whenever the active preset id changes.
+    const cleared = await discardBuildOptionOverrides(context);
+    assert.deepStrictEqual(cleared, ["frozen"]);
+    assert.deepStrictEqual(readBuildOptions(context)?.values, {}, "the persisted map is emptied");
+
+    const afterSwitch = await resolveFor("preset-valid", "dev", context);
+    assert.strictEqual(findResolved(afterSwitch, "frozen").value, true, "follows dev's calculated value");
+    for (const r of afterSwitch) {
+      assert.strictEqual(r.isOverride, false, `${r.option.key} should not be emphasized after a preset change`);
+    }
+
+    // Switching back does not resurrect it.
     const backToDefault = await resolveFor("preset-valid", "default", context);
-    assert.strictEqual(findResolved(backToDefault, "frozen").value, false);
-    assert.strictEqual(findResolved(backToDefault, "frozen").isOverride, true);
-    assert.strictEqual(readBuildOptions(context)?.values.frozen, false, "override remains persisted");
+    assert.strictEqual(findResolved(backToDefault, "frozen").value, true);
+    assert.strictEqual(findResolved(backToDefault, "frozen").isOverride, false);
+  });
+
+  test("a stale pre-feature checkbox false stops shadowing its [[defaults]] value after one preset change", async () => {
+    // The reported defect, end to end: a workspace whose build-option record
+    // predates presets stores `false` for an option that [[defaults]] sets to
+    // true, which reads as an override no checkbox interaction can undo.
+    const context = createFakeContext();
+    await writeBuildOption(context, "frozen", false);
+
+    const onLoad = await resolveFor("preset-valid", "default", context);
+    assert.strictEqual(findResolved(onLoad, "frozen").value, false);
+    assert.strictEqual(findResolved(onLoad, "frozen").isOverride, true, "stale value shadows [[defaults]]");
+
+    await discardBuildOptionOverrides(context);
+    const afterFirstSwitch = await resolveFor("preset-valid", "default", context);
+    assert.strictEqual(findResolved(afterFirstSwitch, "frozen").value, true, "the [[defaults]] value is visible again");
+    assert.strictEqual(findResolved(afterFirstSwitch, "frozen").isOverride, false);
   });
 
   test("the tree row and its rendering reflect the override state", async () => {

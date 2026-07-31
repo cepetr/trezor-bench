@@ -192,7 +192,9 @@ Resolution order for `value`:
 
 FR-016 falls out of step 3: a stored selection equal to `presetValue` yields `isOverride === false`, so it is neither emphasized nor emitted.
 
-FR-017 falls out of the same steps: stored selections are never rewritten when the active preset changes, so a still-differing override survives while `presetValue` is recalculated.
+FR-017 is enforced one level up, not by these steps: `normalizeBuildOptions` stays a pure comparison that never writes, and the active-preset refresh seam clears the whole persisted selection map before resolving whenever the active preset id changed. So a preset change leaves every option at its recalculated `presetValue` with `isOverride === false`, and an override authored against the previous preset is never re-compared against the new one.
+
+Clearing is unconditional across contexts, not scoped to the currently available options: the active preset is workspace-scoped, so selections held for other model/target/component contexts are equally stale for the new preset. It is skipped when no previous preset id is known (activation), so restoring a session does not wipe the selections it just restored.
 
 `BuildOption` also gains `readonly id?: string` (research Decision 4).
 

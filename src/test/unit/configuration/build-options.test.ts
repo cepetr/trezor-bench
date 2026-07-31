@@ -8,6 +8,7 @@ import {
   BuildOptionsState,
   readBuildOptions,
   writeBuildOption,
+  discardBuildOptionOverrides,
 } from "../../../configuration/build-options";
 import { BuildOption } from "../../../manifest/manifest-types";
 import { PresetEffectiveValue } from "../../../presets/preset-resolution";
@@ -116,6 +117,75 @@ suite("readBuildOptions / writeBuildOption", () => {
     await writeBuildOption(extCtx, "debug", true);
     const state = readBuildOptions(extCtx);
     assert.ok(state!.persistedAt >= before);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// clearBuildOptions — the FR-017 preset-change discard
+// ---------------------------------------------------------------------------
+
+suite("discardBuildOptionOverrides (FR-017)", () => {
+  test("discards every stored selection so all options fall back to preset-effective values", async () => {
+    const extCtx = makeExtContext();
+    await writeBuildOption(extCtx, "frozen", false);
+    await writeBuildOption(extCtx, "pyopt", "false");
+    assert.deepStrictEqual(readBuildOptions(extCtx)!.values, { frozen: false, pyopt: "false" });
+
+    const cleared = await discardBuildOptionOverrides(extCtx);
+    assert.deepStrictEqual(cleared.sort(), ["frozen", "pyopt"], "returns the discarded keys for the log record");
+    assert.deepStrictEqual(readBuildOptions(extCtx)!.values, {});
+
+    // Resolution now follows the preset with nothing emphasized.
+    const opts = [checkbox("frozen", "--frozen")];
+    const presets = new Map([["frozen", resolvedPreset("frozen", true)]]);
+    const resolved = normalizeBuildOptions(opts, readBuildOptions(extCtx), ctx, presets);
+    assert.strictEqual(resolved[0].value, true, "follows the preset-effective value again");
+    assert.strictEqual(resolved[0].isOverride, false);
+  });
+
+  test("clears a stale pre-feature checkbox false that was shadowing a [[defaults]] value", async () => {
+    // The reported defect: before presets existed, unchecking a checkbox
+    // persisted `false`, which now reads as an override and suppresses the
+    // defaults layer with no way to undo it.
+    const extCtx = makeExtContext({
+      [BUILD_OPTIONS_KEY]: { values: { pyopt: false }, persistedAt: "legacy" },
+    });
+    const opts = [checkbox("pyopt", "--pyopt")];
+    const presets = new Map([["pyopt", resolvedPreset("pyopt", true)]]);
+
+    const before = normalizeBuildOptions(opts, readBuildOptions(extCtx), ctx, presets);
+    assert.strictEqual(before[0].value, false);
+    assert.strictEqual(before[0].isOverride, true, "the stale value shadows the [[defaults]] value");
+
+    await discardBuildOptionOverrides(extCtx);
+    const after = normalizeBuildOptions(opts, readBuildOptions(extCtx), ctx, presets);
+    assert.strictEqual(after[0].value, true);
+    assert.strictEqual(after[0].isOverride, false);
+  });
+
+  test("clears selections held for other build contexts too, since the active preset is workspace-scoped", async () => {
+    const extCtx = makeExtContext();
+    // An option that is unavailable in the current context still holds a value
+    // that is just as stale for the newly active preset.
+    await writeBuildOption(extCtx, "storage_insecure_testing_mode", true);
+    const cleared = await discardBuildOptionOverrides(extCtx);
+    assert.deepStrictEqual(cleared, ["storage_insecure_testing_mode"]);
+    assert.deepStrictEqual(readBuildOptions(extCtx)!.values, {});
+  });
+
+  test("writes nothing on a workspace that never stored a selection", async () => {
+    const extCtx = makeExtContext();
+    const cleared = await discardBuildOptionOverrides(extCtx);
+    assert.deepStrictEqual(cleared, []);
+    assert.strictEqual(readBuildOptions(extCtx), undefined, "no empty record is created");
+  });
+
+  test("sets persistedAt timestamp", async () => {
+    const before = new Date().toISOString();
+    const extCtx = makeExtContext();
+    await writeBuildOption(extCtx, "debug", true);
+    await discardBuildOptionOverrides(extCtx);
+    assert.ok(readBuildOptions(extCtx)!.persistedAt >= before);
   });
 });
 
@@ -273,7 +343,7 @@ suite("normalizeBuildOptions – presetValue, presetState, isOverride", () => {
     assert.strictEqual(resolved[0].isOverride, true);
   });
 
-  test("switching preset recalculates presetValue while preserving a still-differing override (FR-017)", () => {
+  test("resolution is a pure re-comparison: the same stored map against a new presetValue, never rewritten (FR-016)", () => {
     const saved: BuildOptionsState = { values: { pyopt: "false" }, persistedAt: "t" };
     const states = [
       { id: "null", label: "Default", flag: "" },
@@ -287,12 +357,14 @@ suite("normalizeBuildOptions – presetValue, presetState, isOverride", () => {
     assert.strictEqual(firstResolved[0].value, "false");
     assert.strictEqual(firstResolved[0].isOverride, true);
 
-    // Switching the active preset changes presetValue; the untouched stored
-    // override is preserved and re-compared, not erased.
+    // A different presetValue re-runs the comparison. Discarding overrides on a
+    // preset change is the refresh seam's job (FR-017, see the clearBuildOptions
+    // suite below); normalizeBuildOptions itself never writes.
     const secondPreset = new Map([["pyopt", resolvedPreset("pyopt", "false")]]);
     const secondResolved = normalizeBuildOptions(opts, saved, ctx, secondPreset);
     assert.strictEqual(secondResolved[0].value, "false");
     assert.strictEqual(secondResolved[0].isOverride, false, "now equals the new preset-effective value");
+    assert.deepStrictEqual(saved.values, { pyopt: "false" }, "the stored map is not mutated by resolution");
   });
 
   test("a stored value equal to the null-valued state id is treated as no explicit selection (research Decision 8 rule 3)", () => {

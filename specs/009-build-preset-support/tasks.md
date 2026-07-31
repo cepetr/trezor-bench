@@ -157,6 +157,19 @@ description: "Task list for Build Preset Support"
 
 ---
 
+## Phase 7: Defect Fix — overrides shadowed the `[[defaults]]` layer
+
+**Purpose**: Manual testing found that switching presets showed only the selected named fragment's values while `[[defaults]]` values appeared unapplied. Diagnosis: a stored selection always wins over the preset-effective value, so a value persisted under the pre-preset semantics — where unchecking a checkbox stored `false` rather than "unset" — reads as an override and permanently suppresses the calculated value, with no affordance to clear it (checkboxes have no equivalent of the multistate null state). Resolution: an override belongs to the preset it was authored against, so changing the active preset now retires all of them. This revises FR-017 from "preserve overrides" to "discard overrides".
+
+- [X] T055 Revise FR-017 in `specs/009-build-preset-support/spec.md` (plus US2 acceptance scenarios 4 and 6 and the override `Assumptions` entry), the FR-017 note in `specs/009-build-preset-support/data-model.md` §4, the override bullet in `specs/009-build-preset-support/plan.md` `Critical Detail Reconciliation`, `Build Option Management` in `specs/product-spec.md`, and the `build-option override` entry in `specs/glossary.md`, so all five state that an active-preset change discards every override while preset-input edits and build-context changes do not
+- [X] T056 Add `discardBuildOptionOverrides` to `src/configuration/build-options.ts` — clears the whole persisted selection map and returns the discarded keys, writing nothing when the map is already empty — and add `logOverridesClearedForPreset` to `src/observability/log-channel.ts` (FR-017, Principle IV)
+- [X] T057 Call `discardBuildOptionOverrides` from `refreshPresetsAndActiveConfig` in `src/extension.ts` inside the existing changed-preset-id guard, before preset-effective values and resolved options are recomputed, so both a user selection and a normalization-driven change land with nothing emphasized — and so the `undefined` previous id at activation never wipes a restored session (FR-017)
+- [X] T058 [P] Cover it in `src/test/unit/configuration/build-options.test.ts` (a `discardBuildOptionOverrides` suite including the stale pre-feature `false` case and the no-write-when-empty case) and in `src/test/integration/preset-build-options.integration.test.ts` (a preset change clears the map, the new preset's values show with nothing emphasized, switching back does not resurrect the override, and the reported defect resolves after one switch); re-scope the former FR-017 unit test to FR-016's pure re-comparison
+- [X] T059 [P] Update the US2 manual walkthrough in `specs/009-build-preset-support/quickstart.md`: replace the "switching back restores the emphasis" step and add a regression step for a pre-feature build-option record
+- [X] T060 Re-run `npm run lint`, `npm run compile`, and `npm run test:unit` (803 passing, 0 lint errors). `npm test` could not be re-run in the current sandbox — the `@vscode/test-electron` launcher rejects its own CLI flags before any test code loads — so the integration additions from T058 still need one local `npm test` run
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

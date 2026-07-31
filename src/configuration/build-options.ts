@@ -63,6 +63,39 @@ export async function writeBuildOption(
   return state;
 }
 
+/**
+ * Discards every persisted build-option selection, so that all options fall
+ * back to their preset-effective values and nothing is reported as an
+ * override. Returns the keys that were discarded, for the log record, or an
+ * empty array when nothing was stored (in which case no write happens).
+ *
+ * Called when the active preset changes (FR-017): an override is authored
+ * against one preset's calculated values, so a preset change retires all of
+ * them rather than re-comparing stale selections against a different preset's
+ * values. Without this, a stored value silently suppresses the new preset's
+ * — and the `[[defaults]]` layer's — value, and a checkbox override can never
+ * be undone at all, since unchecking persists `false` rather than "unset".
+ *
+ * Clears the whole map, not just the currently available options: the active
+ * preset is workspace-scoped, so selections held for other model/target/
+ * component contexts are equally stale for the new preset.
+ */
+export async function discardBuildOptionOverrides(
+  context: vscode.ExtensionContext
+): Promise<string[]> {
+  const stored = readBuildOptions(context);
+  const keys = Object.keys(stored?.values ?? {});
+  if (keys.length === 0) {
+    return [];
+  }
+  const state: BuildOptionsState = {
+    values: {},
+    persistedAt: new Date().toISOString(),
+  };
+  await context.workspaceState.update(BUILD_OPTIONS_KEY, state);
+  return keys;
+}
+
 // ---------------------------------------------------------------------------
 // Context evaluation
 // ---------------------------------------------------------------------------

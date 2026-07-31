@@ -22,6 +22,7 @@ import {
   logManifestState,
   logPresetState,
   logPresetNormalization,
+  logOverridesClearedForPreset,
 } from "./observability/log-channel";
 import {
   disposeDiagnostics,
@@ -42,6 +43,7 @@ import { normalizeActiveConfig } from "./configuration/normalize-config";
 import {
   readBuildOptions,
   writeBuildOption,
+  discardBuildOptionOverrides,
   normalizeBuildOptions,
   ResolvedOption,
 } from "./configuration/build-options";
@@ -227,8 +229,9 @@ function computeResolvedOptions(
 /**
  * Recomputes available presets and preset-effective build-option values
  * against the current manifest, active build context, and preset state;
- * normalizes and persists the active preset id when it changed; and
- * refreshes the `Presets` selector and Build Options (FR-009, FR-013,
+ * normalizes and persists the active preset id when it changed; discards
+ * explicit build-option overrides when the active preset changed (FR-017);
+ * and refreshes the `Presets` selector and Build Options (FR-009, FR-013,
  * FR-017, SC-004). The single entry point for every preset-relevant
  * trigger: activation, preset-state change, manifest-state change, and
  * active model/target/component change.
@@ -261,6 +264,18 @@ async function refreshPresetsAndActiveConfig(
   const newPresetId = activePresetId(normalizedConfig);
   if (previousPresetId !== undefined && previousPresetId !== newPresetId) {
     logPresetNormalization(previousPresetId, newPresetId);
+    // The active preset changed — whether the user picked it or normalization
+    // moved it — so every explicit override is stale: it was authored against
+    // the previous preset's calculated values (FR-017). Discard them before
+    // resolving below, so Build Options show the new preset's values with
+    // nothing emphasized. The guard matters: `previousPresetId` is undefined
+    // at activation, which keeps a restored session from wiping the
+    // selections it just restored.
+    logOverridesClearedForPreset(
+      previousPresetId,
+      newPresetId,
+      await discardBuildOptionOverrides(context)
+    );
   }
 
   _activeConfig = normalizedConfig;
