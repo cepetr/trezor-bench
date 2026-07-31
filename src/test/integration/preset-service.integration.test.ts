@@ -14,6 +14,27 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Polls `predicate` until it returns true or `timeoutMs` elapses. Real
+ * OS-level file-watch dispatch latency for a path outside any open
+ * workspace folder (as in these tmpdir-based tests) varies far more than a
+ * fixed sleep can safely account for; polling resolves as soon as the
+ * watcher fires instead of guessing a duration.
+ */
+async function waitUntil(
+  predicate: () => boolean,
+  timeoutMs: number,
+  intervalMs = 50
+): Promise<void> {
+  const start = Date.now();
+  while (!predicate()) {
+    if (Date.now() - start > timeoutMs) {
+      return;
+    }
+    await wait(intervalMs);
+  }
+}
+
 function fixtureUris(fixtureName: string): { shared: vscode.Uri; user: vscode.Uri } {
   const base = path.resolve(__dirname, "../../../test-fixtures/workspaces", fixtureName, "xtask/tf-tools");
   return {
@@ -107,7 +128,7 @@ suite("PresetService – watching and reload", () => {
 
     // Create
     await fs.writeFile(userPath, "[[local]]\nfrozen = false\n", "utf-8");
-    await wait(1500);
+    await waitUntil(() => states.length > 0, 8000);
     assert.ok(states.length > 0, "expected a republish after user-presets.toml is created");
     let last = states[states.length - 1];
     assert.strictEqual(last.status, "loaded");
@@ -119,7 +140,7 @@ suite("PresetService – watching and reload", () => {
     // Change
     states.length = 0;
     await fs.writeFile(userPath, "[[other]]\nfrozen = true\n", "utf-8");
-    await wait(1500);
+    await waitUntil(() => states.length > 0, 8000);
     assert.ok(states.length > 0, "expected a republish after user-presets.toml changes");
     last = states[states.length - 1];
     if (last.status === "loaded") {
@@ -129,7 +150,7 @@ suite("PresetService – watching and reload", () => {
     // Delete
     states.length = 0;
     await fs.rm(userPath);
-    await wait(1500);
+    await waitUntil(() => states.length > 0, 8000);
     assert.ok(states.length > 0, "expected a republish after user-presets.toml is deleted");
     last = states[states.length - 1];
     assert.strictEqual(last.status, "loaded");
