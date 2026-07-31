@@ -5,29 +5,26 @@ description: "Task list template for feature implementation"
 
 # Tasks: [FEATURE NAME]
 
-**Input**: Design documents from `specs/[###-feature-name]/`
-**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
-**Affected Product Areas**: [List the product-spec sections from spec.md and plan.md]
-**Scope Guard**: [Tasks in this file stay within the scoped feature change; reject unrelated product-area drift]
+**Input**: Design documents from `/specs/[###-feature-name]/`
 
-**Tests**: Generate automated test tasks for every user story. Include regression coverage for bug fixes and integration coverage whenever the change crosses VS Code APIs, manifest parsing, task execution, diagnostics, persisted state, or implementation-sensitive UI/event-ordering behavior from the product specification.
+**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
+
+**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
-
-**Scope Rule**: Include only tasks and stories that belong to the scoped feature change described by spec.md and plan.md.
-
-**Critical Detail Rule**: Include explicit tasks for the critical product-spec and glossary details named in spec.md and plan.md. Do not assume those details are covered implicitly by broader implementation tasks.
 
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
-- Include exact workspace-relative file paths in descriptions
+- Include exact file paths in descriptions
 
 ## Path Conventions
 
-- **Extension project**: `src/` for runtime code, `src/test/` for automated tests, `test-fixtures/` for manifest/workspace fixtures
-- Adjust paths if plan.md documents a different structure, but keep tests in-repo and runnable by automation
+- **Single project**: `src/`, `tests/` at repository root
+- **Web app**: `backend/src/`, `frontend/src/`
+- **Mobile**: `api/src/`, `ios/src/` or `android/src/`
+- Paths shown below assume single project - adjust based on plan.md structure
 
 <!--
   ============================================================================
@@ -52,10 +49,9 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create extension project structure per implementation plan
-- [ ] T002 Initialize TypeScript extension dependencies and scripts in package.json
-- [ ] T003 [P] Configure linting, formatting, and type-checking
-- [ ] T004 [P] Configure unit and VS Code integration test runners
+- [ ] T001 Create project structure per implementation plan
+- [ ] T002 Initialize [language] project with [framework] dependencies
+- [ ] T003 [P] Configure linting and formatting tools
 
 ---
 
@@ -67,11 +63,12 @@ description: "Task list template for feature implementation"
 
 Examples of foundational tasks (adjust based on your project):
 
-- [ ] T005 Define shared extension state, configuration, and manifest models
-- [ ] T006 [P] Implement manifest/config loading and validation infrastructure
-- [ ] T007 [P] Set up diagnostics and output-channel logging infrastructure
-- [ ] T008 [P] Register base commands, providers, or view wiring needed by all stories
-- [ ] T009 Create reusable test fixtures for manifests and workspace scenarios
+- [ ] T004 Setup database schema and migrations framework
+- [ ] T005 [P] Implement authentication/authorization framework
+- [ ] T006 [P] Setup API routing and middleware structure
+- [ ] T007 Create base models/entities that all stories depend on
+- [ ] T008 Configure error handling and logging infrastructure
+- [ ] T009 Setup environment configuration management
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -83,21 +80,21 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 1 ⚠️
+### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T010 [P] [US1] Add unit tests for [behavior] in src/test/unit/[name].test.ts
-- [ ] T011 [P] [US1] Add integration test for [user journey] in src/test/integration/[name].test.ts
+- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
+- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create [module] in src/core/[module].ts
-- [ ] T013 [P] [US1] Create supporting view or command code in src/ui/[file].ts
-- [ ] T014 [US1] Implement [service/behavior] in src/core/[service].ts (depends on T012, T013)
-- [ ] T015 [US1] Wire [feature] through src/commands/[file].ts or src/extension.ts
-- [ ] T016 [US1] Add validation and explicit failure handling
-- [ ] T017 [US1] Add diagnostics and log output for user story 1 failure paths
+- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
+- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
+- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
+- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T016 [US1] Add validation and error handling
+- [ ] T017 [US1] Add logging for user story 1 operations
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -109,17 +106,17 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 2 ⚠️
+### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
 
-- [ ] T018 [P] [US2] Add unit tests for [behavior] in src/test/unit/[name].test.ts
-- [ ] T019 [P] [US2] Add integration test for [user journey] in src/test/integration/[name].test.ts
+- [ ] T018 [P] [US2] Contract test for [endpoint] in tests/contract/test_[name].py
+- [ ] T019 [P] [US2] Integration test for [user journey] in tests/integration/test_[name].py
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Create supporting module in src/core/[module].ts
-- [ ] T021 [US2] Implement [service/behavior] in src/core/[service].ts
-- [ ] T022 [US2] Implement [feature] in src/ui/[file].ts or src/commands/[file].ts
-- [ ] T023 [US2] Integrate with user story 1 components and extend diagnostics/logging if needed
+- [ ] T020 [P] [US2] Create [Entity] model in src/models/[entity].py
+- [ ] T021 [US2] Implement [Service] in src/services/[service].py
+- [ ] T022 [US2] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T023 [US2] Integrate with User Story 1 components (if needed)
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -131,16 +128,16 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 3 ⚠️
+### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
 
-- [ ] T024 [P] [US3] Add unit tests for [behavior] in src/test/unit/[name].test.ts
-- [ ] T025 [P] [US3] Add integration test for [user journey] in src/test/integration/[name].test.ts
+- [ ] T024 [P] [US3] Contract test for [endpoint] in tests/contract/test_[name].py
+- [ ] T025 [P] [US3] Integration test for [user journey] in tests/integration/test_[name].py
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Create supporting module in src/core/[module].ts
-- [ ] T027 [US3] Implement [service/behavior] in src/core/[service].ts
-- [ ] T028 [US3] Implement [feature] in src/ui/[file].ts or src/commands/[file].ts
+- [ ] T026 [P] [US3] Create [Entity] model in src/models/[entity].py
+- [ ] T027 [US3] Implement [Service] in src/services/[service].py
+- [ ] T028 [US3] Implement [endpoint/feature] in src/[location]/[file].py
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -154,11 +151,11 @@ Examples of foundational tasks (adjust based on your project):
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] TXXX [P] Documentation updates in docs/ or specs/
+- [ ] TXXX [P] Documentation updates in docs/
 - [ ] TXXX Code cleanup and refactoring
-- [ ] TXXX Review identifier length and simplify unjustified abstractions
-- [ ] TXXX [P] Expand automated test coverage for cross-story behavior in src/test/
-- [ ] TXXX Validate diagnostics, logging, and failure messaging end to end
+- [ ] TXXX Performance optimization across all stories
+- [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
+- [ ] TXXX Security hardening
 - [ ] TXXX Run quickstart.md validation
 
 ---
@@ -248,15 +245,8 @@ With multiple developers:
 
 - [P] tasks = different files, no dependencies
 - [Story] label maps task to specific user story for traceability
-- State the affected product areas at the top of the file and reject scope drift into unrelated behavior
 - Each user story should be independently completable and testable
 - Verify tests fail before implementing
-- Complete one task at a time. Create automatic commits only after the task is
-  verified and marked complete in `tasks.md`. Do not batch multiple tasks into
-  a single commit unless an approved exception explicitly allows it
-- Implementation-phase commit subjects should use `T001: concise description`
-  for single-task commits, `T002-T003:` for explicitly approved contiguous
-  multi-task commits, `T001,T007,T009:` for explicitly approved non-contiguous
-  multi-task commits, and mixed forms such as `T001,T003-T006:` when approved
+- Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
 - Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence

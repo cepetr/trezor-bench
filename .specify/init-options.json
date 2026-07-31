@@ -5,5 +5,5 @@
   "integration": "copilot",
   "preset": null,
   "script": "sh",
-  "speckit_version": "0.4.5"
+  "speckit_version": "0.15.1"
 }
