@@ -1,0 +1,3 @@
+[[local]]
+when = { arch = "arm" }
+btc-only = true

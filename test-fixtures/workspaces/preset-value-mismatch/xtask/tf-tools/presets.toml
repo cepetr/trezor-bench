@@ -1,0 +1,2 @@
+[[defaults]]
+dbg-console = "uart"

@@ -1,0 +1,6 @@
+[[test]]
+btc-only = true
+
+[[dev]]
+when = { project = ["firmware"] }
+pyopt = false
