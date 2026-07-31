@@ -103,6 +103,10 @@ export interface ResolvedOption {
    * `false` when `presetState` is `"unresolved"` or `"mismatch"`.
    */
   readonly isOverride: boolean;
+  /** The unrepresentable raw value, present only when `presetState === "mismatch"`. */
+  readonly rawValue?: PresetEffectiveValue["rawValue"];
+  /** File that supplied the mismatching value, present only when `presetState === "mismatch"`. */
+  readonly sourceUri?: PresetEffectiveValue["sourceUri"];
 }
 
 // ---------------------------------------------------------------------------
@@ -192,7 +196,16 @@ export function normalizeBuildOptions(
       isOverride = false;
     }
 
-    return { option, available, value, presetValue, presetState, isOverride };
+    return {
+      option,
+      available,
+      value,
+      presetValue,
+      presetState,
+      isOverride,
+      rawValue: presetState === "mismatch" ? effective?.rawValue : undefined,
+      sourceUri: presetState === "mismatch" ? effective?.sourceUri : undefined,
+    };
   });
 }
 

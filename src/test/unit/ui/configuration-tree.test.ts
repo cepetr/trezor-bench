@@ -1221,7 +1221,7 @@ suite("ConfigurationTreeProvider – Build Options preset-relative emphasis", ()
       [resolved(opt, { value: "swo", presetState: "resolved", presetValue: "null", isOverride: true })]
     );
     const [item] = getBuildOptionsChildren(provider) as BuildOptionMultistateHeaderItem[];
-    assert.deepStrictEqual(item.label, { label: "dbg-console", highlights: [[0, 12]] });
+    assert.deepStrictEqual(item.label, { label: "dbg-console", highlights: [[0, 11]] });
   });
 
   test("multistate row is not emphasized when isOverride is false, regardless of which state is active", () => {
