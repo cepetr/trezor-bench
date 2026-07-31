@@ -19,10 +19,11 @@ import {
 } from "../../../ui/configuration-tree";
 import { ActiveCompileCommandsArtifact } from "../../../intellisense/intellisense-types";
 import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../../../intellisense/artifact-resolution";
-import { ManifestStateLoaded } from "../../../manifest/manifest-types";
+import { ManifestStateLoaded, BuildOption } from "../../../manifest/manifest-types";
 import { ActiveConfig } from "../../../configuration/active-config";
 import { PresetFile, PresetState } from "../../../presets/preset-types";
 import { AvailablePreset } from "../../../presets/preset-resolution";
+import { ResolvedOption } from "../../../configuration/build-options";
 
 // ---------------------------------------------------------------------------
 // Regression target: Build Selection and Build Artifacts default to Expanded,
@@ -146,12 +147,17 @@ suite("BuildOptionMultistateHeaderItem accordion", () => {
 });
 
 suite("BuildOptionCheckboxItem bold label", () => {
-  test("label has highlights when checked (non-default state)", () => {
-    const item = new BuildOptionCheckboxItem("verbose", "Verbose", true);
+  test("label has highlights when isOverride = true, regardless of checked state (FR-015, replacing _isNonDefault)", () => {
+    const item = new BuildOptionCheckboxItem("verbose", "Verbose", true, true);
     assert.deepStrictEqual(item.label, { label: "Verbose", highlights: [[0, 7]] });
   });
 
-  test("label is plain string when unchecked (default state)", () => {
+  test("label is plain string when isOverride = false, even if checked", () => {
+    const item = new BuildOptionCheckboxItem("verbose", "Verbose", true, false);
+    assert.strictEqual(item.label, "Verbose");
+  });
+
+  test("label is plain string when isOverride is omitted (defaults to false)", () => {
     const item = new BuildOptionCheckboxItem("verbose", "Verbose", false);
     assert.strictEqual(item.label, "Verbose");
   });
@@ -216,7 +222,7 @@ suite("BuildOptionGroupItem bold label", () => {
 
 suite("BuildOptionCheckboxItem tooltip", () => {
   test("tooltip is set when description is provided", () => {
-    const item = new BuildOptionCheckboxItem("opt", "Verbose", false, "Enables verbose output");
+    const item = new BuildOptionCheckboxItem("opt", "Verbose", false, false, "Enables verbose output");
     assert.strictEqual(item.tooltip, "Enables verbose output");
   });
 
@@ -247,6 +253,59 @@ suite("BuildOptionStateItem tooltip", () => {
   test("tooltip is undefined when state description is omitted", () => {
     const item = new BuildOptionStateItem("opt", "swo", "SWO", false);
     assert.strictEqual(item.tooltip, undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Preset-relative mismatch/unresolved rendering (feature 009, US2)
+// ---------------------------------------------------------------------------
+
+suite("BuildOptionCheckboxItem mismatch rendering", () => {
+  test("renders the warning icon and names the unrepresentable value when mismatched", () => {
+    const item = new BuildOptionCheckboxItem("frozen", "Frozen", false, false, undefined, { rawValue: "yes" });
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "warning");
+    assert.ok(String(item.description).includes("yes"));
+  });
+
+  test("has no mismatch icon or description when not mismatched", () => {
+    const item = new BuildOptionCheckboxItem("frozen", "Frozen", true, true);
+    assert.strictEqual(item.iconPath, undefined);
+    assert.strictEqual(item.description, undefined);
+  });
+});
+
+suite("BuildOptionMultistateHeaderItem mismatch rendering", () => {
+  test("renders the warning icon and names the unrepresentable value when mismatched", () => {
+    const item = new BuildOptionMultistateHeaderItem(
+      "dbg-console",
+      "Debug Console",
+      "SWO",
+      [],
+      false,
+      false,
+      undefined,
+      { rawValue: "uart" }
+    );
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "warning");
+    assert.ok(String(item.description).includes("uart"));
+  });
+
+  test("uses the list-selection icon and the active state label when not mismatched", () => {
+    const item = new BuildOptionMultistateHeaderItem("dbg-console", "Debug Console", "SWO", [], false);
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "list-selection");
+    assert.strictEqual(item.description, "SWO");
+  });
+});
+
+suite("BuildOptionStateItem selectability", () => {
+  test("has a select command by default", () => {
+    const item = new BuildOptionStateItem("opt", "swo", "SWO", false);
+    assert.strictEqual(item.command?.command, "tfTools.selectBuildOptionState");
+  });
+
+  test("omits the select command when not selectable (unresolved option, Edge Cases)", () => {
+    const item = new BuildOptionStateItem("opt", "swo", "SWO", false, undefined, false);
+    assert.strictEqual(item.command, undefined);
   });
 });
 
@@ -1075,5 +1134,154 @@ suite("ConfigurationTreeProvider – Presets selector", () => {
       new SelectorHeaderItem("model", "Model", undefined, false)
     );
     assert.strictEqual(modelChildren.length, 0, "model choices should not render while collapsed");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ConfigurationTreeProvider – Build Options preset-relative emphasis (US2)
+// ---------------------------------------------------------------------------
+
+function checkboxOption(key: string, flag: string, group?: string): BuildOption {
+  return { key, label: key, flag, kind: "checkbox", group };
+}
+
+function multistateOption(
+  key: string,
+  flag: string,
+  states: Array<{ id: string; label: string; flag: string }>
+): BuildOption {
+  return { key, label: key, flag, kind: "multistate", states };
+}
+
+function resolved(
+  option: BuildOption,
+  overrides: Partial<Omit<ResolvedOption, "option">> = {}
+): ResolvedOption {
+  return {
+    option,
+    available: true,
+    value: option.kind === "checkbox" ? false : (option.states?.[0]?.id ?? ""),
+    presetState: "unresolved",
+    isOverride: false,
+    ...overrides,
+  };
+}
+
+function getBuildOptionsChildren(provider: ConfigurationTreeProvider): vscode.TreeItem[] {
+  const top = provider.getChildren() as vscode.TreeItem[];
+  const section = top.find(
+    (i) => i instanceof SectionItem && (i as SectionItem).sectionId === "build-options"
+  ) as SectionItem;
+  assert.ok(section, "build-options section not found");
+  return provider.getChildren(section) as vscode.TreeItem[];
+}
+
+suite("ConfigurationTreeProvider – Build Options preset-relative emphasis", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    provider.dispose();
+  });
+
+  test("checkbox row is emphasized only when isOverride is true", () => {
+    const opt = checkboxOption("frozen", "--frozen");
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [resolved(opt, { value: false, presetState: "resolved", isOverride: true })]
+    );
+    const [item] = getBuildOptionsChildren(provider) as BuildOptionCheckboxItem[];
+    assert.deepStrictEqual(item.label, { label: "frozen", highlights: [[0, 6]] });
+  });
+
+  test("checkbox row is not emphasized when isOverride is false, even if value is true", () => {
+    const opt = checkboxOption("frozen", "--frozen");
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [resolved(opt, { value: true, presetState: "resolved", isOverride: false })]
+    );
+    const [item] = getBuildOptionsChildren(provider) as BuildOptionCheckboxItem[];
+    assert.strictEqual(item.label, "frozen");
+  });
+
+  test("multistate row is emphasized only when isOverride is true", () => {
+    const states = [
+      { id: "null", label: "Default", flag: "" },
+      { id: "swo", label: "SWO", flag: "--dbg-console=swo" },
+    ];
+    const opt = multistateOption("dbg-console", "--dbg-console", states);
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [resolved(opt, { value: "swo", presetState: "resolved", presetValue: "null", isOverride: true })]
+    );
+    const [item] = getBuildOptionsChildren(provider) as BuildOptionMultistateHeaderItem[];
+    assert.deepStrictEqual(item.label, { label: "dbg-console", highlights: [[0, 12]] });
+  });
+
+  test("multistate row is not emphasized when isOverride is false, regardless of which state is active", () => {
+    const states = [
+      { id: "null", label: "Default", flag: "" },
+      { id: "swo", label: "SWO", flag: "--dbg-console=swo" },
+    ];
+    const opt = multistateOption("dbg-console", "--dbg-console", states);
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [resolved(opt, { value: "swo", presetState: "resolved", presetValue: "swo", isOverride: false })]
+    );
+    const [item] = getBuildOptionsChildren(provider) as BuildOptionMultistateHeaderItem[];
+    assert.strictEqual(item.label, "dbg-console");
+  });
+
+  test("collapsed group header is emphasized when any member has isOverride true", () => {
+    const optA = checkboxOption("alpha", "--alpha", "Group");
+    const optB = checkboxOption("beta", "--beta", "Group");
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [
+        resolved(optA, { value: false, presetState: "resolved", isOverride: false }),
+        resolved(optB, { value: true, presetState: "resolved", isOverride: true }),
+      ]
+    );
+    provider.setGroupCollapsed("Group", true);
+    const [group] = getBuildOptionsChildren(provider) as BuildOptionGroupItem[];
+    assert.deepStrictEqual(group.label, { label: "Group", highlights: [[0, 5]] });
+  });
+
+  test("mismatch checkbox row shows the warning icon and names the unrepresentable value", () => {
+    const opt = checkboxOption("frozen", "--frozen");
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [resolved(opt, { presetState: "mismatch", isOverride: false })]
+    );
+    const [item] = getBuildOptionsChildren(provider) as BuildOptionCheckboxItem[];
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "warning");
+  });
+
+  test("unresolved multistate row renders with non-selectable state children", () => {
+    const states = [
+      { id: "true", label: "Enabled", flag: "--pyopt=true" },
+      { id: "false", label: "Disabled", flag: "--pyopt=false" },
+    ];
+    const opt = multistateOption("pyopt", "--pyopt", states);
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [resolved(opt, { value: "true", presetState: "unresolved", isOverride: false })]
+    );
+    provider.setExpandedMultistateKey("pyopt");
+    const [item] = getBuildOptionsChildren(provider) as BuildOptionMultistateHeaderItem[];
+    assert.ok(item.stateChildren.length > 0);
+    for (const stateChild of item.stateChildren) {
+      assert.strictEqual(stateChild.command, undefined, "unresolved state children must not be selectable");
+    }
   });
 });
