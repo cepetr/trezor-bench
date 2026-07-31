@@ -1,10 +1,13 @@
 /**
- * Pure preset resolution: PresetContext derivation and preset availability.
+ * Pure preset resolution: PresetContext derivation, preset availability, and
+ * preset-effective build-option values.
  *
  * specs/009-build-preset-support/data-model.md §2
  */
+import * as vscode from "vscode";
+import { BuildOption } from "../manifest/manifest-types";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
-import { PresetFile, PresetFilter, PresetFragment, DEFAULT_PRESET_ID } from "./preset-types";
+import { PresetFile, PresetFilter, PresetFragment, PresetRawValue, DEFAULT_PRESET_ID } from "./preset-types";
 
 /** The subset of the active build context PresetContext derivation needs. */
 export interface ActiveBuildContext {
@@ -91,5 +94,130 @@ export function listAvailablePresets(
     }
   }
 
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Preset-effective values (data-model.md §2 "PresetEffectiveValue")
+// ---------------------------------------------------------------------------
+
+/** The preset-effective value for one manifest build option, before explicit overrides. */
+export interface PresetEffectiveValue {
+  readonly optionKey: string;
+  readonly state: "resolved" | "unresolved" | "mismatch";
+  /** Present only when `state === "resolved"`. */
+  readonly value?: boolean | string;
+  /** Present when `state === "mismatch"`, for the diagnostic message. */
+  readonly rawValue?: PresetRawValue;
+  /** File that supplied the mismatching value. */
+  readonly sourceUri?: vscode.Uri;
+}
+
+interface OverlayEntry {
+  readonly rawValue: PresetRawValue;
+  readonly sourceUri: vscode.Uri;
+}
+
+/**
+ * Matches a preset fragment key to a manifest build option: the key equals
+ * `option.id` when declared, otherwise `option.flag` with leading dashes
+ * stripped (research Decision 4).
+ */
+export function presetMatchKey(option: BuildOption): string {
+  return option.id ?? option.flag.replace(/^-+/, "");
+}
+
+/**
+ * Builds the ordered key -> raw-value overlay for one active preset:
+ * matching shared `defaults` fragments, matching user `defaults` fragments,
+ * matching shared `<activePresetId>` fragments, then matching user
+ * `<activePresetId>` fragments — each in file order, layers 3-4 skipped for
+ * the synthetic `Default` choice (FR-010, FR-011; contracts/preset-files.md
+ * "Precedence").
+ */
+export function buildPresetOverlay(
+  shared: PresetFile,
+  user: PresetFile,
+  activePresetId: string,
+  context: PresetContext
+): ReadonlyMap<string, OverlayEntry> {
+  const overlay = new Map<string, OverlayEntry>();
+
+  const applyLayer = (file: PresetFile, name: string): void => {
+    for (const fragment of file.fragments) {
+      if (fragment.name !== name || !matchesPresetFilter(fragment.filter, context)) {
+        continue;
+      }
+      for (const [key, rawValue] of Object.entries(fragment.values)) {
+        overlay.set(key, { rawValue, sourceUri: file.uri });
+      }
+    }
+  };
+
+  applyLayer(shared, "defaults");
+  applyLayer(user, "defaults");
+  if (activePresetId !== DEFAULT_PRESET_ID) {
+    applyLayer(shared, activePresetId);
+    applyLayer(user, activePresetId);
+  }
+
+  return overlay;
+}
+
+/**
+ * Maps one build option's overlay entry to its `PresetEffectiveValue`, per
+ * the raw-value -> option-value table in data-model.md §2.
+ */
+export function computePresetEffectiveValue(
+  option: BuildOption,
+  overlay: ReadonlyMap<string, OverlayEntry>
+): PresetEffectiveValue {
+  const optionKey = option.key;
+  const entry = overlay.get(presetMatchKey(option));
+
+  if (option.kind === "checkbox") {
+    if (entry === undefined) {
+      return { optionKey, state: "resolved", value: false };
+    }
+    if (typeof entry.rawValue === "boolean") {
+      return { optionKey, state: "resolved", value: entry.rawValue };
+    }
+    return { optionKey, state: "mismatch", rawValue: entry.rawValue, sourceUri: entry.sourceUri };
+  }
+
+  // multistate
+  if (entry === undefined) {
+    const nullState = option.states?.find((s) => s.id === "null");
+    if (nullState) {
+      return { optionKey, state: "resolved", value: "null" };
+    }
+    return { optionKey, state: "unresolved" };
+  }
+
+  const rawAsStateId = String(entry.rawValue);
+  if (option.states?.some((s) => s.id === rawAsStateId)) {
+    return { optionKey, state: "resolved", value: rawAsStateId };
+  }
+  return { optionKey, state: "mismatch", rawValue: entry.rawValue, sourceUri: entry.sourceUri };
+}
+
+/**
+ * Computes the preset-effective value for every option, keyed by
+ * `BuildOption.key`. Options whose preset fragment key matches no manifest
+ * option simply never appear in the overlay and contribute nothing
+ * (research Decision 5).
+ */
+export function computePresetEffectiveValues(
+  options: ReadonlyArray<BuildOption>,
+  shared: PresetFile,
+  user: PresetFile,
+  activePresetId: string,
+  context: PresetContext
+): ReadonlyMap<string, PresetEffectiveValue> {
+  const overlay = buildPresetOverlay(shared, user, activePresetId, context);
+  const result = new Map<string, PresetEffectiveValue>();
+  for (const option of options) {
+    result.set(option.key, computePresetEffectiveValue(option, overlay));
+  }
   return result;
 }
