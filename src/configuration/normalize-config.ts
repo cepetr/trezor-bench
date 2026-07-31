@@ -1,5 +1,6 @@
 import { ManifestStateLoaded } from "../manifest/manifest-types";
 import { ActiveConfig } from "./active-config";
+import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 
 /**
  * Returns a valid active configuration for `manifest`.
@@ -32,4 +33,25 @@ export function normalizeActiveConfig(
       : manifest.components[0].id;
 
   return { modelId, targetId, componentId };
+}
+
+/**
+ * Normalizes a saved preset id against the currently available preset ids.
+ *
+ * - `availableIds === undefined` (preset state invalid) → the saved id is
+ *   returned unchanged; FR-031 forbids resolving it while data is invalid.
+ * - a saved id present in `availableIds` → kept (FR-008, Scenario 1.6).
+ * - any other saved id → normalized to `DEFAULT_PRESET_ID` (FR-008, Scenario 1.4).
+ */
+export function normalizePresetId(
+  savedId: string,
+  availableIds: ReadonlySet<string> | undefined
+): string {
+  if (availableIds === undefined) {
+    return savedId;
+  }
+  if (availableIds.has(savedId)) {
+    return savedId;
+  }
+  return DEFAULT_PRESET_ID;
 }
