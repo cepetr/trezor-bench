@@ -1,22 +1,13 @@
 <!--
 Sync Impact Report
-Version change: 1.5.2 -> 1.6.0
+Version change: 1.6.0 -> 1.7.0
 Modified principles:
-- None (core principle titles unchanged; Delivery Workflow now anchors automation to consolidated product docs)
+- III. Tests Are Mandatory: integration-level coverage now explicitly includes diagnostics.
+- Delivery Workflow: added Scope Discipline rules enforced by affected product areas.
 Added sections:
 - None
 Removed sections:
 - None
-Templates requiring updates:
-- ✅ .specify/templates/constitution-template.md
-- ✅ .specify/templates/spec-template.md
-- ✅ .specify/templates/plan-template.md
-- ✅ .specify/templates/tasks-template.md
-- ✅ .github/agents/speckit.specify.agent.md
-- ✅ .github/agents/speckit.plan.agent.md
-- ✅ .github/agents/speckit.tasks.agent.md
-- ✅ .github/agents/speckit.implement.agent.md
-- ✅ .specify/templates/commands/*.md not present in this repository
 Follow-up TODOs:
 - None
 -->
@@ -44,8 +35,8 @@ aligned with it instead of drifting into duplicated configuration.
 Every functional change MUST ship with automated tests that fail before the fix or
 feature is implemented when practical. User-story work MUST include tests for the
 primary success path, and bug fixes MUST include regression coverage. Changes that
-touch VS Code integration, manifest parsing, task execution, or persisted state MUST
-include integration-level coverage in addition to focused unit tests where feasible.
+touch VS Code integration, manifest parsing, task execution, diagnostics, or persisted
+state MUST include integration-level coverage in addition to focused unit tests where feasible.
 Rationale: this extension coordinates workspace state, UI, tasks, and tooling; without
 tests, regressions will be hard to detect and expensive to diagnose.
 
@@ -100,6 +91,16 @@ concise code and justified complexity keep it maintainable.
 - Each generated spec, implementation plan, and task list MUST explicitly name
 	the affected product areas in `specs/product-spec.md` and any required terms
 	from `specs/glossary.md`, and MUST stay aligned with that documentation.
+- Scope Discipline: every spec, plan, and task list MUST remain within the
+	bounded feature scope defined by its named affected product areas. Spec
+	generation MUST reject requirements outside that scope. Plan generation MUST
+	error when it introduces behavior outside that scope without a corresponding
+	specification and product-documentation update. Task generation MUST error
+	when a generated task belongs to unrelated product behavior outside the
+	scoped feature change. An agent executing `tasks.md` MUST halt and request
+	clarification, rather than silently absorbing the work, when a task, code
+	change, or requested follow-on work would cross into product behavior outside
+	the affected product areas.
 - If requested work changes user-visible behavior or terminology that is not yet
 	represented in `specs/product-spec.md` or `specs/glossary.md`, the workflow
 	MUST update the relevant consolidated document in the same change or stop for
@@ -153,4 +154,4 @@ requirements, and PATCH for clarifications that do not change project obligation
 Compliance review is required for every plan, task list, and pull request that
 changes behavior, tooling, or development workflow.
 
-**Version**: 1.6.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-04-06
+**Version**: 1.7.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-07-31
