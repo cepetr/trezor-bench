@@ -14,9 +14,15 @@ import {
   BinaryArtifactItem,
   MapArtifactItem,
   ExecutableArtifactItem,
+  PlaceholderItem,
+  WarningItem,
 } from "../../../ui/configuration-tree";
 import { ActiveCompileCommandsArtifact } from "../../../intellisense/intellisense-types";
 import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../../../intellisense/artifact-resolution";
+import { ManifestStateLoaded } from "../../../manifest/manifest-types";
+import { ActiveConfig } from "../../../configuration/active-config";
+import { PresetFile, PresetState } from "../../../presets/preset-types";
+import { AvailablePreset } from "../../../presets/preset-resolution";
 
 // ---------------------------------------------------------------------------
 // Regression target: Build Selection and Build Artifacts default to Expanded,
@@ -66,6 +72,16 @@ suite("SelectorHeaderItem icons", () => {
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "extensions");
   });
 
+  test("uses the layers icon for preset (research Decision 16)", () => {
+    const item = new SelectorHeaderItem("preset", "Presets", "Default", false);
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "layers");
+  });
+
+  test("preset selector description falls back to '—' when nothing has resolved yet", () => {
+    const item = new SelectorHeaderItem("preset", "Presets", undefined, false);
+    assert.strictEqual(item.description, "—");
+  });
+
   test("uses expanded collapsible state when the selector is open", () => {
     const item = new SelectorHeaderItem("model", "Model", "T2T1", true);
     assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
@@ -89,6 +105,11 @@ suite("SelectorChoiceItem icons", () => {
     const item = new SelectorChoiceItem("model", "T3W1", "Trezor Model T3", false);
     assert.ok(item.iconPath instanceof vscode.Uri);
     assert.ok((item.iconPath as vscode.Uri).fsPath.endsWith("images/blank-tree-icon.svg"));
+  });
+
+  test("selects tfTools.selectPreset as the command for a preset choice", () => {
+    const item = new SelectorChoiceItem("preset", "test", "test", false);
+    assert.strictEqual(item.command?.command, "tfTools.selectPreset");
   });
 });
 
@@ -881,5 +902,178 @@ suite("ConfigurationTreeProvider – Executable row", () => {
       String(execItem.tooltip).includes("/custom/path/to/firmware.elf"),
       `expected tooltip to include the path, got: ${execItem.tooltip}`
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ConfigurationTreeProvider – Presets selector (feature 009, US1)
+// ---------------------------------------------------------------------------
+
+function makeManifestState(): ManifestStateLoaded {
+  return {
+    status: "loaded",
+    manifestUri: vscode.Uri.file("/workspace/tf-tools-manifest.yaml"),
+    models: [{ kind: "model", id: "T2T1", name: "Trezor Model T" }],
+    targets: [{ kind: "target", id: "hw", name: "Hardware", shortName: "HW" }],
+    components: [{ kind: "component", id: "firmware", name: "Firmware" }],
+    buildOptions: [],
+    hasWorkflowBlockingIssues: false,
+    hasDebugBlockingIssues: false,
+    validationIssues: [],
+    loadedAt: new Date(),
+  };
+}
+
+function makeActiveConfig(): ActiveConfig {
+  return {
+    modelId: "T2T1",
+    targetId: "hw",
+    componentId: "firmware",
+    persistedAt: new Date().toISOString(),
+  };
+}
+
+function makePresetFile(overrides: Partial<PresetFile> & Pick<PresetFile, "source">): PresetFile {
+  return {
+    uri: vscode.Uri.file(`/workspace/xtask/tf-tools/${overrides.source === "user" ? "user-presets.toml" : "presets.toml"}`),
+    present: true,
+    names: [],
+    fragments: [],
+    issues: [],
+    ...overrides,
+  };
+}
+
+function makeLoadedPresetState(available: AvailablePreset[]): { state: PresetState; available: AvailablePreset[] } {
+  return {
+    state: {
+      status: "loaded",
+      shared: makePresetFile({ source: "shared", names: available.filter((p) => !p.isDefault).map((p) => p.id) }),
+      user: makePresetFile({ source: "user" }),
+      loadedAt: new Date(),
+      validationIssues: [],
+    },
+    available,
+  };
+}
+
+const DEFAULT_ONLY: AvailablePreset[] = [{ id: "default", label: "Default", isDefault: true }];
+
+suite("ConfigurationTreeProvider – Presets selector", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    provider.dispose();
+  });
+
+  function buildContextChildren(): vscode.TreeItem[] {
+    return provider.getChildren(new SectionItem("build-context", "Build Selection"));
+  }
+
+  test("Presets is the fourth Build Selection child, directly below Component (FR-001)", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const children = buildContextChildren() as SelectorHeaderItem[];
+    assert.strictEqual(children.length, 4);
+    assert.deepStrictEqual(
+      children.map((c) => c.selectorKind),
+      ["model", "target", "component", "preset"]
+    );
+  });
+
+  test("description shows '—' before preset state has resolved", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const children = buildContextChildren() as SelectorHeaderItem[];
+    assert.strictEqual(children[3].description, "—");
+  });
+
+  test("description shows 'Default' for the synthetic choice", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const { state } = makeLoadedPresetState(DEFAULT_ONLY);
+    provider.updatePresets(state, "default", DEFAULT_ONLY);
+    const children = buildContextChildren() as SelectorHeaderItem[];
+    assert.strictEqual(children[3].description, "Default");
+  });
+
+  test("description shows the active named preset's label", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const available: AvailablePreset[] = [
+      { id: "default", label: "Default", isDefault: true },
+      { id: "test", label: "test", isDefault: false },
+    ];
+    const { state } = makeLoadedPresetState(available);
+    provider.updatePresets(state, "test", available);
+    const children = buildContextChildren() as SelectorHeaderItem[];
+    assert.strictEqual(children[3].description, "test");
+  });
+
+  test("preset state undefined renders the loading placeholder when expanded", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    provider.setExpandedSelector("preset");
+    const children = provider.getChildren(
+      new SelectorHeaderItem("preset", "Presets", undefined, true)
+    );
+    assert.strictEqual(children.length, 1);
+    assert.ok(children[0] instanceof PlaceholderItem);
+  });
+
+  test("preset state invalid replaces all choices with a warning row naming the failing file", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const invalidState: PresetState = {
+      status: "invalid",
+      shared: makePresetFile({
+        source: "shared",
+        issues: [{ severity: "error", code: "toml-parse", message: "bad syntax" }],
+      }),
+      user: makePresetFile({ source: "user" }),
+      loadedAt: new Date(),
+      validationIssues: [{ severity: "error", code: "toml-parse", message: "bad syntax" }],
+    };
+    provider.updatePresets(invalidState, "default", []);
+    provider.setExpandedSelector("preset");
+    const children = provider.getChildren(
+      new SelectorHeaderItem("preset", "Presets", undefined, true)
+    );
+    assert.ok(children[0] instanceof WarningItem);
+    assert.ok(
+      String(children[0].label).includes("presets.toml"),
+      `expected the warning to name the failing file, got: ${children[0].label}`
+    );
+    assert.ok(children[1] instanceof PlaceholderItem);
+  });
+
+  test("preset state loaded lists Default first, then named presets, with the active one marked", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const available: AvailablePreset[] = [
+      { id: "default", label: "Default", isDefault: true },
+      { id: "test", label: "test", isDefault: false },
+    ];
+    const { state } = makeLoadedPresetState(available);
+    provider.updatePresets(state, "test", available);
+    provider.setExpandedSelector("preset");
+    const children = provider.getChildren(
+      new SelectorHeaderItem("preset", "Presets", undefined, true)
+    ) as SelectorChoiceItem[];
+    assert.strictEqual(children.length, 2);
+    assert.strictEqual(children[0].entryId, "default");
+    assert.strictEqual(children[1].entryId, "test");
+    assert.strictEqual(children[1].description, "active");
+    assert.strictEqual(children[0].description, undefined);
+  });
+
+  test("only one selector expands at a time; expanding preset collapses model (FR-002)", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    provider.setExpandedSelector("model");
+    assert.strictEqual(provider.getExpandedSelector(), "model");
+    provider.setExpandedSelector("preset");
+    assert.strictEqual(provider.getExpandedSelector(), "preset");
+
+    const modelChildren = provider.getChildren(
+      new SelectorHeaderItem("model", "Model", undefined, false)
+    );
+    assert.strictEqual(modelChildren.length, 0, "model choices should not render while collapsed");
   });
 });
