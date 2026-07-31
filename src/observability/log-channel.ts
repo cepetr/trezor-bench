@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { ManifestState } from "../manifest/manifest-types";
+import { PresetState } from "../presets/preset-types";
 
 const CHANNEL_NAME = "Trezor Firmware Tools";
 let _channel: vscode.OutputChannel | undefined;
@@ -93,6 +94,57 @@ export function logManifestState(state: ManifestState): void {
       break;
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Preset state logging (feature 009)
+// ---------------------------------------------------------------------------
+
+/**
+ * Logs a human-readable description of the new preset state: load results
+ * for a `loaded` state, or the offending file(s) and issues for `invalid`.
+ */
+export function logPresetState(state: PresetState): void {
+  const describe = (label: string, file: PresetState["shared"]): string =>
+    file.present ? `${label}=${file.uri.fsPath} (${file.names.length} preset(s))` : `${label}=(absent)`;
+
+  switch (state.status) {
+    case "loaded":
+      log(`Presets loaded: ${describe("shared", state.shared)}, ${describe("user", state.user)}`);
+      for (const issue of state.validationIssues) {
+        log(`  [${issue.severity}] ${issue.message} (${issue.code})`);
+      }
+      break;
+    case "invalid": {
+      const offending = [state.shared, state.user]
+        .filter((f) => f.issues.some((i) => i.severity === "error"))
+        .map((f) => f.uri.fsPath);
+      log(
+        `[ERROR] Presets invalid: ${offending.join(", ")} — ${state.validationIssues.length} issue(s)`
+      );
+      for (const issue of state.validationIssues) {
+        log(`  [${issue.severity}] ${issue.message} (${issue.code})`);
+      }
+      break;
+    }
+  }
+}
+
+/** Keys already logged as unknown-to-the-manifest, to avoid repeat entries. */
+const _loggedUnknownPresetKeys = new Set<string>();
+
+/**
+ * Logs, once per key, an informational entry for a preset option key that no
+ * manifest build option claims (research Decision 5). Never blocks and never
+ * produces a diagnostic — this is observability only.
+ */
+export function logUnknownPresetKeys(keys: ReadonlyArray<string>): void {
+  const fresh = keys.filter((k) => !_loggedUnknownPresetKeys.has(k));
+  if (fresh.length === 0) {
+    return;
+  }
+  fresh.forEach((k) => _loggedUnknownPresetKeys.add(k));
+  log(`Preset option key(s) not recognized by the manifest (ignored): ${fresh.join(", ")}`);
 }
 
 // ---------------------------------------------------------------------------
