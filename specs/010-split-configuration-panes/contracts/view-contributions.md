@@ -30,7 +30,9 @@ Three entries under `contributes.views["tf-tools"]`, in this exact array order â
 - Entry 1 MUST reuse today's view id. Renaming it is a breaking change to the status-bar command and to saved view placement (FR-017).
 - No entry declares a `when` clause; all three panes are always contributed (FR-012).
 - No entry declares Collapse All; the `TreeView` options keep `showCollapseAll: false` for all three (FR-009d).
-- `visibility` is an initial state only. The host stops applying it once the user has collapsed, moved, or hidden a view (FR-004, FR-005).
+- `visibility` is an initial state only. The host stops applying it once the user has collapsed, moved, or hidden a view (FR-004, FR-005). Because the host exposes no way to read a pane's collapse state back, tests can assert this declaration but not its restoration across a reload; that is a manual check.
+- **Test ownership**: the `visibility` column is asserted by the US2 test task, not by the US1 view-contribution test, so the US1 test stays green while the two stories land separately.
+- The manifest MUST NOT declare `enabledApiProposals`, a `viewContainer/title` menu, or a `configurationDefaults` entry (FR-009c).
 
 ## 3. `view/title` â€” the workflow toolbar
 

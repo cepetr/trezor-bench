@@ -66,7 +66,8 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] Add integration tests asserting exactly three views are contributed for the `tf-tools` container, in the declared order, with the titles, `type`, and `icon` from [contracts/view-contributions.md](contracts/view-contributions.md), and that entry 1 reuses the inherited view id, in new `src/test/integration/configuration-panes.integration.test.ts`
+- [ ] T006 [P] [US1] Add integration tests asserting exactly three views are contributed for the `tf-tools` container, in the declared order, with the titles, `type`, and `icon` from [contracts/view-contributions.md](contracts/view-contributions.md), and that entry 1 reuses the inherited view id, in new `src/test/integration/configuration-panes.integration.test.ts`. Do **not** assert `visibility` here — that belongs to T012, so this test stays green between US1 and US2
+- [ ] T006a [P] [US1] Add integration assertions that `package.json` declares no `enabledApiProposals`, contributes no `viewContainer/title` menu, and contributes no `configurationDefaults` entry, in `src/test/integration/configuration-panes.integration.test.ts` (FR-009c — the guardrail behind the whole host-constraint decision)
 - [ ] T007 [P] [US1] Add unit tests asserting no pane's rows contain a `Build Selection`, `Build Options`, or `Build Artifacts` row and that each pane's rows match the T001 inventory in every manifest state, in `src/test/unit/ui/configuration-tree.test.ts`
 
 ### Implementation for User Story 1
@@ -88,7 +89,7 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 
 ### Tests for User Story 2
 
-- [ ] T012 [US2] Add integration tests asserting `Build Options` declares `visibility: collapsed`, the other two omit `visibility`, and no view enables Collapse All, in `src/test/integration/configuration-panes.integration.test.ts`
+- [ ] T012 [US2] Add integration tests asserting `Build Options` declares `visibility: collapsed`, the other two omit `visibility`, and no view enables Collapse All, in `src/test/integration/configuration-panes.integration.test.ts` — this task owns every `visibility` assertion; T006 deliberately leaves it alone
 
 ### Implementation for User Story 2
 
@@ -152,7 +153,7 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 
 ### Parallel Opportunities
 
-- T006 and T007 touch different files and can run in parallel
+- T006, T006a, and T007 can be written in parallel; T006 and T006a share `configuration-panes.integration.test.ts`, so sequence them if one person writes both
 - T015, T016, and T017 can be written in parallel; T015 and T016 both land in `configuration-panes.integration.test.ts`, so if one person writes both, sequence them
 - T021 and T022 are different documents and can run in parallel
 - US2 and US3 can proceed in parallel once US1 is complete
@@ -194,6 +195,6 @@ Task: "T007 Unit tests for per-pane rows and absent section rows in src/test/uni
 
 ## Notes
 
-- Total: 27 tasks — Setup 1, Foundational 4, US1 6, US2 3, US3 6, Polish 7
+- Total: 28 tasks — Setup 1, Foundational 4, US1 7, US2 3, US3 6, Polish 7
 - The riskiest task is T019: each `TreeView` emits events only for its own rows, so an incomplete split leaves selector or option expansion silently dead. Exercise both panes manually after it
 - No task introduces a new dependency, service, or persisted state

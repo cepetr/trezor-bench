@@ -120,7 +120,7 @@ As a firmware developer, I keep using the same selectors, option controls, row a
 - **FR-002**: Each pane MUST render exactly the rows its corresponding section renders today, with identical labels, icons, descriptions, tooltips, checkbox states, and inline row actions.
 - **FR-003**: The `Build Selection`, `Build Options`, and `Build Artifacts` rows MUST no longer exist as content rows; those names MUST be carried by the pane titles.
 - **FR-004**: On first use, `Build Options` MUST start collapsed and `Build Selection` and `Build Artifacts` MUST start expanded.
-- **FR-005**: Each pane's collapse state MUST be remembered across window reloads.
+- **FR-005**: Each pane's collapse state MUST be remembered across window reloads. This is provided by the editor host rather than by the extension, and no interface exposes a pane's collapse state back to the extension, so restoration MUST be verified by the manual reload check in [quickstart.md](quickstart.md) rather than by an automated test.
 - **FR-006**: Expanding one build-context selector MUST continue to collapse any other expanded selector, and only one selector MUST be expanded at a time.
 - **FR-007**: Multistate build-option expansion, option-group collapse, and checkbox toggling MUST produce the same stored values, emphasis, and refresh behavior as today.
 - **FR-008**: Inline artifact row actions MUST remain attached to their artifact rows with unchanged visibility, enablement, and behavior.
@@ -136,7 +136,7 @@ As a firmware developer, I keep using the same selectors, option controls, row a
 - **FR-014**: State updates that previously refreshed one section MUST refresh the corresponding pane, and MUST NOT require the user to reopen or reload the container to see current values.
 - **FR-015**: `specs/product-spec.md` and `specs/glossary.md` MUST be updated in the same change so the Configuration view is documented as three sibling panes rather than a single tree with three section rows.
 - **FR-017**: The `Build Selection` pane MUST inherit the identity of today's Configuration view, retitled to `Build Selection`; `Build Options` and `Build Artifacts` MUST be introduced as new panes. A user who has relocated today's view MUST find `Build Selection` in that same location after the update, and the status-bar link together with every action-visibility rule that refers to today's view MUST keep working without being repointed.
-- **FR-016**: Automated coverage MUST verify pane composition, default and persisted collapse states, per-pane placeholder content, the toolbar's membership on `Build Selection` and the absence of actions on the other two pane headers, and the status bar reveal target.
+- **FR-016**: Automated coverage MUST verify pane composition, the declared initial collapse states, per-pane placeholder content, the toolbar's membership on `Build Selection` and the absence of actions on the other two pane headers, the absence of any dependency on unreleased editor APIs or global-setting defaults, and the status bar reveal target. Restoration of collapse state across a reload is out of scope for automated coverage for the reason given in FR-005 and MUST instead be covered by the manual validation pass.
 
 ### Key Entities
 
@@ -153,7 +153,7 @@ As a firmware developer, I keep using the same selectors, option controls, row a
 - **SC-003**: 100% of the actions exposed today from the Configuration view header, overflow menu, and artifact rows remain reachable, with unchanged enablement outcomes in every state tested.
 - **SC-003a**: All 8 workflow actions appear in one toolbar on the topmost pane, and 0 of them appear on the `Build Options` or `Build Artifacts` headers, in every pane focus, hover, collapse, and visibility combination tested.
 - **SC-003b**: With `Build Selection` expanded, a user reaches any workflow action in the same number of interactions as today — 0 for the two visible icons, 1 for the overflow entries.
-- **SC-004**: After changing pane collapse states and reloading the window, 3 of 3 panes are restored to the states the user left them in.
+- **SC-004**: After changing pane collapse states and reloading the window, 3 of 3 panes are restored to the states the user left them in, confirmed by the manual reload check.
 - **SC-005**: Selecting the status bar configuration item reveals the build-selection surface in 100% of attempts where the item is visible.
 - **SC-006**: No regression is observed in build-option resolution, preset handling, artifact resolution, IntelliSense refresh, or file decorations across the existing automated suites.
 - **SC-007**: A user needs at most 1 interaction to reach any of the three areas from the container, because each area is reachable by expanding its own header.
