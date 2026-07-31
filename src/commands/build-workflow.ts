@@ -7,9 +7,9 @@
 
 import * as vscode from "vscode";
 import { ResolvedOption } from "../configuration/build-options";
-import { deriveOptionFlags } from "../configuration/build-options";
 import { logWorkflowFailure } from "../observability/log-channel";
 import { ManifestState } from "../manifest/manifest-types";
+import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -72,21 +72,52 @@ export function formatTaskLabel(kind: WorkflowKind, ctx: WorkflowContext): strin
 // ---------------------------------------------------------------------------
 
 /**
+ * Derives the override-only command-line flags for Build, Clippy, or Check:
+ * one entry per `available && isOverride` option, in manifest declaration
+ * order. Checkbox on -> bare `<flag>`; checkbox off -> `<flag>=false`
+ * (research Decision 9); multistate -> the selected state's existing
+ * `<flag>=<value>` form, unchanged (FR-023). Nothing is emitted for
+ * `unresolved` or `mismatch` options, since `isOverride` is forced `false`
+ * for both.
+ */
+function deriveOverrideFlags(resolved: ReadonlyArray<ResolvedOption>): string[] {
+  const flags: string[] = [];
+  for (const r of resolved) {
+    if (!r.available || !r.isOverride) {
+      continue;
+    }
+    if (r.option.kind === "checkbox") {
+      flags.push(r.value === true ? r.option.flag : `${r.option.flag}=false`);
+    } else {
+      const state = r.option.states?.find((s) => s.id === r.value);
+      if (state?.flag) {
+        flags.push(state.flag);
+      }
+    }
+  }
+  return flags;
+}
+
+/**
  * Derives the ordered command-line arguments for Build, Clippy, or Check.
  *
- * Argument format: `<component-id> -m <model-id> [target-flag] [option-flags]`.
+ * Argument format: `<component-id> -m <model-id> [target-flag] [-p <preset-id>] [override-flags…]`.
  * The target flag comes from the manifest target `flag` field and is
- * omitted when absent or null.
+ * omitted when absent or null. `-p <preset-id>` is emitted exactly once and
+ * only for a non-`default` active preset — `-p default` is never emitted
+ * (FR-021). Option flags are emitted only for differing overrides (FR-022).
  */
 export function deriveWorkflowArguments(
   kind: Exclude<WorkflowKind, "Clean">,
   ctx: { modelId: string; targetId: string; componentId: string; targetFlag?: string | null },
-  resolved: ReadonlyArray<ResolvedOption>
+  resolved: ReadonlyArray<ResolvedOption>,
+  presetId: string
 ): string[] {
   const base = [ctx.componentId, "-m", ctx.modelId];
   const targetArgs = ctx.targetFlag ? [ctx.targetFlag] : [];
-  const flags = deriveOptionFlags(resolved);
-  return [...base, ...targetArgs, ...flags];
+  const presetArgs = presetId !== DEFAULT_PRESET_ID ? ["-p", presetId] : [];
+  const overrideFlags = deriveOverrideFlags(resolved);
+  return [...base, ...targetArgs, ...presetArgs, ...overrideFlags];
 }
 
 /**
