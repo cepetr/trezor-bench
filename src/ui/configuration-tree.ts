@@ -381,7 +381,7 @@ export class ConfigurationTreeProvider
 
   /**
    * Updates the preset state, active preset id, and available preset
-   * choices, and refreshes the `Presets` selector.
+   * choices, and refreshes the `Preset` selector.
    */
   updatePresets(
     state: PresetState | undefined,
@@ -570,7 +570,7 @@ export class ConfigurationTreeProvider
       ),
       new SelectorHeaderItem(
         "preset",
-        "Presets",
+        "Preset",
         this._presetDisplayValue(),
         this._expandedSelector === "preset"
       ),
@@ -578,7 +578,7 @@ export class ConfigurationTreeProvider
   }
 
   /**
-   * The active preset's label for the `Presets` selector description.
+   * The active preset's label for the `Preset` selector description.
    * `undefined` renders as `—` (nothing has resolved yet).
    */
   private _presetDisplayValue(): string | undefined {
@@ -622,7 +622,7 @@ export class ConfigurationTreeProvider
   }
 
   /**
-   * Expanded content for the `Presets` selector: a loading placeholder
+   * Expanded content for the `Preset` selector: a loading placeholder
    * before the first load, an error row replacing all choices when preset
    * state is invalid (FR-028, FR-030), or one choice per available preset.
    */

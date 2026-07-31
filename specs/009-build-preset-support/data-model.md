@@ -67,7 +67,7 @@ Published by `PresetService`, mirroring the `ManifestState` discriminated-union 
 | `{ status: "loaded" }` | `shared: PresetFile`, `user: PresetFile`, `loadedAt: Date`, `validationIssues` | Both inputs parsed. Either or both may be absent-and-empty. May carry warning-severity issues (e.g. reserved `default` name). |
 | `{ status: "invalid" }` | `shared`, `user`, `validationIssues`, `loadedAt` | At least one input is unreadable or has an error-severity issue. Preset choices are replaced by an error row; Build/Clippy/Check are blocked; the saved preset id is preserved unresolved. |
 
-`PresetState` is `undefined` before the first load; the `Presets` selector shows the loading placeholder in that window.
+`PresetState` is `undefined` before the first load; the `Preset` selector shows the loading placeholder in that window.
 
 New `ValidationCode` members required: `toml-parse`, `invalid-filter`, `reserved-preset-name`, `preset-value-mismatch`.
 
@@ -227,7 +227,7 @@ The prune covers stored keys for options that are not currently available: the m
 `src/ui/configuration-tree.ts`:
 
 - `SelectorKind` gains `"preset"`; `SELECTOR_ICONS.preset = "layers"`; `SELECT_COMMANDS.preset = "tfTools.selectPreset"`.
-- The `Build Selection` children become `Model`, `Target`, `Component`, `Presets` — the new selector is last, directly below `Component` (FR-001).
+- The `Build Selection` children become `Model`, `Target`, `Component`, `Preset` — the new selector is last, directly below `Component` (FR-001).
 - Selector description: the active preset's label, `Default` for the synthetic choice, `—` when nothing has resolved yet.
 - Expanded children:
   - preset state `undefined` → `PlaceholderItem("Loading…")`;
@@ -254,7 +254,7 @@ The prune covers stored keys for options that are not currently available: the m
 PresetService ──publishes──> PresetState
                                │
    ManifestStateLoaded ────────┤
-   ActiveConfig ───────────────┼──> PresetContext ──> AvailablePreset[]        (Presets selector)
+   ActiveConfig ───────────────┼──> PresetContext ──> AvailablePreset[]        (Preset selector)
                                │                 └──> PresetEffectiveValue[]  (per manifest option)
                                                           │
    tfTools.buildOptions ──────────────────────────────────┼──> ResolvedOption[]

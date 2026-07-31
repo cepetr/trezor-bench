@@ -68,7 +68,7 @@ export interface PresetStateInvalid {
   readonly validationIssues: ReadonlyArray<ValidationIssue>;
 }
 
-/** `undefined` before the first load; the `Presets` selector shows a loading placeholder in that window. */
+/** `undefined` before the first load; the `Preset` selector shows a loading placeholder in that window. */
 export type PresetState = PresetStateLoaded | PresetStateInvalid;
 
 /**

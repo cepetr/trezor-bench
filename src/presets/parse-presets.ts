@@ -180,7 +180,7 @@ export function parsePresetFile(source: string, presetSource: PresetSource): Par
         issue(
           "warning",
           "reserved-preset-name",
-          `"default" is a reserved preset name; this group is excluded from the Presets choice list.`,
+          `"default" is a reserved preset name; this group is excluded from the Preset choice list.`,
           headerRange(headerLines[0])
         )
       );

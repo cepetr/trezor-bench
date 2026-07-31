@@ -84,7 +84,7 @@ Within any layer a later matching fragment replaces an earlier value for the sam
 | Option key unknown to the manifest | none | Key ignored. Log entry only. |
 | Value unrepresentable by the matching manifest option | error | Option-level mismatch. Choices remain listed; Build/Clippy/Check blocked. |
 
-File-level invalid means: the `Presets` selector header stays visible with its preset choices replaced by an error row, details go to the `Trezor Firmware Tools` log channel and to diagnostics on the offending file, Build/Clippy/Check are blocked, and the saved preset id is preserved without being resolved until valid data returns.
+File-level invalid means: the `Preset` selector header stays visible with its preset choices replaced by an error row, details go to the `Trezor Firmware Tools` log channel and to diagnostics on the offending file, Build/Clippy/Check are blocked, and the saved preset id is preserved without being resolved until valid data returns.
 
 ## Worked example
 

@@ -70,15 +70,15 @@ description: "Task list for Build Preset Support"
 
 ## Phase 3: User Story 1 - Select an Available Preset (Priority: P1) 🎯 MVP
 
-**Goal**: A fourth `Presets` selector under `Component` lists the synthetic `Default` choice plus every named preset available for the active build context, and the selection persists in the same workspace-scoped active-configuration record as model, target, and component.
+**Goal**: A fourth `Preset` selector under `Component` lists the synthetic `Default` choice plus every named preset available for the active build context, and the selection persists in the same workspace-scoped active-configuration record as model, target, and component.
 
-**Independent Test**: Open `test-fixtures/workspaces/preset-valid/`, expand `Presets`, select a named preset, and verify the selected row and selector description update while the status bar, task labels, and command names stay free of any preset name. Reload the window and confirm the selection survives.
+**Independent Test**: Open `test-fixtures/workspaces/preset-valid/`, expand `Preset`, select a named preset, and verify the selected row and selector description update while the status bar, task labels, and command names stay free of any preset name. Reload the window and confirm the selection survives.
 
 ### Tests for User Story 1
 
 - [X] T021 [P] [US1] Write unit suite `src/test/unit/presets/preset-availability.test.ts` covering `PresetContext` derivation (`emulator` from the active target's manifest `flag` for an emulator target, a hardware target, and a manifest that renames the target ids — research Decision 3) and `AvailablePreset` listing: `Default` always first and always present including with no `[[defaults]]` fragment (FR-004), each named preset listed once at its first declaration scanning shared `names` then user `names` (FR-003), a preset listed only when at least one of its fragments matches the context (FR-006), and `defaults` and a literal `default` group never listed (FR-005, Decision 7)
 - [X] T022 [P] [US1] Extend `src/test/unit/configuration/normalize-config.test.ts` for `normalizePresetId`: `availableIds === undefined` returns the saved id unchanged (FR-031); a saved id present in `availableIds` is kept (FR-008, Scenario 1.6); any other saved id normalizes to `DEFAULT_PRESET_ID` (FR-008, Scenario 1.4); and existing `normalizeActiveConfig` behavior for the manifest axes is unchanged
-- [X] T023 [P] [US1] Extend `src/test/unit/ui/configuration-tree.test.ts` for the `Presets` selector: it is the fourth `Build Selection` child directly below `Component` (FR-001); its icon is `layers` and its select command is `tfTools.selectPreset` (research Decision 16); its description shows the active preset's label, `Default` for the synthetic choice, and `—` before anything resolves; preset state `undefined` renders the loading placeholder; preset state `invalid` replaces all choices with a warning row naming the failing file plus a details placeholder (FR-028, FR-030); and only one selector is expanded at a time with `"preset"` participating (FR-002)
+- [X] T023 [P] [US1] Extend `src/test/unit/ui/configuration-tree.test.ts` for the `Preset` selector: it is the fourth `Build Selection` child directly below `Component` (FR-001); its icon is `layers` and its select command is `tfTools.selectPreset` (research Decision 16); its description shows the active preset's label, `Default` for the synthetic choice, and `—` before anything resolves; preset state `undefined` renders the loading placeholder; preset state `invalid` replaces all choices with a warning row naming the failing file plus a details placeholder (FR-028, FR-030); and only one selector is expanded at a time with `"preset"` participating (FR-002)
 - [X] T024 [US1] Write integration suite `src/test/integration/preset-selection.integration.test.ts` covering: the four-selector order in `preset-valid/`; `Default` still offered in `preset-no-defaults/`; selecting a named preset updates the description and active marker and persists `presetId` into `tfTools.activeConfig`; a legacy `tfTools.activeConfig` record without `presetId` restores as `default` and is not rewritten merely for that (data-model §3, §7); changing `Component` to one no fragment matches normalizes the active preset to `default` (Scenario 1.4); with a preset file broken the saved id is preserved unresolved and, once fixed, is restored if available and normalized to `default` only if not (FR-031, Scenario 1.6); and the status bar item, task labels, and command names contain no preset name (FR-024, Scenario 1.5)
 
 ### Implementation for User Story 1
@@ -200,6 +200,16 @@ description: "Task list for Build Preset Support"
 
 ---
 
+## Phase 10: Refinement — the build-context selector reads `Preset`, not `Presets`
+
+**Purpose**: The fourth `Build Selection` selector shipped with the plural label `Presets`, which reads inconsistently beside its three singular siblings (`Model`, `Target`, `Component`) — each of which names the *one* thing currently selected, not the set to choose from. Resolution: rename the header label to `Preset`. Selector kind, tree-item id, `contextValue`, command id (`tfTools.selectPreset`), icon, and every behavior stay exactly as they are; this is a display-string change plus the artifact rename that keeps FR-001 truthful.
+
+- [X] T077 Change the fourth `Build Selection` header label from `Presets` to `Preset` in `src/ui/configuration-tree.ts` `_buildContextChildren`, leaving `selectorKind`, `id`, `contextValue`, `SELECT_COMMANDS`, and `SELECTOR_ICONS` untouched (FR-001)
+- [X] T078 Rename the selector in the user-visible `reserved-preset-name` validation message in `src/presets/parse-presets.ts` (`excluded from the Preset choice list`) and in the `Preset selector` references in the `src/presets/` and `src/ui/` doc comments, so no code path still calls the element `Presets`
+- [X] T079 Lock the label in `src/test/unit/ui/configuration-tree.test.ts`: extend the FR-001 ordering test to assert the four header labels are `Model`, `Target`, `Component`, `Preset`, and update the `SelectorHeaderItem` label arguments and suite name to the singular form
+- [X] T080 Rename the selector across the feature artifacts so the spec no longer mandates the old label — FR-001, FR-002, FR-028, FR-030, SC-004, the US1 scenarios and edge cases in `spec.md`; the summary, selector rule, failure-model, and file-map lines in `plan.md`; the US1 and failure walkthrough steps in `quickstart.md`; `data-model.md` §`PresetState` plus the `Build Selection` children list and dataflow diagram; research Decisions 10 and 16; and the file-level-invalid paragraph in `contracts/preset-files.md`
+- [X] T081 Re-ran `npm run lint` (0 errors, the same 13 pre-existing `no-explicit-any` warnings), `npm run compile`, and `npm run test:unit` (823 passing, including the extended FR-001 label assertion). `npm test` remains unable to start in the agent sandbox for the reason recorded in T076; no integration expectation asserts the header label, so the label change is fully covered by the unit suite
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -267,7 +277,7 @@ Task: "Create fixture test-fixtures/workspaces/preset-value-mismatch/"
 # Launch the three unit suites for User Story 1 together:
 Task: "Write unit suite src/test/unit/presets/preset-availability.test.ts"
 Task: "Extend src/test/unit/configuration/normalize-config.test.ts for normalizePresetId"
-Task: "Extend src/test/unit/ui/configuration-tree.test.ts for the Presets selector"
+Task: "Extend src/test/unit/ui/configuration-tree.test.ts for the Preset selector"
 ```
 
 ---
@@ -278,7 +288,7 @@ Task: "Extend src/test/unit/ui/configuration-tree.test.ts for the Presets select
 
 1. Complete Phase 1: Setup — dependency plus fixtures.
 2. Complete Phase 2: Foundational — the `src/presets/` slice. **Blocks everything.**
-3. Complete Phase 3: User Story 1 — the `Presets` selector, persistence, normalization.
+3. Complete Phase 3: User Story 1 — the `Preset` selector, persistence, normalization.
 4. **STOP and VALIDATE**: Run the US1 checks in `specs/009-build-preset-support/quickstart.md`. Presets are visible, selectable, and persisted; nothing else in the extension has moved.
 5. Demo if ready.
 

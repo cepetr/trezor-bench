@@ -244,7 +244,7 @@ function computeResolvedOptions(
  * normalizes and persists the active preset id when it changed; drops, when
  * the active preset or the preset context changed, exactly those explicit
  * build-option overrides whose calculated value moved with it (FR-017);
- * and refreshes the `Presets` selector and Build Options (FR-009, FR-013,
+ * and refreshes the `Preset` selector and Build Options (FR-009, FR-013,
  * FR-017, SC-004). The single entry point for every preset-relevant
  * trigger: activation, preset-state change, manifest-state change, and
  * active model/target/component change.
@@ -999,7 +999,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   // --- Preset selector command (feature 009). Not a contributed command —
-  // invoked only through the Presets selector's tree-item command binding. ---
+  // invoked only through the Preset selector's tree-item command binding. ---
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.selectPreset", async (presetId: string) => {
       const state = _manifestState;

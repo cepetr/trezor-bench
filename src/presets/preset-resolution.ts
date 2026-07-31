@@ -23,7 +23,7 @@ export interface PresetContext {
   readonly emulator: boolean;
 }
 
-/** One choice offered under the `Presets` selector. */
+/** One choice offered under the `Preset` selector. */
 export interface AvailablePreset {
   readonly id: string;
   readonly label: string;
@@ -79,7 +79,7 @@ export function matchesPresetFilter(filter: PresetFilter, context: PresetContext
 }
 
 /**
- * Lists preset choices for the `Presets` selector: the synthetic `Default`
+ * Lists preset choices for the `Preset` selector: the synthetic `Default`
  * choice always first, then each named preset exactly once, at the position
  * of its first declaration scanning `shared.names` then `user.names`, and
  * only when at least one of its fragments — from either file — matches

@@ -180,7 +180,7 @@ Not errors: `when.model` or `when.project` values that do not correspond to any 
 
 **Decision**: Distinguish file-level invalidity from per-option mismatch.
 
-| Tier | Trigger | `Presets` selector | Build/Clippy/Check | Saved preset id | Signal |
+| Tier | Trigger | `Preset` selector | Build/Clippy/Check | Saved preset id | Signal |
 | --- | --- | --- | --- | --- | --- |
 | File-level invalid | Decision 6 error list, or an unreadable file | Header stays; choices replaced by an error row | Blocked | Preserved, never resolved (FR-031) | Log entry + diagnostic on the offending file |
 | Option-level mismatch | A known option's preset-effective value is not representable by that option (non-boolean for a checkbox, or a multistate value matching no state id) | Choices listed normally | Blocked | Normalized normally | Log entry + diagnostic on the file that supplied the value; affected option row shows the mismatch |
@@ -236,9 +236,9 @@ Not errors: `when.model` or `when.project` values that do not correspond to any 
 
 ---
 
-## Decision 16 — `Presets` selector iconography
+## Decision 16 — `Preset` selector iconography
 
-**Decision**: Use the `layers` codicon for the `Presets` selector header, keeping `check` for the active choice and `images/blank-tree-icon.svg` as the inactive spacer, matching the three existing selectors.
+**Decision**: Use the `layers` codicon for the `Preset` selector header, keeping `check` for the active choice and `images/blank-tree-icon.svg` as the inactive spacer, matching the three existing selectors.
 
 **Rationale**: FR-002 requires the same interaction conventions as the existing selectors, and `Configuration View Iconography` in `specs/product-spec.md` enumerates one distinct icon per selector. `layers` reads as a stack of overlaid option layers, which is what a preset is. It must be added to that product-spec list as part of FR-029.
 

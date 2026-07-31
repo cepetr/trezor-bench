@@ -74,12 +74,12 @@ suite("SelectorHeaderItem icons", () => {
   });
 
   test("uses the layers icon for preset (research Decision 16)", () => {
-    const item = new SelectorHeaderItem("preset", "Presets", "Default", false);
+    const item = new SelectorHeaderItem("preset", "Preset", "Default", false);
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "layers");
   });
 
   test("preset selector description falls back to '—' when nothing has resolved yet", () => {
-    const item = new SelectorHeaderItem("preset", "Presets", undefined, false);
+    const item = new SelectorHeaderItem("preset", "Preset", undefined, false);
     assert.strictEqual(item.description, "—");
   });
 
@@ -965,7 +965,7 @@ suite("ConfigurationTreeProvider – Executable row", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ConfigurationTreeProvider – Presets selector (feature 009, US1)
+// ConfigurationTreeProvider – Preset selector (feature 009, US1)
 // ---------------------------------------------------------------------------
 
 function makeManifestState(): ManifestStateLoaded {
@@ -1018,7 +1018,7 @@ function makeLoadedPresetState(available: AvailablePreset[]): { state: PresetSta
 
 const DEFAULT_ONLY: AvailablePreset[] = [{ id: "default", label: "Default", isDefault: true }];
 
-suite("ConfigurationTreeProvider – Presets selector", () => {
+suite("ConfigurationTreeProvider – Preset selector", () => {
   let provider: ConfigurationTreeProvider;
 
   setup(() => {
@@ -1033,13 +1033,17 @@ suite("ConfigurationTreeProvider – Presets selector", () => {
     return provider.getChildren(new SectionItem("build-context", "Build Selection"));
   }
 
-  test("Presets is the fourth Build Selection child, directly below Component (FR-001)", () => {
+  test("Preset is the fourth Build Selection child, directly below Component (FR-001)", () => {
     provider.update(makeManifestState(), makeActiveConfig(), []);
     const children = buildContextChildren() as SelectorHeaderItem[];
     assert.strictEqual(children.length, 4);
     assert.deepStrictEqual(
       children.map((c) => c.selectorKind),
       ["model", "target", "component", "preset"]
+    );
+    assert.deepStrictEqual(
+      children.map((c) => c.label),
+      ["Model", "Target", "Component", "Preset"]
     );
   });
 
@@ -1073,7 +1077,7 @@ suite("ConfigurationTreeProvider – Presets selector", () => {
     provider.update(makeManifestState(), makeActiveConfig(), []);
     provider.setExpandedSelector("preset");
     const children = provider.getChildren(
-      new SelectorHeaderItem("preset", "Presets", undefined, true)
+      new SelectorHeaderItem("preset", "Preset", undefined, true)
     );
     assert.strictEqual(children.length, 1);
     assert.ok(children[0] instanceof PlaceholderItem);
@@ -1094,7 +1098,7 @@ suite("ConfigurationTreeProvider – Presets selector", () => {
     provider.updatePresets(invalidState, "default", []);
     provider.setExpandedSelector("preset");
     const children = provider.getChildren(
-      new SelectorHeaderItem("preset", "Presets", undefined, true)
+      new SelectorHeaderItem("preset", "Preset", undefined, true)
     );
     assert.ok(children[0] instanceof WarningItem);
     assert.ok(
@@ -1114,7 +1118,7 @@ suite("ConfigurationTreeProvider – Presets selector", () => {
     provider.updatePresets(state, "test", available);
     provider.setExpandedSelector("preset");
     const children = provider.getChildren(
-      new SelectorHeaderItem("preset", "Presets", undefined, true)
+      new SelectorHeaderItem("preset", "Preset", undefined, true)
     ) as SelectorChoiceItem[];
     assert.strictEqual(children.length, 2);
     assert.strictEqual(children[0].entryId, "default");

@@ -10,7 +10,7 @@
 
 ## Summary
 
-Add `xtask` build-preset support to the Configuration view: a fourth `Presets` selector under `Build Selection`, preset-relative build-option display and override semantics, and preset-aware argument generation for `Build`, `Clippy`, and `Check`.
+Add `xtask` build-preset support to the Configuration view: a fourth `Preset` selector under `Build Selection`, preset-relative build-option display and override semantics, and preset-aware argument generation for `Build`, `Clippy`, and `Check`.
 
 The design adds one new read-only input slice — `src/presets/` with a `PresetService` modeled on the existing `ManifestService`, a pure TOML parser/validator, and a pure resolution layer — and then threads its output through the three existing seams: `ActiveConfig` gains a `presetId`, `ResolvedOption` becomes preset-relative (`presetValue`, `presetState`, `isOverride`), and `deriveWorkflowArguments` gains the `-p` pair plus override-only flag emission. Everything else the extension does stays byte-identical: the build-context display, status bar, task labels, command names, artifact resolution, IntelliSense, and the `Clean`, `Flash to Device`, `Upload to Device`, and `Start Debugging` argument lists.
 
@@ -32,11 +32,11 @@ Preset files are resolved from the same directory `xtask` itself reads (`<cargo-
 
 **Critical Product Details**:
 
-- `Presets` is the fourth selector, positioned directly below `Component`, and follows the existing expand/collapse, active-choice, loading, and refresh conventions — including the single-expanded-selector rule.
+- `Preset` is the fourth selector, positioned directly below `Component`, and follows the existing expand/collapse, active-choice, loading, and refresh conventions — including the single-expanded-selector rule.
 - The synthetic `Default` choice is always present and always first, even when neither file declares a `[[defaults]]` fragment. It means defaults-only behavior and never emits a preset argument; `-p default` is never emitted.
 - The preset id lives in the same workspace-scoped active-configuration record as model, target, and component, and follows the same save/restore/normalize/refresh lifecycle — while staying out of every display string.
 - An absent `presets.toml` behaves exactly like an empty file and is never reported.
-- A file-level invalid preset input replaces the choices under `Presets` with an error row, logs details, raises diagnostics on the offending file, blocks `Build`/`Clippy`/`Check`, and preserves the saved preset id without resolving it.
+- A file-level invalid preset input replaces the choices under `Preset` with an error row, logs details, raises diagnostics on the offending file, blocks `Build`/`Clippy`/`Check`, and preserves the saved preset id without resolving it.
 - Effective-value precedence is shared defaults → user defaults → shared active-preset fragments → user active-preset fragments → explicit overrides, with file order preserved inside each layer and omitted keys retaining prior values.
 - Fragment applicability is evaluated against the active model, the active component (upstream `project`), and the active target's emulator flag.
 - The manifest stays the source of truth for which options exist and how they are displayed; multistate options no longer require a manifest-authored default.
@@ -74,7 +74,7 @@ Post-Phase-1 re-check: passed.
 - [x] **I. TypeScript Extension First** — all new code is TypeScript against the stable VS Code API at the 1.105 baseline. `smol-toml` is a pure-JS, zero-dependency library that both `tsc` (CommonJS) and the esbuild bundle resolve without special handling. No work is done for older VS Code releases.
 - [x] **II. Manifest-Driven Behavior** — the manifest stays authoritative for which options exist, their labels, groups, availability, types, and states (FR-018). Preset applicability is evaluated from manifest data only: model ids, component ids, and the active target's `flag` (research Decision 3) — no hardcoded firmware matrix and no id-string special-casing. Preset inputs are resolved from the existing `tfTools.cargoWorkspacePath` setting, and invalid or missing inputs trigger visible normalization or explicit failure rather than stale state.
 - [x] **III. Tests Are Mandatory** — every user story gets primary-path unit coverage plus integration coverage. The changed areas are exactly the ones the constitution names as requiring integration-level tests: VS Code integration (tree, context keys, commands), manifest parsing (`BuildOption.id`), task execution (argument derivation via the task provider), diagnostics (preset issues), and persisted state (`presetId`, legacy records). Tests are scheduled before their implementation tasks.
-- [x] **IV. Failures Must Be Visible** — the two-tier failure model in research Decision 10 gives every failure a user-visible surface plus a persistent signal: an error row under `Presets` or on the affected option row, a diagnostic on the file that caused it, and a `Trezor Firmware Tools` log entry. Blocked launches report a reason and log it. No path falls back to a guessed argument set or to stale preset data.
+- [x] **IV. Failures Must Be Visible** — the two-tier failure model in research Decision 10 gives every failure a user-visible surface plus a persistent signal: an error row under `Preset` or on the affected option row, a diagnostic on the file that caused it, and a `Trezor Firmware Tools` log entry. Blocked launches report a reason and log it. No path falls back to a guessed argument set or to stale preset data.
 - [x] **V. Keep It Small And Clear** — one new slice reusing the existing service/parse/state pattern rather than a new architecture; no new settings, no new contributed commands, no new persistence store. The TOML dependency replaces a parser we would otherwise have to write and keep in sync with `xtask`. Identifiers stay short (`PresetState`, `PresetFilter`, `presetValue`, `isOverride`). No complexity exception is required.
 - [x] **Product-spec alignment** — affected areas are named above, the design stays inside them, and the `specs/product-spec.md` / `specs/glossary.md` updates are part of this change (FR-029), not a follow-up.
 - [x] **Product-detail capture** — the `Critical Product Details` list and `Critical Detail Reconciliation` below carry the tree-view, event-ordering, persistence, command-visibility, and argument-shape details forward explicitly.
@@ -141,7 +141,7 @@ src/
 │   ├── diagnostics.ts            # preset-state diagnostics
 │   └── log-channel.ts            # preset-state and preset-failure logging
 ├── ui/
-│   └── configuration-tree.ts     # Presets selector, error row, preset-relative emphasis
+│   └── configuration-tree.ts     # Preset selector, error row, preset-relative emphasis
 ├── workspace/
 │   └── settings.ts               # resolve the two preset input paths
 ├── extension.ts                  # wire PresetService, selectPreset, presetBlocked key

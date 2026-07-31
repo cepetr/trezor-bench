@@ -14,12 +14,12 @@
 - **Scope Guard**: This feature adds preset discovery and selection, preset-relative build-option behavior, and preset-aware argument generation for Build, Clippy, and Check. It does not change Clean, Flash to Device, Upload to Device, Start Debugging, artifact resolution, IntelliSense, excluded-file visibility, status-bar content, command names, or task labels.
 - **Terminology Guard**: Existing terms `active build context`, `Configuration view`, `Build Selection`, `Build Options`, `build option`, `checkbox option`, `multistate option`, `option state`, `xtask`, `Build`, `Clippy`, and `Check` MUST retain their glossary meanings. The glossary definition of `active configuration` MUST be extended to include the selected preset id in its persisted workspace-state record. The glossary MUST add and consistently define `preset`, `active preset`, `default preset`, `preset-effective value`, and `build-option override`. The active preset remains separate from the active build context, which is still the selected model, target, and component.
 - **Critical Product Details**:
-  - `Presets` appears as a fourth selector directly below `Component` in `Build Selection`, and follows the existing selector interaction conventions.
+  - `Preset` appears as a fourth selector directly below `Component` in `Build Selection`, and follows the existing selector interaction conventions.
   - The tree always shows a synthetic `Default` choice, including when neither preset file defines any `[[defaults]]` fragments. It represents defaults-only behavior rather than a named preset and never emits a preset argument.
   - The selected preset id is retained in the same workspace-scoped active-configuration record and follows the same save, restore, normalization, and refresh lifecycle as the selected model, component/project, and target/emulator, while remaining excluded from build-context display text.
   - Available named presets and preset-effective values come from both the shared `presets.toml` file and optional `user-presets.toml` file.
   - An absent `presets.toml` contributes no shared fragments and is treated exactly like an empty file; it is not an error.
-  - A malformed `presets.toml`, or one containing validation errors, replaces the preset choices under `Presets` with an error message and records the details in log output.
+  - A malformed `presets.toml`, or one containing validation errors, replaces the preset choices under `Preset` with an error message and records the details in log output.
   - Effective values follow upstream precedence: shared defaults, user defaults, shared selected-preset fragments, user selected-preset fragments, then explicit build-option overrides.
   - Matching preset fragments retain file order; later matching fragments replace earlier values for the same option, while omitted options retain their prior effective values.
   - Preset fragment applicability is evaluated against the selected model, component, and emulator state represented by the active target.
@@ -45,13 +45,13 @@ As a firmware developer, I can inspect and select a build preset in the Configur
 
 **Why this priority**: Preset selection is the entry point for every other behavior in this feature and provides immediate user value on its own.
 
-**Independent Test**: Open a supported workspace containing shared and user preset definitions, expand `Presets`, select a named preset, and verify that the selected row and selector description update while existing build-context labels remain unchanged.
+**Independent Test**: Open a supported workspace containing shared and user preset definitions, expand `Preset`, select a named preset, and verify that the selected row and selector description update while existing build-context labels remain unchanged.
 
 **Acceptance Scenarios**:
 
-1. **Given** shared presets and user presets define distinct names, **When** the user expands `Presets`, **Then** every preset available for the active model, target, and component is listed once and the synthetic `Default` choice is included.
-2. **Given** neither preset file defines any `[[defaults]]` fragments, **When** the user expands `Presets`, **Then** `Default` is still shown as a selectable choice.
-3. **Given** a named preset is available, **When** the user selects it, **Then** the `Presets` selector description and active-choice marker update immediately and its id is saved and restored in the same workspace-scoped active-configuration record as the selected model, component/project, and target/emulator.
+1. **Given** shared presets and user presets define distinct names, **When** the user expands `Preset`, **Then** every preset available for the active model, target, and component is listed once and the synthetic `Default` choice is included.
+2. **Given** neither preset file defines any `[[defaults]]` fragments, **When** the user expands `Preset`, **Then** `Default` is still shown as a selectable choice.
+3. **Given** a named preset is available, **When** the user selects it, **Then** the `Preset` selector description and active-choice marker update immediately and its id is saved and restored in the same workspace-scoped active-configuration record as the selected model, component/project, and target/emulator.
 4. **Given** a saved named preset is no longer available after preset inputs or the active build context change, **When** preset state is refreshed, **Then** the active preset normalizes to `default` and the selector shows that value.
 5. **Given** the active preset changes, **When** status-bar text, task labels, and command names are refreshed, **Then** they continue to identify only the selected model, target, and component and contain no preset name.
 6. **Given** either preset file becomes invalid while a named preset is saved, **When** valid preset data is later restored, **Then** the saved preset is restored if available and is normalized to `default` only if it is unavailable in the restored data.
@@ -97,9 +97,9 @@ As a firmware developer, I can run Build, Clippy, or Check and have the extensio
 ### Edge Cases
 
 - `user-presets.toml` is absent: shared presets remain available and no warning is shown for the intentionally optional file.
-- `user-presets.toml` is malformed, unreadable, or contains validation errors: stale preset and preset-effective state is not used; the saved preset id is preserved without being resolved, an error message replaces the choices under `Presets`, details are logged, and Build, Clippy, and Check are blocked until the file is fixed.
+- `user-presets.toml` is malformed, unreadable, or contains validation errors: stale preset and preset-effective state is not used; the saved preset id is preserved without being resolved, an error message replaces the choices under `Preset`, details are logged, and Build, Clippy, and Check are blocked until the file is fixed.
 - `presets.toml` is absent: it contributes no shared fragments and behaves exactly like an empty file; `default` and any presets contributed by `user-presets.toml` remain available, with no missing-file warning.
-- `presets.toml` is malformed or contains validation errors: stale preset and preset-effective state is not used; the saved preset id is preserved without being resolved, an error message appears under the `Presets` selector in place of the preset choices, details are logged, and preset-aware Build, Clippy, and Check execution is blocked.
+- `presets.toml` is malformed or contains validation errors: stale preset and preset-effective state is not used; the saved preset id is preserved without being resolved, an error message appears under the `Preset` selector in place of the preset choices, details are logged, and preset-aware Build, Clippy, and Check execution is blocked.
 - The two files define the same named preset: the UI lists the name once and effective-value calculation applies shared fragments before user fragments.
 - A file contains multiple fragments for one preset: every matching fragment is applied in declaration order, and nonmatching fragments contribute no values.
 - A fragment omits `when`: it matches every active model, component, and target.
@@ -113,8 +113,8 @@ As a firmware developer, I can run Build, Clippy, or Check and have the extensio
 
 ### Functional Requirements
 
-- **FR-001**: The extension MUST add a `Presets` selector directly below `Component` in the `Build Selection` section of the Configuration view.
-- **FR-002**: The `Presets` selector MUST use the same expand, collapse, active-choice, loading, and refresh interaction conventions as the existing build-selection selectors.
+- **FR-001**: The extension MUST add a `Preset` selector directly below `Component` in the `Build Selection` section of the Configuration view.
+- **FR-002**: The `Preset` selector MUST use the same expand, collapse, active-choice, loading, and refresh interaction conventions as the existing build-selection selectors.
 - **FR-003**: The extension MUST discover available named presets from both the shared `presets.toml` input and the optional `user-presets.toml` input, list duplicate names once, and preserve first declaration order across the shared file followed by the user file.
 - **FR-004**: The extension MUST always show a synthetic tree choice labeled `Default`, even when neither file contains a `[[defaults]]` fragment; selecting it MUST represent selection of no named preset and MUST NOT imply that a preset named `default` exists.
 - **FR-005**: The extension MUST recognize `[[defaults]]` fragments in both `presets.toml` and `user-presets.toml`, automatically apply matching fragments as base option inputs before any selected named-preset fragments, and MUST NOT expose  `defaults` as a named preset choice.
@@ -140,9 +140,9 @@ As a firmware developer, I can run Build, Clippy, or Check and have the extensio
 - **FR-025**: Clean, Flash to Device, Upload to Device, and Start Debugging MUST retain their pre-feature command argument behavior and MUST NOT receive a preset argument solely because a preset is selected.
 - **FR-026**: The extension MUST watch both preset inputs for creation, change, and deletion and refresh preset-dependent UI and workflow readiness without requiring a window reload.
 - **FR-027**: When `presets.toml` is absent, the extension MUST treat it exactly as an empty shared preset file, continue processing `user-presets.toml` when present, and MUST NOT report the absence as an error.
-- **FR-028**: When `presets.toml` is malformed, unreadable, or contains validation errors, the extension MUST replace the preset choices under the `Presets` selector with an error message, MUST write the error details to log output, and MUST prevent stale or guessed preset-effective values from being used for Build, Clippy, or Check.
+- **FR-028**: When `presets.toml` is malformed, unreadable, or contains validation errors, the extension MUST replace the preset choices under the `Preset` selector with an error message, MUST write the error details to log output, and MUST prevent stale or guessed preset-effective values from being used for Build, Clippy, or Check.
 - **FR-029**: Implementation of this feature MUST update `specs/product-spec.md` and `specs/glossary.md` to incorporate preset behavior and remove conflicting manifest-default and three-selector-only statements.
-- **FR-030**: When `user-presets.toml` is malformed, unreadable, contains validation errors, or supplies unsupported preset values, the extension MUST replace the preset choices under the `Presets` selector with an error message, MUST write the error details to log output, MUST report file-backed syntax or semantic issues as diagnostics, and MUST block Build, Clippy, and Check until the file is valid.
+- **FR-030**: When `user-presets.toml` is malformed, unreadable, contains validation errors, or supplies unsupported preset values, the extension MUST replace the preset choices under the `Preset` selector with an error message, MUST write the error details to log output, MUST report file-backed syntax or semantic issues as diagnostics, and MUST block Build, Clippy, and Check until the file is valid.
 - **FR-031**: While either preset file is invalid, the extension MUST preserve the saved preset id without resolving or replacing it; when valid preset data returns, the extension MUST restore that preset if available and otherwise normalize it to `default`.
 
 ### Key Entities
@@ -168,13 +168,13 @@ As a firmware developer, I can run Build, Clippy, or Check and have the extensio
   - **User-visible response**: The extension behaves as though the shared file were empty. `default` and presets from a valid `user-presets.toml` remain selectable, and no missing-file warning is shown.
   - **Persistent signal**: No failure signal is produced for absence alone.
 - **Trigger**: `presets.toml` is unreadable, malformed, or contains validation errors.
-  - **User-visible response**: The `Presets` selector remains visible, but an error message replaces its preset choices. Build, Clippy, and Check are unavailable until valid preset data is restored; the saved preset id is not changed by the error state.
+  - **User-visible response**: The `Preset` selector remains visible, but an error message replaces its preset choices. Build, Clippy, and Check are unavailable until valid preset data is restored; the saved preset id is not changed by the error state.
   - **Persistent signal**: Error details are written to log output; syntax and semantic issues tied to file content are also reported as diagnostics.
 - **Trigger**: The optional user preset input is absent.
   - **User-visible response**: Shared presets and defaults continue to work without a warning.
   - **Persistent signal**: No failure signal is produced for absence alone.
 - **Trigger**: `user-presets.toml` is unreadable, malformed, contains validation errors, or supplies unsupported preset values.
-  - **User-visible response**: The `Presets` selector remains visible, but an error message replaces its preset choices. Build, Clippy, and Check are unavailable until valid user preset data is restored; the saved preset id is not changed by the error state.
+  - **User-visible response**: The `Preset` selector remains visible, but an error message replaces its preset choices. Build, Clippy, and Check are unavailable until valid user preset data is restored; the saved preset id is not changed by the error state.
   - **Persistent signal**: Error details are written to log output; syntax and semantic issues tied to file content are also reported as diagnostics.
 - **Trigger**: A previously selected named preset is no longer available for the active build context.
   - **User-visible response**: The active preset changes to `default`, and dependent Build Options refresh immediately.
@@ -193,7 +193,7 @@ As a firmware developer, I can run Build, Clippy, or Check and have the extensio
 - **SC-001**: In all tested supported workspaces, users can select any preset available for the active model, target, and component in no more than three Configuration view interactions.
 - **SC-002**: Across a representative matrix containing shared defaults, user defaults, named shared fragments, named user fragments, conditional fragments, checkbox options, and multistate options, 100% of displayed preset-effective values match the documented precedence rules.
 - **SC-003**: Across Build, Clippy, and Check scenarios covering default and named presets, 100% of launched commands include the correct preset argument and omit every option argument whose selected value equals its preset-effective value.
-- **SC-004**: Preset-file or active-build-context changes are reflected in the Presets and Build Options surfaces within two seconds without a window reload.
+- **SC-004**: Preset-file or active-build-context changes are reflected in the Preset and Build Options surfaces within two seconds without a window reload.
 - **SC-005**: In regression checks, 100% of status-bar text, task labels, command names, Clean/flash/upload/debug argument behavior, artifact paths, and IntelliSense context remain identical when only the active preset changes.
 - **SC-006**: In usability verification, at least 90% of participants can identify which build-option values override the active preset on their first attempt without consulting command-line output.
 
