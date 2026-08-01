@@ -18,3 +18,17 @@
 - Workflow tasks now launch `cargo xtask` through `ProcessExecution`, inheriting the VS Code session environment without shell-mediated startup.
 ### Fixed
 - Build artifact status and related actions now refresh after running `cargo xtask build` or `cargo xtask clean` outside the extension.
+
+## 0.3.0 - 2026-08-01
+### Added
+- Added a `Preset` selector below `Component` in `Build Selection`, listing every preset declared in `presets.toml` and the optional `user-presets.toml` plus a synthetic `Default` choice. The selected preset id is saved and restored with the rest of the active configuration and never appears in the status bar, task labels, or command names.
+- Added preset-relative build options: controls display the preset-effective value calculated from shared defaults, user defaults, shared preset fragments, and user preset fragments, and only values explicitly overridden away from that baseline are emphasized. Overrides are discarded for options the newly active preset or build context calculates differently, and retained for those calculated identically.
+- Added preset-aware `Build`, `Clippy`, and `Check` execution: the command appends `-p <preset-name>` only for a non-default preset and emits build-option arguments only for overrides that differ from the preset-effective values.
+- Added error reporting for preset inputs. A missing `presets.toml` means the repository's `xtask` predates preset support, so the selector reports the file as unavailable; a malformed or invalid preset file replaces the preset choices with an error message. In both cases details go to the log, the saved preset id is preserved, and `Build`, `Clippy`, and `Check` are blocked while `Clean` stays available. An absent `user-presets.toml` remains optional.
+- Added persistence of each configuration pane's collapse state across window reloads.
+### Changed
+- Split the single `Configuration` tree view into three sibling panes in the activity-bar container — `Build Selection`, `Build Artifacts`, and `Build Options`, in that order — each with its own header and divider. Row labels, icons, descriptions, tooltips, checkboxes, inline artifact actions, and placeholder wording are unchanged. `Build Options` starts collapsed.
+- Moved the workflow toolbar from the container title to the `Build Selection` pane header, keeping its full membership, order, grouping, icons, and enablement. The host reveals pane header actions on hover or focus and hides them while the pane is collapsed; `Build Options` and `Build Artifacts` expose no workflow actions.
+- Selecting the status bar configuration item now opens the container, expands `Build Selection`, and focuses it.
+- Renamed the activity-bar container from `Trezor` to `Trezor Firmware Tools`.
+- Multistate build options no longer require manifest-authored defaults; the selected state is inferred from the preset-effective value when no override exists.
