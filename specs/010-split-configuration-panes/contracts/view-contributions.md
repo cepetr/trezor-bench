@@ -22,8 +22,8 @@ Three entries under `contributes.views["tf-tools"]`, in this exact array order â
 | # | View id | `name` | `type` | `icon` | `visibility` |
 |---|---|---|---|---|---|
 | 1 | `tfTools.configuration` (inherited) | `Build Selection` | `tree` | `images/tf-tools.svg` | omitted (defaults to `visible`) |
-| 2 | new id, `tfTools.` prefixed | `Build Options` | `tree` | `images/tf-tools.svg` | `collapsed` |
-| 3 | new id, `tfTools.` prefixed | `Build Artifacts` | `tree` | `images/tf-tools.svg` | omitted (defaults to `visible`) |
+| 2 | new id, `tfTools.` prefixed | `Build Artifacts` | `tree` | `images/tf-tools.svg` | omitted (defaults to `visible`) |
+| 3 | new id, `tfTools.` prefixed | `Build Options` | `tree` | `images/tf-tools.svg` | `collapsed` |
 
 **Rules**
 

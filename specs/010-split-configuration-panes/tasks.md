@@ -141,7 +141,7 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 **Independent Test**: Open the `Trezor` container on a fresh profile and verify the panes appear top-to-bottom as `Build Selection`, `Build Artifacts`, `Build Options`, with `Build Options` still collapsed and the other two expanded.
 
 - [X] T028 Record the reorder decision and update every order statement in [spec.md](spec.md) — the `Clarifications` session, the `Behavior Contract` fixed-order bullet, FR-001, and SC-001 — to `Build Selection`, `Build Artifacts`, `Build Options`
-- [ ] T029 Swap rows 2 and 3 of the §2 view table in [contracts/view-contributions.md](contracts/view-contributions.md) so the contract's array order matches FR-001, leaving `visibility: collapsed` attached to `Build Options`
+- [X] T029 Swap rows 2 and 3 of the §2 view table in [contracts/view-contributions.md](contracts/view-contributions.md) so the contract's array order matches FR-001, leaving `visibility: collapsed` attached to `Build Options`
 - [ ] T030 Update the pane-order assertion in `src/test/integration/configuration-panes.integration.test.ts` to the new order, and retarget the "entry 2 / entry 3" id assertions accordingly — test before implementation, so this fails against the current manifest
 - [ ] T031 Move the `tfTools.buildArtifacts` entry ahead of `tfTools.buildOptions` in `contributes.views["tf-tools"]` in `package.json`, changing nothing else about either entry
 - [ ] T032 [P] Align the three `createTreeView` calls and their `context.subscriptions` order in `src/extension.ts` with the declared pane order, so the source reads in pane order (no behavior change — `package.json` array order is what the host renders)
