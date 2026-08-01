@@ -31,7 +31,6 @@ import { normalizePresetId } from "../../configuration/normalize-config";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
 import {
   ConfigurationTreeProvider,
-  SectionItem,
   SelectorHeaderItem,
 } from "../../ui/configuration-tree";
 import { formatStatusBarText } from "../../ui/status-bar";
@@ -95,12 +94,7 @@ function activeConfig(overrides: Partial<ActiveConfig> = {}): ActiveConfig {
 }
 
 function buildContextChildren(provider: ConfigurationTreeProvider): SelectorHeaderItem[] {
-  const top = provider.getChildren() as vscode.TreeItem[];
-  const contextSection = top.find(
-    (i) => i instanceof SectionItem && (i as SectionItem).sectionId === "build-context"
-  ) as SectionItem;
-  assert.ok(contextSection, "build-context section not found");
-  return provider.getChildren(contextSection) as SelectorHeaderItem[];
+  return provider.paneRootChildren("build-selection") as SelectorHeaderItem[];
 }
 
 // ---------------------------------------------------------------------------

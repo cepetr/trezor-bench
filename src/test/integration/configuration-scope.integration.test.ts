@@ -63,9 +63,17 @@ suite("Scope guard — no cross-slice commands", () => {
   test("only expected tfTools commands are registered", async () => {
     await activateExtension();
     const allCommands = await vscode.commands.getCommands(true);
+    // Each contributed view auto-generates its own `<viewId>.focus` and
+    // `<viewId>.resetViewLocation` commands; the three configuration panes'
+    // ids are host-generated, not contributed, and must be excluded here.
+    const VIEW_COMMAND_PREFIXES = [
+      "tfTools.configuration.",
+      "tfTools.buildOptions.",
+      "tfTools.buildArtifacts.",
+    ];
     const tfCommands = allCommands
       .filter((cmd) => cmd.startsWith("tfTools."))
-      .filter((cmd) => !cmd.startsWith("tfTools.configuration."));
+      .filter((cmd) => !VIEW_COMMAND_PREFIXES.some((prefix) => cmd.startsWith(prefix)));
 
     // Allowed commands through Debug Launch (Feature 6) and earlier slices
     const ALLOWED = new Set([

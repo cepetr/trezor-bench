@@ -6,8 +6,8 @@ This glossary defines the preferred product and documentation terms used by the 
 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
-| **Trezor Firmware Tools** | The formal product name of the extension. | Use in the title, introduction, and places where the official product name matters. |
-| **Trezor** | The compact user-facing label used in space-constrained UI surfaces. | Use for the activity bar container title, command category prefix, and other compact UI labels. Do not use it as a replacement for the formal product name in general prose. |
+| **Trezor Firmware Tools** | The formal product name of the extension. | Use in the title, introduction, the activity bar container title, the log output channel name, and places where the official product name matters. |
+| **Trezor** | The compact user-facing label used in space-constrained UI surfaces. | Use for the command category prefix and other compact UI labels. Not used for the activity bar container title, which carries the formal product name. Do not use it as a replacement for the formal product name in general prose. |
 | **the extension** | The default prose reference to Trezor Firmware Tools after first mention. | Preferred term for most requirement and behavior statements throughout the specification. |
 | **tf-tools** | Short internal identifier for the product. | Use for file names, setting prefixes, variable names, command ids, and compact references. Do not use as the main product name in user-facing prose. |
 | **workspace** | The single opened VS Code workspace folder in which the extension operates. | The product assumes a single-root workspace. |
@@ -21,8 +21,8 @@ This glossary defines the preferred product and documentation terms used by the 
 | --- | --- | --- |
 | **active build context** | The currently selected combination of model, target, and component that drives visible UI state and runtime behaviors. | Preferred product term when behavior depends on the current selection. Stays separate from the active preset, which never appears in build-context display text. |
 | **active configuration** | The persisted workspace-state record that stores the selected model id, target id, component id, active preset id, and save timestamp. | Use for persistence and normalization behavior; avoid using it as a synonym for any visible UI section. Records persisted before preset support was added have no preset id and are read as the default preset. |
-| **Configuration view** | The tree view contributed by the extension inside the `Trezor` activity bar container. | Preferred term for the extension's main side-bar surface. |
-| **Build Selection** | The Configuration view section that shows the current model, target, component, and preset selectors. | Use this exact capitalization for the UI surface. |
+| **Configuration view** | The collective term for the three sibling tree-view panes — `Build Selection`, `Build Artifacts`, `Build Options`, in that order — contributed by the extension inside the `Trezor Firmware Tools` activity bar container. | Preferred term for the extension's main side-bar surface as a whole; use the individual pane name when a statement applies to only one pane. |
+| **Build Selection** | The Configuration view pane that shows the current model, target, component, and preset selectors. | Use this exact capitalization for the UI surface. |
 | **preset** | A named, ordered collection of build-option value fragments defined in the required shared `presets.toml` file or the optional `user-presets.toml` file. Each fragment is matched against the active model, component, and target-derived emulator state; the preset itself is always offered, whatever the active build context. | Use for the named choices offered under the `Preset` selector, distinct from the always-present default preset. Matching decides which fragments a preset contributes, never whether it is listed: a preset with no matching fragment stays selectable and contributes nothing beyond the preset-file defaults. When `presets.toml` is absent, the repository's `xtask` does not support presets: no choices are offered at all and `Build`, `Clippy`, and `Check` are blocked. |
 | **active preset** | The single preset selection — a named preset or the default preset — used to derive preset-effective build-option values for `Build`, `Clippy`, and `Check`. | Its id is stored in the active configuration but stays separate from the active build context and its display text. |
 | **default preset** | The always-present synthetic `Default` choice under the `Preset` selector. It applies matching shared and user preset-file defaults without selecting a named preset and never produces a `-p` command-line argument. | Use `Default` (capitalized) for the UI label; use "default preset" in prose describing its behavior. |
@@ -47,7 +47,7 @@ This glossary defines the preferred product and documentation terms used by the 
 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
-| **Build Options** | The Configuration view section that shows manifest-driven build options. | Use this exact capitalization for the UI surface. |
+| **Build Options** | The Configuration view pane that shows manifest-driven build options. | Use this exact capitalization for the UI surface. |
 | **build option** | A manifest-defined option that can affect build behavior and command arguments. | Generic term covering both checkbox and multistate forms. |
 | **checkbox option** | A build option that is either enabled or disabled. | Preferred term over "boolean option" in user-facing prose. |
 | **multistate option** | A build option that exposes one selected state from a fixed list. | Preferred term over "enum option" in user-facing prose. |
@@ -62,7 +62,7 @@ This glossary defines the preferred product and documentation terms used by the 
 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
-| **Build Artifacts** | The Configuration view section that reports artifact status and exposes artifact-related actions. | Use this exact capitalization for the UI surface. |
+| **Build Artifacts** | The Configuration view pane that reports artifact status and exposes artifact-related actions. | Use this exact capitalization for the UI surface. |
 | **artifacts root** | The directory configured by `tfTools.artifactsPath` that contains model-specific artifact folders. | Preferred term over generic phrases like "artifacts directory" when precision matters. |
 | **artifact folder** | The model-defined subfolder under the artifacts root where that model's derived files are expected. | Comes from `model.artifactFolder`. |
 | **artifact basename** | The shared base filename stem formed from `component.artifactName` plus `target.artifactSuffix`. | Useful when describing compile commands, binary, and map file derivation. |
@@ -133,7 +133,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | **configuration variable resolution** | The extension behavior that expands supported `${...}` references while reading string-based tf-tools settings. | VS Code does not perform this automatically for extension settings; tf-tools resolves supported references in path settings, `tfTools.taskExtraEnv`, and excluded-file glob settings. |
 | **command surface** | A user-facing place where a command is exposed, such as the Command Palette, a view header, an overflow menu, or an inline row action. | Use when describing shared command availability and visibility rules across multiple entry points. |
 | **invalid when expression** | A manifest `when`, `flashWhen`, or `uploadWhen` expression that cannot be parsed, validated, or resolved against known ids. | Use for manifest validation failures rather than runtime false results. |
-| **status bar configuration item** | The status bar entry that shows the active build context and opens the Configuration view. | Preferred product phrase over generic "status bar text". |
+| **status bar configuration item** | The status bar entry that shows the active build context and, when selected, opens the `Trezor Firmware Tools` container and expands and focuses `Build Selection`. | Preferred product phrase over generic "status bar text". |
 | **diagnostic** | A persistent file-backed problem shown through the Problems view and relevant editors. | Use for manifest-backed validation issues. |
 | **log output** | The dedicated `Trezor Firmware Tools` output channel that records runtime warnings, errors, and detail. | Preferred term over generic "logs" when the VS Code output channel is meant. |
 | **user-visible error** | An error surfaced directly in the UI, typically as a VS Code notification or disabled action state. | Use when distinguishing transient UX feedback from persistent diagnostics or logs. |

@@ -12,22 +12,12 @@ import { PresetChoice } from "../presets/preset-resolution";
 // Tree item types
 // ---------------------------------------------------------------------------
 
-export type SectionId = "build-context" | "build-options" | "build-artifacts";
-
-function getSectionCollapsibleState(sectionId: SectionId): vscode.TreeItemCollapsibleState {
-  return sectionId === "build-options"
-    ? vscode.TreeItemCollapsibleState.Collapsed
-    : vscode.TreeItemCollapsibleState.Expanded;
-}
-
-export class SectionItem extends vscode.TreeItem {
-  constructor(public readonly sectionId: SectionId, label: string) {
-    super(label, getSectionCollapsibleState(sectionId));
-    this.id = `section:${sectionId}`;
-    this.contextValue = sectionId;
-    this.tooltip = "";
-  }
-}
+/**
+ * Identifies one of the three sibling panes in the `tf-tools` container.
+ * `build-selection` is the retitled, id-inheriting successor of the section
+ * that used to be called `build-context`.
+ */
+export type PaneId = "build-selection" | "build-options" | "build-artifacts";
 
 export class WarningItem extends vscode.TreeItem {
   constructor(message: string) {
@@ -362,6 +352,20 @@ export class ConfigurationTreeProvider
   readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined> =
     this._onDidChangeTreeData.event;
 
+  /**
+   * Per-pane refresh signal: fired once per `PaneId` whose rows an update
+   * affects, so a `PaneTreeProvider` facade can relay only what concerns it
+   * (research.md R4) without re-rendering panes that provably cannot have changed.
+   */
+  private readonly _onDidChangePane = new vscode.EventEmitter<PaneId>();
+  readonly onDidChangePane: vscode.Event<PaneId> = this._onDidChangePane.event;
+
+  private firePanes(...panes: PaneId[]): void {
+    for (const pane of panes) {
+      this._onDidChangePane.fire(pane);
+    }
+  }
+
   /** Updates the displayed manifest state and refreshes the view. */
   update(
     state: ManifestState,
@@ -377,6 +381,7 @@ export class ConfigurationTreeProvider
       this._collapsedGroups.clear();
     }
     this._onDidChangeTreeData.fire(undefined);
+    this.firePanes("build-selection", "build-options");
   }
 
   /**
@@ -392,6 +397,7 @@ export class ConfigurationTreeProvider
     this._activePresetId = activePresetId;
     this._presetChoices = choices;
     this._onDidChangeTreeData.fire(undefined);
+    this.firePanes("build-selection", "build-options");
   }
 
   /**
@@ -401,6 +407,7 @@ export class ConfigurationTreeProvider
   updateArtifact(artifact: ActiveCompileCommandsArtifact | null): void {
     this._artifact = artifact;
     this._onDidChangeTreeData.fire(undefined);
+    this.firePanes("build-artifacts");
   }
 
   /**
@@ -409,6 +416,7 @@ export class ConfigurationTreeProvider
   updateBinaryArtifact(artifact: ActiveBinaryArtifact | null | undefined, _workspaceFolder?: vscode.WorkspaceFolder): void {
     this._binaryArtifact = artifact ?? null;
     this._onDidChangeTreeData.fire(undefined);
+    this.firePanes("build-artifacts");
   }
 
   /**
@@ -417,6 +425,7 @@ export class ConfigurationTreeProvider
   updateMapArtifact(artifact: ActiveMapArtifact | null | undefined, _workspaceFolder?: vscode.WorkspaceFolder): void {
     this._mapArtifact = artifact ?? null;
     this._onDidChangeTreeData.fire(undefined);
+    this.firePanes("build-artifacts");
   }
 
   /**
@@ -426,6 +435,7 @@ export class ConfigurationTreeProvider
   updateExecutableArtifact(artifact: ActiveExecutableArtifact | null | undefined): void {
     this._executableArtifact = artifact ?? null;
     this._onDidChangeTreeData.fire(undefined);
+    this.firePanes("build-artifacts");
   }
 
   setExpandedSelector(selectorKind: SelectorKind | undefined): void {
@@ -434,6 +444,7 @@ export class ConfigurationTreeProvider
     }
     this._expandedSelector = selectorKind;
     this._onDidChangeTreeData.fire(undefined);
+    this.firePanes("build-selection");
   }
 
   getExpandedSelector(): SelectorKind | undefined {
@@ -446,6 +457,7 @@ export class ConfigurationTreeProvider
     }
     this._expandedMultistateKey = key;
     this._onDidChangeTreeData.fire(undefined);
+    this.firePanes("build-options");
   }
 
   getExpandedMultistateKey(): string | undefined {
@@ -465,6 +477,7 @@ export class ConfigurationTreeProvider
       this._collapsedGroups.delete(group);
     }
     this._onDidChangeTreeData.fire(undefined);
+    this.firePanes("build-options");
   }
 
   isGroupCollapsed(group: string): boolean {
@@ -475,26 +488,27 @@ export class ConfigurationTreeProvider
     return element;
   }
 
+  /**
+   * The root rows for one pane, exactly matching today's section content
+   * (FR-002). Backs each `PaneTreeProvider`'s `getChildren(undefined)`.
+   */
+  paneRootChildren(paneId: PaneId): vscode.TreeItem[] {
+    switch (paneId) {
+      case "build-selection":
+        return this._buildContextChildren();
+      case "build-options":
+        return this._buildOptionsChildren();
+      case "build-artifacts":
+        return this._buildArtifactsChildren();
+    }
+  }
+
+  /**
+   * Pane roots are no longer reachable here — each `PaneTreeProvider` calls
+   * `paneRootChildren()` directly. An `undefined` element falls through every
+   * `instanceof` check below and returns `[]`.
+   */
   getChildren(element?: vscode.TreeItem): vscode.TreeItem[] {
-    if (!element) {
-      return [
-        new SectionItem("build-context", "Build Selection"),
-        new SectionItem("build-options", "Build Options"),
-        new SectionItem("build-artifacts", "Build Artifacts"),
-      ];
-    }
-
-    if (element instanceof SectionItem) {
-      switch (element.sectionId) {
-        case "build-context":
-          return this._buildContextChildren();
-        case "build-options":
-          return this._buildOptionsChildren();
-        case "build-artifacts":
-          return this._buildArtifactsChildren();
-      }
-    }
-
     if (element instanceof BuildOptionGroupItem) {
       return element.groupChildren;
     }
@@ -787,6 +801,7 @@ export class ConfigurationTreeProvider
 
   dispose(): void {
     this._onDidChangeTreeData.dispose();
+    this._onDidChangePane.dispose();
   }
 
   // -------------------------------------------------------------------------
@@ -809,5 +824,43 @@ export class ConfigurationTreeProvider
       items.push(new ExecutableArtifactItem(this._executableArtifact));
     }
     return items;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Per-pane facade
+// ---------------------------------------------------------------------------
+
+/**
+ * Thin, stateless `TreeDataProvider` for one pane. `ConfigurationTreeProvider`
+ * stays the sole owner of manifest, active-configuration, preset, resolved-option,
+ * and artifact state (research.md R3); this facade only routes to it.
+ */
+export class PaneTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
+  constructor(
+    private readonly owner: ConfigurationTreeProvider,
+    private readonly paneId: PaneId
+  ) {}
+
+  readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined> = (
+    listener,
+    thisArgs,
+    disposables
+  ) =>
+    this.owner.onDidChangePane((pane) => {
+      if (pane === this.paneId) {
+        listener.call(thisArgs, undefined);
+      }
+    }, undefined, disposables);
+
+  getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
+    return this.owner.getTreeItem(element);
+  }
+
+  getChildren(element?: vscode.TreeItem): vscode.TreeItem[] {
+    if (!element) {
+      return this.owner.paneRootChildren(this.paneId);
+    }
+    return this.owner.getChildren(element);
   }
 }

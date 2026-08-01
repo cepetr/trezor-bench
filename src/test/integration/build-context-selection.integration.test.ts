@@ -9,7 +9,6 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import {
   ConfigurationTreeProvider,
-  SectionItem,
   SelectorHeaderItem,
   SelectorChoiceItem,
   WarningItem,
@@ -61,12 +60,7 @@ function activeConfig(
 function getBuildContextChildren(
   provider: ConfigurationTreeProvider
 ): vscode.TreeItem[] {
-  const top = provider.getChildren() as vscode.TreeItem[];
-  const contextSection = top.find(
-    (item) => item instanceof SectionItem && (item as SectionItem).sectionId === "build-context"
-  ) as SectionItem;
-  assert.ok(contextSection, "build-context section not found");
-  return provider.getChildren(contextSection) as vscode.TreeItem[];
+  return provider.paneRootChildren("build-selection");
 }
 
 // ---------------------------------------------------------------------------
@@ -276,12 +270,7 @@ import { ActiveCompileCommandsArtifact } from "../../intellisense/intellisense-t
 function getBuildArtifactsChildren(
   provider: ConfigurationTreeProvider
 ): vscode.TreeItem[] {
-  const top = provider.getChildren() as vscode.TreeItem[];
-  const artifactsSection = top.find(
-    (item) => item instanceof SectionItem && (item as SectionItem).sectionId === "build-artifacts"
-  ) as SectionItem;
-  assert.ok(artifactsSection, "build-artifacts section not found");
-  return provider.getChildren(artifactsSection) as vscode.TreeItem[];
+  return provider.paneRootChildren("build-artifacts");
 }
 
 function makeMissingArtifact(

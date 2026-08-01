@@ -31,25 +31,24 @@ The extension does not define or manage the repository's build system itself. It
 
 ## Core Capabilities
 
-The extension's main configuration surface is the Configuration view, a dedicated tree view in VS Code that is available from the activity bar.
+The extension's main configuration surface is the `Trezor Firmware Tools` activity-bar container, which holds three sibling tree-view panes: `Build Selection`, `Build Artifacts`, and `Build Options`, each with its own header and divider.
 
-At a high level, the tree view is organized like this:
+At a high level, the three panes are organized like this:
 
 ```text
-Trezor
-└── Configuration
-	├── Build Selection
-	│   ├── Model
-	│   ├── Target
-	│   └── Component
-	├── Build Options
-	│   ├── [option group or option]
-	│   └── ...
-	└── Build Artifacts
-		├── Compile Commands
-		├── Binary
-		├── Map File
-		└── Executable
+Trezor Firmware Tools
+├── Build Selection
+│   ├── Model
+│   ├── Target
+│   └── Component
+├── Build Artifacts
+│   ├── Compile Commands
+│   ├── Binary
+│   ├── Map File
+│   └── Executable
+└── Build Options
+	├── [option group or option]
+	└── ...
 ```
 
 The core capabilities below describe what this side-bar experience enables for the user.
@@ -222,11 +221,10 @@ If invocation is attempted without a valid map-file path, the action returns wit
 
 ## Configuration View Iconography
 
-The `Trezor` activity-bar container and the `Configuration` view use the shared SVG icon asset from `images/tf-tools.svg` as their identifying icon. This is distinct from the extension package logo asset.
+The `Trezor Firmware Tools` activity-bar container and all three of its panes (`Build Selection`, `Build Artifacts`, `Build Options`) use the shared SVG icon asset from `images/tf-tools.svg` as their identifying icon. This is distinct from the extension package logo asset.
 
 - Activity-bar container icon: `images/tf-tools.svg`
-- Configuration view icon: `images/tf-tools.svg`
-- Top-level section icons: none for `Build Selection`, `Build Options`, and `Build Artifacts`
+- Pane icons: `images/tf-tools.svg` for each of `Build Selection`, `Build Artifacts`, and `Build Options`
 - `Build Selection` selector icons: `circuit-board` for `Model`, `target` for `Target`, `extensions` for `Component`, `layers` for `Preset`
 - Active selector-choice icon: `check`
 - Inactive selector-choice spacer: `images/blank-tree-icon.svg`
@@ -286,7 +284,7 @@ If any of these conditions stops being true, the status bar item is hidden rathe
 
 ### Interaction
 
-The status bar entry is not only informational. Selecting it focuses the extension's `Configuration` view so the user can move directly from the compact summary to the full build-selection and build-option surface.
+The status bar entry is not only informational. Selecting it opens the `Trezor Firmware Tools` container, expands `Build Selection` if it is collapsed, and focuses it, so the user can move directly from the compact summary to the full build-selection and build-option surface.
 
 ### Refresh Behavior
 
