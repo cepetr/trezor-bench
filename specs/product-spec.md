@@ -31,12 +31,12 @@ The extension does not define or manage the repository's build system itself. It
 
 ## Core Capabilities
 
-The extension's main configuration surface is the `Trezor` activity-bar container, which holds three sibling tree-view panes: `Build Selection`, `Build Artifacts`, and `Build Options`, each with its own header and divider.
+The extension's main configuration surface is the `Trezor Firmware Tools` activity-bar container, which holds three sibling tree-view panes: `Build Selection`, `Build Artifacts`, and `Build Options`, each with its own header and divider.
 
 At a high level, the three panes are organized like this:
 
 ```text
-Trezor
+Trezor Firmware Tools
 ├── Build Selection
 │   ├── Model
 │   ├── Target
@@ -221,7 +221,7 @@ If invocation is attempted without a valid map-file path, the action returns wit
 
 ## Configuration View Iconography
 
-The `Trezor` activity-bar container and all three of its panes (`Build Selection`, `Build Artifacts`, `Build Options`) use the shared SVG icon asset from `images/tf-tools.svg` as their identifying icon. This is distinct from the extension package logo asset.
+The `Trezor Firmware Tools` activity-bar container and all three of its panes (`Build Selection`, `Build Artifacts`, `Build Options`) use the shared SVG icon asset from `images/tf-tools.svg` as their identifying icon. This is distinct from the extension package logo asset.
 
 - Activity-bar container icon: `images/tf-tools.svg`
 - Pane icons: `images/tf-tools.svg` for each of `Build Selection`, `Build Artifacts`, and `Build Options`
@@ -284,7 +284,7 @@ If any of these conditions stops being true, the status bar item is hidden rathe
 
 ### Interaction
 
-The status bar entry is not only informational. Selecting it opens the `Trezor` container, expands `Build Selection` if it is collapsed, and focuses it, so the user can move directly from the compact summary to the full build-selection and build-option surface.
+The status bar entry is not only informational. Selecting it opens the `Trezor Firmware Tools` container, expands `Build Selection` if it is collapsed, and focuses it, so the user can move directly from the compact summary to the full build-selection and build-option surface.
 
 ### Refresh Behavior
 

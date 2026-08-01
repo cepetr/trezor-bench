@@ -8,7 +8,7 @@ This feature adds no persisted data and no manifest structure. The model below d
 
 ### Configuration pane
 
-One of the three top-level surfaces in the `tf-tools` container.
+One of the three top-level surfaces in the `tf-tools` container, titled `Trezor Firmware Tools`.
 
 | Attribute | Value | Owner |
 |---|---|---|

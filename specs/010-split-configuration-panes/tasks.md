@@ -60,9 +60,9 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 
 ## Phase 3: User Story 1 - Read the three configuration areas as separate panes (Priority: P1) 🎯 MVP
 
-**Goal**: The `Trezor` container shows `Build Selection`, `Build Artifacts`, `Build Options` as three headed panes containing exactly today's rows, with the section rows gone (the order was `Build Selection`, `Build Options`, `Build Artifacts` when this phase landed; Phase 7 supersedes it)
+**Goal**: The `Trezor Firmware Tools` container shows `Build Selection`, `Build Artifacts`, `Build Options` as three headed panes containing exactly today's rows, with the section rows gone (the order was `Build Selection`, `Build Options`, `Build Artifacts` when this phase landed; Phase 7 supersedes it)
 
-**Independent Test**: Open a supported workspace with a valid manifest, open the `Trezor` container, and verify three headed panes appear in order, each containing exactly the rows its section renders today, with no section row inside any pane's content
+**Independent Test**: Open a supported workspace with a valid manifest, open the `Trezor Firmware Tools` container, and verify three headed panes appear in order, each containing exactly the rows its section renders today, with no section row inside any pane's content
 
 ### Tests for User Story 1
 
@@ -125,7 +125,7 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 - [X] T021 [P] Update `specs/product-spec.md` so the `Core Capabilities` tree outline shows three sibling panes rather than one `Configuration` tree with section rows, the `Configuration View Iconography` top-level-section entry describes pane titles, and `Status Bar` → `Interaction` states that selecting the item opens the container, expands `Build Selection`, and focuses it (FR-015)
-- [X] T022 [P] Update the `Configuration view` definition in `specs/glossary.md` to the set of three sibling panes in the `Trezor` container, keeping `Build Selection`, `Build Options`, and `Build Artifacts` as the pane names (FR-015)
+- [X] T022 [P] Update the `Configuration view` definition in `specs/glossary.md` to the set of three sibling panes in the `Trezor Firmware Tools` container, keeping `Build Selection`, `Build Options`, and `Build Artifacts` as the pane names (FR-015)
 - [X] T023 Run `npm run lint`, `npm run compile`, and `npm run test:unit` and fix any failure
 - [X] T024 Verify no residual references to `SectionItem`, `SectionId`, `getSectionCollapsibleState`, or `section:` item ids remain in `src/`
 - [ ] T025 Run `npm test` on a workstation outside the restricted sandbox and record the result; the feature is not done while this is unverified (constitution principle III)
@@ -138,7 +138,7 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 
 **Purpose**: The declared pane order becomes `Build Selection`, `Build Artifacts`, `Build Options` — the two panes a user reads on every build cycle sit above the pane that starts collapsed. `Build Selection` stays first, so the inherited view id, the whole `view/title` toolbar, and the status-bar `.focus` target are all untouched (FR-009, FR-010, FR-017).
 
-**Independent Test**: Open the `Trezor` container on a fresh profile and verify the panes appear top-to-bottom as `Build Selection`, `Build Artifacts`, `Build Options`, with `Build Options` still collapsed and the other two expanded.
+**Independent Test**: Open the `Trezor Firmware Tools` container on a fresh profile and verify the panes appear top-to-bottom as `Build Selection`, `Build Artifacts`, `Build Options`, with `Build Options` still collapsed and the other two expanded.
 
 - [X] T028 Record the reorder decision and update every order statement in [spec.md](spec.md) — the `Clarifications` session, the `Behavior Contract` fixed-order bullet, FR-001, and SC-001 — to `Build Selection`, `Build Artifacts`, `Build Options`
 - [X] T029 Swap rows 2 and 3 of the §2 view table in [contracts/view-contributions.md](contracts/view-contributions.md) so the contract's array order matches FR-001, leaving `visibility: collapsed` attached to `Build Options`
@@ -150,6 +150,25 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 - [X] T035 Run `npm run lint`, `npm run compile`, and `npm run test:unit` and fix any failure
 
 **Checkpoint**: The container renders `Build Selection`, `Build Artifacts`, `Build Options`; the toolbar, artifact row actions, status-bar target, and initial collapse states are unchanged
+
+---
+
+## Phase 8: Container Title Rename (change request, 2026-08-01)
+
+**Purpose**: The activity-bar container title becomes the formal product name, `Trezor Firmware Tools`, instead of the compact `Trezor` label. Only `contributes.viewsContainers.activitybar[0].title` changes — the container id, icon, all three view ids, the `view/title` toolbar, the `view/item/context` entries, the status-bar `.focus` target, and the `Trezor` command-category prefix are all untouched.
+
+**Independent Test**: Open the activity bar and hover the extension's container icon; the container header and its hover label read `Trezor Firmware Tools`, and every pane, toolbar action, row action, and Command Palette entry behaves exactly as before.
+
+- [X] T036 Update the `Assumptions` bullet in [spec.md](spec.md) that asserts the container title is unchanged, and retarget every `Trezor` container reference in [spec.md](spec.md) (Scope Guard, US1 Independent Test, acceptance scenario 5, FR-010, the `Configuration pane` key-entity definition) to `Trezor Firmware Tools`
+- [X] T037 Update §1 of [contracts/view-contributions.md](contracts/view-contributions.md) — `title` becomes `Trezor Firmware Tools`, and the section no longer claims the container is unchanged
+- [X] T038 Add an integration assertion that the `tf-tools` activity-bar container declares exactly one entry with id `tf-tools`, title `Trezor Firmware Tools`, and the unchanged icon, in `src/test/integration/configuration-panes.integration.test.ts` — test before implementation, so this fails against the current manifest
+- [X] T039 Change `title` from `Trezor` to `Trezor Firmware Tools` on the `tf-tools` entry in `contributes.viewsContainers.activitybar` in `package.json`, changing nothing else — in particular no `contributes.commands` `category` value
+- [X] T040 [P] Update the container references in [quickstart.md](quickstart.md) step 1 and [data-model.md](data-model.md)'s container mention
+- [X] T041 [P] Update `specs/glossary.md` — drop the activity-bar container title from the compact `Trezor` label's usage note, and retitle the container in the `Configuration view` and `status bar configuration item` definitions (FR-015)
+- [X] T042 [P] Update the container references in `specs/product-spec.md` (`Core Capabilities` intro and tree outline, `Configuration View Iconography`, `Status Bar` → `Interaction`) and in `README.md`'s usage section
+- [X] T043 Run `npm run lint`, `npm run compile`, and `npm run test:unit` and fix any failure
+
+**Checkpoint**: The container is titled `Trezor Firmware Tools`; pane titles, order, toolbar, row actions, status-bar reveal, and command category are unchanged
 
 ---
 
@@ -214,10 +233,13 @@ Task: "T007 Unit tests for per-pane rows and absent section rows in src/test/uni
 
 ## Notes
 
-- Total: 36 tasks — Setup 1, Foundational 4, US1 7, US2 3, US3 6, Polish 7, Pane reorder 8
+- Total: 44 tasks — Setup 1, Foundational 4, US1 7, US2 3, US3 6, Polish 7, Pane reorder 8, Container title rename 8
 - The riskiest task is T019: each `TreeView` emits events only for its own rows, so an incomplete split leaves selector or option expansion silently dead. Exercise both panes manually after it
 - No task introduces a new dependency, service, or persisted state
 - **T011 scope correction**: research.md's R7 inventory and this task's file list both undercounted the `SectionItem`/`SectionId` call sites T009 breaks. Three more real files needed migration beyond the three named here: `src/test/integration/configuration-health.integration.test.ts`, `src/test/integration/preset-selection.integration.test.ts`, and `src/test/integration/preset-build-options.integration.test.ts`. All six were migrated together when T011 landed.
 - **T025/T026 status**: this implementation ran in a sandboxed environment with no network access and an incompatible bundled VS Code binary (`bad option: --disable-extensions` etc. from `.vscode-test`), consistent with the environment's standing constraint that `npm test` and `npm run smoke:package` cannot run here (confirmed research.md R8). `npm run lint`, `npm run compile`, and `npm run test:unit` all pass (0 errors, 867/867 unit tests).
 - **T025 workstation run (round 1)**: 449 passing, 1 failing — `configuration-panes.integration.test.ts`'s "matches the contract's command/group/enablement table exactly, in order" test (view/title). Root cause: `assert.deepStrictEqual` treats an object key present with value `undefined` as different from the key being absent; the test's `actual` mapper always set `enablement` (even to `undefined` for `tfTools.refreshIntelliSense`, which has none), while `expected`'s last entry omitted the key. This was a test-authoring bug, not an implementation defect — the underlying `package.json` contribution was already correct. Fixed by only including `enablement` in `actual` when the real entry has one. Verified by simulating the corrected comparison against the real `package.json` with `node -e`. T025 and T026 remain **unchecked** pending a clean re-run on a workstation — per constitution principle III, the feature is not done until both pass there.
 - **Phase 7 (pane reorder)**: requested 2026-08-01 after the split landed. Only the declaration order changed — `Build Selection` stays entry 1, so the inherited view id, all ten `view/title` entries, the four `view/item/context` entries, the status-bar `.focus` target, and `Build Options`' `visibility: collapsed` are all untouched. Local gates pass (lint 0 errors, compile clean, 867/867 unit tests), and every `package.json`-derived assertion in `configuration-panes.integration.test.ts` was verified against the real manifest with `node -e`. **T025 and T026 must be re-run on a workstation for this change** — the reorder alters what the manual pane-layout pass in [quickstart.md](quickstart.md) step 1 expects.
+
+- **Phase 8 (container title rename)**: requested 2026-08-01 after the reorder landed. `contributes.viewsContainers.activitybar[0].title` becomes `Trezor Firmware Tools`; the container id, icon, all three view ids, the ten `view/title` entries, the four `view/item/context` entries, the status-bar `.focus` target, and the `Trezor` command `category` are all untouched. The title is display text with nothing derived from it, so no code change was needed beyond the manifest. Local gates pass (lint 0 errors, compile clean, 867/867 unit tests), and the two new container assertions in `configuration-panes.integration.test.ts` were verified against the real manifest with `node -e`. **T025 and T026 must be re-run on a workstation for this change** — [quickstart.md](quickstart.md) step 1 now expects the new container title.
+- **Working-tree conflict found and resolved during Phase 8**: the uncommitted `package.json` in the working tree had `Build Options` ahead of `Build Artifacts` under `contributes.views["tf-tools"]`, reverting committed task T031 (9639c8d) and contradicting FR-001, the §2 contract table, and the pane-order assertion T030 added. It predated Phase 8 and was restored to the T031 order on request, so `package.json`'s only remaining uncommitted change is the container title.

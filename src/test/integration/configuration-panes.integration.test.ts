@@ -41,6 +41,20 @@ function getTfToolsViews(): ViewContribution[] {
   return views["tf-tools"] ?? [];
 }
 
+interface ViewContainerContribution {
+  id: string;
+  title: string;
+  icon?: string;
+}
+
+function getActivityBarContainers(): ViewContainerContribution[] {
+  const containers = getContributes().viewsContainers as Record<
+    string,
+    ViewContainerContribution[]
+  >;
+  return containers?.activitybar ?? [];
+}
+
 const INHERITED_VIEW_ID = "tfTools.configuration";
 const BUILD_OPTIONS_VIEW_ID = "tfTools.buildOptions";
 const BUILD_ARTIFACTS_VIEW_ID = "tfTools.buildArtifacts";
@@ -60,6 +74,24 @@ function getMenuEntries(menuId: string): MenuEntry[] {
 // ---------------------------------------------------------------------------
 // US1 — three views contributed, in order, with contract titles/type/icon
 // ---------------------------------------------------------------------------
+
+suite("Configuration panes – view container", () => {
+  test("contributes exactly one activity-bar container, with the tf-tools id and icon", () => {
+    const containers = getActivityBarContainers();
+    assert.strictEqual(
+      containers.length,
+      1,
+      `expected exactly 1 activity-bar container, got ${containers.length}`
+    );
+    assert.strictEqual(containers[0].id, "tf-tools");
+    assert.strictEqual(containers[0].icon, "images/tf-tools.svg");
+  });
+
+  test("the container title is the formal product name", () => {
+    const [container] = getActivityBarContainers();
+    assert.strictEqual(container.title, "Trezor Firmware Tools");
+  });
+});
 
 suite("Configuration panes – view contributions (US1)", () => {
   test("contributes exactly three views for the tf-tools container", () => {

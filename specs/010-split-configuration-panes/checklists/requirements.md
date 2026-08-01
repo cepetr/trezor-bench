@@ -37,6 +37,6 @@
 - Iteration 4 (final): all workflow actions sit together in one toolbar on the `Build Selection` pane; `Build Options` and `Build Artifacts` carry none (see `Clarifications`, session 2026-08-01). FR-009 through FR-009c, User Story 3 scenarios 6-10, the edge cases, SC-003a/b, the `Workflow toolbar` entity, and the `Host Constraint` note all updated to match. All 16 items pass.
 - The `Host Constraint` note under `Assumptions` is now a resolved design constraint, not an open question. Planning should implement against it rather than re-deriving it.
 - Accepted trade recorded in the spec: header actions are revealed on hover or focus and hidden while `Build Selection` is collapsed. This is a real change from today's always-visible toolbar and was chosen knowingly.
-- UI surface names (`Build Selection`, `Build Options`, `Build Artifacts`, `Trezor` container, status bar item) are product terminology from `specs/glossary.md`, not implementation details.
+- UI surface names (`Build Selection`, `Build Options`, `Build Artifacts`, `Trezor Firmware Tools` container, status bar item) are product terminology from `specs/glossary.md`, not implementation details.
 
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`

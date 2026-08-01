@@ -11,8 +11,8 @@
 
 - **Source Documents**: `specs/product-spec.md`, `specs/glossary.md`
 - **Affected Product Areas**: `Core Capabilities` (the Configuration view tree outline, `Build Context Management`, `Build Option Management`, `Workflow Actions`, `Build Artifacts`, `Artifact Row Actions`), `Configuration View Iconography`, `Status Bar` (`Interaction`), and `Command Surface` visibility rules in `specs/product-spec.md`; the `Configuration view`, `Build Selection`, `Build Options`, `Build Artifacts`, `command surface`, and `status bar configuration item` terms in `specs/glossary.md`
-- **Scope Guard**: This feature changes only how the three existing Configuration sections are presented as separate panes in the `Trezor` activity-bar container, where the workflow toolbar is attached, and what the status bar item reveals. The toolbar keeps its current membership, order, and enablement, and moves from the container title to the `Build Selection` pane header. It does not change build-option resolution, preset discovery or selection semantics, artifact resolution, IntelliSense behavior, excluded-file decorations, manifest parsing, task execution, persistence of the active configuration, command names, or task labels.
-- **Terminology Guard**: `Build Selection`, `Build Options`, and `Build Artifacts` MUST retain their exact capitalization and their existing meaning; they are promoted from tree sections to top-level panes without changing what they contain. The glossary definition of `Configuration view` MUST be updated: it is no longer a single tree view but the set of three sibling panes contributed inside the `Trezor` activity-bar container. `active build context`, `build option`, `option group`, `preset`, `artifact status`, `available action`, `disabled action`, and `hidden action` MUST keep their glossary meanings.
+- **Scope Guard**: This feature changes only how the three existing Configuration sections are presented as separate panes in the `Trezor Firmware Tools` activity-bar container, where the workflow toolbar is attached, and what the status bar item reveals. The toolbar keeps its current membership, order, and enablement, and moves from the container title to the `Build Selection` pane header. It does not change build-option resolution, preset discovery or selection semantics, artifact resolution, IntelliSense behavior, excluded-file decorations, manifest parsing, task execution, persistence of the active configuration, command names, or task labels.
+- **Terminology Guard**: `Build Selection`, `Build Options`, and `Build Artifacts` MUST retain their exact capitalization and their existing meaning; they are promoted from tree sections to top-level panes without changing what they contain. The glossary definition of `Configuration view` MUST be updated: it is no longer a single tree view but the set of three sibling panes contributed inside the `Trezor Firmware Tools` activity-bar container. `active build context`, `build option`, `option group`, `preset`, `artifact status`, `available action`, `disabled action`, and `hidden action` MUST keep their glossary meanings.
 - **Critical Product Details**:
   - The three panes appear in the fixed order `Build Selection`, `Build Artifacts`, `Build Options`.
   - `Build Options` starts collapsed; `Build Selection` and `Build Artifacts` start expanded — the behavior the single tree provides today.
@@ -44,15 +44,15 @@
 
 ### User Story 1 - Read the three configuration areas as separate panes (Priority: P1)
 
-As a firmware developer, I open the `Trezor` activity-bar container and see `Build Selection`, `Build Options`, and `Build Artifacts` as three separate panes with their own headers and dividers, so I can tell at a glance where one area ends and the next begins.
+As a firmware developer, I open the `Trezor Firmware Tools` activity-bar container and see `Build Selection`, `Build Options`, and `Build Artifacts` as three separate panes with their own headers and dividers, so I can tell at a glance where one area ends and the next begins.
 
 **Why this priority**: Visual separation of the three areas is the entire point of the feature; delivered alone it already gives the user the clearer configuration surface, with every row still rendering exactly as before.
 
-**Independent Test**: Open a supported workspace with a valid manifest, open the `Trezor` container, and verify three headed panes appear in order, each containing exactly the rows its section renders today, with no `Build Selection`, `Build Options`, or `Build Artifacts` row inside any pane's content.
+**Independent Test**: Open a supported workspace with a valid manifest, open the `Trezor Firmware Tools` container, and verify three headed panes appear in order, each containing exactly the rows its section renders today, with no `Build Selection`, `Build Options`, or `Build Artifacts` row inside any pane's content.
 
 **Acceptance Scenarios**:
 
-1. **Given** a supported workspace with a loaded manifest, **When** the user opens the `Trezor` activity-bar container, **Then** three panes titled `Build Selection`, `Build Artifacts`, and `Build Options` are shown in that order.
+1. **Given** a supported workspace with a loaded manifest, **When** the user opens the `Trezor Firmware Tools` activity-bar container, **Then** three panes titled `Build Selection`, `Build Artifacts`, and `Build Options` are shown in that order.
 2. **Given** the three panes are shown, **When** the user inspects the contents of each pane, **Then** the pane contains the same rows the corresponding section renders today, with identical labels, icons, descriptions, tooltips, and checkboxes.
 3. **Given** the three panes are shown, **When** the user looks for the former section rows, **Then** no row labelled `Build Selection`, `Build Options`, or `Build Artifacts` appears inside any pane's content; the pane titles carry those names instead.
 4. **Given** the manifest is still loading, is missing, or is invalid, **When** the user views the panes, **Then** each pane shows its current placeholder or warning rows with unchanged wording, and no pane is hidden or emptied because of that state.
@@ -90,7 +90,7 @@ As a firmware developer, I keep using the same selectors, option controls, row a
 2. **Given** a choice is listed under an expanded selector, **When** the user selects it, **Then** the active build context or active preset updates and every dependent surface refreshes exactly as it does today.
 3. **Given** the `Build Options` pane is expanded, **When** the user toggles a checkbox option, expands a multistate option and selects a state, or collapses and expands an option group, **Then** the resulting stored value, emphasis, and refresh behavior are unchanged from today.
 4. **Given** the `Build Artifacts` pane is expanded, **When** the user hovers the `Binary`, `Map File`, and `Executable` rows, **Then** the applicable inline actions appear with the same visibility and enablement rules as today.
-5. **Given** the status bar configuration item is visible and `Build Selection` is collapsed, **When** the user selects the item, **Then** the `Trezor` container opens, `Build Selection` expands and takes focus, and its workflow toolbar is available.
+5. **Given** the status bar configuration item is visible and `Build Selection` is collapsed, **When** the user selects the item, **Then** the `Trezor Firmware Tools` container opens, `Build Selection` expands and takes focus, and its workflow toolbar is available.
 6. **Given** the panes are shown, **When** the user looks for the workflow actions currently exposed in the Configuration view header and overflow menu, **Then** every one of those actions is still in the `Build Selection` toolbar with unchanged enablement rules.
 7. **Given** the `Build Selection` pane is expanded, **When** the user hovers or focuses it, **Then** `Build` and `Start Debugging` appear as directly visible icons on its header and `Build`, `Clippy`, `Check`, `Clean`, `Flash to Device`, `Upload to Device`, `Start Debugging`, and `Refresh IntelliSense` appear in its overflow menu, in their current order, with `Flash to Device` and `Upload to Device` shown only when applicable to the active build context.
 8. **Given** the container is open, **When** the user inspects the `Build Options` and `Build Artifacts` pane headers, **Then** neither exposes any workflow action, and no pane header offers a Collapse All action.
@@ -117,7 +117,7 @@ As a firmware developer, I keep using the same selectors, option controls, row a
 
 ### Functional Requirements
 
-- **FR-001**: The `Trezor` activity-bar container MUST present three sibling panes titled `Build Selection`, `Build Artifacts`, and `Build Options`, in that order.
+- **FR-001**: The `Trezor Firmware Tools` activity-bar container MUST present three sibling panes titled `Build Selection`, `Build Artifacts`, and `Build Options`, in that order.
 - **FR-002**: Each pane MUST render exactly the rows its corresponding section renders today, with identical labels, icons, descriptions, tooltips, checkbox states, and inline row actions.
 - **FR-003**: The `Build Selection`, `Build Options`, and `Build Artifacts` rows MUST no longer exist as content rows; those names MUST be carried by the pane titles.
 - **FR-004**: On first use, `Build Options` MUST start collapsed and `Build Selection` and `Build Artifacts` MUST start expanded.
@@ -130,7 +130,7 @@ As a firmware developer, I keep using the same selectors, option controls, row a
 - **FR-009d**: No pane MUST offer a Collapse All action, preserving today's behavior and keeping the extension the single owner of option-group and multistate expansion state.
 - **FR-009b**: The toolbar MUST NOT change contents, order, or enablement based on which pane is focused, hovered, or expanded.
 - **FR-009c**: The implementation MUST use stable, published contribution points only. It MUST NOT depend on an unreleased editor API proposal to place the toolbar, and MUST NOT change the user's global editor settings to alter when header actions are revealed.
-- **FR-010**: Selecting the status bar configuration item MUST open the `Trezor` container, expand the `Build Selection` pane if it is collapsed, and focus it, so its selectors and workflow toolbar are immediately usable.
+- **FR-010**: Selecting the status bar configuration item MUST open the `Trezor Firmware Tools` container, expand the `Build Selection` pane if it is collapsed, and focus it, so its selectors and workflow toolbar are immediately usable.
 - **FR-011**: All loading, missing-manifest, invalid-manifest, workflow-blocked, no-options-defined, no-options-available, unavailable-preset, invalid-preset, and not-yet-evaluated placeholder and warning rows MUST keep their current wording and MUST appear inside the pane that owns them.
 - **FR-012**: Every pane MUST remain contributed and functional when the workspace is unsupported or the manifest cannot be loaded, without reporting a missing data provider.
 - **FR-013**: The split MUST NOT change build-option resolution, preset handling, artifact resolution, IntelliSense refresh, or file decorations in any user-observable way.
@@ -141,7 +141,7 @@ As a firmware developer, I keep using the same selectors, option controls, row a
 
 ### Key Entities
 
-- **Configuration pane**: One of the three top-level surfaces in the `Trezor` container. Has a fixed title, a fixed position in the container, a default collapse state, a remembered collapse state, and an owned set of rows. Only `Build Selection` owns header actions.
+- **Configuration pane**: One of the three top-level surfaces in the `Trezor Firmware Tools` container. Has a fixed title, a fixed position in the container, a default collapse state, a remembered collapse state, and an owned set of rows. Only `Build Selection` owns header actions.
 - **Workflow toolbar**: The single action surface holding every workflow action, owned by the `Build Selection` pane. Its membership and enablement do not vary with pane focus or visibility.
 - **Pane content set**: The rows a pane renders for the current manifest, active build context, preset state, and artifact state — unchanged in composition from the corresponding section today.
 
@@ -161,7 +161,7 @@ As a firmware developer, I keep using the same selectors, option controls, row a
 
 ## Assumptions
 
-- The `Trezor` activity-bar container, its icon, and its title are unchanged; its contents are reorganized into three panes and the workflow toolbar moves from the container title to the `Build Selection` pane header.
+- The activity-bar container and its icon are unchanged; its contents are reorganized into three panes and the workflow toolbar moves from the container title to the `Build Selection` pane header. Its title was `Trezor` when this feature was specified and was changed to the formal product name, `Trezor Firmware Tools`, by the 2026-08-01 rename change request; the title is display text only, so nothing else in this spec depends on it.
 
 **Host Constraint (resolved — do not revisit during planning)**: On the supported editor baseline, a view's action toolbar is raised into the container title bar only while the container holds exactly one visible view; with several panes, the host renders actions on each pane header instead, revealed on hover or focus and hidden while the pane is collapsed. The stable, published contribution surface offers no container-level action menu — the container-title menu exists but is gated behind an unreleased API proposal that a shipped extension may not depend on. Built-in editor containers such as Run and Debug, Source Control, and Testing do show action buttons above several panes; they register into that same internal menu directly from workbench code, a path no extension can take. Their appearance is therefore not evidence that the arrangement is reachable here. Checked on 2026-08-01 against the installed host, the newest released host, and the upstream development branch: the single-view merge rule and the proposal gate are identical in all three, and the proposal has not changed since it was introduced two years earlier, so no newer editor version removes this constraint.
 

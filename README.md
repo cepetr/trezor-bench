@@ -66,7 +66,7 @@ NOTE: When the Microsoft C/C++ extension is unavailable (for example in editors 
 
 ## How To Use
 
-Open the `Trezor` activity-bar view and use the `Configuration` tree:
+Open the `Trezor Firmware Tools` activity-bar container and use the `Configuration` view:
 
 - Choose the active build context in `Build Selection`.
 - Enable or adjust build options in `Build Options`.

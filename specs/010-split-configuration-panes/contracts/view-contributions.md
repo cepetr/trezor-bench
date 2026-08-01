@@ -6,14 +6,19 @@ The extension's user-facing contract for this feature is its contribution surfac
 
 ## 1. View container
 
-Unchanged.
+Exactly one entry under `contributes.viewsContainers.activitybar`. Only the title changed, on 2026-08-01, from the compact `Trezor` label to the formal product name; id, icon, and location are unchanged.
 
 | Field | Value |
 |---|---|
 | id | `tf-tools` |
-| title | `Trezor` |
+| title | `Trezor Firmware Tools` |
 | icon | `images/tf-tools.svg` |
 | location | activity bar |
+
+**Rules**
+
+- The title is display text only. No command, menu, view id, or persisted state derives from it.
+- The `Trezor` compact label stays the `category` of every contributed command; the container rename does not touch `contributes.commands`.
 
 ## 2. Views
 
