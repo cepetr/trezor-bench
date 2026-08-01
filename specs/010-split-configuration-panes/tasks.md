@@ -130,7 +130,7 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 - [X] T024 Verify no residual references to `SectionItem`, `SectionId`, `getSectionCollapsibleState`, or `section:` item ids remain in `src/`
 - [ ] T025 Run `npm test` on a workstation outside the restricted sandbox and record the result; the feature is not done while this is unverified (constitution principle III)
 - [ ] T026 Execute the manual validation pass in [quickstart.md](quickstart.md), including the upgrade-path check that a relocated view reappears as `Build Selection` in its saved location
-- [ ] T027 Self-review the full diff against [spec.md](spec.md), `specs/product-spec.md`, and `specs/glossary.md`, confirming FR-001 through FR-017 are implemented as specified rather than approximated
+- [X] T027 Self-review the full diff against [spec.md](spec.md), `specs/product-spec.md`, and `specs/glossary.md`, confirming FR-001 through FR-017 are implemented as specified rather than approximated
 
 ---
 
@@ -198,3 +198,5 @@ Task: "T007 Unit tests for per-pane rows and absent section rows in src/test/uni
 - Total: 28 tasks — Setup 1, Foundational 4, US1 7, US2 3, US3 6, Polish 7
 - The riskiest task is T019: each `TreeView` emits events only for its own rows, so an incomplete split leaves selector or option expansion silently dead. Exercise both panes manually after it
 - No task introduces a new dependency, service, or persisted state
+- **T011 scope correction**: research.md's R7 inventory and this task's file list both undercounted the `SectionItem`/`SectionId` call sites T009 breaks. Three more real files needed migration beyond the three named here: `src/test/integration/configuration-health.integration.test.ts`, `src/test/integration/preset-selection.integration.test.ts`, and `src/test/integration/preset-build-options.integration.test.ts`. All six were migrated together when T011 landed.
+- **T025/T026 status**: this implementation ran in a sandboxed environment with no network access and an incompatible bundled VS Code binary (`bad option: --disable-extensions` etc. from `.vscode-test`), consistent with the environment's standing constraint that `npm test` and `npm run smoke:package` cannot run here (confirmed research.md R8). `npm run lint`, `npm run compile`, and `npm run test:unit` all pass (0 errors, 867/867 unit tests). T025 (workstation `npm test` run) and T026 (manual Extension Development Host validation pass) remain **unchecked and unverified** — per constitution principle III, the feature is not done until both are run on a normal workstation.
