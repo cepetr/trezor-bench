@@ -136,25 +136,25 @@
       "view/item/context": [
         {
           "command": "tfTools.flash",
-          "when": "view == tfTools.configuration && viewItem == artifact-binary && tfTools.flashApplicable",
+          "when": "view == tfTools.buildArtifacts && viewItem == artifact-binary && tfTools.flashApplicable",
           "group": "inline@1",
           "enablement": "tfTools.binaryExists"
         },
         {
           "command": "tfTools.upload",
-          "when": "view == tfTools.configuration && viewItem == artifact-binary && tfTools.uploadApplicable",
+          "when": "view == tfTools.buildArtifacts && viewItem == artifact-binary && tfTools.uploadApplicable",
           "group": "inline@2",
           "enablement": "tfTools.binaryExists"
         },
         {
           "command": "tfTools.openMapFile",
-          "when": "view == tfTools.configuration && viewItem == artifact-map",
+          "when": "view == tfTools.buildArtifacts && viewItem == artifact-map",
           "group": "inline@1",
           "enablement": "tfTools.mapExists"
         },
         {
           "command": "tfTools.startDebugging",
-          "when": "view == tfTools.configuration && viewItem == artifact-executable",
+          "when": "view == tfTools.buildArtifacts && viewItem == artifact-executable",
           "group": "inline@1",
           "enablement": "tfTools.startDebuggingEnabled"
         }
