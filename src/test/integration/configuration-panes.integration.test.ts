@@ -237,11 +237,11 @@ suite("Configuration panes – view/title toolbar targets only Build Selection (
       { command: "tfTools.startDebugging", group: "overflow@7", enablement: "tfTools.startDebuggingEnabled" },
       { command: "tfTools.refreshIntelliSense", group: "overflow@8" },
     ];
-    const actual = getMenuEntries("view/title").map((e) => ({
-      command: e.command,
-      group: e.group,
-      enablement: e.enablement,
-    }));
+    const actual = getMenuEntries("view/title").map((e) =>
+      e.enablement === undefined
+        ? { command: e.command, group: e.group }
+        : { command: e.command, group: e.group, enablement: e.enablement }
+    );
     assert.deepStrictEqual(actual, expected);
   });
 
