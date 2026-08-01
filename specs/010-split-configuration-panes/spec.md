@@ -14,7 +14,7 @@
 - **Scope Guard**: This feature changes only how the three existing Configuration sections are presented as separate panes in the `Trezor` activity-bar container, where the workflow toolbar is attached, and what the status bar item reveals. The toolbar keeps its current membership, order, and enablement, and moves from the container title to the `Build Selection` pane header. It does not change build-option resolution, preset discovery or selection semantics, artifact resolution, IntelliSense behavior, excluded-file decorations, manifest parsing, task execution, persistence of the active configuration, command names, or task labels.
 - **Terminology Guard**: `Build Selection`, `Build Options`, and `Build Artifacts` MUST retain their exact capitalization and their existing meaning; they are promoted from tree sections to top-level panes without changing what they contain. The glossary definition of `Configuration view` MUST be updated: it is no longer a single tree view but the set of three sibling panes contributed inside the `Trezor` activity-bar container. `active build context`, `build option`, `option group`, `preset`, `artifact status`, `available action`, `disabled action`, and `hidden action` MUST keep their glossary meanings.
 - **Critical Product Details**:
-  - The three panes appear in the fixed order `Build Selection`, `Build Options`, `Build Artifacts`.
+  - The three panes appear in the fixed order `Build Selection`, `Build Artifacts`, `Build Options`.
   - `Build Options` starts collapsed; `Build Selection` and `Build Artifacts` start expanded — the behavior the single tree provides today.
   - Each pane's collapse state is remembered across window reloads, which the single tree does not do today.
   - Every row keeps its current label, icon, description, tooltip, checkbox, and inline row actions.
@@ -38,6 +38,7 @@
 - Q: When the status-bar item is clicked while `Build Selection` is collapsed, should the pane expand? → A: Yes. The click opens the container, expands `Build Selection`, and focuses it, so the selectors and the workflow toolbar are immediately usable whatever state the pane was left in.
 - Q: Should any pane offer a Collapse All button in its header? → A: No. No pane offers one, unchanged from today, so the extension remains the single owner of group and multistate expansion state.
 - Q: Is losing the always-visible toolbar acceptable? → A: Yes. The host shows a pane's actions on hover or focus and hides them while that pane is collapsed. Placing the toolbar on the topmost pane keeps it as close as possible to its current position.
+- Q: In what order should the three panes be declared? → A: `Build Selection` first, then `Build Artifacts`, then `Build Options`. This supersedes the earlier `Build Selection`, `Build Options`, `Build Artifacts` order. The two panes read on every build cycle sit above the one that starts collapsed, and `Build Selection` stays first so it keeps the inherited view id, the whole workflow toolbar, and the status-bar `.focus` target.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -51,7 +52,7 @@ As a firmware developer, I open the `Trezor` activity-bar container and see `Bui
 
 **Acceptance Scenarios**:
 
-1. **Given** a supported workspace with a loaded manifest, **When** the user opens the `Trezor` activity-bar container, **Then** three panes titled `Build Selection`, `Build Options`, and `Build Artifacts` are shown in that order.
+1. **Given** a supported workspace with a loaded manifest, **When** the user opens the `Trezor` activity-bar container, **Then** three panes titled `Build Selection`, `Build Artifacts`, and `Build Options` are shown in that order.
 2. **Given** the three panes are shown, **When** the user inspects the contents of each pane, **Then** the pane contains the same rows the corresponding section renders today, with identical labels, icons, descriptions, tooltips, and checkboxes.
 3. **Given** the three panes are shown, **When** the user looks for the former section rows, **Then** no row labelled `Build Selection`, `Build Options`, or `Build Artifacts` appears inside any pane's content; the pane titles carry those names instead.
 4. **Given** the manifest is still loading, is missing, or is invalid, **When** the user views the panes, **Then** each pane shows its current placeholder or warning rows with unchanged wording, and no pane is hidden or emptied because of that state.
@@ -116,7 +117,7 @@ As a firmware developer, I keep using the same selectors, option controls, row a
 
 ### Functional Requirements
 
-- **FR-001**: The `Trezor` activity-bar container MUST present three sibling panes titled `Build Selection`, `Build Options`, and `Build Artifacts`, in that order.
+- **FR-001**: The `Trezor` activity-bar container MUST present three sibling panes titled `Build Selection`, `Build Artifacts`, and `Build Options`, in that order.
 - **FR-002**: Each pane MUST render exactly the rows its corresponding section renders today, with identical labels, icons, descriptions, tooltips, checkbox states, and inline row actions.
 - **FR-003**: The `Build Selection`, `Build Options`, and `Build Artifacts` rows MUST no longer exist as content rows; those names MUST be carried by the pane titles.
 - **FR-004**: On first use, `Build Options` MUST start collapsed and `Build Selection` and `Build Artifacts` MUST start expanded.
@@ -148,7 +149,7 @@ As a firmware developer, I keep using the same selectors, option controls, row a
 
 ### Measurable Outcomes
 
-- **SC-001**: A user opening the container sees three visually separated, individually headed areas in the order `Build Selection`, `Build Options`, `Build Artifacts`, with 0 leftover section rows inside them.
+- **SC-001**: A user opening the container sees three visually separated, individually headed areas in the order `Build Selection`, `Build Artifacts`, `Build Options`, with 0 leftover section rows inside them.
 - **SC-002**: 100% of the rows rendered today by the three sections are rendered after the split, with unchanged labels, icons, descriptions, tooltips, and checkbox states.
 - **SC-003**: 100% of the actions exposed today from the Configuration view header, overflow menu, and artifact rows remain reachable, with unchanged enablement outcomes in every state tested.
 - **SC-003a**: All 8 workflow actions appear in one toolbar on the topmost pane, and 0 of them appear on the `Build Options` or `Build Artifacts` headers, in every pane focus, hover, collapse, and visibility combination tested.
