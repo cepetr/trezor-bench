@@ -42,7 +42,8 @@
           "id": "tfTools.buildOptions",
           "name": "Build Options",
           "icon": "images/tf-tools.svg",
-          "type": "tree"
+          "type": "tree",
+          "visibility": "collapsed"
         },
         {
           "id": "tfTools.buildArtifacts",

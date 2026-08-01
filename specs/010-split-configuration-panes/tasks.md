@@ -89,12 +89,12 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 
 ### Tests for User Story 2
 
-- [ ] T012 [US2] Add integration tests asserting `Build Options` declares `visibility: collapsed`, the other two omit `visibility`, and no view enables Collapse All, in `src/test/integration/configuration-panes.integration.test.ts` — this task owns every `visibility` assertion; T006 deliberately leaves it alone
+- [X] T012 [US2] Add integration tests asserting `Build Options` declares `visibility: collapsed`, the other two omit `visibility`, and no view enables Collapse All, in `src/test/integration/configuration-panes.integration.test.ts` — this task owns every `visibility` assertion; T006 deliberately leaves it alone
 
 ### Implementation for User Story 2
 
-- [ ] T013 [US2] Set `"visibility": "collapsed"` on the `Build Options` view entry in `package.json`, leaving the other two at the `visible` default
-- [ ] T014 [US2] Keep `showCollapseAll: false` on all three `TreeView` creations in `src/extension.ts`, so the extension stays the only owner of option-group and multistate expansion state (FR-009d)
+- [X] T013 [US2] Set `"visibility": "collapsed"` on the `Build Options` view entry in `package.json`, leaving the other two at the `visible` default
+- [X] T014 [US2] Keep `showCollapseAll: false` on all three `TreeView` creations in `src/extension.ts`, so the extension stays the only owner of option-group and multistate expansion state (FR-009d)
 
 **Checkpoint**: Initial states match today's behavior and the host persists user changes
 

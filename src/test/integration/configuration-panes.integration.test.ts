@@ -9,6 +9,8 @@
  * by T012, so the US1 suite stays green whether or not US2 has landed yet.
  */
 import * as assert from "assert";
+import * as fs from "fs";
+import * as path from "path";
 import * as vscode from "vscode";
 
 // ---------------------------------------------------------------------------
@@ -119,5 +121,58 @@ suite("Configuration panes – host-constraint guardrails (FR-009c)", () => {
   test("package.json contributes no configurationDefaults entry", () => {
     const pkg = getExtPackageJson();
     assert.strictEqual(pkg.configurationDefaults, undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US2 — initial collapse state. This suite owns every `visibility` assertion
+// (contracts/view-contributions.md §2); the US1 suite above deliberately
+// leaves it alone so it stays green whether or not US2 has landed yet.
+// ---------------------------------------------------------------------------
+
+suite("Configuration panes – initial collapse state (US2)", () => {
+  test("Build Options declares visibility: collapsed", () => {
+    const views = getTfToolsViews();
+    const buildOptions = views.find((v) => v.name === "Build Options");
+    assert.ok(buildOptions, "expected a Build Options view entry");
+    assert.strictEqual(buildOptions!.visibility, "collapsed");
+  });
+
+  test("Build Selection omits visibility (defaults to visible)", () => {
+    const views = getTfToolsViews();
+    const buildSelection = views.find((v) => v.name === "Build Selection");
+    assert.ok(buildSelection, "expected a Build Selection view entry");
+    assert.strictEqual(buildSelection!.visibility, undefined);
+  });
+
+  test("Build Artifacts omits visibility (defaults to visible)", () => {
+    const views = getTfToolsViews();
+    const buildArtifacts = views.find((v) => v.name === "Build Artifacts");
+    assert.ok(buildArtifacts, "expected a Build Artifacts view entry");
+    assert.strictEqual(buildArtifacts!.visibility, undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// No pane offers Collapse All (FR-009d) — the extension stays the sole owner
+// of option-group and multistate expansion state.
+// ---------------------------------------------------------------------------
+
+suite("Configuration panes – no Collapse All on any view", () => {
+  // showCollapseAll is a vscode.window.createTreeView() option, not a
+  // package.json contribution field, so it cannot be introspected from the
+  // running extension's manifest — this reads the compiled extension.js
+  // that this very test process is running alongside.
+  test("extension.ts creates all three TreeViews with showCollapseAll: false", () => {
+    const extensionJsPath = path.join(__dirname, "../../extension.js");
+    const extensionSource = fs.readFileSync(extensionJsPath, "utf-8");
+    const createTreeViewCalls = extensionSource.match(/createTreeView\([^;]*?\}\)/gs) ?? [];
+    assert.strictEqual(createTreeViewCalls.length, 3, "expected exactly 3 createTreeView calls");
+    for (const call of createTreeViewCalls) {
+      assert.ok(
+        /showCollapseAll\s*:\s*false/.test(call),
+        `expected showCollapseAll: false in call: ${call}`
+      );
+    }
   });
 });
