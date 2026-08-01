@@ -857,3 +857,41 @@ export class ConfigurationTreeProvider
     return items;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Per-pane facade
+// ---------------------------------------------------------------------------
+
+/**
+ * Thin, stateless `TreeDataProvider` for one pane. `ConfigurationTreeProvider`
+ * stays the sole owner of manifest, active-configuration, preset, resolved-option,
+ * and artifact state (research.md R3); this facade only routes to it.
+ */
+export class PaneTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
+  constructor(
+    private readonly owner: ConfigurationTreeProvider,
+    private readonly paneId: PaneId
+  ) {}
+
+  readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined> = (
+    listener,
+    thisArgs,
+    disposables
+  ) =>
+    this.owner.onDidChangePane((pane) => {
+      if (pane === this.paneId) {
+        listener.call(thisArgs, undefined);
+      }
+    }, undefined, disposables);
+
+  getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
+    return this.owner.getTreeItem(element);
+  }
+
+  getChildren(element?: vscode.TreeItem): vscode.TreeItem[] {
+    if (!element) {
+      return this.owner.paneRootChildren(this.paneId);
+    }
+    return this.owner.getChildren(element);
+  }
+}

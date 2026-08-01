@@ -52,7 +52,7 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 - [X] T002 Add unit tests for per-pane root children and per-pane refresh signals — `paneRootChildren("build-selection" | "build-options" | "build-artifacts")` returns today's section content for each manifest, preset, and artifact state, and each `update*()` entry point signals the panes whose rows it affects — in `src/test/unit/ui/configuration-tree.test.ts`
 - [X] T003 Rename `SectionId` to `PaneId` and add the per-pane root builders plus a per-pane change signal to `ConfigurationTreeProvider` in `src/ui/configuration-tree.ts`, keeping `SectionItem` in place for now so existing callers still compile
 - [X] T004 Add unit tests for the `PaneTreeProvider` facade — root delegation per `PaneId`, non-root delegation to the owner's element dispatch, `getTreeItem` identity, and change-event relay — in `src/test/unit/ui/configuration-tree.test.ts`
-- [ ] T005 Implement the `PaneTreeProvider` facade in `src/ui/configuration-tree.ts` per [data-model.md](data-model.md) (holds no state; constructed with the owner and a `PaneId`)
+- [X] T005 Implement the `PaneTreeProvider` facade in `src/ui/configuration-tree.ts` per [data-model.md](data-model.md) (holds no state; constructed with the owner and a `PaneId`)
 
 **Checkpoint**: Three pane providers can be constructed and render correct content; nothing is wired to the editor yet
 
