@@ -4,6 +4,7 @@ import {
   ConfigurationTreeProvider,
   SectionItem,
   SectionId,
+  PaneId,
   SelectorChoiceItem,
   SelectorHeaderItem,
   BuildOptionGroupItem,
@@ -1358,5 +1359,236 @@ suite("ConfigurationTreeProvider – Build Options preset-relative emphasis", ()
     for (const stateChild of item.stateChildren) {
       assert.strictEqual(stateChild.command, undefined, "unresolved state children must not be selectable");
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ConfigurationTreeProvider – per-pane root children (paneRootChildren)
+// Each PaneId's root rows must match today's section content exactly, for
+// every state the row-inventory (specs/010-split-configuration-panes/checklists/row-inventory.md)
+// records. This is the reference the pane split is checked against (FR-002).
+// ---------------------------------------------------------------------------
+
+suite("ConfigurationTreeProvider – paneRootChildren('build-selection')", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    provider.dispose();
+  });
+
+  test("loading: renders the loading placeholder before any manifest state is set", () => {
+    const children = provider.paneRootChildren("build-selection");
+    assert.strictEqual(children.length, 1);
+    assert.ok(children[0] instanceof PlaceholderItem);
+    assert.strictEqual(children[0].label, "Loading…");
+  });
+
+  test("missing: renders the missing-manifest warning and placeholder", () => {
+    provider.update({
+      status: "missing",
+      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+    });
+    const children = provider.paneRootChildren("build-selection");
+    assert.ok(children[0] instanceof WarningItem);
+    assert.ok(children[1] instanceof PlaceholderItem);
+  });
+
+  test("invalid: renders the validation-error warning and placeholder", () => {
+    provider.update({
+      status: "invalid",
+      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+      validationIssues: [{ severity: "error", code: "invalid-type", message: "bad" }],
+      loadedAt: new Date(),
+    });
+    const children = provider.paneRootChildren("build-selection");
+    assert.ok(children[0] instanceof WarningItem);
+    assert.ok(String(children[0].label).includes("1 validation error"));
+    assert.ok(children[1] instanceof PlaceholderItem);
+  });
+
+  test("loaded: renders the four selector headers matching build-context content exactly", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const paneChildren = provider.paneRootChildren("build-selection");
+    const legacyChildren = provider.getChildren(new SectionItem("build-context", "Build Selection"));
+    assert.deepStrictEqual(paneChildren, legacyChildren);
+    assert.strictEqual(paneChildren.length, 4);
+  });
+});
+
+suite("ConfigurationTreeProvider – paneRootChildren('build-options')", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    provider.dispose();
+  });
+
+  test("loading: renders the loading placeholder before any manifest state is set", () => {
+    const children = provider.paneRootChildren("build-options");
+    assert.strictEqual(children.length, 1);
+    assert.ok(children[0] instanceof PlaceholderItem);
+    assert.strictEqual(children[0].label, "Loading…");
+  });
+
+  test("missing: renders the unavailable-manifest placeholder", () => {
+    provider.update({
+      status: "missing",
+      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+    });
+    const children = provider.paneRootChildren("build-options");
+    assert.strictEqual(children.length, 1);
+    assert.ok(children[0] instanceof PlaceholderItem);
+    assert.strictEqual(children[0].label, "No manifest — Build Options unavailable");
+  });
+
+  test("invalid: renders the invalid-manifest placeholder", () => {
+    provider.update({
+      status: "invalid",
+      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+      validationIssues: [{ severity: "error", code: "invalid-type", message: "bad" }],
+      loadedAt: new Date(),
+    });
+    const children = provider.paneRootChildren("build-options");
+    assert.strictEqual(children.length, 1);
+    assert.strictEqual(children[0].label, "Manifest is invalid — Build Options unavailable");
+  });
+
+  test("workflow-blocked: renders the blocked-workflow warning and placeholder", () => {
+    provider.update({ ...makeManifestState(), hasWorkflowBlockingIssues: true }, makeActiveConfig(), []);
+    const children = provider.paneRootChildren("build-options");
+    assert.ok(children[0] instanceof WarningItem);
+    assert.ok(String(children[0].label).includes("Build workflow blocked"));
+    assert.ok(children[1] instanceof PlaceholderItem);
+  });
+
+  test("no-options-defined: renders the no-build-options placeholder when nothing was resolved", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const children = provider.paneRootChildren("build-options");
+    assert.strictEqual(children.length, 1);
+    assert.strictEqual(children[0].label, "No build options defined");
+  });
+
+  test("no-options-available: renders the not-available placeholder when every option is unavailable", () => {
+    const opt = checkboxOption("frozen", "--frozen");
+    provider.update(makeManifestState(), makeActiveConfig(), [resolved(opt, { available: false })]);
+    const children = provider.paneRootChildren("build-options");
+    assert.strictEqual(children.length, 1);
+    assert.strictEqual(children[0].label, "No options available for the active build context");
+  });
+
+  test("loaded: renders build-option rows matching build-options content exactly", () => {
+    const opt = checkboxOption("frozen", "--frozen");
+    provider.update(makeManifestState(), makeActiveConfig(), [resolved(opt, { value: true, isOverride: true })]);
+    const paneChildren = provider.paneRootChildren("build-options");
+    const legacyChildren = provider.getChildren(new SectionItem("build-options", "Build Options"));
+    assert.deepStrictEqual(paneChildren, legacyChildren);
+    assert.strictEqual(paneChildren.length, 1);
+  });
+});
+
+suite("ConfigurationTreeProvider – paneRootChildren('build-artifacts')", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    provider.dispose();
+  });
+
+  test("not-yet-evaluated: renders the not-yet-evaluated placeholder before any artifact update", () => {
+    const children = provider.paneRootChildren("build-artifacts");
+    assert.strictEqual(children.length, 1);
+    assert.ok(children[0] instanceof PlaceholderItem);
+    assert.strictEqual(children[0].label, "IntelliSense not yet evaluated");
+  });
+
+  test("evaluated: renders artifact rows matching build-artifacts content exactly", () => {
+    provider.updateArtifact(makeValidArtifact());
+    provider.updateBinaryArtifact(makeValidBinaryArtifact());
+    const paneChildren = provider.paneRootChildren("build-artifacts");
+    const legacyChildren = provider.getChildren(new SectionItem("build-artifacts", "Build Artifacts"));
+    assert.deepStrictEqual(paneChildren, legacyChildren);
+    assert.strictEqual(paneChildren.length, 2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ConfigurationTreeProvider – per-pane refresh signal (onDidChangePane)
+// Each update*() entry point must signal exactly the panes whose rows it
+// affects (research.md R4), so a facade relays only what concerns its pane.
+// ---------------------------------------------------------------------------
+
+suite("ConfigurationTreeProvider – onDidChangePane fan-out", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    provider.dispose();
+  });
+
+  function collectPanes(action: () => void): PaneId[] {
+    const seen: PaneId[] = [];
+    const sub = provider.onDidChangePane((paneId) => seen.push(paneId));
+    action();
+    sub.dispose();
+    return seen;
+  }
+
+  test("update() signals build-selection and build-options", () => {
+    const seen = collectPanes(() => provider.update(makeManifestState(), makeActiveConfig(), []));
+    assert.deepStrictEqual(new Set(seen), new Set(["build-selection", "build-options"]));
+  });
+
+  test("updatePresets() signals build-selection and build-options", () => {
+    const seen = collectPanes(() => provider.updatePresets(undefined, undefined, []));
+    assert.deepStrictEqual(new Set(seen), new Set(["build-selection", "build-options"]));
+  });
+
+  test("updateArtifact() signals only build-artifacts", () => {
+    const seen = collectPanes(() => provider.updateArtifact(makeValidArtifact()));
+    assert.deepStrictEqual(seen, ["build-artifacts"]);
+  });
+
+  test("updateBinaryArtifact() signals only build-artifacts", () => {
+    const seen = collectPanes(() => provider.updateBinaryArtifact(makeValidBinaryArtifact()));
+    assert.deepStrictEqual(seen, ["build-artifacts"]);
+  });
+
+  test("updateMapArtifact() signals only build-artifacts", () => {
+    const seen = collectPanes(() => provider.updateMapArtifact(makeValidMapArtifact()));
+    assert.deepStrictEqual(seen, ["build-artifacts"]);
+  });
+
+  test("updateExecutableArtifact() signals only build-artifacts", () => {
+    const seen = collectPanes(() => provider.updateExecutableArtifact(makeValidExecutableArtifact()));
+    assert.deepStrictEqual(seen, ["build-artifacts"]);
+  });
+
+  test("setExpandedSelector() signals only build-selection", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    const seen = collectPanes(() => provider.setExpandedSelector("model"));
+    assert.deepStrictEqual(seen, ["build-selection"]);
+  });
+
+  test("setExpandedMultistateKey() signals only build-options", () => {
+    const seen = collectPanes(() => provider.setExpandedMultistateKey("verbose"));
+    assert.deepStrictEqual(seen, ["build-options"]);
+  });
+
+  test("setGroupCollapsed() signals only build-options", () => {
+    const seen = collectPanes(() => provider.setGroupCollapsed("Advanced", true));
+    assert.deepStrictEqual(seen, ["build-options"]);
   });
 });
