@@ -31,7 +31,7 @@ The extension does not define or manage the repository's build system itself. It
 
 ## Core Capabilities
 
-The extension's main configuration surface is the `Trezor` activity-bar container, which holds three sibling tree-view panes: `Build Selection`, `Build Options`, and `Build Artifacts`, each with its own header and divider.
+The extension's main configuration surface is the `Trezor` activity-bar container, which holds three sibling tree-view panes: `Build Selection`, `Build Artifacts`, and `Build Options`, each with its own header and divider.
 
 At a high level, the three panes are organized like this:
 
@@ -41,14 +41,14 @@ Trezor
 │   ├── Model
 │   ├── Target
 │   └── Component
-├── Build Options
-│   ├── [option group or option]
-│   └── ...
-└── Build Artifacts
-	├── Compile Commands
-	├── Binary
-	├── Map File
-	└── Executable
+├── Build Artifacts
+│   ├── Compile Commands
+│   ├── Binary
+│   ├── Map File
+│   └── Executable
+└── Build Options
+	├── [option group or option]
+	└── ...
 ```
 
 The core capabilities below describe what this side-bar experience enables for the user.
@@ -221,10 +221,10 @@ If invocation is attempted without a valid map-file path, the action returns wit
 
 ## Configuration View Iconography
 
-The `Trezor` activity-bar container and all three of its panes (`Build Selection`, `Build Options`, `Build Artifacts`) use the shared SVG icon asset from `images/tf-tools.svg` as their identifying icon. This is distinct from the extension package logo asset.
+The `Trezor` activity-bar container and all three of its panes (`Build Selection`, `Build Artifacts`, `Build Options`) use the shared SVG icon asset from `images/tf-tools.svg` as their identifying icon. This is distinct from the extension package logo asset.
 
 - Activity-bar container icon: `images/tf-tools.svg`
-- Pane icons: `images/tf-tools.svg` for each of `Build Selection`, `Build Options`, and `Build Artifacts`
+- Pane icons: `images/tf-tools.svg` for each of `Build Selection`, `Build Artifacts`, and `Build Options`
 - `Build Selection` selector icons: `circuit-board` for `Model`, `target` for `Target`, `extensions` for `Component`, `layers` for `Preset`
 - Active selector-choice icon: `check`
 - Inactive selector-choice spacer: `images/blank-tree-icon.svg`
