@@ -67,11 +67,11 @@ suite("Configuration panes – view contributions (US1)", () => {
     assert.strictEqual(views.length, 3, `expected exactly 3 views, got ${views.length}`);
   });
 
-  test("declares the three views in the contract's exact order: Build Selection, Build Options, Build Artifacts", () => {
+  test("declares the three views in the contract's exact order: Build Selection, Build Artifacts, Build Options", () => {
     const views = getTfToolsViews();
     assert.deepStrictEqual(
       views.map((v) => v.name),
-      ["Build Selection", "Build Options", "Build Artifacts"]
+      ["Build Selection", "Build Artifacts", "Build Options"]
     );
   });
 
@@ -87,6 +87,13 @@ suite("Configuration panes – view contributions (US1)", () => {
     assert.notStrictEqual(second.id, INHERITED_VIEW_ID);
     assert.notStrictEqual(third.id, INHERITED_VIEW_ID);
     assert.notStrictEqual(second.id, third.id);
+  });
+
+  test("the id order matches the title order: inherited, Build Artifacts, Build Options", () => {
+    assert.deepStrictEqual(
+      getTfToolsViews().map((v) => v.id),
+      [INHERITED_VIEW_ID, BUILD_ARTIFACTS_VIEW_ID, BUILD_OPTIONS_VIEW_ID]
+    );
   });
 
   test("every view id stays under 25 characters (constitution principle V)", () => {
