@@ -39,17 +39,17 @@
           "type": "tree"
         },
         {
+          "id": "tfTools.buildArtifacts",
+          "name": "Build Artifacts",
+          "icon": "images/tf-tools.svg",
+          "type": "tree"
+        },
+        {
           "id": "tfTools.buildOptions",
           "name": "Build Options",
           "icon": "images/tf-tools.svg",
           "type": "tree",
           "visibility": "collapsed"
-        },
-        {
-          "id": "tfTools.buildArtifacts",
-          "name": "Build Artifacts",
-          "icon": "images/tf-tools.svg",
-          "type": "tree"
         }
       ]
     },
