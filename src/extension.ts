@@ -14,7 +14,7 @@ import {
   PresetContext,
   PresetEffectiveValue,
 } from "./presets/preset-resolution";
-import { ConfigurationTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/configuration-tree";
+import { ConfigurationTreeProvider, PaneTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/configuration-tree";
 import { StatusBarPresenter } from "./ui/status-bar";
 import {
   disposeLogChannel,
@@ -119,6 +119,8 @@ let _presetsUnavailable = false;
 let _presetStateSubscription: vscode.Disposable | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
 let _configurationTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
+let _buildOptionsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
+let _buildArtifactsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _statusBar: StatusBarPresenter | undefined;
 let _manifestState: ManifestState | undefined;
 let _activeConfig: ActiveConfig | undefined;
@@ -525,18 +527,25 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // "no data provider registered" when the activity bar is clicked.
   _treeProvider = new ConfigurationTreeProvider();
   _configurationTreeView = vscode.window.createTreeView("tfTools.configuration", {
-    treeDataProvider: _treeProvider,
+    treeDataProvider: new PaneTreeProvider(_treeProvider, "build-selection"),
+    showCollapseAll: false,
+  });
+  _buildOptionsTreeView = vscode.window.createTreeView("tfTools.buildOptions", {
+    treeDataProvider: new PaneTreeProvider(_treeProvider, "build-options"),
+    showCollapseAll: false,
+  });
+  _buildArtifactsTreeView = vscode.window.createTreeView("tfTools.buildArtifacts", {
+    treeDataProvider: new PaneTreeProvider(_treeProvider, "build-artifacts"),
     showCollapseAll: false,
   });
   context.subscriptions.push(
     _configurationTreeView,
+    _buildOptionsTreeView,
+    _buildArtifactsTreeView,
+    // Selector expand/collapse: rows only ever render in Build Selection.
     _configurationTreeView.onDidExpandElement(({ element }) => {
       if (element instanceof SelectorHeaderItem) {
         _treeProvider?.setExpandedSelector(element.selectorKind);
-      } else if (element instanceof BuildOptionMultistateHeaderItem) {
-        _treeProvider?.setExpandedMultistateKey(element.optionKey);
-      } else if (element instanceof BuildOptionGroupItem) {
-        _treeProvider?.setGroupCollapsed(element.groupLabel, false);
       }
     }),
     _configurationTreeView.onDidCollapseElement(({ element }) => {
@@ -544,7 +553,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         if (_treeProvider?.getExpandedSelector() === element.selectorKind) {
           _treeProvider.setExpandedSelector(undefined);
         }
-      } else if (element instanceof BuildOptionMultistateHeaderItem) {
+      }
+    }),
+    // Multistate expand/collapse, option-group collapse, and checkbox toggling:
+    // rows only ever render in Build Options.
+    _buildOptionsTreeView.onDidExpandElement(({ element }) => {
+      if (element instanceof BuildOptionMultistateHeaderItem) {
+        _treeProvider?.setExpandedMultistateKey(element.optionKey);
+      } else if (element instanceof BuildOptionGroupItem) {
+        _treeProvider?.setGroupCollapsed(element.groupLabel, false);
+      }
+    }),
+    _buildOptionsTreeView.onDidCollapseElement(({ element }) => {
+      if (element instanceof BuildOptionMultistateHeaderItem) {
         if (_treeProvider?.getExpandedMultistateKey() === element.optionKey) {
           _treeProvider.setExpandedMultistateKey(undefined);
         }
@@ -552,7 +573,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         _treeProvider?.setGroupCollapsed(element.groupLabel, true);
       }
     }),
-    _configurationTreeView.onDidChangeCheckboxState(async ({ items }) => {
+    _buildOptionsTreeView.onDidChangeCheckboxState(async ({ items }) => {
       for (const [element, state] of items) {
         if (!(element instanceof BuildOptionCheckboxItem)) {
           continue;
@@ -1164,6 +1185,10 @@ export function deactivate(): void {
   _treeProvider = undefined;
   _configurationTreeView?.dispose();
   _configurationTreeView = undefined;
+  _buildOptionsTreeView?.dispose();
+  _buildOptionsTreeView = undefined;
+  _buildArtifactsTreeView?.dispose();
+  _buildArtifactsTreeView = undefined;
   _statusBar?.dispose();
   _statusBar = undefined;
   _intelliSenseService?.dispose();
