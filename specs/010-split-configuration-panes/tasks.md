@@ -126,8 +126,8 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 
 - [X] T021 [P] Update `specs/product-spec.md` so the `Core Capabilities` tree outline shows three sibling panes rather than one `Configuration` tree with section rows, the `Configuration View Iconography` top-level-section entry describes pane titles, and `Status Bar` → `Interaction` states that selecting the item opens the container, expands `Build Selection`, and focuses it (FR-015)
 - [X] T022 [P] Update the `Configuration view` definition in `specs/glossary.md` to the set of three sibling panes in the `Trezor` container, keeping `Build Selection`, `Build Options`, and `Build Artifacts` as the pane names (FR-015)
-- [ ] T023 Run `npm run lint`, `npm run compile`, and `npm run test:unit` and fix any failure
-- [ ] T024 Verify no residual references to `SectionItem`, `SectionId`, `getSectionCollapsibleState`, or `section:` item ids remain in `src/`
+- [X] T023 Run `npm run lint`, `npm run compile`, and `npm run test:unit` and fix any failure
+- [X] T024 Verify no residual references to `SectionItem`, `SectionId`, `getSectionCollapsibleState`, or `section:` item ids remain in `src/`
 - [ ] T025 Run `npm test` on a workstation outside the restricted sandbox and record the result; the feature is not done while this is unverified (constitution principle III)
 - [ ] T026 Execute the manual validation pass in [quickstart.md](quickstart.md), including the upgrade-path check that a relocated view reappears as `Build Selection` in its saved location
 - [ ] T027 Self-review the full diff against [spec.md](spec.md), `specs/product-spec.md`, and `specs/glossary.md`, confirming FR-001 through FR-017 are implemented as specified rather than approximated
