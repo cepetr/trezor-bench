@@ -12,29 +12,12 @@ import { PresetChoice } from "../presets/preset-resolution";
 // Tree item types
 // ---------------------------------------------------------------------------
 
-export type SectionId = "build-context" | "build-options" | "build-artifacts";
-
 /**
  * Identifies one of the three sibling panes in the `tf-tools` container.
- * Replaces `SectionId` as the split's addressing scheme; `build-selection`
- * is the retitled, id-inheriting successor of the old `build-context` section.
+ * `build-selection` is the retitled, id-inheriting successor of the section
+ * that used to be called `build-context`.
  */
 export type PaneId = "build-selection" | "build-options" | "build-artifacts";
-
-function getSectionCollapsibleState(sectionId: SectionId): vscode.TreeItemCollapsibleState {
-  return sectionId === "build-options"
-    ? vscode.TreeItemCollapsibleState.Collapsed
-    : vscode.TreeItemCollapsibleState.Expanded;
-}
-
-export class SectionItem extends vscode.TreeItem {
-  constructor(public readonly sectionId: SectionId, label: string) {
-    super(label, getSectionCollapsibleState(sectionId));
-    this.id = `section:${sectionId}`;
-    this.contextValue = sectionId;
-    this.tooltip = "";
-  }
-}
 
 export class WarningItem extends vscode.TreeItem {
   constructor(message: string) {
@@ -520,26 +503,12 @@ export class ConfigurationTreeProvider
     }
   }
 
+  /**
+   * Pane roots are no longer reachable here — each `PaneTreeProvider` calls
+   * `paneRootChildren()` directly. An `undefined` element falls through every
+   * `instanceof` check below and returns `[]`.
+   */
   getChildren(element?: vscode.TreeItem): vscode.TreeItem[] {
-    if (!element) {
-      return [
-        new SectionItem("build-context", "Build Selection"),
-        new SectionItem("build-options", "Build Options"),
-        new SectionItem("build-artifacts", "Build Artifacts"),
-      ];
-    }
-
-    if (element instanceof SectionItem) {
-      switch (element.sectionId) {
-        case "build-context":
-          return this._buildContextChildren();
-        case "build-options":
-          return this._buildOptionsChildren();
-        case "build-artifacts":
-          return this._buildArtifactsChildren();
-      }
-    }
-
     if (element instanceof BuildOptionGroupItem) {
       return element.groupChildren;
     }
