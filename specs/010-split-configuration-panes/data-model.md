@@ -12,11 +12,11 @@ One of the three top-level surfaces in the `tf-tools` container.
 
 | Attribute | Value | Owner |
 |---|---|---|
-| Pane id | `build-selection`, `build-options`, `build-artifacts` | Extension (`PaneId`) |
+| Pane id | `build-selection`, `build-artifacts`, `build-options` | Extension (`PaneId`) |
 | View id | inherited id for `Build Selection`; new ids for the other two | `package.json` |
-| Title | `Build Selection`, `Build Options`, `Build Artifacts` | `package.json` |
-| Position | fixed declaration order 1, 2, 3 | `package.json` |
-| Initial collapse state | expanded, collapsed, expanded | `package.json` (`visibility`) |
+| Title | `Build Selection`, `Build Artifacts`, `Build Options` | `package.json` |
+| Position | fixed declaration order 1, 2, 3 — `Build Selection`, `Build Artifacts`, `Build Options` | `package.json` |
+| Initial collapse state | expanded, expanded, collapsed | `package.json` (`visibility`) |
 | Current collapse state | user's choice, restored across reloads | Editor host |
 | Visibility (shown/hidden) | user's choice via container context menu | Editor host |
 | Header actions | `Build Selection` only | `package.json` (`view/title`) |
@@ -53,8 +53,8 @@ The rows a pane renders for current state. Composition is unchanged from the cor
 | Pane | Rows |
 |---|---|
 | `Build Selection` | four selector headers (`Model`, `Target`, `Component`, `Preset`) and, under the expanded one, its choice rows; otherwise the loading, missing-manifest, or invalid-manifest placeholder set |
-| `Build Options` | option group headers with their children, ungrouped checkbox and multistate rows in manifest declaration order, multistate state rows under an expanded header; otherwise the loading, unavailable, workflow-blocked, no-options-defined, or no-options-available placeholder set |
 | `Build Artifacts` | `Compile Commands`, `Binary`, `Map File`, `Executable` rows as their artifact states exist; otherwise the not-yet-evaluated placeholder |
+| `Build Options` | option group headers with their children, ungrouped checkbox and multistate rows in manifest declaration order, multistate state rows under an expanded header; otherwise the loading, unavailable, workflow-blocked, no-options-defined, or no-options-available placeholder set |
 
 **Validation rules**: no row labelled `Build Selection`, `Build Options`, or `Build Artifacts` appears in any pane's content (FR-003); placeholder wording is unchanged and stays in its own pane (FR-011).
 

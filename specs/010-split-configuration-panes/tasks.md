@@ -145,7 +145,7 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 - [X] T030 Update the pane-order assertion in `src/test/integration/configuration-panes.integration.test.ts` to the new order, and retarget the "entry 2 / entry 3" id assertions accordingly — test before implementation, so this fails against the current manifest
 - [X] T031 Move the `tfTools.buildArtifacts` entry ahead of `tfTools.buildOptions` in `contributes.views["tf-tools"]` in `package.json`, changing nothing else about either entry
 - [X] T032 [P] Align the three `createTreeView` calls and their `context.subscriptions` order in `src/extension.ts` with the declared pane order, so the source reads in pane order (no behavior change — `package.json` array order is what the host renders)
-- [ ] T033 [P] Update the pane-order statements in [plan.md](plan.md) §Pane order and initial state, [data-model.md](data-model.md) (`Title` and `Position` rows, pane-content table order), and [quickstart.md](quickstart.md) step 1
+- [X] T033 [P] Update the pane-order statements in [plan.md](plan.md) §Pane order and initial state, [data-model.md](data-model.md) (`Title` and `Position` rows, pane-content table order), and [quickstart.md](quickstart.md) step 1
 - [ ] T034 [P] Update `specs/product-spec.md` — the `Core Capabilities` tree outline and the pane enumerations in the intro and `Configuration View Iconography` — and the `Configuration view` definition in `specs/glossary.md`, to the new pane order (FR-015)
 - [ ] T035 Run `npm run lint`, `npm run compile`, and `npm run test:unit` and fix any failure
 

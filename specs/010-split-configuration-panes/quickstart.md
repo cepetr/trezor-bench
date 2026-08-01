@@ -44,7 +44,7 @@ Launch the Extension Development Host (F5) against a real firmware workspace.
 
 ### Pane layout — US1
 
-1. Open the `Trezor` container. **Expect**: three headed panes, `Build Selection` / `Build Options` / `Build Artifacts`, in that order, separated by real dividers.
+1. Open the `Trezor` container. **Expect**: three headed panes, `Build Selection` / `Build Artifacts` / `Build Options`, in that order, separated by real dividers.
 2. Inspect each pane. **Expect**: the same rows as before the split, with identical labels, icons, descriptions, tooltips, and checkboxes; no section row anywhere inside a pane.
 3. Point the manifest path at a missing file, then at an invalid one. **Expect**: each pane shows its own placeholder or warning rows with unchanged wording; no pane disappears or empties.
 
