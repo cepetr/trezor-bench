@@ -1604,6 +1604,107 @@ suite("PaneTreeProvider – non-root delegation to the owner's element dispatch"
   });
 });
 
+// ---------------------------------------------------------------------------
+// US3 (T017): every interaction still behaves as it does today when driven
+// through the pane providers, not the owner directly — selector accordion
+// behavior, multistate expansion, option-group collapse, and checkbox state.
+// ---------------------------------------------------------------------------
+
+suite("PaneTreeProvider – selector accordion behavior (US3)", () => {
+  let owner: ConfigurationTreeProvider;
+  let buildSelection: PaneTreeProvider;
+
+  setup(() => {
+    owner = new ConfigurationTreeProvider();
+    buildSelection = new PaneTreeProvider(owner, "build-selection");
+    owner.update(makeManifestState(), makeActiveConfig(), []);
+  });
+
+  teardown(() => {
+    owner.dispose();
+  });
+
+  test("expanding a second selector collapses the previously expanded one", () => {
+    owner.setExpandedSelector("model");
+    let [modelHeader, targetHeader] = buildSelection.getChildren(undefined) as SelectorHeaderItem[];
+    assert.strictEqual(modelHeader.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+    assert.strictEqual(targetHeader.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+    assert.ok(buildSelection.getChildren(modelHeader).length > 0);
+
+    owner.setExpandedSelector("target");
+    [modelHeader, targetHeader] = buildSelection.getChildren(undefined) as SelectorHeaderItem[];
+    assert.strictEqual(modelHeader.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+    assert.strictEqual(targetHeader.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+    assert.strictEqual(buildSelection.getChildren(modelHeader).length, 0);
+    assert.ok(buildSelection.getChildren(targetHeader).length > 0);
+  });
+});
+
+suite("PaneTreeProvider – multistate expansion, group collapse, and checkbox state (US3)", () => {
+  let owner: ConfigurationTreeProvider;
+  let buildOptions: PaneTreeProvider;
+
+  setup(() => {
+    owner = new ConfigurationTreeProvider();
+    buildOptions = new PaneTreeProvider(owner, "build-options");
+  });
+
+  teardown(() => {
+    owner.dispose();
+  });
+
+  test("expanding a multistate option shows its state children unchanged from today", () => {
+    const states = [
+      { id: "off", label: "Off", flag: "" },
+      { id: "swo", label: "SWO", flag: "--dbg-console=swo" },
+    ];
+    const opt = multistateOption("dbg-console", "--dbg-console", states);
+    owner.update(makeManifestState(), makeActiveConfig(), [resolved(opt, { value: "off", presetState: "resolved" })]);
+
+    owner.setExpandedMultistateKey("dbg-console");
+    const [header] = buildOptions.getChildren(undefined) as BuildOptionMultistateHeaderItem[];
+    assert.strictEqual(header.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+    const stateChildren = buildOptions.getChildren(header) as BuildOptionStateItem[];
+    assert.strictEqual(stateChildren.length, 2);
+    assert.strictEqual(stateChildren[0].contextValue, "build-option-state");
+
+    owner.setExpandedMultistateKey(undefined);
+    const [collapsedHeader] = buildOptions.getChildren(undefined) as BuildOptionMultistateHeaderItem[];
+    assert.strictEqual(collapsedHeader.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+  });
+
+  test("collapsing an option group hides its members but keeps the header emphasized on override", () => {
+    const optA = checkboxOption("alpha", "--alpha", "Group");
+    const optB = checkboxOption("beta", "--beta", "Group");
+    owner.update(makeManifestState(), makeActiveConfig(), [
+      resolved(optA, { isOverride: false }),
+      resolved(optB, { value: true, isOverride: true }),
+    ]);
+
+    owner.setGroupCollapsed("Group", true);
+    const [group] = buildOptions.getChildren(undefined) as BuildOptionGroupItem[];
+    assert.strictEqual(group.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+    assert.deepStrictEqual(group.label, { label: "Group", highlights: [[0, 5]] });
+
+    owner.setGroupCollapsed("Group", false);
+    const [expandedGroup] = buildOptions.getChildren(undefined) as BuildOptionGroupItem[];
+    assert.strictEqual(expandedGroup.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+    assert.strictEqual(buildOptions.getChildren(expandedGroup).length, 2);
+  });
+
+  test("checkbox row reflects the stored value unchanged through the facade", () => {
+    const opt = checkboxOption("frozen", "--frozen");
+    owner.update(makeManifestState(), makeActiveConfig(), [resolved(opt, { value: false })]);
+    let [checkbox] = buildOptions.getChildren(undefined) as BuildOptionCheckboxItem[];
+    assert.strictEqual(checkbox.checkboxState, vscode.TreeItemCheckboxState.Unchecked);
+
+    // Simulate the extension re-resolving and re-rendering after a checkbox toggle.
+    owner.update(makeManifestState(), makeActiveConfig(), [resolved(opt, { value: true })]);
+    [checkbox] = buildOptions.getChildren(undefined) as BuildOptionCheckboxItem[];
+    assert.strictEqual(checkbox.checkboxState, vscode.TreeItemCheckboxState.Checked);
+  });
+});
+
 suite("PaneTreeProvider – getTreeItem identity", () => {
   test("returns the same element it was given, like the owner", () => {
     const owner = new ConfigurationTreeProvider();

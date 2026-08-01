@@ -42,6 +42,20 @@ function getTfToolsViews(): ViewContribution[] {
 }
 
 const INHERITED_VIEW_ID = "tfTools.configuration";
+const BUILD_OPTIONS_VIEW_ID = "tfTools.buildOptions";
+const BUILD_ARTIFACTS_VIEW_ID = "tfTools.buildArtifacts";
+
+interface MenuEntry {
+  command: string;
+  when?: string;
+  group?: string;
+  enablement?: string;
+}
+
+function getMenuEntries(menuId: string): MenuEntry[] {
+  const menus = getContributes().menus as Record<string, MenuEntry[]>;
+  return menus[menuId] ?? [];
+}
 
 // ---------------------------------------------------------------------------
 // US1 — three views contributed, in order, with contract titles/type/icon
@@ -174,5 +188,116 @@ suite("Configuration panes – no Collapse All on any view", () => {
         `expected showCollapseAll: false in call: ${call}`
       );
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US3 — the workflow toolbar stays whole on Build Selection (FR-009, FR-009a,
+// FR-009b). Every existing view/title entry keeps its command, group, and
+// enablement, and stays bound to the inherited view id.
+// ---------------------------------------------------------------------------
+
+suite("Configuration panes – view/title toolbar targets only Build Selection (US3)", () => {
+  test("declares exactly ten view/title entries", () => {
+    assert.strictEqual(getMenuEntries("view/title").length, 10);
+  });
+
+  test("every view/title entry targets the inherited view id", () => {
+    for (const entry of getMenuEntries("view/title")) {
+      assert.ok(
+        entry.when?.includes(`view == ${INHERITED_VIEW_ID}`),
+        `expected '${entry.command}' (${entry.group}) to target the inherited view id, got when: ${entry.when}`
+      );
+    }
+  });
+
+  test("no view/title entry targets Build Options or Build Artifacts", () => {
+    for (const entry of getMenuEntries("view/title")) {
+      assert.ok(
+        !entry.when?.includes(`view == ${BUILD_OPTIONS_VIEW_ID}`),
+        `'${entry.command}' (${entry.group}) must not target Build Options`
+      );
+      assert.ok(
+        !entry.when?.includes(`view == ${BUILD_ARTIFACTS_VIEW_ID}`),
+        `'${entry.command}' (${entry.group}) must not target Build Artifacts`
+      );
+    }
+  });
+
+  test("matches the contract's command/group/enablement table exactly, in order", () => {
+    const expected: Array<{ command: string; group: string; enablement?: string }> = [
+      { command: "tfTools.build", group: "navigation@1", enablement: "!tfTools.workflowBlocked && !tfTools.presetBlocked" },
+      { command: "tfTools.startDebugging", group: "navigation@2", enablement: "tfTools.startDebuggingEnabled" },
+      { command: "tfTools.build", group: "overflow@1", enablement: "!tfTools.workflowBlocked && !tfTools.presetBlocked" },
+      { command: "tfTools.clippy", group: "overflow@2", enablement: "!tfTools.workflowBlocked && !tfTools.presetBlocked" },
+      { command: "tfTools.check", group: "overflow@3", enablement: "!tfTools.workflowBlocked && !tfTools.presetBlocked" },
+      { command: "tfTools.clean", group: "overflow@4", enablement: "!tfTools.workflowBlocked" },
+      { command: "tfTools.flash", group: "overflow@5", enablement: "tfTools.binaryExists" },
+      { command: "tfTools.upload", group: "overflow@6", enablement: "tfTools.binaryExists" },
+      { command: "tfTools.startDebugging", group: "overflow@7", enablement: "tfTools.startDebuggingEnabled" },
+      { command: "tfTools.refreshIntelliSense", group: "overflow@8" },
+    ];
+    const actual = getMenuEntries("view/title").map((e) => ({
+      command: e.command,
+      group: e.group,
+      enablement: e.enablement,
+    }));
+    assert.deepStrictEqual(actual, expected);
+  });
+
+  test("the status-bar command still equals '<inherited view id>.focus'", () => {
+    const statusBarSource = fs.readFileSync(
+      path.join(__dirname, "../../ui/status-bar.js"),
+      "utf-8"
+    );
+    assert.ok(
+      statusBarSource.includes(`${INHERITED_VIEW_ID}.focus`),
+      `expected status-bar command '${INHERITED_VIEW_ID}.focus' in status-bar.js`
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US3 — artifact row actions move to Build Artifacts (FR-008).
+// ---------------------------------------------------------------------------
+
+suite("Configuration panes – view/item/context targets only Build Artifacts (US3)", () => {
+  test("declares exactly four view/item/context entries", () => {
+    assert.strictEqual(getMenuEntries("view/item/context").length, 4);
+  });
+
+  test("every view/item/context entry targets the Build Artifacts view id", () => {
+    for (const entry of getMenuEntries("view/item/context")) {
+      assert.ok(
+        entry.when?.includes(`view == ${BUILD_ARTIFACTS_VIEW_ID}`),
+        `expected '${entry.command}' to target Build Artifacts, got when: ${entry.when}`
+      );
+    }
+  });
+
+  test("no view/item/context entry targets the inherited view id or Build Options", () => {
+    for (const entry of getMenuEntries("view/item/context")) {
+      assert.ok(!entry.when?.includes(`view == ${INHERITED_VIEW_ID}`));
+      assert.ok(!entry.when?.includes(`view == ${BUILD_OPTIONS_VIEW_ID}`));
+    }
+  });
+
+  test("matches the contract's command/viewItem/group/enablement table exactly", () => {
+    const expected: Array<{ command: string; viewItem: string; group: string; enablement?: string }> = [
+      { command: "tfTools.flash", viewItem: "artifact-binary", group: "inline@1", enablement: "tfTools.binaryExists" },
+      { command: "tfTools.upload", viewItem: "artifact-binary", group: "inline@2", enablement: "tfTools.binaryExists" },
+      { command: "tfTools.openMapFile", viewItem: "artifact-map", group: "inline@1", enablement: "tfTools.mapExists" },
+      { command: "tfTools.startDebugging", viewItem: "artifact-executable", group: "inline@1", enablement: "tfTools.startDebuggingEnabled" },
+    ];
+    const actual = getMenuEntries("view/item/context").map((e) => {
+      const viewItemMatch = /viewItem == ([\w-]+)/.exec(e.when ?? "");
+      return {
+        command: e.command,
+        viewItem: viewItemMatch?.[1],
+        group: e.group,
+        enablement: e.enablement,
+      };
+    });
+    assert.deepStrictEqual(actual, expected);
   });
 });

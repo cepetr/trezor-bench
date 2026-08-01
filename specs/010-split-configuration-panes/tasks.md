@@ -108,9 +108,9 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 
 ### Tests for User Story 3
 
-- [ ] T015 [P] [US3] Add integration tests asserting all ten `view/title` entries target the inherited view id with unchanged command, group, and enablement, that no `view/title` entry targets the other two views, and that the status-bar command still equals `<inherited view id>.focus`, in `src/test/integration/configuration-panes.integration.test.ts`
-- [ ] T016 [P] [US3] Add integration tests asserting all four `view/item/context` entries target the `Build Artifacts` view id and keep their `viewItem`, group, and enablement, in `src/test/integration/configuration-panes.integration.test.ts`
-- [ ] T017 [P] [US3] Add unit tests asserting selector expansion collapses the previously expanded selector, and that multistate expansion, option-group collapse, and checkbox toggling produce unchanged rows and stored values when driven through the pane providers, in `src/test/unit/ui/configuration-tree.test.ts`
+- [X] T015 [P] [US3] Add integration tests asserting all ten `view/title` entries target the inherited view id with unchanged command, group, and enablement, that no `view/title` entry targets the other two views, and that the status-bar command still equals `<inherited view id>.focus`, in `src/test/integration/configuration-panes.integration.test.ts`
+- [X] T016 [P] [US3] Add integration tests asserting all four `view/item/context` entries target the `Build Artifacts` view id and keep their `viewItem`, group, and enablement, in `src/test/integration/configuration-panes.integration.test.ts`
+- [X] T017 [P] [US3] Add unit tests asserting selector expansion collapses the previously expanded selector, and that multistate expansion, option-group collapse, and checkbox toggling produce unchanged rows and stored values when driven through the pane providers, in `src/test/unit/ui/configuration-tree.test.ts`
 
 ### Implementation for User Story 3
 
