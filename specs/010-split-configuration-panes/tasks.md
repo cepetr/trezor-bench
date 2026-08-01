@@ -66,9 +66,9 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] Add integration tests asserting exactly three views are contributed for the `tf-tools` container, in the declared order, with the titles, `type`, and `icon` from [contracts/view-contributions.md](contracts/view-contributions.md), and that entry 1 reuses the inherited view id, in new `src/test/integration/configuration-panes.integration.test.ts`. Do **not** assert `visibility` here — that belongs to T012, so this test stays green between US1 and US2
-- [ ] T006a [P] [US1] Add integration assertions that `package.json` declares no `enabledApiProposals`, contributes no `viewContainer/title` menu, and contributes no `configurationDefaults` entry, in `src/test/integration/configuration-panes.integration.test.ts` (FR-009c — the guardrail behind the whole host-constraint decision)
-- [ ] T007 [P] [US1] Add unit tests asserting no pane's rows contain a `Build Selection`, `Build Options`, or `Build Artifacts` row and that each pane's rows match the T001 inventory in every manifest state, in `src/test/unit/ui/configuration-tree.test.ts`
+- [X] T006 [P] [US1] Add integration tests asserting exactly three views are contributed for the `tf-tools` container, in the declared order, with the titles, `type`, and `icon` from [contracts/view-contributions.md](contracts/view-contributions.md), and that entry 1 reuses the inherited view id, in new `src/test/integration/configuration-panes.integration.test.ts`. Do **not** assert `visibility` here — that belongs to T012, so this test stays green between US1 and US2
+- [X] T006a [P] [US1] Add integration assertions that `package.json` declares no `enabledApiProposals`, contributes no `viewContainer/title` menu, and contributes no `configurationDefaults` entry, in `src/test/integration/configuration-panes.integration.test.ts` (FR-009c — the guardrail behind the whole host-constraint decision)
+- [X] T007 [P] [US1] Add unit tests asserting no pane's rows contain a `Build Selection`, `Build Options`, or `Build Artifacts` row and that each pane's rows match the T001 inventory in every manifest state, in `src/test/unit/ui/configuration-tree.test.ts`
 
 ### Implementation for User Story 1
 

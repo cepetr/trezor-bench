@@ -1720,3 +1720,114 @@ suite("PaneTreeProvider – change-event relay", () => {
     assert.strictEqual(fired, 0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// No pane's rows contain a Build Selection / Build Options / Build Artifacts
+// row — that is the removed SectionItem wrapper, not a row any pane renders
+// (FR-003). Walks every reachable row per pane and per state.
+// ---------------------------------------------------------------------------
+
+const FORBIDDEN_LABELS = new Set(["Build Selection", "Build Options", "Build Artifacts"]);
+
+function labelText(item: vscode.TreeItem): string {
+  const label = item.label;
+  if (typeof label === "string") {
+    return label;
+  }
+  return label?.label ?? "";
+}
+
+function collectAllRows(
+  provider: ConfigurationTreeProvider,
+  paneId: PaneId
+): vscode.TreeItem[] {
+  const all: vscode.TreeItem[] = [];
+  const visit = (children: vscode.TreeItem[]): void => {
+    for (const child of children) {
+      all.push(child);
+      visit(provider.getChildren(child));
+    }
+  };
+  visit(provider.paneRootChildren(paneId));
+  return all;
+}
+
+suite("ConfigurationTreeProvider – no section rows inside any pane (FR-003)", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    provider.dispose();
+  });
+
+  const PANE_IDS: PaneId[] = ["build-selection", "build-options", "build-artifacts"];
+
+  test("loading state: no pane renders a forbidden section-name row", () => {
+    for (const paneId of PANE_IDS) {
+      for (const row of collectAllRows(provider, paneId)) {
+        assert.ok(!FORBIDDEN_LABELS.has(labelText(row)), `pane '${paneId}' rendered forbidden row '${labelText(row)}'`);
+      }
+    }
+  });
+
+  test("missing manifest: no pane renders a forbidden section-name row", () => {
+    provider.update({ status: "missing", manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml") });
+    for (const paneId of PANE_IDS) {
+      for (const row of collectAllRows(provider, paneId)) {
+        assert.ok(!FORBIDDEN_LABELS.has(labelText(row)), `pane '${paneId}' rendered forbidden row '${labelText(row)}'`);
+      }
+    }
+  });
+
+  test("invalid manifest: no pane renders a forbidden section-name row", () => {
+    provider.update({
+      status: "invalid",
+      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+      validationIssues: [{ severity: "error", code: "invalid-type", message: "bad" }],
+      loadedAt: new Date(),
+    });
+    for (const paneId of PANE_IDS) {
+      for (const row of collectAllRows(provider, paneId)) {
+        assert.ok(!FORBIDDEN_LABELS.has(labelText(row)), `pane '${paneId}' rendered forbidden row '${labelText(row)}'`);
+      }
+    }
+  });
+
+  test("loaded manifest with expanded selectors, options, and artifacts: no pane renders a forbidden section-name row", () => {
+    const optA = checkboxOption("alpha", "--alpha", "Group");
+    const states = [{ id: "off", label: "Off", flag: "" }];
+    const multi = multistateOption("verbose", "--verbose", states);
+    provider.update(makeManifestState(), makeActiveConfig(), [resolved(optA), resolved(multi)]);
+    provider.setExpandedSelector("model");
+    provider.setExpandedMultistateKey("verbose");
+    provider.updateArtifact(makeValidArtifact());
+    provider.updateBinaryArtifact(makeValidBinaryArtifact());
+    provider.updateMapArtifact(makeValidMapArtifact());
+    provider.updateExecutableArtifact(makeValidExecutableArtifact());
+
+    for (const paneId of PANE_IDS) {
+      for (const row of collectAllRows(provider, paneId)) {
+        assert.ok(!FORBIDDEN_LABELS.has(labelText(row)), `pane '${paneId}' rendered forbidden row '${labelText(row)}'`);
+      }
+    }
+  });
+
+  test("each pane's root rows match the T001 row inventory exactly, per state", () => {
+    provider.update(makeManifestState(), makeActiveConfig(), []);
+    assert.deepStrictEqual(
+      provider.paneRootChildren("build-selection"),
+      provider.getChildren(new SectionItem("build-context", "Build Selection"))
+    );
+    assert.deepStrictEqual(
+      provider.paneRootChildren("build-options"),
+      provider.getChildren(new SectionItem("build-options", "Build Options"))
+    );
+    assert.deepStrictEqual(
+      provider.paneRootChildren("build-artifacts"),
+      provider.getChildren(new SectionItem("build-artifacts", "Build Artifacts"))
+    );
+  });
+});
