@@ -6,7 +6,7 @@
 
 ## Summary
 
-Replace the single `Configuration` tree view with three sibling panes — `Build Selection`, `Build Options`, `Build Artifacts` — inside the existing `tf-tools` activity-bar container, so the three areas are separated by real pane headers and dividers and the editor owns each pane's collapse state.
+Replace the single `Configuration` tree view with three sibling panes — `Build Selection`, `Build Artifacts`, `Build Options` — inside the existing `tf-tools` activity-bar container, so the three areas are separated by real pane headers and dividers and the editor owns each pane's collapse state.
 
 Technical approach: keep `ConfigurationTreeProvider` as the single owner of manifest, active-configuration, preset, resolved-option, and artifact state, and expose each pane through a thin `PaneTreeProvider` facade that renders one pane's root children and relays the owner's change event. The `SectionItem` row type and `getSectionCollapsibleState()` are deleted; pane titles and the `visibility` contribution replace them. `Build Selection` inherits the existing view id so the status-bar link, the workflow toolbar's `view/title` entries, and any saved view placement carry over untouched; the two new panes get new ids, and the artifact row actions move to the `Build Artifacts` view.
 
