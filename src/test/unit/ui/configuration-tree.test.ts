@@ -2,6 +2,7 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import {
   ConfigurationTreeProvider,
+  PaneTreeProvider,
   SectionItem,
   SectionId,
   PaneId,
@@ -1590,5 +1591,132 @@ suite("ConfigurationTreeProvider – onDidChangePane fan-out", () => {
   test("setGroupCollapsed() signals only build-options", () => {
     const seen = collectPanes(() => provider.setGroupCollapsed("Advanced", true));
     assert.deepStrictEqual(seen, ["build-options"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PaneTreeProvider facade (research.md R3): thin, stateless TreeDataProvider
+// wrapping the owner's per-pane root builder, element dispatch, item
+// identity, and change-event relay.
+// ---------------------------------------------------------------------------
+
+suite("PaneTreeProvider – root delegation", () => {
+  let owner: ConfigurationTreeProvider;
+
+  setup(() => {
+    owner = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    owner.dispose();
+  });
+
+  test("getChildren(undefined) delegates to the owner's paneRootChildren for build-selection", () => {
+    owner.update(makeManifestState(), makeActiveConfig(), []);
+    const facade = new PaneTreeProvider(owner, "build-selection");
+    assert.deepStrictEqual(facade.getChildren(undefined), owner.paneRootChildren("build-selection"));
+  });
+
+  test("getChildren(undefined) delegates to the owner's paneRootChildren for build-options", () => {
+    const opt = checkboxOption("frozen", "--frozen");
+    owner.update(makeManifestState(), makeActiveConfig(), [resolved(opt)]);
+    const facade = new PaneTreeProvider(owner, "build-options");
+    assert.deepStrictEqual(facade.getChildren(undefined), owner.paneRootChildren("build-options"));
+  });
+
+  test("getChildren(undefined) delegates to the owner's paneRootChildren for build-artifacts", () => {
+    owner.updateArtifact(makeValidArtifact());
+    const facade = new PaneTreeProvider(owner, "build-artifacts");
+    assert.deepStrictEqual(facade.getChildren(undefined), owner.paneRootChildren("build-artifacts"));
+  });
+
+  test("a build-options facade never returns build-selection's root rows", () => {
+    owner.update(makeManifestState(), makeActiveConfig(), []);
+    const facade = new PaneTreeProvider(owner, "build-options");
+    const rows = facade.getChildren(undefined);
+    assert.ok(!rows.some((r) => r instanceof SelectorHeaderItem));
+  });
+});
+
+suite("PaneTreeProvider – non-root delegation to the owner's element dispatch", () => {
+  let owner: ConfigurationTreeProvider;
+
+  setup(() => {
+    owner = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    owner.dispose();
+  });
+
+  test("expands a selector header through the same dispatch as the owner", () => {
+    owner.update(makeManifestState(), makeActiveConfig(), []);
+    owner.setExpandedSelector("model");
+    const facade = new PaneTreeProvider(owner, "build-selection");
+    const [modelHeader] = facade.getChildren(undefined) as SelectorHeaderItem[];
+    assert.deepStrictEqual(facade.getChildren(modelHeader), owner.getChildren(modelHeader));
+    assert.ok(facade.getChildren(modelHeader).length > 0);
+  });
+
+  test("expands a multistate option header through the same dispatch as the owner", () => {
+    const states = [{ id: "off", label: "Off", flag: "" }];
+    const opt = multistateOption("verbose", "--verbose", states);
+    owner.update(makeManifestState(), makeActiveConfig(), [resolved(opt)]);
+    owner.setExpandedMultistateKey("verbose");
+    const facade = new PaneTreeProvider(owner, "build-options");
+    const [header] = facade.getChildren(undefined) as BuildOptionMultistateHeaderItem[];
+    assert.deepStrictEqual(facade.getChildren(header), owner.getChildren(header));
+  });
+
+  test("expands a build-option group through the same dispatch as the owner", () => {
+    const optA = checkboxOption("alpha", "--alpha", "Group");
+    owner.update(makeManifestState(), makeActiveConfig(), [resolved(optA)]);
+    const facade = new PaneTreeProvider(owner, "build-options");
+    const [group] = facade.getChildren(undefined) as BuildOptionGroupItem[];
+    assert.deepStrictEqual(facade.getChildren(group), owner.getChildren(group));
+  });
+});
+
+suite("PaneTreeProvider – getTreeItem identity", () => {
+  test("returns the same element it was given, like the owner", () => {
+    const owner = new ConfigurationTreeProvider();
+    const facade = new PaneTreeProvider(owner, "build-artifacts");
+    const item = new PlaceholderItem("anything");
+    assert.strictEqual(facade.getTreeItem(item), item);
+    owner.dispose();
+  });
+});
+
+suite("PaneTreeProvider – change-event relay", () => {
+  let owner: ConfigurationTreeProvider;
+
+  setup(() => {
+    owner = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    owner.dispose();
+  });
+
+  test("relays the owner's per-pane signal only when it matches this facade's PaneId", () => {
+    const facade = new PaneTreeProvider(owner, "build-artifacts");
+    let fired = 0;
+    const sub = facade.onDidChangeTreeData(() => {
+      fired++;
+    });
+    owner.updateArtifact(makeValidArtifact());
+    sub.dispose();
+    assert.strictEqual(fired, 1);
+  });
+
+  test("does not fire for a pane change that belongs to a different PaneId", () => {
+    const facade = new PaneTreeProvider(owner, "build-artifacts");
+    let fired = 0;
+    const sub = facade.onDidChangeTreeData(() => {
+      fired++;
+    });
+    owner.update(makeManifestState(), makeActiveConfig(), []);
+    sub.dispose();
+    assert.strictEqual(fired, 0);
   });
 });
