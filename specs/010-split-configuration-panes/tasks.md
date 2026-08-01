@@ -37,7 +37,7 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 
 **Purpose**: Establish the reference the "identical rows" requirements are checked against
 
-- [ ] T001 Record the pre-change row inventory for all three sections — labels, icons, descriptions, tooltips, checkbox states, and `contextValue`s, for loaded / loading / missing / invalid / workflow-blocked / no-options / not-yet-evaluated states — in `specs/010-split-configuration-panes/checklists/row-inventory.md`, derived from `src/ui/configuration-tree.ts` and the current `src/test/unit/ui/configuration-tree.test.ts` expectations
+- [X] T001 Record the pre-change row inventory for all three sections — labels, icons, descriptions, tooltips, checkbox states, and `contextValue`s, for loaded / loading / missing / invalid / workflow-blocked / no-options / not-yet-evaluated states — in `specs/010-split-configuration-panes/checklists/row-inventory.md`, derived from `src/ui/configuration-tree.ts` and the current `src/test/unit/ui/configuration-tree.test.ts` expectations
 
 **Checkpoint**: The FR-002 and SC-002 reference exists before any row-rendering code is touched
 
