@@ -119,8 +119,8 @@ let _presetsUnavailable = false;
 let _presetStateSubscription: vscode.Disposable | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
 let _configurationTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
-let _buildOptionsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _buildArtifactsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
+let _buildOptionsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _statusBar: StatusBarPresenter | undefined;
 let _manifestState: ManifestState | undefined;
 let _activeConfig: ActiveConfig | undefined;
@@ -530,18 +530,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     treeDataProvider: new PaneTreeProvider(_treeProvider, "build-selection"),
     showCollapseAll: false,
   });
-  _buildOptionsTreeView = vscode.window.createTreeView("tfTools.buildOptions", {
-    treeDataProvider: new PaneTreeProvider(_treeProvider, "build-options"),
-    showCollapseAll: false,
-  });
   _buildArtifactsTreeView = vscode.window.createTreeView("tfTools.buildArtifacts", {
     treeDataProvider: new PaneTreeProvider(_treeProvider, "build-artifacts"),
     showCollapseAll: false,
   });
+  _buildOptionsTreeView = vscode.window.createTreeView("tfTools.buildOptions", {
+    treeDataProvider: new PaneTreeProvider(_treeProvider, "build-options"),
+    showCollapseAll: false,
+  });
   context.subscriptions.push(
     _configurationTreeView,
-    _buildOptionsTreeView,
     _buildArtifactsTreeView,
+    _buildOptionsTreeView,
     // Selector expand/collapse: rows only ever render in Build Selection.
     _configurationTreeView.onDidExpandElement(({ element }) => {
       if (element instanceof SelectorHeaderItem) {
@@ -1185,10 +1185,10 @@ export function deactivate(): void {
   _treeProvider = undefined;
   _configurationTreeView?.dispose();
   _configurationTreeView = undefined;
-  _buildOptionsTreeView?.dispose();
-  _buildOptionsTreeView = undefined;
   _buildArtifactsTreeView?.dispose();
   _buildArtifactsTreeView = undefined;
+  _buildOptionsTreeView?.dispose();
+  _buildOptionsTreeView = undefined;
   _statusBar?.dispose();
   _statusBar = undefined;
   _intelliSenseService?.dispose();
