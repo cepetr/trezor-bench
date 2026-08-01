@@ -25,7 +25,6 @@ import {
   ConfigurationTreeProvider,
   CompileCommandsArtifactItem,
   ExecutableArtifactItem,
-  SectionItem,
 } from "../../ui/configuration-tree";
 import {
   makeDebugLoadedState,
@@ -192,10 +191,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
   });
 
   function getBuildArtifacts(): vscode.TreeItem[] {
-    return provider.getChildren(new SectionItem(
-      "build-artifacts",
-      "Build Artifacts"
-    ));
+    return provider.paneRootChildren("build-artifacts");
   }
 
   function makeExecArtifact(overrides: Partial<ActiveExecutableArtifact> = {}): ActiveExecutableArtifact {

@@ -75,7 +75,7 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 - [X] T008 [US1] Add the three view entries to `contributes.views["tf-tools"]` in `package.json` — inherited id retitled `Build Selection`, plus new `Build Options` and `Build Artifacts` ids — per [contracts/view-contributions.md](contracts/view-contributions.md) §2
 - [X] T009 [US1] Delete `SectionItem` and `getSectionCollapsibleState()` and make `getChildren(undefined)` unreachable for pane roots in `src/ui/configuration-tree.ts`
 - [X] T010 [US1] Create the three `TreeView`s with their pane providers, register them in `context.subscriptions`, and dispose all three in `deactivate()`, in `src/extension.ts`
-- [ ] T011 [US1] Migrate the remaining `SectionItem` call sites to the per-pane root builders in `src/test/unit/ui/configuration-tree.test.ts`, `src/test/integration/debug-launch-artifacts.integration.test.ts`, and `src/test/integration/build-context-selection.integration.test.ts`
+- [X] T011 [US1] Migrate the remaining `SectionItem` call sites to the per-pane root builders in `src/test/unit/ui/configuration-tree.test.ts`, `src/test/integration/debug-launch-artifacts.integration.test.ts`, and `src/test/integration/build-context-selection.integration.test.ts`
 
 **Checkpoint**: Three panes render today's content; US1 is independently demonstrable
 

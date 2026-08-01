@@ -3,8 +3,6 @@ import * as vscode from "vscode";
 import {
   ConfigurationTreeProvider,
   PaneTreeProvider,
-  SectionItem,
-  SectionId,
   PaneId,
   SelectorChoiceItem,
   SelectorHeaderItem,
@@ -26,38 +24,6 @@ import { ActiveConfig } from "../../../configuration/active-config";
 import { PresetFile, PresetState } from "../../../presets/preset-types";
 import { PresetChoice } from "../../../presets/preset-resolution";
 import { ResolvedOption } from "../../../configuration/build-options";
-
-// ---------------------------------------------------------------------------
-// Regression target: Build Selection and Build Artifacts default to Expanded,
-// while Build Options stays collapsed until the user opens it.
-// Refs: specs/product-spec.md root-section expansion requirement
-// ---------------------------------------------------------------------------
-const EXPECTED_ROOT_SECTION_STATES: Array<{
-  id: SectionId;
-  label: string;
-  state: vscode.TreeItemCollapsibleState;
-}> = [
-  { id: "build-context",   label: "Build Selection", state: vscode.TreeItemCollapsibleState.Expanded },
-  { id: "build-options",   label: "Build Options", state: vscode.TreeItemCollapsibleState.Collapsed },
-  { id: "build-artifacts", label: "Build Artifacts", state: vscode.TreeItemCollapsibleState.Expanded },
-];
-
-suite("SectionItem icons", () => {
-  test("uses no icon for Build Selection", () => {
-    const item = new SectionItem("build-context", "Build Selection");
-    assert.strictEqual(item.iconPath, undefined);
-  });
-
-  test("uses no icon for Build Options", () => {
-    const item = new SectionItem("build-options", "Build Options");
-    assert.strictEqual(item.iconPath, undefined);
-  });
-
-  test("uses no icon for Build Artifacts", () => {
-    const item = new SectionItem("build-artifacts", "Build Artifacts");
-    assert.strictEqual(item.iconPath, undefined);
-  });
-});
 
 suite("SelectorHeaderItem icons", () => {
   test("uses a distinct icon for model", () => {
@@ -417,40 +383,6 @@ suite("CompileCommandsArtifactItem – missing artifact", () => {
 });
 
 // ---------------------------------------------------------------------------
-// SectionItem default section states (UI-02)
-// Build Selection and Build Artifacts default to Expanded.
-// Build Options defaults to Collapsed so activation does not auto-expand it.
-// ---------------------------------------------------------------------------
-
-suite("SectionItem default section states (UI-02)", () => {
-  EXPECTED_ROOT_SECTION_STATES.forEach(({ id, label, state }) => {
-    test(`${id} root section uses the expected default collapsible state`, () => {
-      const item = new SectionItem(id, label);
-      assert.strictEqual(
-        item.collapsibleState,
-        state,
-        `Expected SectionItem(${id}) to use collapsibleState ${vscode.TreeItemCollapsibleState[state]}`
-      );
-    });
-  });
-
-  test("Build Selection section defaults to Expanded", () => {
-    const item = new SectionItem("build-context", "Build Selection");
-    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
-  });
-
-  test("Build Options section defaults to Collapsed", () => {
-    const item = new SectionItem("build-options", "Build Options");
-    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
-  });
-
-  test("Build Artifacts section defaults to Expanded", () => {
-    const item = new SectionItem("build-artifacts", "Build Artifacts");
-    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
-  });
-});
-
-// ---------------------------------------------------------------------------
 // BinaryArtifactItem rendering
 // ---------------------------------------------------------------------------
 
@@ -676,7 +608,7 @@ suite("ConfigurationTreeProvider – Binary/Map artifact refresh", () => {
   });
 
   function getBuildArtifactsChildren(): vscode.TreeItem[] {
-    return provider.getChildren(new SectionItem("build-artifacts", "Build Artifacts"));
+    return provider.paneRootChildren("build-artifacts");
   }
 
   test("switching artifact context replaces Binary and Map rows with the new paths", () => {
@@ -875,8 +807,7 @@ suite("ConfigurationTreeProvider – Executable row", () => {
   });
 
   function getBuildArtifactsChildrenExec(): vscode.TreeItem[] {
-    const section = new SectionItem("build-artifacts", "Build Artifacts");
-    return provider.getChildren(section);
+    return provider.paneRootChildren("build-artifacts");
   }
 
   test("Executable row appears when updateExecutableArtifact is called with valid artifact", () => {
@@ -1032,7 +963,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
   });
 
   function buildContextChildren(): vscode.TreeItem[] {
-    return provider.getChildren(new SectionItem("build-context", "Build Selection"));
+    return provider.paneRootChildren("build-selection");
   }
 
   test("Preset is the fourth Build Selection child, directly below Component (FR-001)", () => {
@@ -1245,12 +1176,7 @@ function resolved(
 }
 
 function getBuildOptionsChildren(provider: ConfigurationTreeProvider): vscode.TreeItem[] {
-  const top = provider.getChildren() as vscode.TreeItem[];
-  const section = top.find(
-    (i) => i instanceof SectionItem && (i as SectionItem).sectionId === "build-options"
-  ) as SectionItem;
-  assert.ok(section, "build-options section not found");
-  return provider.getChildren(section) as vscode.TreeItem[];
+  return provider.paneRootChildren("build-options");
 }
 
 suite("ConfigurationTreeProvider – Build Options preset-relative emphasis", () => {
@@ -1411,12 +1337,14 @@ suite("ConfigurationTreeProvider – paneRootChildren('build-selection')", () =>
     assert.ok(children[1] instanceof PlaceholderItem);
   });
 
-  test("loaded: renders the four selector headers matching build-context content exactly", () => {
+  test("loaded: renders the four selector headers in order", () => {
     provider.update(makeManifestState(), makeActiveConfig(), []);
-    const paneChildren = provider.paneRootChildren("build-selection");
-    const legacyChildren = provider.getChildren(new SectionItem("build-context", "Build Selection"));
-    assert.deepStrictEqual(paneChildren, legacyChildren);
+    const paneChildren = provider.paneRootChildren("build-selection") as SelectorHeaderItem[];
     assert.strictEqual(paneChildren.length, 4);
+    assert.deepStrictEqual(
+      paneChildren.map((c) => c.selectorKind),
+      ["model", "target", "component", "preset"]
+    );
   });
 });
 
@@ -1484,13 +1412,12 @@ suite("ConfigurationTreeProvider – paneRootChildren('build-options')", () => {
     assert.strictEqual(children[0].label, "No options available for the active build context");
   });
 
-  test("loaded: renders build-option rows matching build-options content exactly", () => {
+  test("loaded: renders an emphasized checkbox row for an overridden option", () => {
     const opt = checkboxOption("frozen", "--frozen");
     provider.update(makeManifestState(), makeActiveConfig(), [resolved(opt, { value: true, isOverride: true })]);
-    const paneChildren = provider.paneRootChildren("build-options");
-    const legacyChildren = provider.getChildren(new SectionItem("build-options", "Build Options"));
-    assert.deepStrictEqual(paneChildren, legacyChildren);
-    assert.strictEqual(paneChildren.length, 1);
+    const [item] = provider.paneRootChildren("build-options") as BuildOptionCheckboxItem[];
+    assert.strictEqual(item.checkboxState, vscode.TreeItemCheckboxState.Checked);
+    assert.deepStrictEqual(item.label, { label: "frozen", highlights: [[0, 6]] });
   });
 });
 
@@ -1512,13 +1439,13 @@ suite("ConfigurationTreeProvider – paneRootChildren('build-artifacts')", () =>
     assert.strictEqual(children[0].label, "IntelliSense not yet evaluated");
   });
 
-  test("evaluated: renders artifact rows matching build-artifacts content exactly", () => {
+  test("evaluated: renders Compile Commands then Binary once both are set", () => {
     provider.updateArtifact(makeValidArtifact());
     provider.updateBinaryArtifact(makeValidBinaryArtifact());
-    const paneChildren = provider.paneRootChildren("build-artifacts");
-    const legacyChildren = provider.getChildren(new SectionItem("build-artifacts", "Build Artifacts"));
-    assert.deepStrictEqual(paneChildren, legacyChildren);
-    assert.strictEqual(paneChildren.length, 2);
+    const children = provider.paneRootChildren("build-artifacts");
+    assert.strictEqual(children.length, 2);
+    assert.ok(children[0] instanceof CompileCommandsArtifactItem);
+    assert.ok(children[1] instanceof BinaryArtifactItem);
   });
 });
 
@@ -1815,19 +1742,4 @@ suite("ConfigurationTreeProvider – no section rows inside any pane (FR-003)", 
     }
   });
 
-  test("each pane's root rows match the T001 row inventory exactly, per state", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
-    assert.deepStrictEqual(
-      provider.paneRootChildren("build-selection"),
-      provider.getChildren(new SectionItem("build-context", "Build Selection"))
-    );
-    assert.deepStrictEqual(
-      provider.paneRootChildren("build-options"),
-      provider.getChildren(new SectionItem("build-options", "Build Options"))
-    );
-    assert.deepStrictEqual(
-      provider.paneRootChildren("build-artifacts"),
-      provider.getChildren(new SectionItem("build-artifacts", "Build Artifacts"))
-    );
-  });
 });

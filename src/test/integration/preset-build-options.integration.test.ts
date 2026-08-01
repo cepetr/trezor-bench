@@ -26,7 +26,6 @@ import {
 import { BuildOption } from "../../manifest/manifest-types";
 import {
   ConfigurationTreeProvider,
-  SectionItem,
   BuildOptionCheckboxItem,
   BuildOptionMultistateHeaderItem,
 } from "../../ui/configuration-tree";
@@ -311,11 +310,7 @@ suite("Preset-relative Build Options – override emphasis round-trip", () => {
 
     const provider = new ConfigurationTreeProvider();
     provider.update(manifest(), activeConfig(), resolved);
-    const top = provider.getChildren() as vscode.TreeItem[];
-    const optionsSection = top.find(
-      (i) => i instanceof SectionItem && (i as SectionItem).sectionId === "build-options"
-    ) as SectionItem;
-    const children = provider.getChildren(optionsSection) as vscode.TreeItem[];
+    const children = provider.paneRootChildren("build-options") as vscode.TreeItem[];
     provider.dispose();
 
     const frozenItem = children.find((c) => c instanceof BuildOptionCheckboxItem) as BuildOptionCheckboxItem;
@@ -467,11 +462,7 @@ suite("Preset-relative Build Options – option-level mismatch", () => {
 
     const provider = new ConfigurationTreeProvider();
     provider.update(manifest(), activeConfig(), resolved);
-    const top = provider.getChildren() as vscode.TreeItem[];
-    const optionsSection = top.find(
-      (i) => i instanceof SectionItem && (i as SectionItem).sectionId === "build-options"
-    ) as SectionItem;
-    const children = provider.getChildren(optionsSection) as vscode.TreeItem[];
+    const children = provider.paneRootChildren("build-options") as vscode.TreeItem[];
     provider.dispose();
 
     const dbgConsoleItem = children.find(
