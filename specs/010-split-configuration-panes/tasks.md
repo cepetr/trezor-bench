@@ -116,7 +116,7 @@ Single-package VS Code extension: sources in `src/`, tests in `src/test/unit/` a
 
 - [X] T018 [US3] Retarget the four `view/item/context` entries from the inherited view id to the `Build Artifacts` view id in `package.json`, leaving `viewItem`, group, enablement, and additional `when` clauses unchanged
 - [X] T019 [US3] Split the `onDidExpandElement`, `onDidCollapseElement`, and `onDidChangeCheckboxState` handlers across the `Build Selection` view (selector rows) and the `Build Options` view (multistate, option-group, checkbox rows) in `src/extension.ts`, replacing the single-view registration at lines 533-568
-- [ ] T020 [US3] Widen the auto-generated view-command filter to cover all three view ids in `src/test/integration/configuration-scope.integration.test.ts`, so the new `*.focus` and `*.resetViewLocation` commands are not reported as unauthorized
+- [X] T020 [US3] Widen the auto-generated view-command filter to cover all three view ids in `src/test/integration/configuration-scope.integration.test.ts`, so the new `*.focus` and `*.resetViewLocation` commands are not reported as unauthorized
 
 **Checkpoint**: All three stories are independently functional; no interaction or action has regressed
 
