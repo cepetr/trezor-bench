@@ -1,6 +1,12 @@
 # Trezor Firmware Tools
 
-Trezor Firmware Tools helps you work with `trezor-firmware` more comfortably inside VS Code by adding a dedicated Configuration view where you can choose the active build context, adjust build options, run common firmware tasks, and work with the build artifacts used by IntelliSense and debugging.
+Trezor Firmware Tools brings the `trezor-firmware` build workflow into VS Code. Pick the active build context — model, target, component, preset — in a dedicated view, and the rest follows it:
+
+- **xtask integration** — build options and workflows in the UI instead of on the command line
+  - run `build`, `clippy`, `check`, and `clean` as VS Code tasks
+  - flash or upload the resulting artifacts to a device
+- **IntelliSense** — C/C++ IntelliSense (cpptools or clangd) driven by the compile database of the active context
+- **Debugging** — start a debug session for the active context without writing a `launch.json`
 
 The extension is intended for use with the new cargo-based build system. It does not support the legacy SCons-based firmware build scripts used in older repository layouts.
 
@@ -32,81 +38,60 @@ The extension does not require these VS Code settings, but they are recommended 
     "python.terminal.activateEnvironment": true,
     "terminal.integrated.env.linux": {
         "VIRTUAL_ENV": "${workspaceFolder}/.venv",
-        "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}"
+        "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}",
+        "CARGO_TERM_COLOR": "always"
     },
     "rust-analyzer.linkedProjects": [
         "${workspaceFolder}/core/embed/Cargo.toml",
     ],
     "rust-analyzer.cargo.targetDir": true,
+    "rust-analyzer.checkOnSave": true,
     "rust-analyzer.cargo.features": "all",
     "rust-analyzer.cargo.extraEnv": {
         "IS_RUST_ANALYZER": "true",
         "VIRTUAL_ENV": "${workspaceFolder}/.venv",
         "PYTHONPATH": "${workspaceFolder}/.venv/lib/python3.13/site-packages"
     },
-    "cortex-debug.variableUseNaturalFormat": false,
-    "C_Cpp.default.configurationProvider": "cepetr.tf-tools"
+    "C_Cpp.default.configurationProvider": "cepetr.tf-tools",
+    
+    // The rest is not required, it is just an optimization
+
+    "rust-analyzer.cachePriming.enable": false,
+    "rust-analyzer.lru.capacity": 64,
+    "editor.inlayHints.enabled": "off",
+    "npm.autoDetect": "off",
+    "js/ts.tsc.autoDetect": "off",
+    "files.watcherExclude": {
+        "${workspaceFolder}/core/build-xtask/**": true,
+        "${workspaceFolder}/core/build/**": true,
+        "**/.git/**": true,
+    },
 }
 ```
 
 NOTE: `IS_RUST_ANALYZER` is not required by the extension. It is recommended because it minimizes the work done by `build.rs` scripts so Rust Analyzer can run quickly and avoid failures when all features are enabled, without compiling the C code.
-
-## What It Does
-
-- Lets you choose the active `model`, `target`, and `component` in one place.
-- Remembers build options for the active configuration.
-- Gives you quick access to common workflows such as `Build`, `Clippy`, `Check`, and `Clean`.
-- Exposes device actions such as `Flash to Device` and `Upload to Device` when they are available.
-- Starts a debug session for the active configuration when debugging is supported.
-- Shows build artifacts such as compile commands, binary, map file, and executable.
-- Refreshes C/C++ IntelliSense from the active compile database, using either the Microsoft C/C++ (`cpptools`) extension or the clangd extension.
-- Marks files that are outside the active build configuration.
-
-NOTE: When the Microsoft C/C++ extension is unavailable (for example in editors that ship a different C/C++ fork) and the clangd extension (`llvm-vs-code-extensions.vscode-clangd`) is installed, the extension drives clangd instead. To do so it creates a managed `.tf-tools/compile_commands.json` link and a managed `.clangd` file in the workspace root and restarts clangd when the active build context changes. These files are generated and not meant to be committed; add `.tf-tools/` and `.clangd` to your local Git ignore (for example in `.git/info/exclude`) if they show up as untracked changes. If you already maintain your own `.clangd`, the extension leaves it untouched and logs a warning instead.
 
 ## How To Use
 
 Open the `Trezor Firmware Tools` activity-bar container and use the `Configuration` view:
 
 - Choose the active build context in `Build Selection`.
-- Enable or adjust build options in `Build Options`.
+- Adjust build options in `Build Options` if needed.
 - Start with `Build` to produce the artifacts for the active configuration.
 - Check `Build Artifacts` to confirm that the expected outputs were created.
 - After a successful build, use `Flash to Device` or `Upload to Device` to send the firmware to hardware when needed.
 - Use `Start Debugging` when the active configuration provides a valid executable and debug support.
 
-The extension can also show the current build context in the status bar and makes key actions available from the Command Palette.
+The extension can also show the current build context in the status bar and makes key actions available from the Command Palette. It ships no keyboard shortcuts of its own, so you can bind the `Trezor: ...` commands to whatever keys you prefer in `Keyboard Shortcuts`.
 
 ## Workspace Requirements
 
 The extension is designed for the `trezor-firmware` repository opened as a single-root VS Code workspace.
 
-It expects:
-
-- the `xtask` build tool to be present in the repository
-- a tf-tools manifest file
-- a cargo workspace
-- a build artifacts directory
-- optional debug templates for debug launch support
-
-In the default `trezor-firmware` layout, the extension finds these automatically and usually does not need additional configuration.
-
 The extension relies on repository-specific manifest data, paths, and generated artifacts that are already present in the workspace. For more information, see the [product specification](specs/product-spec.md).
 
-## Configuration
+## Development
 
-These workspace settings can be used when you need to override the automatically detected paths:
+This extension was developed entirely with AI assistance — GitHub Copilot and Claude — following a spec-driven workflow based on [spec-kit](https://github.com/github/spec-kit). Every feature starts as a specification and plan under [specs/](specs/), which is then turned into tasks and implemented.
 
-- `tfTools.manifestPath`
-- `tfTools.cargoWorkspacePath`
-- `tfTools.artifactsPath`
-- `tfTools.debug.templatesPath`
-
-You can adjust optional UI behavior with:
-
-- `tfTools.showConfigurationInStatusBar`
-- `tfTools.excludedFiles.grayInTree`
-- `tfTools.excludedFiles.showEditorOverlay`
-- `tfTools.excludedFiles.fileNamePatterns`
-- `tfTools.excludedFiles.folderGlobs`
 
