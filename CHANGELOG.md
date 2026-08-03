@@ -19,7 +19,7 @@
 ### Fixed
 - Build artifact status and related actions now refresh after running `cargo xtask build` or `cargo xtask clean` outside the extension.
 
-## 0.3.0 - 2026-08-01
+## 0.3.0 - 2026-08-03
 ### Added
 - Added a `Preset` selector below `Component` in `Build Selection`, listing every preset declared in `presets.toml` and the optional `user-presets.toml` plus a synthetic `Default` choice. The selected preset id is saved and restored with the rest of the active configuration and never appears in the status bar, task labels, or command names.
 - Added preset-relative build options: controls display the preset-effective value calculated from shared defaults, user defaults, shared preset fragments, and user preset fragments, and only values explicitly overridden away from that baseline are emphasized. Overrides are discarded for options the newly active preset or build context calculates differently, and retained for those calculated identically.
