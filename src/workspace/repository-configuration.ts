@@ -234,16 +234,21 @@ export async function loadRepositoryConfiguration(
 export class RepositoryConfigurationService implements vscode.Disposable {
   private readonly onDidChangeStateEmitter = new vscode.EventEmitter<RepositoryConfigurationState>();
   private readonly watcher: fsNative.FSWatcher;
+  private readonly configurationPath: string;
   private debounceTimer: ReturnType<typeof setTimeout> | undefined;
   private currentState: RepositoryConfigurationState | undefined;
 
   readonly onDidChangeState = this.onDidChangeStateEmitter.event;
 
   constructor(private readonly workspaceFolder: vscode.WorkspaceFolder) {
+    this.configurationPath = path.join(workspaceFolder.uri.fsPath, REPOSITORY_CONFIGURATION_FILE);
     this.watcher = fsNative.watch(workspaceFolder.uri.fsPath, (_event, fileName) => {
       if (fileName?.toString() === REPOSITORY_CONFIGURATION_FILE) {
         this.scheduleReload();
       }
+    });
+    fsNative.watchFile(this.configurationPath, { interval: 100, persistent: false }, () => {
+      this.scheduleReload();
     });
   }
 
@@ -261,6 +266,7 @@ export class RepositoryConfigurationService implements vscode.Disposable {
       this.debounceTimer = undefined;
     }
     this.watcher.close();
+    fsNative.unwatchFile(this.configurationPath);
     this.onDidChangeStateEmitter.dispose();
   }
 
