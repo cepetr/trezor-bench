@@ -37,7 +37,9 @@ This glossary defines the preferred product and documentation terms used by the 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
 | **manifest** | The YAML file that defines available models, targets, components, build options, debug profiles, and related rules. | This is the runtime source of truth for product behavior. |
-| **manifest path** | The workspace setting that points to the manifest file. | Exposed as `tfTools.manifestPath`. |
+| **repository configuration file** | The optional root-level `tf-tools.toml` file that commits repository-dependent tf-tools paths. | Its `[paths]` entries are resolved from the workspace root; it is authoritative when present and valid. |
+| **repository configuration status** | The current state of the repository configuration file: absent and using defaults, valid and resolved, or invalid and blocking. | A present malformed file or wrong-typed supported path entry is blocking and is never treated as absent. |
+| **manifest path** | The repository-configuration path that points to the manifest file. | Defined by `[paths].manifest` in `tf-tools.toml`, or its built-in default when absent. |
 | **tf-tools manifest** | Shorthand for the manifest file used by Trezor Firmware Tools. | Acceptable short form when the file itself is the subject. |
 | **manifest status** | The current load state of the manifest: `loaded`, `missing`, or `invalid`. | Use when describing command gating and warning surfaces. |
 | **validation issue** | A concrete manifest problem found during parsing or validation. | Use for structured problems that may become diagnostics or logs. |
@@ -63,7 +65,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
 | **Build Artifacts** | The Configuration view pane that reports artifact status and exposes artifact-related actions. | Use this exact capitalization for the UI surface. |
-| **artifacts root** | The directory configured by `tfTools.artifactsPath` that contains model-specific artifact folders. | Preferred term over generic phrases like "artifacts directory" when precision matters. |
+| **artifacts root** | The directory configured by `[paths].build-artifacts` in `tf-tools.toml` that contains model-specific artifact folders. | An absent entry uses the built-in default; an empty entry disables artifact-based IntelliSense resolution. |
 | **artifact folder** | The model-defined subfolder under the artifacts root where that model's derived files are expected. | Comes from `model.artifactFolder`. |
 | **artifact basename** | The shared base filename stem formed from `component.artifactName` plus `target.artifactSuffix`. | Useful when describing compile commands, binary, and map file derivation. |
 | **compile commands artifact** | The `.cc.json` file that represents the expected compile database for the active build context. | Preferred product term over raw filename references when discussing IntelliSense. |
@@ -107,7 +109,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | **matching debug profile set** | The ordered collection of component-owned debug profiles whose `when` expressions evaluate to true for the active build context. | Use when describing how Run and Debug entries are generated or how the default profile is derived. |
 | **default debug profile** | The first matching debug profile in declaration order for the selected component, used by direct `Start Debugging` actions and by the default Run and Debug entry. | Use when contrasting the default choice from profile-specific Run and Debug entries. |
 | **debug template** | The JSONC file referenced by a debug profile and loaded at launch time. | Preferred term over "launch template" in this product. |
-| **debug templates path** | The workspace setting that points to the directory containing debug templates. | Exposed as `tfTools.debug.templatesPath`. |
+| **debug templates path** | The repository-configuration path that points to the directory containing debug templates. | Defined by `[paths].debug-templates` in `tf-tools.toml`, or its built-in default when absent. |
 | **debug variable** | A tf-tools substitution variable available during template resolution. | Covers built-in variables and profile-defined `tfTools.debug.var:<name>` entries. |
 | **built-in debug variable** | A substitution variable derived from the active model, target, component, artifact path, executable, or debug profile name. | Use when distinguishing built-ins from profile-defined variables. |
 | **profile-defined debug variable** | A substitution variable declared in a manifest debug profile under `vars`. | Use this term instead of just "custom variable" for precision. |
@@ -130,7 +132,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
 | **resource-scoped setting** | A VS Code setting that can vary by workspace rather than being globally fixed. | Use when describing tf-tools configuration settings. |
-| **configuration variable resolution** | The extension behavior that expands supported `${...}` references while reading string-based tf-tools settings. | VS Code does not perform this automatically for extension settings; tf-tools resolves supported references in path settings, `tfTools.taskExtraEnv`, and excluded-file glob settings. |
+| **configuration variable resolution** | The extension behavior that expands supported `${...}` references while reading eligible string-based tf-tools settings. | VS Code does not perform this automatically for extension settings; tf-tools resolves supported references in `tfTools.taskExtraEnv` and excluded-file glob settings. It never expands values in `tf-tools.toml`. |
 | **command surface** | A user-facing place where a command is exposed, such as the Command Palette, a view header, an overflow menu, or an inline row action. | Use when describing shared command availability and visibility rules across multiple entry points. |
 | **invalid when expression** | A manifest `when`, `flashWhen`, or `uploadWhen` expression that cannot be parsed, validated, or resolved against known ids. | Use for manifest validation failures rather than runtime false results. |
 | **status bar configuration item** | The status bar entry that shows the active build context and, when selected, opens the `Trezor Firmware Tools` container and expands and focuses `Build Selection`. | Preferred product phrase over generic "status bar text". |

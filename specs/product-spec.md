@@ -305,7 +305,7 @@ This capability has two user-visible outcomes:
 
 The extension resolves the expected compile-commands artifact for the active build context and treats that artifact as the source of truth for IntelliSense.
 
-The expected compile-commands path is constructed as `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix>.cc.json`, where `artifacts-root` comes from `tfTools.artifactsPath`, `artifactFolder` comes from the selected model, `artifactName` comes from the selected component, and `artifactSuffix` comes from the selected target and defaults to an empty string when omitted.
+The expected compile-commands path is constructed as `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix>.cc.json`, where `artifacts-root` comes from the resolved repository configuration, `artifactFolder` comes from the selected model, `artifactName` comes from the selected component, and `artifactSuffix` comes from the selected target and defaults to an empty string when omitted.
 
 The `Compile Commands` row in `Build Artifacts` shows whether that artifact is currently available for the active build context. When the artifact exists, the row shows `valid` and its tooltip shows the resolved artifact path. When it does not exist, the row shows `missing` and its tooltip states that the artifact is missing and shows the resolved artifact path that was checked.
 
@@ -369,14 +369,14 @@ When excluded-file input data becomes unavailable, excluded-file badges and over
 
 ## Extension Configuration
 
-The extension exposes workspace-scoped VS Code settings under the `tfTools` namespace. These settings let a workspace maintainer point the extension at the correct manifest, cargo workspace, artifacts directory, and debug-template directory, configure workflow task environment, and control optional UI behavior.
+Repository-dependent paths are committed in an optional root-level `tf-tools.toml`; VS Code settings under the `tfTools` namespace remain only for user- or workspace-local task environment and UI behavior. This binds repository layout to the checked-in repository state rather than to each contributor's editor configuration.
 
-At a high level, the settings fall into four groups:
+At a high level, configuration falls into four groups:
 
-- **Workspace paths**: Control where the extension looks for the manifest file, the cargo workspace, build artifacts, and debug templates.
-- **Task environment**: Control extra environment variables merged into workflow task processes.
-- **Visibility settings**: Control whether the active build context is shown in the status bar and how excluded files are marked in the Explorer and editors.
-- **Excluded-file scope settings**: Control which files are eligible to be marked as excluded from the active build configuration.
+- **Repository paths**: The root-level `tf-tools.toml` controls where the extension looks for the manifest file, cargo workspace, build artifacts, debug templates, and preset inputs.
+- **Task environment**: A VS Code setting controls extra environment variables merged into workflow task processes.
+- **Visibility settings**: VS Code settings control whether the active build context is shown in the status bar and how excluded files are marked in the Explorer and editors.
+- **Excluded-file scope settings**: VS Code settings control which files are eligible to be marked as excluded from the active build configuration.
 
 ### Configuration Variable References
 
@@ -394,14 +394,19 @@ Other VS Code variable forms are left unchanged, including editor, selection, co
 
 Variable substitution is single-pass. Substituted values are not re-expanded.
 
-This applies to path settings, `tfTools.taskExtraEnv`, and excluded-file glob settings. Boolean settings are not subject to variable expansion.
+This applies to `tfTools.taskExtraEnv` and excluded-file glob settings. Repository paths do not support configuration variable references.
 
-### Workspace Path Settings
+### Repository Path Configuration
 
-- `tfTools.manifestPath`: string, default `core/embed/xtask/tf-tools/manifest.yaml`. Path to the manifest file, relative to the workspace root unless given as an absolute path or expanded to one through configuration variable references.
-- `tfTools.cargoWorkspacePath`: string, default `core/embed`. Path to the cargo workspace used for build-related tasks, relative to the workspace root unless given as an absolute path or expanded to one through configuration variable references. If the setting is cleared, the workspace root is used.
-- `tfTools.artifactsPath`: string, default `core/build-xtask/artifacts`. Absolute or workspace-relative path to the build artifacts directory. If the setting is cleared, artifact-based IntelliSense resolution is disabled. Supports configuration variable references.
-- `tfTools.debug.templatesPath`: string, default `core/embed/xtask/tf-tools/debug`. Path to the directory that contains debug template files, relative to the workspace root unless given as an absolute path or expanded to one through configuration variable references.
+The extension reads the optional `tf-tools.toml` only from the workspace root of a supported single-root workspace. Its `[paths]` table can define the following string entries:
+
+- `cargo-workspace`: default `core/embed`; the cargo workspace used for build-related tasks. An empty value uses the workspace root.
+- `debug-templates`: default `core/embed/xtask/tf-tools/debug`; the directory containing debug template files.
+- `build-artifacts`: default `core/build-xtask/artifacts`; the build artifacts directory. An empty value disables artifact-based IntelliSense resolution.
+- `manifest`: default `core/embed/xtask/tf-tools/manifest.yaml`; the manifest file.
+- `presets`: default `core/embed/xtask`; the directory containing `presets.toml` and `user-presets.toml`.
+
+Each relative value is resolved from the workspace root, while each absolute value is used unchanged. The file deliberately does not expand VS Code variable references, so variable-reference-like text is treated as literal path content. If the file is absent, or if an individual supported entry is absent, the corresponding default applies. A present file that cannot be read or parsed, or that contains a non-string supported path entry, is a blocking configuration error: the extension logs and shows the error and does not silently use defaults or stale paths until the file is corrected or removed.
 
 ### Task Environment Settings
 
@@ -432,9 +437,9 @@ If the workspace is unsupported or no workspace folder is open, the extension sh
 
 If the workspace is supported, the extension:
 
-- Resolves the configured manifest path, artifacts path, cargo workspace path, and debug templates path.
-- Starts the manifest service and begins watching the configured manifest file.
-- Starts the preset service and begins watching both preset inputs at `<cargo workspace path>/xtask/tf-tools/presets.toml` and `.../user-presets.toml`.
+- Resolves repository paths from root-level `tf-tools.toml` or the built-in defaults, and begins watching `tf-tools.toml`.
+- Starts the manifest service and begins watching the resolved manifest file.
+- Starts the preset service and begins watching both preset inputs at `<presets path>/presets.toml` and `<presets path>/user-presets.toml`.
 - Initializes the status-bar presenter, IntelliSense service, and excluded-file visibility services.
 - Restores the persisted active build context when possible and normalizes it against the loaded manifest if previously saved values are no longer valid.
 - Recomputes the declared preset list, restores the persisted active preset id when the preset inputs still declare it, and normalizes it to the synthetic `Default` choice otherwise.
@@ -472,14 +477,14 @@ When either preset input changes:
 
 The shared `presets.toml` is required. It ships with the `xtask` that accepts preset arguments, so its absence means the open repository predates preset support rather than that no presets are defined: the extension reports the shared input as unavailable, offers no preset choices, writes the cause to log output, and blocks `Build`, `Clippy`, and `Check` while leaving `Clean` available. No diagnostic is produced for the absence, since there is no file content to attribute one to. An absent `user-presets.toml` is the genuinely optional case and is never reported. If either present file is unreadable, malformed, or contains validation errors, the extension keeps the UI available but replaces the `Preset` choices with a warning row, shows the failure through diagnostics and log output, and blocks `Build`, `Clippy`, and `Check` while leaving `Clean` available, without using stale or guessed preset data.
 
+### Repository Configuration Change
+
+The extension watches root-level `tf-tools.toml` for create, change, and delete events without requiring a window reload. Each event causes it to re-read the configuration, re-resolve every repository path, and refresh manifest, preset, artifact, IntelliSense, workflow, and debug state. A valid file that becomes invalid places the extension in its blocking repository-configuration error state without retaining stale paths. A corrected file or deleted invalid file exits that state and uses the new values or defaults.
+
 ### Setting Change
 
-The extension reacts to changes in relevant `tfTools` settings without requiring a window reload.
+The extension reacts to remaining relevant `tfTools` settings without requiring a window reload.
 
-- If `tfTools.manifestPath` changes, the extension restarts the manifest service for the newly resolved file path and then follows the normal manifest-change flow.
-- If `tfTools.cargoWorkspacePath` changes, the extension restarts the preset service against the newly resolved `xtask/tf-tools` directory and then follows the normal preset-change flow.
-- If `tfTools.artifactsPath` changes, the extension updates artifact resolution immediately, refreshes build-artifact rows, recomputes artifact-dependent action state, and refreshes IntelliSense.
-- If `tfTools.debug.templatesPath` changes, the extension refreshes debug-related availability state so subsequent debug launches use the new templates location.
 - If `tfTools.showConfigurationInStatusBar` changes, the status bar is updated immediately.
 - If `tfTools.taskExtraEnv` changes, subsequent workflow task launches use the updated environment. Existing running tasks are not restarted.
 - If any excluded-file visibility or scope setting changes, the extension refreshes excluded-file evaluation so Explorer decorations and editor overlays match the new settings.
@@ -647,7 +652,7 @@ The command always uses the currently active model, target, component, and prese
 
 Before deriving arguments, `Build` reloads both preset inputs from disk and recalculates the declared preset list and the preset-effective build-option values from that fresh state, so the launched command always reflects the current preset files rather than a possibly stale cached state.
 
-When launched, `Build` runs from the cargo workspace path configured through `tfTools.cargoWorkspacePath` and uses the workflow task environment described above.
+When launched, `Build` runs from the cargo workspace path resolved from repository configuration and uses the workflow task environment described above.
 
 The task invokes `cargo xtask build` for the active build context.
 
@@ -709,7 +714,7 @@ When shown through the VS Code task system, both tasks use the shared display co
 
 Like `Build`, they require a supported workspace, a present and valid manifest, a resolved active build context, no workflow-blocking manifest issues, and a present shared `presets.toml` with both preset inputs valid and no available build option reporting a preset-effective value mismatch. Like `Build`, they reload both preset inputs and recalculate available presets and preset-effective build-option values before deriving arguments.
 
-They also use the cargo workspace path configured through `tfTools.cargoWorkspacePath` and the workflow task environment described above.
+They also use the cargo workspace path resolved from repository configuration and the workflow task environment described above.
 
 Their command-line shape follows the same argument mapping as `Build`, but with a different xtask subcommand:
 
@@ -754,7 +759,7 @@ When shown through the VS Code task system, `Clean` is the only workflow task th
 
 #### Preconditions
 
-`Clean` follows the same shared workflow blocking rules as `Build`, `Clippy`, and `Check`, with one exception: `Clean` is never blocked by an unavailable `presets.toml`, preset invalidity, or a preset-effective value mismatch. It requires a supported workspace, a present and valid manifest, a resolved workflow state, and no workflow-blocking manifest issues. It also runs from the cargo workspace path configured through `tfTools.cargoWorkspacePath` and uses the workflow task environment described above.
+`Clean` follows the same shared workflow blocking rules as `Build`, `Clippy`, and `Check`, with one exception: `Clean` is never blocked by an unavailable `presets.toml`, preset invalidity, or a preset-effective value mismatch. It requires a supported workspace, a present and valid manifest, a resolved workflow state, and no workflow-blocking manifest issues. It also runs from the cargo workspace path resolved from repository configuration and uses the workflow task environment described above.
 
 `Clean` stays available and continues to launch with the same fixed arguments even when `presets.toml` is absent, a preset file is invalid, or an option reports a preset-effective value mismatch, since it never uses preset or build-option data.
 
@@ -815,7 +820,7 @@ Applicability is controlled separately for the two actions:
 
 If the selected component does not define the corresponding rule, that action is unavailable for that context.
 
-When launched, both actions run from the cargo workspace path configured through `tfTools.cargoWorkspacePath` and use the workflow task environment described above.
+When launched, both actions run from the cargo workspace path resolved from repository configuration and use the workflow task environment described above.
 
 Their command-line shapes are:
 
