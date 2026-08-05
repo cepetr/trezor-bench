@@ -37,7 +37,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
 | **manifest** | The YAML file that defines available models, targets, components, build options, debug profiles, and related rules. | This is the runtime source of truth for product behavior. |
-| **repository configuration file** | The optional root-level `tf-tools.toml` file that commits repository-dependent tf-tools paths. | Its `[paths]` entries are resolved from the workspace root; it is authoritative when present and valid. |
+| **repository configuration file** | The optional root-level `tf-tools.toml` file that commits repository-dependent tf-tools paths. | Its `[paths]` entries are resolved from the workspace root; it is authoritative when present and valid. Unknown `[paths]` keys are ignored. |
 | **repository configuration status** | The current state of the repository configuration file: absent and using defaults, valid and resolved, or invalid and blocking. | A present malformed file or wrong-typed supported path entry is blocking and is never treated as absent. |
 | **manifest path** | The repository-configuration path that points to the manifest file. | Defined by `[paths].manifest` in `tf-tools.toml`, or its built-in default when absent. |
 | **tf-tools manifest** | Shorthand for the manifest file used by Trezor Firmware Tools. | Acceptable short form when the file itself is the subject. |

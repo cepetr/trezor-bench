@@ -465,7 +465,7 @@ If the manifest becomes missing or invalid, the extension keeps the UI available
 
 ### Preset Change
 
-The extension watches both preset inputs — the shared `presets.toml` and the optional `user-presets.toml`, both resolved under `<cargo workspace path>/xtask/tf-tools/` — for create, change, and delete events, and reloads them with the same debounce behavior used for the manifest. The extension also reconciles both preset files on a one-second interval, the same reconciliation approach used for build artifacts, so preset changes remain reliable even when a filesystem watcher does not report an event for a given create, change, or delete.
+The extension watches both preset inputs — the shared `presets.toml` and the optional `user-presets.toml`, both resolved directly under the repository-configured presets path — for create, change, and delete events, and reloads them with the same debounce behavior used for the manifest. The extension also reconciles both preset files on a one-second interval, the same reconciliation approach used for build artifacts, so preset changes remain reliable even when a filesystem watcher does not report an event for a given create, change, or delete.
 
 When either preset input changes:
 
