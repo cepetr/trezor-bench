@@ -12,12 +12,6 @@ Replace the four repository-path VS Code settings with an optional root-level `t
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
 **Language/Version**: TypeScript 5.8 targeting VS Code 1.105+ extension host
 
 **Primary Dependencies**: VS Code Extension API, existing `smol-toml`, Node.js `fs`/`path`
@@ -67,12 +61,6 @@ specs/011-repository-config-file/
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
 ```text
 src/

@@ -24,7 +24,6 @@
 **⚠️ CRITICAL**: Complete this phase before user-story work so no consumer independently reads a removed VS Code path setting.
 
 - [ ] T003 Define exported repository configuration defaults, resolved snapshot, validation issues, and `absent`/`loaded`/`invalid` state types in `src/workspace/repository-configuration.ts`
-- [ ] T004 Add repository-configuration diagnostic and log state helpers, including clearing diagnostics when the file becomes absent or valid, in `src/observability/diagnostics.ts` and `src/observability/log-channel.ts`
 
 **Checkpoint**: A single configuration-state vocabulary exists for all path consumers, diagnostics, and workflow gating.
 
@@ -88,7 +87,7 @@
 ### Implementation for User Story 3
 
 - [ ] T019 [US3] Implement debounced root-file watching and blocking invalid state publication with anchored validation issues in `src/workspace/repository-configuration.ts`
-- [ ] T020 [US3] Publish repository-configuration diagnostics and persistent output-channel error details, and show one user-visible error per entered invalid state, in `src/observability/diagnostics.ts` and `src/observability/log-channel.ts`
+- [ ] T020 [US3] Add repository-configuration diagnostic and log state helpers, including clearing diagnostics when the file becomes absent or valid, publishing persistent error details, and showing one user-visible error per entered invalid state, in `src/observability/diagnostics.ts` and `src/observability/log-channel.ts`
 - [ ] T021 [US3] Apply invalid snapshots in `src/extension.ts` by disposing path-dependent services, clearing manifest/preset/artifact/IntelliSense/debug state, setting workflow blocking, and atomically restoring consumers when a loaded or absent snapshot returns
 
 **Checkpoint**: A broken checked-in configuration cannot be mistaken for an absent file, and correcting or deleting it recovers the extension without a window reload.
@@ -111,10 +110,10 @@
 ### Phase Dependencies
 
 - **Setup (Phase 1)**: No dependencies; T001 and T002 can run in parallel.
-- **Foundational (Phase 2)**: Depends on setup; T004 depends on T003's exported state types.
-- **User Story 1 (Phase 3)**: Depends on T003-T004. T005-T006 must fail before T007-T012. T007 precedes T008-T010; T009 applies the completed resolver; T011-T012 finalize removal of legacy settings and regressions.
+- **Foundational (Phase 2)**: Depends on setup; T003 provides the shared state types.
+- **User Story 1 (Phase 3)**: Depends on T003. T005-T006 must fail before T007-T012. T007 precedes T008-T010; T009 applies the completed resolver; T011-T012 finalize removal of legacy settings and regressions.
 - **User Story 2 (Phase 4)**: Depends on the shared service from T007 and snapshot application from T009. T013-T014 must fail before T015-T016.
-- **User Story 3 (Phase 5)**: Depends on the full valid/default snapshot behavior from Phases 3-4. T017-T018 must fail before T019-T021.
+- **User Story 3 (Phase 5)**: Depends on the full valid/default snapshot behavior from Phases 3-4. T017-T018 must fail before T019-T021; T020 provides the required observability implementation after the failing lifecycle tests exist.
 - **Polish (Phase 6)**: Depends on the desired user stories being complete. T024 runs after T022-T023; T025 is last.
 
 ### User Story Dependencies

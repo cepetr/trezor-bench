@@ -401,12 +401,12 @@ This applies to `tfTools.taskExtraEnv` and excluded-file glob settings. Reposito
 The extension reads the optional `tf-tools.toml` only from the workspace root of a supported single-root workspace. Its `[paths]` table can define the following string entries:
 
 - `cargo-workspace`: default `core/embed`; the cargo workspace used for build-related tasks. An empty value uses the workspace root.
-- `debug-templates`: default `core/embed/xtask/tf-tools/debug`; the directory containing debug template files.
+- `debug-templates`: default `core/embed/xtask/tf-tools/debug`; the directory containing debug template files. An empty value uses the built-in default.
 - `build-artifacts`: default `core/build-xtask/artifacts`; the build artifacts directory. An empty value disables artifact-based IntelliSense resolution.
-- `manifest`: default `core/embed/xtask/tf-tools/manifest.yaml`; the manifest file.
-- `presets`: default `core/embed/xtask`; the directory containing `presets.toml` and `user-presets.toml`.
+- `manifest`: default `core/embed/xtask/tf-tools/manifest.yaml`; the manifest file. An empty value uses the built-in default.
+- `presets`: default `core/embed/xtask`; the directory containing `presets.toml` and `user-presets.toml`. An empty value uses the built-in default.
 
-Each relative value is resolved from the workspace root, while each absolute value is used unchanged. The file deliberately does not expand VS Code variable references, so variable-reference-like text is treated as literal path content. If the file is absent, or if an individual supported entry is absent, the corresponding default applies. A present file that cannot be read or parsed, or that contains a non-string supported path entry, is a blocking configuration error: the extension logs and shows the error and does not silently use defaults or stale paths until the file is corrected or removed.
+Each relative value is resolved from the workspace root, while each absolute value is used unchanged. The file deliberately does not expand VS Code variable references, so variable-reference-like text is treated as literal path content. If the file is absent, or if an individual supported entry is absent, the corresponding default applies. Unsupported `[paths]` keys are ignored. A present file that cannot be read or parsed, or that contains a non-string supported path entry, is a blocking configuration error: the extension logs and shows the error and does not silently use defaults or stale paths until the file is corrected or removed.
 
 ### Task Environment Settings
 
