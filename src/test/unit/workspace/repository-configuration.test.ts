@@ -17,7 +17,9 @@ suite("Repository configuration", () => {
   let workspacePath: string;
 
   setup(async () => {
-    workspacePath = await fs.mkdtemp(path.join(os.tmpdir(), "tf-tools-repository-configuration-"));
+    workspacePath = vscode.Uri.file(
+      await fs.mkdtemp(path.join(os.tmpdir(), "tf-tools-repository-configuration-"))
+    ).fsPath;
   });
 
   teardown(async () => {

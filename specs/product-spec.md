@@ -24,10 +24,10 @@ The extension expects one open workspace folder. Its workflow features are desig
 
 At a high level, the extension expects these workspace inputs:
 
-- A manifest file as described in the `Manifest Structure` section and located using the settings described in the `Extension Configuration` section.
-- A cargo workspace, artifacts root, and debug templates path located using the settings described in the `Extension Configuration` section.
+- A manifest file as described in the `Manifest Structure` section and located through the repository configuration described in the `Extension Configuration` section.
+- A cargo workspace, artifacts root, and debug templates path located through the same repository configuration.
 
-The extension does not define or manage the repository's build system itself. It assumes that the workspace and its generated artifacts follow repository-specific conventions that the configured manifest and settings describe.
+The extension does not define or manage the repository's build system itself. It assumes that the workspace and its generated artifacts follow repository-specific conventions that the configured manifest and repository configuration describe.
 
 ## Core Capabilities
 
