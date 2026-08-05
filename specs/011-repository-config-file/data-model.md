@@ -10,7 +10,7 @@ The optional root-level `tf-tools.toml` is a committed TOML document. Only its `
 | `paths.debug-templates` | string | `core/embed/xtask/tf-tools/debug` | Built-in default | Directory containing debug templates. |
 | `paths.build-artifacts` | string | `core/build-xtask/artifacts` | Disabled | Empty string disables artifact-based IntelliSense resolution. |
 | `paths.manifest` | string | `core/embed/xtask/tf-tools/manifest.yaml` | Built-in default | Manifest file location. |
-| `paths.presets` | string | `core/embed/xtask` | Built-in default | Direct parent of `presets.toml` and `user-presets.toml`. |
+| `paths.xtask-presets` | string | `core/embed/xtask` | Built-in default | Direct parent of `presets.toml` and `user-presets.toml`. |
 
 Each non-empty relative value is resolved against the workspace root. Each absolute value is used unchanged. Variable-reference-like text is retained literally. Unsupported `[paths]` keys are ignored. A non-string value for a supported field makes the file invalid.
 
@@ -23,7 +23,7 @@ Each non-empty relative value is resolved against the workspace root. Each absol
 | `debugTemplatesPath` | absolute filesystem path | `paths.debug-templates` | Start Debugging and Run and Debug provider |
 | `artifactsPath` | absolute filesystem path or empty string | `paths.build-artifacts` | Artifact rows, artifact actions, IntelliSense |
 | `manifestUri` | URI | `paths.manifest` | Manifest service |
-| `presetUris` | shared and user URIs | `paths.presets` | Preset service |
+| `presetUris` | shared and user URIs | `paths.xtask-presets` | Preset service |
 
 ## Repository Configuration State
 

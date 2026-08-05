@@ -41,7 +41,7 @@ As a user opening an older repository revision or a repository with only some pa
 2. **Given** a valid `tf-tools.toml` omits one or more `[paths]` entries, **When** the extension activates, **Then** each omitted entry independently uses its built-in default.
 3. **Given** `cargo-workspace` is an empty string, **When** the extension resolves workflow-task location, **Then** it uses the workspace root.
 4. **Given** `build-artifacts` is an empty string, **When** the extension refreshes artifacts and IntelliSense, **Then** artifact-based IntelliSense resolution is disabled.
-5. **Given** `manifest`, `debug-templates`, or `presets` is an empty string, **When** the extension resolves that entry, **Then** it uses the entry's built-in default.
+5. **Given** `manifest`, `debug-templates`, or `xtask-presets` is an empty string, **When** the extension resolves that entry, **Then** it uses the entry's built-in default.
 
 ---
 
@@ -63,7 +63,7 @@ As a user, I am clearly blocked when the repository configuration is invalid and
 
 - The extension continues to report the existing unsupported-workspace state when there is no workspace folder or more than one workspace folder; it does not search outside the single workspace root for configuration.
 - An existing but unreadable `tf-tools.toml` is treated as a blocking configuration read error, not as an absent file.
-- An empty `manifest`, `debug-templates`, or `presets` value uses that entry's built-in default.
+- An empty `manifest`, `debug-templates`, or `xtask-presets` value uses that entry's built-in default.
 - Unsupported keys under `[paths]` are ignored so a repository can retain unrelated or future metadata without blocking the extension.
 - A configuration file is deleted while the extension is active: the extension immediately returns to the built-in defaults rather than retaining paths from the removed file.
 - A configuration file is changed from valid to invalid, or invalid to valid: the extension respectively enters or leaves the blocking configuration state and does not retain stale resolved paths.
@@ -73,12 +73,12 @@ As a user, I am clearly blocked when the repository configuration is invalid and
 ### Functional Requirements
 
 - **FR-001**: The extension MUST support repository configuration only for a single-root workspace and MUST read `tf-tools.toml` only from that workspace root.
-- **FR-002**: The extension MUST read repository paths from the `[paths]` section using the entries `cargo-workspace`, `debug-templates`, `build-artifacts`, `manifest`, and `presets`.
-- **FR-003**: The extension MUST use the following built-in defaults whenever `tf-tools.toml` or an individual `[paths]` entry is absent: `core/embed` for `cargo-workspace`, `core/embed/xtask/tf-tools/debug` for `debug-templates`, `core/build-xtask/artifacts` for `build-artifacts`, `core/embed/xtask/tf-tools/manifest.yaml` for `manifest`, and `core/embed/xtask` for `presets`.
+- **FR-002**: The extension MUST read repository paths from the `[paths]` section using the entries `cargo-workspace`, `debug-templates`, `build-artifacts`, `manifest`, and `xtask-presets`.
+- **FR-003**: The extension MUST use the following built-in defaults whenever `tf-tools.toml` or an individual `[paths]` entry is absent: `core/embed` for `cargo-workspace`, `core/embed/xtask/tf-tools/debug` for `debug-templates`, `core/build-xtask/artifacts` for `build-artifacts`, `core/embed/xtask/tf-tools/manifest.yaml` for `manifest`, and `core/embed/xtask` for `xtask-presets`.
 - **FR-004**: The extension MUST resolve a relative repository path from the workspace root and MUST use an absolute repository path unchanged.
 - **FR-005**: The extension MUST not expand VS Code variable references in `tf-tools.toml`; variable-reference-like text is interpreted as literal path content.
-- **FR-006**: The extension MUST interpret an empty `cargo-workspace` value as the workspace root, an empty `build-artifacts` value as disabling artifact-based IntelliSense resolution, and an empty `manifest`, `debug-templates`, or `presets` value as that entry's built-in default.
-- **FR-007**: The extension MUST use the resolved `presets` directory directly to locate `presets.toml` and `user-presets.toml`; it MUST NOT derive that directory from the cargo-workspace path.
+- **FR-006**: The extension MUST interpret an empty `cargo-workspace` value as the workspace root, an empty `build-artifacts` value as disabling artifact-based IntelliSense resolution, and an empty `manifest`, `debug-templates`, or `xtask-presets` value as that entry's built-in default.
+- **FR-007**: The extension MUST use the resolved `xtask-presets` directory directly to locate `presets.toml` and `user-presets.toml`; it MUST NOT derive that directory from the cargo-workspace path.
 - **FR-008**: The extension MUST replace the four VS Code path settings `tfTools.cargoWorkspacePath`, `tfTools.debug.templatesPath`, `tfTools.artifactsPath`, and `tfTools.manifestPath` with repository configuration and MUST remove those settings from the extension's settings surface.
 - **FR-009**: The release notes MUST record removal of the four replaced VS Code path settings and MUST NOT provide a migration path for prior local customizations.
 - **FR-010**: If `tf-tools.toml` exists but is unreadable, malformed, or has a `[paths]` entry that is not a string, the extension MUST log the error, show a user-visible error, block affected extension workflows, and MUST NOT use defaults or stale resolved paths.

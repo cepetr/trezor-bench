@@ -33,7 +33,7 @@ cargo-workspace = "firmware/workspace"
 debug-templates = "${absoluteTemplatesPath}"
 build-artifacts = "firmware/artifacts"
 manifest = "firmware/config/manifest.yaml"
-presets = "firmware/presets"
+xtask-presets = "firmware/presets"
 unused-future-entry = "ignored"
 `,
       "utf-8"
@@ -96,7 +96,7 @@ cargo-workspace = ""
 debug-templates = ""
 build-artifacts = ""
 manifest = ""
-presets = ""
+xtask-presets = ""
 `,
       "utf-8"
     );

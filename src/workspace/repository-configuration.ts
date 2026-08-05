@@ -58,7 +58,7 @@ const TOML_PATH_KEYS: Readonly<Record<string, RepositoryPathKey>> = {
   "debug-templates": "debugTemplates",
   "build-artifacts": "buildArtifacts",
   manifest: "manifest",
-  presets: "presets",
+  "xtask-presets": "presets",
 };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

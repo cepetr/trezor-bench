@@ -29,7 +29,7 @@
 
 ## Decision: Apply built-in defaults per absent or empty entry as specified
 
-**Rationale**: A missing file and a partial file support older repository revisions. Empty `cargo-workspace` deliberately resolves to the workspace root; empty `build-artifacts` deliberately disables artifact IntelliSense; empty `manifest`, `debug-templates`, and `presets` select their built-in defaults. Unsupported `[paths]` keys are ignored, while each supported non-string value blocks the configuration.
+**Rationale**: A missing file and a partial file support older repository revisions. Empty `cargo-workspace` deliberately resolves to the workspace root; empty `build-artifacts` deliberately disables artifact IntelliSense; empty `manifest`, `debug-templates`, and `xtask-presets` select their built-in defaults. Unsupported `[paths]` keys are ignored, while each supported non-string value blocks the configuration.
 
 **Alternatives considered**:
 

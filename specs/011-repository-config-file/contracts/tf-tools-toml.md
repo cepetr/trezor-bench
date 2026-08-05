@@ -12,7 +12,7 @@ cargo-workspace = "core/embed"
 debug-templates = "core/embed/xtask/tf-tools/debug"
 build-artifacts = "core/build-xtask/artifacts"
 manifest = "core/embed/xtask/tf-tools/manifest.yaml"
-presets = "core/embed/xtask"
+xtask-presets = "core/embed/xtask"
 ```
 
 All supported entries are optional strings. Omitted entries use their defaults in [data-model.md](../data-model.md). Unknown keys in `[paths]` are ignored.
@@ -24,8 +24,8 @@ All supported entries are optional strings. Omitted entries use their defaults i
 - `${workspaceFolder}`, `${env:NAME}`, and all other VS Code variable references are literal file-name text; they are never expanded.
 - `cargo-workspace = ""` resolves to the workspace root.
 - `build-artifacts = ""` disables artifact-based IntelliSense resolution.
-- Empty `manifest`, `debug-templates`, and `presets` values select their respective built-in defaults.
-- `presets` is the directory directly containing `presets.toml` and `user-presets.toml`; it is never derived from `cargo-workspace`.
+- Empty `manifest`, `debug-templates`, and `xtask-presets` values select their respective built-in defaults.
+- `xtask-presets` is the directory directly containing `presets.toml` and `user-presets.toml`; it is never derived from `cargo-workspace`.
 
 ## Validity And Recovery
 
