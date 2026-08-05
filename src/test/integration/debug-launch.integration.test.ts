@@ -448,11 +448,10 @@ suite("Debug Launch – scope boundaries", () => {
       ?.configuration;
     const propKeys = Object.keys(conf?.properties ?? {});
     const debugSettingKeys = propKeys.filter((k) => k.startsWith("tfTools.debug."));
-    // Only the templatesPath setting is allowed
     assert.deepStrictEqual(
       debugSettingKeys,
-      ["tfTools.debug.templatesPath"],
-      `Only tfTools.debug.templatesPath must be contributed; found: ${debugSettingKeys.join(", ")}`
+      [],
+      `No tfTools.debug settings must be contributed; found: ${debugSettingKeys.join(", ")}`
     );
   });
 

@@ -185,7 +185,7 @@ const BLOCK_REASON_MESSAGES: Record<
   "workspace-unsupported":
     "Trezor Firmware Tools requires an open workspace folder.",
   "manifest-missing":
-    "Cannot start: the manifest file is missing. Check tfTools.manifestPath.",
+    "Cannot start: the manifest file is missing. Check [paths].manifest in tf-tools.toml.",
   "manifest-invalid":
     "Cannot start: the manifest file has validation errors. Check the Problems view.",
   "action-inapplicable":

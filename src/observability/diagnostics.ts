@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { ValidationIssue, ManifestState } from "../manifest/manifest-types";
 import { PresetState } from "../presets/preset-types";
+import { RepositoryConfigurationState } from "../workspace/repository-configuration";
 
 // ---------------------------------------------------------------------------
 // Diagnostic collection
@@ -112,4 +113,25 @@ export function handlePresetStateDiagnostics(state: PresetState): void {
   }
   publishDiagnostics(state.shared.uri, state.shared.issues);
   publishDiagnostics(state.user.uri, state.user.issues);
+}
+
+/** Publishes or clears diagnostics for the root repository configuration file. */
+export function handleRepositoryConfigurationDiagnostics(
+  state: RepositoryConfigurationState
+): void {
+  if (state.status !== "invalid") {
+    clearDiagnostics(state.configuration.configurationUri);
+    return;
+  }
+  const diagnostics = state.validationIssues.map((issue) => {
+    const diagnostic = new vscode.Diagnostic(
+      issue.range ?? new vscode.Range(0, 0, 0, 0),
+      issue.message,
+      vscode.DiagnosticSeverity.Error
+    );
+    diagnostic.source = "tf-tools";
+    diagnostic.code = issue.code;
+    return diagnostic;
+  });
+  getDiagnosticCollection().set(state.configurationUri, diagnostics);
 }

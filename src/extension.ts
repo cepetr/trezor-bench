@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder, isWorkflowWorkspaceSupported } from "./workspace/workspace-guard";
 import { resolveManifestUri, isStatusBarEnabled, resolveArtifactsPath, resolveDebugTemplatesPath, resolvePresetUris } from "./workspace/settings";
+import { RepositoryConfigurationService, loadRepositoryConfiguration, setRepositoryConfiguration } from "./workspace/repository-configuration";
 import { ManifestService } from "./manifest/manifest-service";
 import { PresetService } from "./presets/preset-service";
 import { PresetState } from "./presets/preset-types";
@@ -20,18 +21,19 @@ import {
   disposeLogChannel,
   initLogChannel,
   logWarning,
-  logError,
   revealLogs,
   logManifestState,
   logPresetState,
   logPresetNormalization,
   logOverridesPrunedForPreset,
   logOverridesPrunedForContext,
+  logRepositoryConfigurationState,
 } from "./observability/log-channel";
 import {
   disposeDiagnostics,
   handleManifestStateDiagnostics,
   handlePresetStateDiagnostics,
+  handleRepositoryConfigurationDiagnostics,
 } from "./observability/diagnostics";
 import {
   restoreActiveConfig,
@@ -601,6 +603,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   const workspaceFolder = requireWorkspaceFolder();
+  const repositoryConfigurationState = await loadRepositoryConfiguration(workspaceFolder);
+  if (repositoryConfigurationState.status !== "invalid") {
+    setRepositoryConfiguration(workspaceFolder, repositoryConfigurationState.configuration);
+  }
   const manifestUri = resolveManifestUri(workspaceFolder);
   const refreshArtifactFileWatcher = (): void => {
     const loadedState =
@@ -746,20 +752,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   _intelliSenseService.setWorkspaceFolder(workspaceFolder);
   _intelliSenseService.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
 
-  // Watch for tfTools.artifactsPath AND tfTools.manifestPath configuration changes
+  // Watch remaining VS Code settings that still control user-local behavior.
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration("tfTools.artifactsPath", workspaceFolder.uri)) {
-        _intelliSenseService?.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
-        refreshArtifactFileWatcher();
-        refreshBuildArtifacts("artifacts-path-change");
-      }
-      if (e.affectsConfiguration("tfTools.debug.templatesPath", workspaceFolder.uri)) {
-        // The templates path does not affect startDebuggingEnabled (templates are validated
-        // at invocation time, not pre-checked). Trigger a context refresh to keep the tree
-        // and context keys consistent with the new setting if future logic depends on it.
-        refreshArtifactActionState();
-      }
       if (e.affectsConfiguration("tfTools.showConfigurationInStatusBar", workspaceFolder.uri)) {
         refreshStatusBar();
       }
@@ -770,35 +765,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         e.affectsConfiguration("tfTools.excludedFiles.folderGlobs", workspaceFolder.uri)
       ) {
         _intelliSenseService?.scheduleRefresh("excluded-files-setting-change");
-      }
-      if (e.affectsConfiguration("tfTools.manifestPath", workspaceFolder.uri)) {
-        // Restart the manifest service with the newly resolved path.
-        // The resulting onDidChangeState fires will propagate "manifest-change"
-        // to the IntelliSense service automatically.
-        _manifestStateSubscription?.dispose();
-        _manifestService?.dispose();
-        const newManifestUri = resolveManifestUri(workspaceFolder);
-        _manifestService = new ManifestService(newManifestUri);
-        _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
-        _manifestService.start().catch((err) => {
-          const detail = err instanceof Error ? err.message : String(err);
-          const message = `Failed to start manifest service after path change: ${detail}`;
-          logError(`[tf-tools] ${message}`);
-        });
-      }
-      if (e.affectsConfiguration("tfTools.cargoWorkspacePath", workspaceFolder.uri)) {
-        // Restart the preset service against the newly resolved xtask/tf-tools
-        // directory (research Decision 2, Decision 14).
-        _presetStateSubscription?.dispose();
-        _presetService?.dispose();
-        const newPresetUris = resolvePresetUris(workspaceFolder);
-        _presetService = new PresetService(newPresetUris.shared, newPresetUris.user);
-        _presetStateSubscription = _presetService.onDidChangeState(onPresetStateChange);
-        _presetService.start().catch((err) => {
-          const detail = err instanceof Error ? err.message : String(err);
-          const message = `Failed to start preset service after cargo workspace path change: ${detail}`;
-          logError(`[tf-tools] ${message}`);
-        });
       }
     })
   );
@@ -1161,9 +1127,61 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  // --- Start manifest and preset services (load and begin watching) ---
-  await _manifestService.start();
-  await _presetService.start();
+  const repositoryConfigurationService = new RepositoryConfigurationService(workspaceFolder);
+  context.subscriptions.push(repositoryConfigurationService);
+  let repositoryConfigurationWasInvalid = false;
+  const applyRepositoryConfigurationState = async (): Promise<void> => {
+    const state = repositoryConfigurationService.state;
+    if (!state) {
+      return;
+    }
+    handleRepositoryConfigurationDiagnostics(state);
+    logRepositoryConfigurationState(state);
+    if (state.status === "invalid") {
+      setRepositoryConfiguration(workspaceFolder, undefined);
+      _manifestStateSubscription?.dispose();
+      _presetStateSubscription?.dispose();
+      _manifestService?.dispose();
+      _presetService?.dispose();
+      _manifestService = undefined;
+      _presetService = undefined;
+      _manifestState = undefined;
+      _presetState = undefined;
+      _activeConfig = undefined;
+      _resolvedOptions = [];
+      _intelliSenseService?.setManifest(undefined);
+      _intelliSenseService?.setActiveConfig(undefined);
+      _intelliSenseService?.setArtifactsRoot("");
+      void vscode.commands.executeCommand("setContext", "tfTools.workflowBlocked", true);
+      if (!repositoryConfigurationWasInvalid) {
+        repositoryConfigurationWasInvalid = true;
+        vscode.window.showErrorMessage("Trezor Firmware Tools: tf-tools.toml is invalid. Check the Problems view.");
+      }
+      return;
+    }
+
+    repositoryConfigurationWasInvalid = false;
+    setRepositoryConfiguration(workspaceFolder, state.configuration);
+    _intelliSenseService?.setArtifactsRoot(state.configuration.artifactsPath);
+    _manifestStateSubscription?.dispose();
+    _presetStateSubscription?.dispose();
+    _manifestService?.dispose();
+    _presetService?.dispose();
+    _manifestService = new ManifestService(state.configuration.manifestUri);
+    _presetService = new PresetService(state.configuration.presetUris.shared, state.configuration.presetUris.user);
+    _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
+    _presetStateSubscription = _presetService.onDidChangeState(onPresetStateChange);
+    await _manifestService.start();
+    await _presetService.start();
+  };
+  context.subscriptions.push(
+    repositoryConfigurationService.onDidChangeState(() => {
+      void applyRepositoryConfigurationState();
+    })
+  );
+
+  // --- Start root configuration and its dependent services. ---
+  await repositoryConfigurationService.start();
 
   // Schedule IntelliSense refresh on activation.
   refreshArtifactFileWatcher();

@@ -152,8 +152,8 @@ suite("resolveActiveArtifact — status and no-fallback", () => {
     const result = resolveActiveArtifact(inputs, config);
     assert.strictEqual(result.status, "missing");
     assert.ok(
-      result.missingReason?.includes("artifactsPath"),
-      `expected missingReason to mention 'artifactsPath', got: ${result.missingReason}`
+      result.missingReason?.includes("build-artifacts"),
+      `expected missingReason to mention 'build-artifacts', got: ${result.missingReason}`
     );
   });
 

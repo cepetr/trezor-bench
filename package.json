@@ -224,18 +224,6 @@
     "configuration": {
       "title": "Trezor Firmware Tools",
       "properties": {
-        "tfTools.manifestPath": {
-          "type": "string",
-          "default": "core/embed/xtask/tf-tools/manifest.yaml",
-          "description": "(Trezor) Path to the tf-tools manifest file, relative to the workspace root. Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
-          "scope": "resource"
-        },
-        "tfTools.cargoWorkspacePath": {
-          "type": "string",
-          "default": "core/embed",
-          "description": "(Trezor) Path to the cargo workspace directory used for build tasks, relative to the workspace root. Defaults to the workspace root when empty. Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
-          "scope": "resource"
-        },
         "tfTools.taskExtraEnv": {
           "type": "object",
           "default": {},
@@ -249,12 +237,6 @@
           "type": "boolean",
           "default": true,
           "description": "(Trezor) Show the active build configuration in the status bar.",
-          "scope": "resource"
-        },
-        "tfTools.artifactsPath": {
-          "type": "string",
-          "default": "core/build-xtask/artifacts",
-          "description": "(Trezor) Absolute or workspace-relative path to the directory that contains build artifact sub-folders (e.g. compile-commands files). Defaults to 'core/build-xtask/artifacts'. Clear to disable IntelliSense artifact resolution. Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
           "scope": "resource"
         },
         "tfTools.excludedFiles.grayInTree": {
@@ -290,12 +272,6 @@
             "core/vendor/**"
           ],
           "description": "(Trezor) Folder glob patterns that scope excluded-file marking. May be absolute paths or paths relative to the workspace root. Use '/' separators. Excluded-file marking is disabled when this list is empty. Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
-          "scope": "resource"
-        },
-        "tfTools.debug.templatesPath": {
-          "type": "string",
-          "default": "core/embed/xtask/tf-tools/debug",
-          "description": "(Trezor) Path to the directory containing debugger template files (JSONC). Relative to the workspace root. Defaults to 'core/embed/xtask/tf-tools/debug'. Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
           "scope": "resource"
         }
       }

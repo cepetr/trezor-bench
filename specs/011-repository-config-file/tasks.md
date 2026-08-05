@@ -12,8 +12,8 @@
 
 **Purpose**: Establish the focused fixture layout and test entry points for root-level repository configuration.
 
-- [ ] T001 [P] Create valid and partial root-level TOML workspace fixtures in `test-fixtures/workspaces/repository-configuration-valid/tf-tools.toml` and `test-fixtures/workspaces/repository-configuration-partial/tf-tools.toml`
-- [ ] T002 [P] Create malformed TOML and wrong-supported-type workspace fixtures in `test-fixtures/workspaces/repository-configuration-invalid/tf-tools.toml` and `test-fixtures/workspaces/repository-configuration-wrong-type/tf-tools.toml`
+- [X] T001 [P] Create valid and partial root-level TOML workspace fixtures in `test-fixtures/workspaces/repository-configuration-valid/tf-tools.toml` and `test-fixtures/workspaces/repository-configuration-partial/tf-tools.toml`
+- [X] T002 [P] Create malformed TOML and wrong-supported-type workspace fixtures in `test-fixtures/workspaces/repository-configuration-invalid/tf-tools.toml` and `test-fixtures/workspaces/repository-configuration-wrong-type/tf-tools.toml`
 
 ---
 
@@ -23,7 +23,7 @@
 
 **⚠️ CRITICAL**: Complete this phase before user-story work so no consumer independently reads a removed VS Code path setting.
 
-- [ ] T003 Define exported repository configuration defaults, resolved snapshot, validation issues, and `absent`/`loaded`/`invalid` state types in `src/workspace/repository-configuration.ts`
+- [X] T003 Define exported repository configuration defaults, resolved snapshot, validation issues, and `absent`/`loaded`/`invalid` state types in `src/workspace/repository-configuration.ts`
 
 **Checkpoint**: A single configuration-state vocabulary exists for all path consumers, diagnostics, and workflow gating.
 
@@ -37,17 +37,17 @@
 
 ### Tests for User Story 1
 
-- [ ] T005 [P] [US1] Add TOML parsing and resolution tests for all five entries, relative and absolute paths, literal VS Code variables, and ignored unknown keys in `src/test/unit/workspace/repository-configuration.test.ts`
-- [ ] T006 [P] [US1] Add extension-host integration coverage proving a valid configuration supplies manifest, presets, artifacts, debug templates, and workflow cwd in `src/test/integration/repository-configuration.integration.test.ts`
+- [X] T005 [P] [US1] Add TOML parsing and resolution tests for all five entries, relative and absolute paths, literal VS Code variables, and ignored unknown keys in `src/test/unit/workspace/repository-configuration.test.ts`
+- [X] T006 [P] [US1] Add extension-host integration coverage proving a valid configuration supplies manifest, presets, artifacts, debug templates, and workflow cwd in `src/test/integration/repository-configuration.integration.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Implement TOML loading, supported-entry validation, literal path resolution, and immutable loaded snapshots in `src/workspace/repository-configuration.ts`
-- [ ] T008 [US1] Replace repository-path resolver exports in `src/workspace/settings.ts` and update `src/tasks/xtask-execution.ts` to consume the resolved repository configuration while retaining only task environment and UI settings
-- [ ] T009 [US1] Refactor activation and valid-snapshot application so `src/extension.ts` starts or restarts manifest and preset services, artifact/IntelliSense state, debug templates, and workflow context from one resolved snapshot
-- [ ] T010 [US1] Update artifact, debug, manifest, and preset path-facing messages and types to name repository configuration rather than removed VS Code settings in `src/commands/artifact-actions.ts`, `src/intellisense/artifact-resolution.ts`, `src/intellisense/intellisense-service.ts`, `src/intellisense/intellisense-types.ts`, `src/manifest/manifest-service.ts`, and `src/manifest/manifest-types.ts`
-- [ ] T011 [US1] Remove `tfTools.cargoWorkspacePath`, `tfTools.debug.templatesPath`, `tfTools.artifactsPath`, and `tfTools.manifestPath` contributions from `package.json` while preserving task-environment, status-bar, and excluded-file settings
-- [ ] T012 [US1] Update path-resolution and package-contribution expectations for direct `presets` resolution and removed settings in `src/test/unit/presets/preset-paths.test.ts`, `src/test/unit/workspace/configuration-variables.test.ts`, `src/test/integration/configuration-scope.integration.test.ts`, and `src/test/integration/debug-launch.integration.test.ts`
+- [X] T007 [US1] Implement TOML loading, supported-entry validation, literal path resolution, and immutable loaded snapshots in `src/workspace/repository-configuration.ts`
+- [X] T008 [US1] Replace repository-path resolver exports in `src/workspace/settings.ts` and update `src/tasks/xtask-execution.ts` to consume the resolved repository configuration while retaining only task environment and UI settings
+- [X] T009 [US1] Refactor activation and valid-snapshot application so `src/extension.ts` starts or restarts manifest and preset services, artifact/IntelliSense state, debug templates, and workflow context from one resolved snapshot
+- [X] T010 [US1] Update artifact, debug, manifest, and preset path-facing messages and types to name repository configuration rather than removed VS Code settings in `src/commands/artifact-actions.ts`, `src/intellisense/artifact-resolution.ts`, `src/intellisense/intellisense-service.ts`, `src/intellisense/intellisense-types.ts`, `src/manifest/manifest-service.ts`, and `src/manifest/manifest-types.ts`
+- [X] T011 [US1] Remove `tfTools.cargoWorkspacePath`, `tfTools.debug.templatesPath`, `tfTools.artifactsPath`, and `tfTools.manifestPath` contributions from `package.json` while preserving task-environment, status-bar, and excluded-file settings
+- [X] T012 [US1] Update path-resolution and package-contribution expectations for direct `presets` resolution and removed settings in `src/test/unit/presets/preset-paths.test.ts`, `src/test/unit/workspace/configuration-variables.test.ts`, `src/test/integration/configuration-scope.integration.test.ts`, and `src/test/integration/debug-launch.integration.test.ts`
 
 **Checkpoint**: A workspace maintainer can commit a valid `tf-tools.toml`; all repository-dependent paths use it, and the four legacy path settings are absent from the extension configuration surface.
 
@@ -61,13 +61,13 @@
 
 ### Tests for User Story 2
 
-- [ ] T013 [P] [US2] Add unit cases for absent files, per-entry defaults, and every specified empty-value behavior in `src/test/unit/workspace/repository-configuration.test.ts`
-- [ ] T014 [P] [US2] Add extension-host integration coverage for default and partial-file fallback with no legacy path-setting dependency in `src/test/integration/repository-configuration.integration.test.ts`
+- [X] T013 [P] [US2] Add unit cases for absent files, per-entry defaults, and every specified empty-value behavior in `src/test/unit/workspace/repository-configuration.test.ts`
+- [X] T014 [P] [US2] Add extension-host integration coverage for default and partial-file fallback with no legacy path-setting dependency in `src/test/integration/repository-configuration.integration.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T015 [US2] Implement absent-file default snapshots and per-entry empty-value fallback rules in `src/workspace/repository-configuration.ts`
-- [ ] T016 [US2] Apply absent and partial snapshots through the same activation path in `src/extension.ts` so default manifest, preset, artifact, debug, and workflow behavior replaces no path with stale configuration
+- [X] T015 [US2] Implement absent-file default snapshots and per-entry empty-value fallback rules in `src/workspace/repository-configuration.ts`
+- [X] T016 [US2] Apply absent and partial snapshots through the same activation path in `src/extension.ts` so default manifest, preset, artifact, debug, and workflow behavior replaces no path with stale configuration
 
 **Checkpoint**: Older repositories without `tf-tools.toml`, and repositories with partial configuration, remain usable with the defined defaults.
 
@@ -81,14 +81,14 @@
 
 ### Tests for User Story 3
 
-- [ ] T017 [P] [US3] Add unit tests for malformed TOML, unreadable input, invalid `[paths]` tables, and wrong supported entry types in `src/test/unit/workspace/repository-configuration.test.ts`
-- [ ] T018 [P] [US3] Add extension-host lifecycle tests for create/change/delete watching, diagnostics, error logging, invalid-to-valid recovery, and invalid-to-absent recovery in `src/test/integration/repository-configuration.integration.test.ts`
+- [X] T017 [P] [US3] Add unit tests for malformed TOML, unreadable input, invalid `[paths]` tables, and wrong supported entry types in `src/test/unit/workspace/repository-configuration.test.ts`
+- [X] T018 [P] [US3] Add extension-host lifecycle tests for create/change/delete watching, diagnostics, error logging, invalid-to-valid recovery, and invalid-to-absent recovery in `src/test/integration/repository-configuration.integration.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T019 [US3] Implement debounced root-file watching and blocking invalid state publication with anchored validation issues in `src/workspace/repository-configuration.ts`
-- [ ] T020 [US3] Add repository-configuration diagnostic and log state helpers, including clearing diagnostics when the file becomes absent or valid, publishing persistent error details, and showing one user-visible error per entered invalid state, in `src/observability/diagnostics.ts` and `src/observability/log-channel.ts`
-- [ ] T021 [US3] Apply invalid snapshots in `src/extension.ts` by disposing path-dependent services, clearing manifest/preset/artifact/IntelliSense/debug state, setting workflow blocking, and atomically restoring consumers when a loaded or absent snapshot returns
+- [X] T019 [US3] Implement debounced root-file watching and blocking invalid state publication with anchored validation issues in `src/workspace/repository-configuration.ts`
+- [X] T020 [US3] Add repository-configuration diagnostic and log state helpers, including clearing diagnostics when the file becomes absent or valid, publishing persistent error details, and showing one user-visible error per entered invalid state, in `src/observability/diagnostics.ts` and `src/observability/log-channel.ts`
+- [X] T021 [US3] Apply invalid snapshots in `src/extension.ts` by disposing path-dependent services, clearing manifest/preset/artifact/IntelliSense/debug state, setting workflow blocking, and atomically restoring consumers when a loaded or absent snapshot returns
 
 **Checkpoint**: A broken checked-in configuration cannot be mistaken for an absent file, and correcting or deleting it recovers the extension without a window reload.
 

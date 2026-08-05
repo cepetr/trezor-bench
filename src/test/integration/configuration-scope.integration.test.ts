@@ -192,26 +192,17 @@ suite("Debug Launch scope boundaries", () => {
     assert.strictEqual(entry.category, "Trezor", "startDebugging must use Trezor category");
   });
 
-  test("no tfTools.debug.* settings section is added", () => {
+  test("no tfTools.debug.* settings are contributed", () => {
     const pkg = getExtPackageJson();
     const conf = (pkg.contributes as { configuration?: { properties?: Record<string, unknown> } } | undefined)
       ?.configuration;
     const propKeys = Object.keys(conf?.properties ?? {});
-    const illegalKeys = propKeys.filter((k) => /^tfTools\.debug\./.test(k) && k !== "tfTools.debug.templatesPath");
+    const illegalKeys = propKeys.filter((k) => /^tfTools\.debug\./.test(k));
     assert.deepStrictEqual(
       illegalKeys,
       [],
-      `Unexpected debug settings contributed beyond tfTools.debug.templatesPath: ${illegalKeys.join(", ")}`
+      `Unexpected debug settings contributed: ${illegalKeys.join(", ")}`
     );
-  });
-
-  test("tfTools.debug.templatesPath setting is scoped to resource level", () => {
-    const pkg = getExtPackageJson();
-    const conf = (pkg.contributes as { configuration?: { properties?: Record<string, { scope?: string }> } } | undefined)
-      ?.configuration;
-    const prop = conf?.properties?.["tfTools.debug.templatesPath"];
-    assert.ok(prop, "expected tfTools.debug.templatesPath setting to be contributed");
-    assert.strictEqual(prop.scope, "resource", "tfTools.debug.templatesPath must be resource-scoped");
   });
 });
 

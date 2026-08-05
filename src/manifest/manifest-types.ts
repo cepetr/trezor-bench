@@ -10,7 +10,7 @@ export interface ManifestModel {
   readonly kind: "model";
   readonly id: string;
   readonly name: string;
-  /** Required artifact folder under tfTools.artifactsPath for this model. */
+  /** Required artifact folder under `[paths].build-artifacts` for this model. */
   readonly artifactFolder?: string;
 }
 
@@ -44,7 +44,7 @@ export interface ManifestComponentDebugProfile {
   readonly componentId: string;
   /** User-facing profile name, exposed as `${tfTools.debugProfileName}`. */
   readonly name: string;
-  /** Relative path under `tfTools.debug.templatesPath` for the JSONC template. */
+  /** Relative path under `[paths].debug-templates` for the JSONC template. */
   readonly template: string;
   /**
   * Parsed availability expression. When absent the profile matches all active

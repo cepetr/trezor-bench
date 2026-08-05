@@ -1,0 +1,6 @@
+[paths]
+cargo-workspace = "firmware/workspace"
+debug-templates = "firmware/debug/templates"
+build-artifacts = "firmware/artifacts"
+manifest = "firmware/config/manifest.yaml"
+presets = "firmware/presets"
