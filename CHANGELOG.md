@@ -32,3 +32,9 @@
 - Selecting the status bar configuration item now opens the container, expands `Build Selection`, and focuses it.
 - Renamed the activity-bar container from `Trezor` to `Trezor Firmware Tools`.
 - Multistate build options no longer require manifest-authored defaults; the selected state is inferred from the preset-effective value when no override exists.
+
+## 0.3.1 - 2026-08-05
+### Added
+- Added optional root-level `tf-tools.toml` repository configuration for cargo workspace, manifest, build artifacts, debug templates, and xtask preset input paths. Relative paths resolve from the workspace root; changes are applied without reloading the VS Code window.
+### Changed
+- Removed the `tfTools.cargoWorkspacePath`, `tfTools.debug.templatesPath`, `tfTools.artifactsPath`, and `tfTools.manifestPath` VS Code settings. Their values are not migrated; configure repository paths in `tf-tools.toml` instead.

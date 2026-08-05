@@ -98,7 +98,7 @@
 
 **Purpose**: Finalize compatibility documentation and validate the complete delivery against the user-facing contract.
 
-- [ ] T022 [P] Record removal of the four legacy path settings without a migration path in `CHANGELOG.md`
+- [X] T022 [P] Record removal of the four legacy path settings without a migration path in `CHANGELOG.md`
 - [ ] T023 [P] Reconcile repository-configuration terminology and behavior against the delivered code in `specs/product-spec.md`, `specs/glossary.md`, and `README.md`
 - [ ] T024 Run the quickstart validation commands and the full regression suite from `specs/011-repository-config-file/quickstart.md`
 - [ ] T025 Perform a requirement-by-requirement self-review against `specs/011-repository-config-file/spec.md`, `specs/product-spec.md`, and `specs/glossary.md`, then record any necessary corrections in `specs/011-repository-config-file/tasks.md`
