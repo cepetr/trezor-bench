@@ -9,9 +9,9 @@
 // Artifact resolution inputs
 // ---------------------------------------------------------------------------
 
-/** All manifest and settings inputs needed to compute the expected artifact path. */
+/** All manifest and repository-configuration inputs needed to compute the expected artifact path. */
 export interface ArtifactResolutionInputs {
-  /** Resolved absolute path from tfTools.artifactsPath. Empty string when unset. */
+  /** Resolved absolute path from `[paths].build-artifacts`. Empty string when disabled. */
   readonly artifactsRoot: string;
   /** Active model id. */
   readonly modelId: string;

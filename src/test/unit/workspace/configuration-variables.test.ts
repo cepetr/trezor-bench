@@ -6,8 +6,6 @@ import {
 } from "../../../workspace/configuration-variables";
 import {
   readTaskExtraEnv,
-  resolveArtifactsPath,
-  resolveCargoWorkspacePath,
 } from "../../../workspace/settings";
 
 const MOCK_WORKSPACE_FOLDER = {
@@ -87,33 +85,11 @@ suite("resolveConfigurationVariablesDeep", () => {
   });
 });
 
-suite("settings path resolution", () => {
+suite("task environment settings", () => {
   const originalGetConfiguration = vscode.workspace.getConfiguration;
 
   teardown(() => {
     vscode.workspace.getConfiguration = originalGetConfiguration;
-  });
-
-  test("resolveCargoWorkspacePath expands workspaceFolder in setting value", () => {
-    vscode.workspace.getConfiguration = () => ({
-      get: (key: string) => (key === "cargoWorkspacePath" ? "${workspaceFolder}/core/embed" : undefined),
-      update: () => Promise.resolve(),
-      has: () => true,
-      inspect: () => undefined,
-    });
-
-    assert.strictEqual(resolveCargoWorkspacePath(MOCK_WORKSPACE_FOLDER), "/workspace/core/embed");
-  });
-
-  test("resolveArtifactsPath treats expanded absolute paths as absolute", () => {
-    vscode.workspace.getConfiguration = () => ({
-      get: (key: string) => (key === "artifactsPath" ? "${workspaceFolder}/core/build-xtask/artifacts" : undefined),
-      update: () => Promise.resolve(),
-      has: () => true,
-      inspect: () => undefined,
-    });
-
-    assert.strictEqual(resolveArtifactsPath(MOCK_WORKSPACE_FOLDER), "/workspace/core/build-xtask/artifacts");
   });
 
   test("readTaskExtraEnv expands variable references in values", () => {

@@ -1,29 +1,8 @@
 import * as vscode from "vscode";
-import * as path from "path";
 import {
-  resolveConfigurationVariables,
   resolveConfigurationVariablesDeep,
 } from "./configuration-variables";
-
-/**
- * Expands configuration variables and resolves the result to an absolute path.
- * Relative paths are joined to the workspace folder root.
- */
-function resolveConfiguredPath(
-  raw: string | undefined,
-  workspaceFolder: vscode.WorkspaceFolder,
-  defaultRelative?: string
-): string {
-  const source = raw?.trim() || defaultRelative?.trim() || "";
-  const expanded = resolveConfigurationVariables(source, workspaceFolder).trim();
-  if (!expanded) {
-    return workspaceFolder.uri.fsPath;
-  }
-  if (path.isAbsolute(expanded)) {
-    return expanded;
-  }
-  return path.resolve(workspaceFolder.uri.fsPath, expanded);
-}
+import { getRepositoryConfiguration } from "./repository-configuration";
 
 /**
  * Returns the manifest path setting for the given workspace folder, resolved
@@ -33,11 +12,7 @@ function resolveConfiguredPath(
 export function resolveManifestUri(
   workspaceFolder: vscode.WorkspaceFolder
 ): vscode.Uri {
-  const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
-  const relative: string | undefined = cfg.get<string>("manifestPath");
-  return vscode.Uri.file(
-    resolveConfiguredPath(relative, workspaceFolder, "core/embed/xtask/tf-tools/manifest.yaml")
-  );
+  return getRepositoryConfiguration(workspaceFolder).manifestUri;
 }
 
 /**
@@ -58,12 +33,7 @@ export function isStatusBarEnabled(
 export function resolveCargoWorkspacePath(
   workspaceFolder: vscode.WorkspaceFolder
 ): string {
-  const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
-  const relative: string | undefined = cfg.get<string>("cargoWorkspacePath");
-  if (!relative?.trim()) {
-    return workspaceFolder.uri.fsPath;
-  }
-  return resolveConfiguredPath(relative, workspaceFolder);
+  return getRepositoryConfiguration(workspaceFolder).cargoWorkspacePath;
 }
 
 /**
@@ -104,12 +74,7 @@ export function readTaskExtraEnv(
 export function resolveArtifactsPath(
   workspaceFolder: vscode.WorkspaceFolder
 ): string {
-  const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
-  const value: string | undefined = cfg.get<string>("artifactsPath");
-  if (!value?.trim()) {
-    return "";
-  }
-  return resolveConfiguredPath(value, workspaceFolder);
+  return getRepositoryConfiguration(workspaceFolder).artifactsPath;
 }
 
 // ---------------------------------------------------------------------------
@@ -174,9 +139,7 @@ export function readExcludedFilesSettings(
 export function resolveDebugTemplatesPath(
   workspaceFolder: vscode.WorkspaceFolder
 ): string {
-  const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
-  const value: string | undefined = cfg.get<string>("debug.templatesPath");
-  return resolveConfiguredPath(value, workspaceFolder, "core/embed/xtask/tf-tools/debug");
+  return getRepositoryConfiguration(workspaceFolder).debugTemplatesPath;
 }
 
 // ---------------------------------------------------------------------------
@@ -195,12 +158,7 @@ export interface PresetUris {
  * directory `xtask` itself reads — never from `tfTools.manifestPath` (research Decision 2).
  */
 export function resolvePresetUris(workspaceFolder: vscode.WorkspaceFolder): PresetUris {
-  const cargoWorkspacePath = resolveCargoWorkspacePath(workspaceFolder);
-  const presetsDir = path.join(cargoWorkspacePath, "xtask", "tf-tools");
-  return {
-    shared: vscode.Uri.file(path.join(presetsDir, "presets.toml")),
-    user: vscode.Uri.file(path.join(presetsDir, "user-presets.toml")),
-  };
+  return getRepositoryConfiguration(workspaceFolder).presetUris;
 }
 
 /**

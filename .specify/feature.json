@@ -1,1 +1,3 @@
-{"feature_directory":"specs/010-split-configuration-panes"}
+{
+	"feature_directory": "specs/011-repository-config-file"
+}

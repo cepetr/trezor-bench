@@ -134,7 +134,7 @@ export class ManifestService implements vscode.Disposable {
     if (state.status === "missing") {
       vscode.window.showWarningMessage(
         `Trezor Firmware Tools: manifest file not found at "${state.manifestUri.fsPath}". ` +
-          "Check the tfTools.manifestPath setting."
+          "Check [paths].manifest in tf-tools.toml."
       );
     } else if (state.status === "invalid") {
       const count = state.validationIssues.length;

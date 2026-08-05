@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { ManifestState } from "../manifest/manifest-types";
 import { PresetState } from "../presets/preset-types";
 import { PresetContext } from "../presets/preset-resolution";
+import { RepositoryConfigurationState } from "../workspace/repository-configuration";
 
 const CHANNEL_NAME = "Trezor Firmware Tools";
 let _channel: vscode.OutputChannel | undefined;
@@ -46,6 +47,22 @@ export function logWarning(message: string): void {
 export function logError(message: string): void {
   log(`[ERROR] ${message}`);
   vscode.window.showErrorMessage(message);
+}
+
+/** Logs repository configuration transitions, including persistent invalid-state details. */
+export function logRepositoryConfigurationState(state: RepositoryConfigurationState): void {
+  if (state.status === "invalid") {
+    log(`[ERROR] Repository configuration invalid: ${state.configurationUri.fsPath}`);
+    for (const issue of state.validationIssues) {
+      log(`  [error] ${issue.message} (${issue.code})`);
+    }
+    return;
+  }
+  log(
+    state.status === "absent"
+      ? `Repository configuration absent: using defaults from ${state.configuration.configurationUri.fsPath}`
+      : `Repository configuration loaded: ${state.configuration.configurationUri.fsPath}`
+  );
 }
 
 /**
