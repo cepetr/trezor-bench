@@ -128,7 +128,7 @@ Every available build option displays its preset-effective value — the value c
 
 A build option whose calculated preset-effective value cannot be represented by that option — for example a checkbox given a non-boolean value, or a multistate option given a value that matches none of its declared states — reports the mismatch directly on its row using the `warning` icon and a description naming the unrepresentable value, instead of guessing a value. `Build`, `Clippy`, and `Check` are blocked while any available option reports a mismatch (see `Availability And Blocking Model`).
 
-A multistate option whose active preset supplies no value for it, and which declares no state with a `null` value, is shown as unresolved: it renders normally but its state choices are not selectable and it contributes no build-option argument until a resolvable value is available. A multistate option's states no longer need to include a manifest-authored default state for this display and persistence model to work — see `Persistence And Defaults`.
+A multistate option whose active preset supplies no value for it uses the state whose manifest-declared value is `null` when one exists; otherwise it uses the first declared state. A multistate option's states no longer need to include a manifest-authored default state for this display and persistence model to work — see `Persistence And Defaults`.
 
 At a high level, this part of the tree view is organized like this:
 
@@ -472,7 +472,7 @@ When either preset input changes:
 - Both preset inputs are re-read and re-validated.
 - Diagnostics and log output are refreshed to reflect the new preset state, attributed to whichever file produced an issue.
 - The declared preset list is recomputed, and the active preset id is restored if the inputs still declare it or normalized to the synthetic `Default` choice otherwise.
-- Preset-effective build-option values are recalculated, and Build Options are refreshed to show the new values, emphasis, mismatch, and unresolved states.
+- Preset-effective build-option values are recalculated, and Build Options are refreshed to show the new values, emphasis, and mismatch states.
 - The `Preset` selector, its choices, and workflow blocking state are refreshed.
 
 The shared `presets.toml` is required. It ships with the `xtask` that accepts preset arguments, so its absence means the open repository predates preset support rather than that no presets are defined: the extension reports the shared input as unavailable, offers no preset choices, writes the cause to log output, and blocks `Build`, `Clippy`, and `Check` while leaving `Clean` available. No diagnostic is produced for the absence, since there is no file content to attribute one to. An absent `user-presets.toml` is the genuinely optional case and is never reported. If either present file is unreadable, malformed, or contains validation errors, the extension keeps the UI available but replaces the `Preset` choices with a warning row, shows the failure through diagnostics and log output, and blocks `Build`, `Clippy`, and `Check` while leaving `Clean` available, without using stale or guessed preset data.
@@ -544,7 +544,7 @@ When no explicit build-option value has been saved yet, the displayed and emitte
 
 - Checkbox options preset-effective to disabled when no applicable preset fragment sets them (the upstream implicit-disabled value).
 - Multistate options preset-effective to the state whose manifest-declared value is `null`, when the option declares such a state, whenever no applicable preset fragment sets them.
-- A multistate option that declares no `null`-valued state and receives no value from any applicable preset fragment has no resolvable effective value; it is shown as unresolved (see `Build Option Management`) instead of falling back to the first declared state.
+- A multistate option that declares no `null`-valued state and receives no value from any applicable preset fragment preset-effective to its first declared state.
 
 Explicitly selecting a multistate option's `null`-valued state clears any stored override for that option — the row then follows the active preset again, the same as if no selection had ever been made. A value stored before this behavior existed that happens to equal that `null`-valued state's id is treated the same way.
 

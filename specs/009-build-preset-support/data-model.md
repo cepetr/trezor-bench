@@ -134,7 +134,7 @@ Raw value → option value:
 | multistate | `String(raw)` matches a state id | `resolved`, `value = that state id` |
 | multistate | `String(raw)` matches no state id | `mismatch` |
 | multistate | absent, option declares a state with `value: null` | `resolved`, `value = "null"` |
-| multistate | absent, no null-valued state | `unresolved` |
+| multistate | absent, no null-valued state | `resolved`, `value = first state id` |
 
 Keys that match no manifest option contribute nothing and produce no issue (research Decision 5).
 
@@ -188,8 +188,7 @@ Resolution order for `value`:
 2. Discard it when: it is `null`; it is a multistate value matching no current state id; or it is a multistate value equal to the null-valued state's id (research Decision 8, rule 3).
 3. If a selection survives, `value` = that selection and `isOverride = value !== presetValue`.
 4. Otherwise `value` = `presetValue` and `isOverride = false`.
-5. When `presetState === "unresolved"`, `value` is the null-valued state id if one exists, else the first state id; `isOverride` is forced `false` and the row is not overridable.
-6. When `presetState === "mismatch"`, `isOverride` is forced `false` and the option contributes no argument.
+5. When `presetState === "mismatch"`, `isOverride` is forced `false` and the option contributes no argument.
 
 FR-016 falls out of step 3: a stored selection equal to `presetValue` yields `isOverride === false`, so it is neither emphasized nor emitted.
 
@@ -236,7 +235,7 @@ The prune covers stored keys for options that are not currently available: the m
   - preset state `loaded` → one `SelectorChoiceItem` per `PresetChoice`, `Default` first.
 - Only one selector expands at a time — the existing `_expandedSelector` single-value state already enforces this, so `"preset"` participates unchanged (FR-002).
 - `_isNonDefault` is replaced by `resolved.isOverride` for both the checkbox and multistate emphasis paths and for the group-header rollup (FR-015).
-- A `presetState === "mismatch"` option renders with the `warning` icon and a description naming the unrepresentable value; a `presetState === "unresolved"` option renders normally but with its state children non-selectable.
+- A `presetState === "mismatch"` option renders with the `warning` icon and a description naming the unrepresentable value.
 
 ---
 

@@ -220,11 +220,11 @@ suite("computePresetEffectiveValue – multistate", () => {
     assert.strictEqual(result.value, "null");
   });
 
-  test("absent with no null-valued state -> unresolved", () => {
+  test("absent with no null-valued state -> resolved to the first state", () => {
     const overlay = new Map();
     const result = computePresetEffectiveValue(pyoptNoNull, overlay);
-    assert.strictEqual(result.state, "unresolved");
-    assert.strictEqual(result.value, undefined);
+    assert.strictEqual(result.state, "resolved");
+    assert.strictEqual(result.value, "true");
   });
 
   test("boolean-like raw values map to 'true'/'false' state ids", () => {

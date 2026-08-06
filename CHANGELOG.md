@@ -38,3 +38,7 @@
 - Added optional root-level `tf-tools.toml` repository configuration for cargo workspace, manifest, build artifacts, debug templates, and xtask preset input paths. Relative paths resolve from the workspace root; changes are applied without reloading the VS Code window.
 ### Changed
 - Removed the `tfTools.cargoWorkspacePath`, `tfTools.debug.templatesPath`, `tfTools.artifactsPath`, and `tfTools.manifestPath` VS Code settings. Their values are not migrated; configure repository paths in `tf-tools.toml` instead.
+
+## 0.3.2 - 2026-08-06
+### Fixed
+- Multistate build options without an applicable preset value now use their first declared state, so their state choices remain selectable instead of becoming unavailable.

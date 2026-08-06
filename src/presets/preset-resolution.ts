@@ -245,6 +245,10 @@ export function computePresetEffectiveValue(
     if (nullState) {
       return { optionKey, state: "resolved", value: "null" };
     }
+    const firstState = option.states?.[0];
+    if (firstState) {
+      return { optionKey, state: "resolved", value: firstState.id };
+    }
     return { optionKey, state: "unresolved" };
   }
 
