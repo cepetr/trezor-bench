@@ -42,3 +42,8 @@
 ## 0.3.2 - 2026-08-06
 ### Fixed
 - Multistate build options without an applicable preset value now use their first declared state, so their state choices remain selectable instead of becoming unavailable.
+
+## 0.4.0 - 2026-08-11
+### Changed
+- Renamed the extension from Trezor Firmware Tools to Trezor Bench. This is a breaking change: the extension id is now `cepetr.tbench`, and its commands, settings, context keys, debugger and task types, debug variables, persisted workspace state, repository configuration file, and managed IntelliSense directory now use the `tbench` prefix.
+- Retained upstream Trezor firmware contract paths under `xtask/tf-tools/`, including the manifest, preset, and debug-template locations.
