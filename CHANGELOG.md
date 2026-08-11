@@ -47,3 +47,7 @@
 ### Changed
 - Renamed the extension from Trezor Firmware Tools to Trezor Bench. This is a breaking change: the extension id is now `cepetr.tbench`, and its commands, settings, context keys, debugger and task types, debug variables, persisted workspace state, repository configuration file, and managed IntelliSense directory now use the `tbench` prefix.
 - Retained upstream Trezor firmware contract paths under `xtask/tf-tools/`, including the manifest, preset, and debug-template locations.
+
+## 0.4.1 - 2026-08-11
+### Fixed
+- Restored the existing repository URL in extension package metadata and README links so the bundled README image resolves correctly.
