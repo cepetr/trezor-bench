@@ -25,7 +25,7 @@ function fixtureManifestSource(fixtureName: string): string {
     __dirname,
     "../../../test-fixtures/manifests",
     fixtureName,
-    "tf-tools.yaml"
+    "tbench.yaml"
   );
   return fs.readFileSync(fixturePath, "utf-8");
 }

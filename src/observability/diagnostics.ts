@@ -16,7 +16,7 @@ let _collection: vscode.DiagnosticCollection | undefined;
  */
 export function getDiagnosticCollection(): vscode.DiagnosticCollection {
   if (!_collection) {
-    _collection = vscode.languages.createDiagnosticCollection("tf-tools");
+    _collection = vscode.languages.createDiagnosticCollection("tbench");
   }
   return _collection;
 }
@@ -37,7 +37,7 @@ export function publishDiagnostics(
         ? vscode.DiagnosticSeverity.Error
         : vscode.DiagnosticSeverity.Warning;
     const diagnostic = new vscode.Diagnostic(range, issue.message, severity);
-    diagnostic.source = "tf-tools";
+    diagnostic.source = "tbench";
     diagnostic.code = issue.code;
     return diagnostic;
   });
@@ -129,7 +129,7 @@ export function handleRepositoryConfigurationDiagnostics(
       issue.message,
       vscode.DiagnosticSeverity.Error
     );
-    diagnostic.source = "tf-tools";
+    diagnostic.source = "tbench";
     diagnostic.code = issue.code;
     return diagnostic;
   });

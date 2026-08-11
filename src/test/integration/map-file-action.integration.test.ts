@@ -2,7 +2,7 @@
  * Integration tests for the Map File open action.
  *
  * Covers:
- *  - tfTools.openMapFile command is registered after activation
+ *  - tbench.openMapFile command is registered after activation
  *  - openMapFile is excluded from the Command Palette (when: "false")
  *  - openMapFile view/item/context entry targets artifact-map rows
  *  - openMapFile resolves without throwing when called in an unsupported-workspace state
@@ -20,14 +20,14 @@ import { openMapFile } from "../../commands/artifact-actions";
 // ---------------------------------------------------------------------------
 
 async function activateExtension(): Promise<boolean> {
-  const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+  const ext = vscode.extensions.getExtension("cepetr.tbench");
   if (!ext) { return false; }
   if (!ext.isActive) { await ext.activate(); }
   return ext.isActive;
 }
 
 function getExtPackageJson(): Record<string, unknown> | undefined {
-  const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+  const ext = vscode.extensions.getExtension("cepetr.tbench");
   return ext?.packageJSON as Record<string, unknown> | undefined;
 }
 
@@ -36,24 +36,24 @@ function getExtPackageJson(): Record<string, unknown> | undefined {
 // ---------------------------------------------------------------------------
 
 suite("Map File Action – command registration", () => {
-  test("tfTools.openMapFile is registered as a VS Code command", async () => {
+  test("tbench.openMapFile is registered as a VS Code command", async () => {
     await activateExtension();
     const cmds = await vscode.commands.getCommands(false);
     assert.ok(
-      cmds.includes("tfTools.openMapFile"),
-      "expected 'tfTools.openMapFile' to be registered in VS Code commands"
+      cmds.includes("tbench.openMapFile"),
+      "expected 'tbench.openMapFile' to be registered in VS Code commands"
     );
   });
 
-  test("executing tfTools.openMapFile in missing-artifact state resolves without throwing", async () => {
+  test("executing tbench.openMapFile in missing-artifact state resolves without throwing", async () => {
     await activateExtension();
     let threw = false;
     try {
-      await vscode.commands.executeCommand("tfTools.openMapFile");
+      await vscode.commands.executeCommand("tbench.openMapFile");
     } catch {
       threw = true;
     }
-    assert.strictEqual(threw, false, "tfTools.openMapFile must not throw");
+    assert.strictEqual(threw, false, "tbench.openMapFile must not throw");
   });
 });
 
@@ -62,7 +62,7 @@ suite("Map File Action – command registration", () => {
 // ---------------------------------------------------------------------------
 
 suite("Map File Action – Command Palette exclusion", () => {
-  test("commandPalette entry for tfTools.openMapFile has when: false", () => {
+  test("commandPalette entry for tbench.openMapFile has when: false", () => {
     const pkg = getExtPackageJson();
     if (!pkg) { return; }
     const menus = pkg.contributes as { menus: Record<string, unknown[]> };
@@ -70,8 +70,8 @@ suite("Map File Action – Command Palette exclusion", () => {
       command: string;
       when?: string;
     }>;
-    const entry = paletteEntries.find((e) => e.command === "tfTools.openMapFile");
-    assert.ok(entry, "expected commandPalette entry for tfTools.openMapFile");
+    const entry = paletteEntries.find((e) => e.command === "tbench.openMapFile");
+    assert.ok(entry, "expected commandPalette entry for tbench.openMapFile");
     assert.strictEqual(
       entry.when,
       "false",
@@ -94,7 +94,7 @@ suite("Map File Action – view/item/context registration", () => {
       when?: string;
     }>;
     const mapEntry = contextEntries.find(
-      (e) => e.command === "tfTools.openMapFile" && e.when?.includes("artifact-map")
+      (e) => e.command === "tbench.openMapFile" && e.when?.includes("artifact-map")
     );
     assert.ok(mapEntry, "expected openMapFile entry for artifact-map rows");
   });

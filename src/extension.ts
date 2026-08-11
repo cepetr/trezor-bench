@@ -99,8 +99,8 @@ import { executeDebugLaunch } from "./commands/debug-launch";
 import { logDebugLaunchFailure } from "./observability/log-channel";
 import { EvalContext } from "./manifest/when-expressions";
 import {
-  TfToolsDebugConfigurationProvider,
-  TFTOOLS_DEBUG_TYPE,
+  TbenchDebugConfigurationProvider,
+  TBENCH_DEBUG_TYPE,
 } from "./debug/run-debug-provider";
 
 let _manifestService: ManifestService | undefined;
@@ -108,7 +108,7 @@ let _presetService: PresetService | undefined;
 let _presetState: PresetState | undefined;
 let _presetEffectiveValues: ReadonlyMap<string, PresetEffectiveValue> = new Map();
 /**
- * Backs the `tfTools.presetBlocked` context key (an absent shared
+ * Backs the `tbench.presetBlocked` context key (an absent shared
  * `presets.toml`, file-level invalidity, or any available-option mismatch).
  */
 let _presetBlocked = false;
@@ -181,33 +181,33 @@ export function isSuccessfulArtifactRefreshTaskProcess(
 // Any attempt to register them here is a scope violation.
 //
 // Allowed commands:
-//   tfTools.showLogs              — reveal the output channel
-//   tfTools.build                 — launch Build task
-//   tfTools.clippy                — launch Clippy task
-//   tfTools.check                 — launch Check task
-//   tfTools.clean                 — launch Clean task
-//   tfTools.refreshIntelliSense   — manual IntelliSense refresh
-//   tfTools.flash                 — launch Flash task (Flash/Upload slice)
-//   tfTools.upload                — launch Upload task (Flash/Upload slice)
-//   tfTools.openMapFile           — open resolved map file (Flash/Upload slice)
-//   tfTools.startDebugging        — launch debug session (Debug Launch slice)
+//   tbench.showLogs              — reveal the output channel
+//   tbench.build                 — launch Build task
+//   tbench.clippy                — launch Clippy task
+//   tbench.check                 — launch Check task
+//   tbench.clean                 — launch Clean task
+//   tbench.refreshIntelliSense   — manual IntelliSense refresh
+//   tbench.flash                 — launch Flash task (Flash/Upload slice)
+//   tbench.upload                — launch Upload task (Flash/Upload slice)
+//   tbench.openMapFile           — open resolved map file (Flash/Upload slice)
+//   tbench.startDebugging        — launch debug session (Debug Launch slice)
 // ---------------------------------------------------------------------------
 
 const ALLOWED_CONTRIBUTION_COMMANDS = new Set([
-  "tfTools.showLogs",
-  "tfTools.build",
-  "tfTools.clippy",
-  "tfTools.check",
-  "tfTools.clean",
-  "tfTools.refreshIntelliSense",
-  "tfTools.flash",
-  "tfTools.upload",
-  "tfTools.openMapFile",
-  "tfTools.startDebugging",
+  "tbench.showLogs",
+  "tbench.build",
+  "tbench.clippy",
+  "tbench.check",
+  "tbench.clean",
+  "tbench.refreshIntelliSense",
+  "tbench.flash",
+  "tbench.upload",
+  "tbench.openMapFile",
+  "tbench.startDebugging",
 ]);
 
 /**
- * Development-time guard: verifies that no unauthorized tfTools commands are
+ * Development-time guard: verifies that no unauthorized tbench commands are
  * contributed during activation. Throws in development mode if a violation is
  * detected; logs a warning in production.
  */
@@ -220,12 +220,12 @@ function assertNoUnauthorizedContributions(
     ) ?? [];
 
   const unauthorized = contributed
-    .filter((cmd: string) => cmd.startsWith("tfTools."))
+    .filter((cmd: string) => cmd.startsWith("tbench."))
     .filter((cmd: string) => !ALLOWED_CONTRIBUTION_COMMANDS.has(cmd));
 
   if (unauthorized.length > 0) {
     const msg =
-      `Trezor Firmware Tools scope violation: ` +
+      `Trezor Bench scope violation: ` +
       `unauthorized commands found in package.json: ${unauthorized.join(", ")}`;
     void vscode.window.showWarningMessage(msg);
   }
@@ -270,7 +270,7 @@ async function refreshPresetsAndActiveConfig(
     _presetEffectiveValues = new Map();
     _presetBlocked = false;
     _presetsUnavailable = false;
-    vscode.commands.executeCommand("setContext", "tfTools.presetBlocked", false);
+    vscode.commands.executeCommand("setContext", "tbench.presetBlocked", false);
     _treeProvider?.updatePresets(_presetState, undefined, []);
     return;
   }
@@ -349,14 +349,14 @@ async function refreshPresetsAndActiveConfig(
     _presetsUnavailable ||
     currentPresetState?.status === "invalid" ||
     _resolvedOptions.some((r) => r.available && r.presetState === "mismatch");
-  vscode.commands.executeCommand("setContext", "tfTools.presetBlocked", _presetBlocked);
+  vscode.commands.executeCommand("setContext", "tbench.presetBlocked", _presetBlocked);
 
   _treeProvider?.update(loaded, normalizedConfig, _resolvedOptions);
   _treeProvider?.updatePresets(currentPresetState, newPresetId, choices);
 }
 
 /**
- * Updates the `tfTools.workflowBlocked` VS Code context key so that
+ * Updates the `tbench.workflowBlocked` VS Code context key so that
  * view/title menu `enablement` clauses reflect the current state.
  */
 function updateWorkflowBlockedContext(state: ManifestState): void {
@@ -367,7 +367,7 @@ function updateWorkflowBlockedContext(state: ManifestState): void {
       hasWorkflowBlockingIssues: loaded?.hasWorkflowBlockingIssues ?? false,
       workspaceSupported: isWorkflowWorkspaceSupported(),
     }) !== "no-block";
-  vscode.commands.executeCommand("setContext", "tfTools.workflowBlocked", blocked);
+  vscode.commands.executeCommand("setContext", "tbench.workflowBlocked", blocked);
 }
 
 /**
@@ -383,10 +383,10 @@ function updateArtifactActionContext(
   if (state.status !== "loaded" || !config) {
     _binaryArtifact = undefined;
     _mapArtifact = undefined;
-    vscode.commands.executeCommand("setContext", "tfTools.flashApplicable", false);
-    vscode.commands.executeCommand("setContext", "tfTools.uploadApplicable", false);
-    vscode.commands.executeCommand("setContext", "tfTools.binaryExists", false);
-    vscode.commands.executeCommand("setContext", "tfTools.mapExists", false);
+    vscode.commands.executeCommand("setContext", "tbench.flashApplicable", false);
+    vscode.commands.executeCommand("setContext", "tbench.uploadApplicable", false);
+    vscode.commands.executeCommand("setContext", "tbench.binaryExists", false);
+    vscode.commands.executeCommand("setContext", "tbench.mapExists", false);
     return;
   }
 
@@ -422,14 +422,14 @@ function updateArtifactActionContext(
     _treeProvider?.updateMapArtifact(null, workspaceFolder);
   }
 
-  vscode.commands.executeCommand("setContext", "tfTools.flashApplicable", flashApplicable);
-  vscode.commands.executeCommand("setContext", "tfTools.uploadApplicable", uploadApplicable);
-  vscode.commands.executeCommand("setContext", "tfTools.binaryExists", binaryExists);
-  vscode.commands.executeCommand("setContext", "tfTools.mapExists", mapExists);
+  vscode.commands.executeCommand("setContext", "tbench.flashApplicable", flashApplicable);
+  vscode.commands.executeCommand("setContext", "tbench.uploadApplicable", uploadApplicable);
+  vscode.commands.executeCommand("setContext", "tbench.binaryExists", binaryExists);
+  vscode.commands.executeCommand("setContext", "tbench.mapExists", mapExists);
 }
 
 /**
- * Updates the `tfTools.startDebuggingEnabled` VS Code context key based on the
+ * Updates the `tbench.startDebuggingEnabled` VS Code context key based on the
  * current manifest state, active configuration, and executable artifact status.
  */
 function updateDebugContext(
@@ -438,7 +438,7 @@ function updateDebugContext(
   artifactsRoot: string
 ): void {
   if (state.status !== "loaded" || !config) {
-    vscode.commands.executeCommand("setContext", "tfTools.startDebuggingEnabled", false);
+    vscode.commands.executeCommand("setContext", "tbench.startDebuggingEnabled", false);
     _treeProvider?.updateExecutableArtifact(null);
     return;
   }
@@ -446,7 +446,7 @@ function updateDebugContext(
   const loaded = state as ManifestStateLoaded;
   const artifact = resolveActiveExecutableArtifact(loaded, config, artifactsRoot);
   const enabled = artifact.status === "valid";
-  vscode.commands.executeCommand("setContext", "tfTools.startDebuggingEnabled", enabled);
+  vscode.commands.executeCommand("setContext", "tbench.startDebuggingEnabled", enabled);
   _treeProvider?.updateExecutableArtifact(artifact);
 }
 
@@ -475,12 +475,12 @@ function registerUnsupportedWorkspaceCommands(
     });
 
   const registerBlockedWorkflow = (kind: WorkflowKind): vscode.Disposable =>
-    vscode.commands.registerCommand(`tfTools.${kind.toLowerCase()}`, async () => {
+    vscode.commands.registerCommand(`tbench.${kind.toLowerCase()}`, async () => {
       reportWorkflowBlocked(kind, "workspace-unsupported");
     });
 
   const registerBlockedArtifact = (
-    command: "tfTools.flash" | "tfTools.upload",
+    command: "tbench.flash" | "tbench.upload",
     kind: "flash" | "upload"
   ): vscode.Disposable =>
     vscode.commands.registerCommand(command, async () => {
@@ -488,20 +488,20 @@ function registerUnsupportedWorkspaceCommands(
     });
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("tfTools.showLogs", () => {
+    vscode.commands.registerCommand("tbench.showLogs", () => {
       revealLogs();
     }),
-    vscode.commands.registerCommand("tfTools.refreshIntelliSense", async () => {
+    vscode.commands.registerCommand("tbench.refreshIntelliSense", async () => {
       return;
     }),
     registerBlockedWorkflow("Build"),
     registerBlockedWorkflow("Clippy"),
     registerBlockedWorkflow("Check"),
     registerBlockedWorkflow("Clean"),
-    registerBlockedArtifact("tfTools.flash", "flash"),
-    registerBlockedArtifact("tfTools.upload", "upload"),
-    registerNoop("tfTools.openMapFile"),
-    vscode.commands.registerCommand("tfTools.startDebugging", () => {
+    registerBlockedArtifact("tbench.flash", "flash"),
+    registerBlockedArtifact("tbench.upload", "upload"),
+    registerNoop("tbench.openMapFile"),
+    vscode.commands.registerCommand("tbench.startDebugging", () => {
       logDebugLaunchFailure("unsupported-workspace", {
         detail: "workspace is not supported",
       });
@@ -510,12 +510,12 @@ function registerUnsupportedWorkspaceCommands(
         "Cannot start debugging: workspace is not supported."
       );
     }),
-    registerNoop("tfTools.selectModel"),
-    registerNoop("tfTools.selectTarget"),
-    registerNoop("tfTools.selectComponent"),
-    registerNoop("tfTools.selectPreset"),
-    registerNoop("tfTools.toggleBuildOption"),
-    registerNoop("tfTools.selectBuildOptionState")
+    registerNoop("tbench.selectModel"),
+    registerNoop("tbench.selectTarget"),
+    registerNoop("tbench.selectComponent"),
+    registerNoop("tbench.selectPreset"),
+    registerNoop("tbench.toggleBuildOption"),
+    registerNoop("tbench.selectBuildOptionState")
   );
 }
 
@@ -528,15 +528,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Always register the tree provider so VS Code never shows
   // "no data provider registered" when the activity bar is clicked.
   _treeProvider = new ConfigurationTreeProvider();
-  _configurationTreeView = vscode.window.createTreeView("tfTools.configuration", {
+  _configurationTreeView = vscode.window.createTreeView("tbench.configuration", {
     treeDataProvider: new PaneTreeProvider(_treeProvider, "build-selection"),
     showCollapseAll: false,
   });
-  _buildArtifactsTreeView = vscode.window.createTreeView("tfTools.buildArtifacts", {
+  _buildArtifactsTreeView = vscode.window.createTreeView("tbench.buildArtifacts", {
     treeDataProvider: new PaneTreeProvider(_treeProvider, "build-artifacts"),
     showCollapseAll: false,
   });
-  _buildOptionsTreeView = vscode.window.createTreeView("tfTools.buildOptions", {
+  _buildOptionsTreeView = vscode.window.createTreeView("tbench.buildOptions", {
     treeDataProvider: new PaneTreeProvider(_treeProvider, "build-options"),
     showCollapseAll: false,
   });
@@ -595,10 +595,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     registerUnsupportedWorkspaceCommands(context);
     // Extension activated without a workspace — show a visible warning and bail.
     const noWorkspaceMsg =
-      "Trezor Firmware Tools requires an open workspace folder.";
+      "Trezor Bench requires an open workspace folder.";
     logWarning(noWorkspaceMsg);
     // Mark workflow as blocked (workspace unsupported) so header actions are disabled.
-    vscode.commands.executeCommand("setContext", "tfTools.workflowBlocked", true);
+    vscode.commands.executeCommand("setContext", "tbench.workflowBlocked", true);
     return;
   }
 
@@ -732,7 +732,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         _lastShownProviderFixState = "wrong-provider";
         vscode.window.showWarningMessage(
           readiness.lastWarningMessage ??
-            "IntelliSense: another C/C++ configuration provider is active. Switch to Trezor Firmware Tools?",
+            "IntelliSense: another C/C++ configuration provider is active. Switch to Trezor Bench?",
           "Fix"
         ).then((selection) => {
           if (selection === "Fix") {
@@ -755,14 +755,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Watch remaining VS Code settings that still control user-local behavior.
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration("tfTools.showConfigurationInStatusBar", workspaceFolder.uri)) {
+      if (e.affectsConfiguration("tbench.showConfigurationInStatusBar", workspaceFolder.uri)) {
         refreshStatusBar();
       }
       if (
-        e.affectsConfiguration("tfTools.excludedFiles.grayInTree", workspaceFolder.uri) ||
-        e.affectsConfiguration("tfTools.excludedFiles.showEditorOverlay", workspaceFolder.uri) ||
-        e.affectsConfiguration("tfTools.excludedFiles.fileNamePatterns", workspaceFolder.uri) ||
-        e.affectsConfiguration("tfTools.excludedFiles.folderGlobs", workspaceFolder.uri)
+        e.affectsConfiguration("tbench.excludedFiles.grayInTree", workspaceFolder.uri) ||
+        e.affectsConfiguration("tbench.excludedFiles.showEditorOverlay", workspaceFolder.uri) ||
+        e.affectsConfiguration("tbench.excludedFiles.fileNamePatterns", workspaceFolder.uri) ||
+        e.affectsConfiguration("tbench.excludedFiles.folderGlobs", workspaceFolder.uri)
       ) {
         _intelliSenseService?.scheduleRefresh("excluded-files-setting-change");
       }
@@ -830,21 +830,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- Commands ---
   context.subscriptions.push(
-    vscode.commands.registerCommand("tfTools.showLogs", () => {
+    vscode.commands.registerCommand("tbench.showLogs", () => {
       revealLogs();
     })
   );
 
   // --- Refresh IntelliSense command. ---
   context.subscriptions.push(
-    vscode.commands.registerCommand("tfTools.refreshIntelliSense", () => {
+    vscode.commands.registerCommand("tbench.refreshIntelliSense", () => {
       _intelliSenseService?.scheduleRefresh("manual-refresh");
     })
   );
 
   // --- Flash command. ---
   context.subscriptions.push(
-    vscode.commands.registerCommand("tfTools.flash", async () => {
+    vscode.commands.registerCommand("tbench.flash", async () => {
       const state = _manifestState;
       const config = _activeConfig;
       const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
@@ -875,7 +875,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- Upload command. ---
   context.subscriptions.push(
-    vscode.commands.registerCommand("tfTools.upload", async () => {
+    vscode.commands.registerCommand("tbench.upload", async () => {
       const state = _manifestState;
       const config = _activeConfig;
       const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
@@ -906,7 +906,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- startDebugging command (Debug Launch slice) ---
   context.subscriptions.push(
-    vscode.commands.registerCommand("tfTools.startDebugging", async () => {
+    vscode.commands.registerCommand("tbench.startDebugging", async () => {
       const state = _manifestState;
       const config = _activeConfig;
       const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
@@ -923,7 +923,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   // --- Run and Debug provider (Run and Debug Integration slice) ---
-  const debugConfigProvider = new TfToolsDebugConfigurationProvider(
+  const debugConfigProvider = new TbenchDebugConfigurationProvider(
     () => _manifestState?.status === "loaded" ? (_manifestState as ManifestStateLoaded) : undefined,
     () => _activeConfig,
     () => resolveArtifactsPath(workspaceFolder),
@@ -932,7 +932,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
   _debugConfigProviderRegistration?.dispose();
   _debugConfigProviderRegistration = vscode.debug.registerDebugConfigurationProvider(
-    TFTOOLS_DEBUG_TYPE,
+    TBENCH_DEBUG_TYPE,
     debugConfigProvider,
     vscode.DebugConfigurationProviderTriggerKind.Dynamic
   );
@@ -940,7 +940,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- openMapFile command, scoped to the artifact row. ---
   context.subscriptions.push(
-    vscode.commands.registerCommand("tfTools.openMapFile", async () => {
+    vscode.commands.registerCommand("tbench.openMapFile", async () => {
       const mapArtifact = _mapArtifact;
       if (!mapArtifact?.exists) {
         // Action is disabled in the UI when the map file is missing;
@@ -962,7 +962,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Each selection also re-normalizes the active preset against the new
   // build context (FR-009), via refreshPresetsAndActiveConfig.
   context.subscriptions.push(
-    vscode.commands.registerCommand("tfTools.selectModel", async (modelId: string) => {
+    vscode.commands.registerCommand("tbench.selectModel", async (modelId: string) => {
       const state = _manifestState;
       if (!state || state.status !== "loaded") { return; }
       await selectModel(context, modelId, state);
@@ -975,7 +975,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("tfTools.selectTarget", async (targetId: string) => {
+    vscode.commands.registerCommand("tbench.selectTarget", async (targetId: string) => {
       const state = _manifestState;
       if (!state || state.status !== "loaded") { return; }
       await selectTarget(context, targetId, state);
@@ -988,7 +988,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("tfTools.selectComponent", async (componentId: string) => {
+    vscode.commands.registerCommand("tbench.selectComponent", async (componentId: string) => {
       const state = _manifestState;
       if (!state || state.status !== "loaded") { return; }
       await selectComponent(context, componentId, state);
@@ -1003,7 +1003,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Preset selector command (feature 009). Not a contributed command —
   // invoked only through the Preset selector's tree-item command binding. ---
   context.subscriptions.push(
-    vscode.commands.registerCommand("tfTools.selectPreset", async (presetId: string) => {
+    vscode.commands.registerCommand("tbench.selectPreset", async (presetId: string) => {
       const state = _manifestState;
       if (!state || state.status !== "loaded") { return; }
       await selectPreset(context, presetId, state);
@@ -1020,7 +1020,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // arguments (FR-020, research Decision 13); Clean is exempt from preset
   // blocking entirely (FR-025, research Decision 11).
   const registerWorkflowCommand = (kind: WorkflowKind): vscode.Disposable =>
-    vscode.commands.registerCommand(`tfTools.${kind.toLowerCase()}`, async () => {
+    vscode.commands.registerCommand(`tbench.${kind.toLowerCase()}`, async () => {
       if (kind !== "Clean") {
         await _presetService?.reload();
         await refreshPresetsAndActiveConfig(context);
@@ -1064,7 +1064,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- Build-option toggle/select commands. ---
   context.subscriptions.push(
-    vscode.commands.registerCommand("tfTools.toggleBuildOption", async (key: string) => {
+    vscode.commands.registerCommand("tbench.toggleBuildOption", async (key: string) => {
       const resolved = _resolvedOptions.find((r) => r.option.key === key);
       if (!resolved || !resolved.available || resolved.option.kind !== "checkbox") {
         return;
@@ -1081,7 +1081,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "tfTools.selectBuildOptionState",
+      "tbench.selectBuildOptionState",
       async (key: string, stateId: string) => {
         const resolved = _resolvedOptions.find((r) => r.option.key === key);
         if (!resolved || !resolved.available || resolved.option.kind !== "multistate") {
@@ -1152,10 +1152,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _intelliSenseService?.setManifest(undefined);
       _intelliSenseService?.setActiveConfig(undefined);
       _intelliSenseService?.setArtifactsRoot("");
-      void vscode.commands.executeCommand("setContext", "tfTools.workflowBlocked", true);
+      void vscode.commands.executeCommand("setContext", "tbench.workflowBlocked", true);
       if (!repositoryConfigurationWasInvalid) {
         repositoryConfigurationWasInvalid = true;
-        vscode.window.showErrorMessage("Trezor Firmware Tools: tf-tools.toml is invalid. Check the Problems view.");
+        vscode.window.showErrorMessage("Trezor Bench: tbench.toml is invalid. Check the Problems view.");
       }
       return;
     }

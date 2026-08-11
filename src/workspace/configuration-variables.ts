@@ -9,7 +9,7 @@ const VARIABLE_RE = /\$\{([^}:]+)(?::([^}]*))?\}/g;
  * Resolves VS Code variable references in a configuration string.
  *
  * VS Code does not expand variables returned by `WorkspaceConfiguration.get()`.
- * This helper implements the subset used by tf-tools settings:
+ * This helper implements the subset used by tbench settings:
  * workspace folder, environment, config, user home, and cwd.
  *
  * Unrecognized or context-dependent variables are left unchanged. Replacement

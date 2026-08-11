@@ -12,7 +12,7 @@ import * as vscode from "vscode";
 function makeManifest(overrides?: Partial<ManifestStateLoaded>): ManifestStateLoaded {
   return {
     status: "loaded",
-    manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+    manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
     models: [
       { kind: "model", id: "T2T1", name: "Trezor Model T" },
       { kind: "model", id: "T3W1", name: "Trezor Model T3" },

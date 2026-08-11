@@ -861,7 +861,7 @@ function validateBuildOptionStates(
 // ---------------------------------------------------------------------------
 
 /**
- * Parses `source` as a tf-tools manifest YAML document and validates its
+ * Parses `source` as a tbench manifest YAML document and validates its
  * structure. Returns the parsed collections and any validation issues found.
  *
  * This function does not perform I/O; pass the file contents as a string.

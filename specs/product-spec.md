@@ -1,11 +1,11 @@
-# Product Specification: Trezor Firmware Tools
+# Product Specification: Trezor Bench
 
 **Status**: Draft baseline
 **Last Updated**: 2026-06-23
 
 ## Purpose
 
-This document is the active product-level specification for Trezor Firmware Tools.
+This document is the active product-level specification for Trezor Bench.
 It describes the product as it exists for users and workspace maintainers, without relying on the historical 001-006 delivery slices.
 
 ## Product Summary
@@ -31,12 +31,12 @@ The extension does not define or manage the repository's build system itself. It
 
 ## Core Capabilities
 
-The extension's main configuration surface is the `Trezor Firmware Tools` activity-bar container, which holds three sibling tree-view panes: `Build Selection`, `Build Artifacts`, and `Build Options`, each with its own header and divider.
+The extension's main configuration surface is the `Trezor Bench` activity-bar container, which holds three sibling tree-view panes: `Build Selection`, `Build Artifacts`, and `Build Options`, each with its own header and divider.
 
 At a high level, the three panes are organized like this:
 
 ```text
-Trezor Firmware Tools
+Trezor Bench
 ├── Build Selection
 │   ├── Model
 │   ├── Target
@@ -221,10 +221,10 @@ If invocation is attempted without a valid map-file path, the action returns wit
 
 ## Configuration View Iconography
 
-The `Trezor Firmware Tools` activity-bar container and all three of its panes (`Build Selection`, `Build Artifacts`, `Build Options`) use the shared SVG icon asset from `images/tf-tools.svg` as their identifying icon. This is distinct from the extension package logo asset.
+The `Trezor Bench` activity-bar container and all three of its panes (`Build Selection`, `Build Artifacts`, `Build Options`) use the shared SVG icon asset from `images/tbench.svg` as their identifying icon. This is distinct from the extension package logo asset.
 
-- Activity-bar container icon: `images/tf-tools.svg`
-- Pane icons: `images/tf-tools.svg` for each of `Build Selection`, `Build Artifacts`, and `Build Options`
+- Activity-bar container icon: `images/tbench.svg`
+- Pane icons: `images/tbench.svg` for each of `Build Selection`, `Build Artifacts`, and `Build Options`
 - `Build Selection` selector icons: `circuit-board` for `Model`, `target` for `Target`, `extensions` for `Component`, `layers` for `Preset`
 - Active selector-choice icon: `check`
 - Inactive selector-choice spacer: `images/blank-tree-icon.svg`
@@ -278,19 +278,19 @@ The status bar item is shown only when all of these conditions are true:
 
 - the manifest is loaded successfully
 - the active build context resolves to current manifest entries
-- `tfTools.showConfigurationInStatusBar` is enabled
+- `tbench.showConfigurationInStatusBar` is enabled
 
 If any of these conditions stops being true, the status bar item is hidden rather than shown with stale or partial information.
 
 ### Interaction
 
-The status bar entry is not only informational. Selecting it opens the `Trezor Firmware Tools` container, expands `Build Selection` if it is collapsed, and focuses it, so the user can move directly from the compact summary to the full build-selection and build-option surface.
+The status bar entry is not only informational. Selecting it opens the `Trezor Bench` container, expands `Build Selection` if it is collapsed, and focuses it, so the user can move directly from the compact summary to the full build-selection and build-option surface.
 
 ### Refresh Behavior
 
 The status bar stays aligned with the same active build context and manifest state described in `Startup And Refresh Behavior`.
 
-It is refreshed when the active build context changes, when manifest reload changes the resolved selection labels, and when `tfTools.showConfigurationInStatusBar` is toggled.
+It is refreshed when the active build context changes, when manifest reload changes the resolved selection labels, and when `tbench.showConfigurationInStatusBar` is toggled.
 
 ## IntelliSense
 
@@ -313,26 +313,26 @@ When IntelliSense refresh runs and the active compile-commands artifact is avail
 
 The extension supports two IntelliSense backends and selects one automatically:
 
-- **Microsoft C/C++ (`cpptools`)** is preferred. It is used when the installed `ms-vscode.cpptools` extension exposes the supported custom-configuration API and the workspace `C_Cpp.default.configurationProvider` setting points to `cepetr.tf-tools`. In this mode the parsed compile database is pushed to cpptools through its custom configuration provider.
+- **Microsoft C/C++ (`cpptools`)** is preferred. It is used when the installed `ms-vscode.cpptools` extension exposes the supported custom-configuration API and the workspace `C_Cpp.default.configurationProvider` setting points to `cepetr.tbench`. In this mode the parsed compile database is pushed to cpptools through its custom configuration provider.
 - **clangd (`llvm-vs-code-extensions.vscode-clangd`)** is used as a fallback when cpptools cannot be used — either because the Microsoft C/C++ extension is not installed (as in editors such as Cursor, which provide C/C++ support through clangd instead) or because an installed Microsoft C/C++ extension does not expose the supported custom-configuration API — and the clangd extension is installed. In this mode the extension points clangd at the active compile database rather than pushing per-file configuration.
 
 When cpptools is installed but a different configuration provider is active, the extension treats this as a misconfiguration to be fixed and does not silently fall back to clangd.
 
 When the clangd backend is active, the extension makes the active compile database discoverable to clangd without requiring manual setup:
 
-- it maintains a managed compile database at `.tf-tools/compile_commands.json` in the workspace root as a link to the active compile-commands artifact, and retargets that link whenever the active build context changes;
-- it ensures the workspace `.clangd` configuration points clangd at the `.tf-tools` directory. If no `.clangd` file exists, the extension creates one it owns and marks it as managed by Trezor Firmware Tools. If a `.clangd` file already exists without the managed marker and without a matching `CompilationDatabase` entry, the extension does not modify it and instead logs a warning that clangd may not discover the managed compile database;
+- it maintains a managed compile database at `.tbench/compile_commands.json` in the workspace root as a link to the active compile-commands artifact, and retargets that link whenever the active build context changes;
+- it ensures the workspace `.clangd` configuration points clangd at the `.tbench` directory. If no `.clangd` file exists, the extension creates one it owns and marks it as managed by Trezor Bench. If a `.clangd` file already exists without the managed marker and without a matching `CompilationDatabase` entry, the extension does not modify it and instead logs a warning that clangd may not discover the managed compile database;
 - it restarts the clangd language server after applying or clearing the managed compile database so clangd reloads the current configuration.
 
-The managed `.tf-tools/compile_commands.json` link and the managed `.clangd` file are generated workspace-local artifacts rather than authored configuration, so they are not intended for version control.
+The managed `.tbench/compile_commands.json` link and the managed `.clangd` file are generated workspace-local artifacts rather than authored configuration, so they are not intended for version control.
 
-The extension does not intentionally keep using a stale compile database from another build context. If the expected active artifact is unavailable, it clears the previously applied IntelliSense state instead of silently reusing a different artifact. For the clangd backend, clearing removes the managed `.tf-tools/compile_commands.json` link and restarts clangd.
+The extension does not intentionally keep using a stale compile database from another build context. If the expected active artifact is unavailable, it clears the previously applied IntelliSense state instead of silently reusing a different artifact. For the clangd backend, clearing removes the managed `.tbench/compile_commands.json` link and restarts clangd.
 
 ### Excluded-File Visibility
 
 The same active compile database is also used to determine whether a file belongs to the active build configuration.
 
-Files outside the active compile database can be marked as excluded when they also match the excluded-file scope configured through `tfTools.excludedFiles.fileNamePatterns` and `tfTools.excludedFiles.folderGlobs`.
+Files outside the active compile database can be marked as excluded when they also match the excluded-file scope configured through `tbench.excludedFiles.fileNamePatterns` and `tbench.excludedFiles.folderGlobs`.
 
 The excluded-file scope follows these rules:
 
@@ -346,8 +346,8 @@ The excluded-file scope follows these rules:
 When a file is marked excluded:
 
 - the VS Code Explorer shows an exclusion badge
-- the Explorer can also gray the file when `tfTools.excludedFiles.grayInTree` is enabled
-- open editors can show a first-line warning overlay when `tfTools.excludedFiles.showEditorOverlay` is enabled
+- the Explorer can also gray the file when `tbench.excludedFiles.grayInTree` is enabled
+- open editors can show a first-line warning overlay when `tbench.excludedFiles.showEditorOverlay` is enabled
 
 These indicators explain that the file is not included in the active build configuration.
 
@@ -369,18 +369,18 @@ When excluded-file input data becomes unavailable, excluded-file badges and over
 
 ## Extension Configuration
 
-Repository-dependent paths are committed in an optional root-level `tf-tools.toml`; VS Code settings under the `tfTools` namespace remain only for user- or workspace-local task environment and UI behavior. This binds repository layout to the checked-in repository state rather than to each contributor's editor configuration.
+Repository-dependent paths are committed in an optional root-level `tbench.toml`; VS Code settings under the `tbench` namespace remain only for user- or workspace-local task environment and UI behavior. This binds repository layout to the checked-in repository state rather than to each contributor's editor configuration.
 
 At a high level, configuration falls into four groups:
 
-- **Repository paths**: The root-level `tf-tools.toml` controls where the extension looks for the manifest file, cargo workspace, build artifacts, debug templates, and preset inputs.
+- **Repository paths**: The root-level `tbench.toml` controls where the extension looks for the manifest file, cargo workspace, build artifacts, debug templates, and preset inputs.
 - **Task environment**: A VS Code setting controls extra environment variables merged into workflow task processes.
 - **Visibility settings**: VS Code settings control whether the active build context is shown in the status bar and how excluded files are marked in the Explorer and editors.
 - **Excluded-file scope settings**: VS Code settings control which files are eligible to be marked as excluded from the active build configuration.
 
 ### Configuration Variable References
 
-String values in tf-tools resource-scoped settings support a subset of VS Code variable references from the editor variables reference. VS Code does not expand these references when settings are read through the Extension API, so the extension resolves them when consuming affected settings.
+String values in tbench resource-scoped settings support a subset of VS Code variable references from the editor variables reference. VS Code does not expand these references when settings are read through the Extension API, so the extension resolves them when consuming affected settings.
 
 Supported references include:
 
@@ -394,11 +394,11 @@ Other VS Code variable forms are left unchanged, including editor, selection, co
 
 Variable substitution is single-pass. Substituted values are not re-expanded.
 
-This applies to `tfTools.taskExtraEnv` and excluded-file glob settings. Repository paths do not support configuration variable references.
+This applies to `tbench.taskExtraEnv` and excluded-file glob settings. Repository paths do not support configuration variable references.
 
 ### Repository Path Configuration
 
-The extension reads the optional `tf-tools.toml` only from the workspace root of a supported single-root workspace. Its `[paths]` table can define the following string entries:
+The extension reads the optional `tbench.toml` only from the workspace root of a supported single-root workspace. Its `[paths]` table can define the following string entries:
 
 - `cargo-workspace`: default `core/embed`; the cargo workspace used for build-related tasks. An empty value uses the workspace root.
 - `debug-templates`: default `core/embed/xtask/tf-tools/debug`; the directory containing debug template files. An empty value uses the built-in default.
@@ -410,18 +410,18 @@ Each relative value is resolved from the workspace root, while each absolute val
 
 ### Task Environment Settings
 
-- `tfTools.taskExtraEnv`: object with string keys and string values, default `{}`. Extra environment variables merged into tf-tools workflow task processes on top of the VS Code session environment. Applies to `Build`, `Clippy`, `Check`, `Clean`, `Flash to Device`, and `Upload to Device` tasks launched by the extension. Keys and values support configuration variable references as described above. Non-object values and non-string entries are ignored.
+- `tbench.taskExtraEnv`: object with string keys and string values, default `{}`. Extra environment variables merged into tbench workflow task processes on top of the VS Code session environment. Applies to `Build`, `Clippy`, `Check`, `Clean`, `Flash to Device`, and `Upload to Device` tasks launched by the extension. Keys and values support configuration variable references as described above. Non-object values and non-string entries are ignored.
 
 ### Visibility Settings
 
-- `tfTools.showConfigurationInStatusBar`: boolean, default `true`. Controls whether the active build configuration is shown in the VS Code status bar.
-- `tfTools.excludedFiles.grayInTree`: boolean, default `true`. Controls whether excluded files are grayed in the Explorer in addition to showing an exclusion badge.
-- `tfTools.excludedFiles.showEditorOverlay`: boolean, default `true`. Controls whether excluded files show a warning overlay in the editor.
+- `tbench.showConfigurationInStatusBar`: boolean, default `true`. Controls whether the active build configuration is shown in the VS Code status bar.
+- `tbench.excludedFiles.grayInTree`: boolean, default `true`. Controls whether excluded files are grayed in the Explorer in addition to showing an exclusion badge.
+- `tbench.excludedFiles.showEditorOverlay`: boolean, default `true`. Controls whether excluded files show a warning overlay in the editor.
 
 ### Excluded-File Scope Settings
 
-- `tfTools.excludedFiles.fileNamePatterns`: array of strings, default `['*.c']`. Basename-only, case-sensitive glob patterns that define which file names are eligible for excluded-file marking. Supports configuration variable references in each pattern string.
-- `tfTools.excludedFiles.folderGlobs`: array of strings, default `['core/embed/**', 'core/vendor/**']`. Absolute or workspace-relative folder globs that define where excluded-file marking applies, including recursive matches with `**`. Supports configuration variable references in each pattern string.
+- `tbench.excludedFiles.fileNamePatterns`: array of strings, default `['*.c']`. Basename-only, case-sensitive glob patterns that define which file names are eligible for excluded-file marking. Supports configuration variable references in each pattern string.
+- `tbench.excludedFiles.folderGlobs`: array of strings, default `['core/embed/**', 'core/vendor/**']`. Absolute or workspace-relative folder globs that define where excluded-file marking applies, including recursive matches with `**`. Supports configuration variable references in each pattern string.
 
 These settings are intended to be adjusted at the workspace level so the extension behaves consistently for all users working in the same repository.
 
@@ -437,7 +437,7 @@ If the workspace is unsupported or no workspace folder is open, the extension sh
 
 If the workspace is supported, the extension:
 
-- Resolves repository paths from root-level `tf-tools.toml` or the built-in defaults, and begins watching `tf-tools.toml`.
+- Resolves repository paths from root-level `tbench.toml` or the built-in defaults, and begins watching `tbench.toml`.
 - Starts the manifest service and begins watching the resolved manifest file.
 - Starts the preset service and begins watching both preset inputs at `<presets path>/presets.toml` and `<presets path>/user-presets.toml`.
 - Initializes the status-bar presenter, IntelliSense service, and excluded-file visibility services.
@@ -479,14 +479,14 @@ The shared `presets.toml` is required. It ships with the `xtask` that accepts pr
 
 ### Repository Configuration Change
 
-The extension watches root-level `tf-tools.toml` for create, change, and delete events without requiring a window reload. Each event causes it to re-read the configuration, re-resolve every repository path, and refresh manifest, preset, artifact, IntelliSense, workflow, and debug state. A valid file that becomes invalid places the extension in its blocking repository-configuration error state without retaining stale paths. A corrected file or deleted invalid file exits that state and uses the new values or defaults.
+The extension watches root-level `tbench.toml` for create, change, and delete events without requiring a window reload. Each event causes it to re-read the configuration, re-resolve every repository path, and refresh manifest, preset, artifact, IntelliSense, workflow, and debug state. A valid file that becomes invalid places the extension in its blocking repository-configuration error state without retaining stale paths. A corrected file or deleted invalid file exits that state and uses the new values or defaults.
 
 ### Setting Change
 
-The extension reacts to remaining relevant `tfTools` settings without requiring a window reload.
+The extension reacts to remaining relevant `tbench` settings without requiring a window reload.
 
-- If `tfTools.showConfigurationInStatusBar` changes, the status bar is updated immediately.
-- If `tfTools.taskExtraEnv` changes, subsequent workflow task launches use the updated environment. Existing running tasks are not restarted.
+- If `tbench.showConfigurationInStatusBar` changes, the status bar is updated immediately.
+- If `tbench.taskExtraEnv` changes, subsequent workflow task launches use the updated environment. Existing running tasks are not restarted.
 - If any excluded-file visibility or scope setting changes, the extension refreshes excluded-file evaluation so Explorer decorations and editor overlays match the new settings.
 
 ### Active Build Context Change
@@ -609,7 +609,7 @@ In general:
 
 This section documents the user-facing commands, where they appear, and the rules that govern their availability and execution.
 
-Workflow actions that launch `cargo xtask` run `cargo` directly from the configured cargo workspace path using `ProcessExecution`. They inherit the VS Code session environment and merge any entries from `tfTools.taskExtraEnv` after resolving configuration variable references in that setting. They avoid shell-mediated startup so user shell scripts cannot unexpectedly replace toolchain-related environment variables such as `PATH` or `VIRTUAL_ENV`.
+Workflow actions that launch `cargo xtask` run `cargo` directly from the configured cargo workspace path using `ProcessExecution`. They inherit the VS Code session environment and merge any entries from `tbench.taskExtraEnv` after resolving configuration variable references in that setting. They avoid shell-mediated startup so user shell scripts cannot unexpectedly replace toolchain-related environment variables such as `PATH` or `VIRTUAL_ENV`.
 
 ### Build
 
@@ -868,7 +868,7 @@ Unlike `Build`, successful completion of `Flash to Device` or `Upload to Device`
 
 This action is intended to let the user launch the correct debug configuration directly from extension-managed state, without editing workspace debug configuration by hand.
 
-The same extension-managed state also drives tf-tools-owned entries in VS Code `Run and Debug`, so users can start debugging with standard debug controls such as `F5` without creating or editing `.vscode/launch.json`.
+The same extension-managed state also drives tbench-owned entries in VS Code `Run and Debug`, so users can start debugging with standard debug controls such as `F5` without creating or editing `.vscode/launch.json`.
 
 #### Surfaces
 
@@ -878,7 +878,7 @@ The same extension-managed state also drives tf-tools-owned entries in VS Code `
 - The `Configuration view` overflow menu.
 - The `Executable` row in `Build Artifacts` as a row action.
 - The Command Palette as `Trezor: Start Debugging`.
-- VS Code `Run and Debug` as generated tf-tools-owned debug entries for the active build context.
+- VS Code `Run and Debug` as generated tbench-owned debug entries for the active build context.
 
 The Command Palette entry is more restrictive than the visible `Configuration view` actions. It is shown only when debugging is currently startable for the active build context.
 
@@ -899,7 +899,7 @@ Visible `Start Debugging` actions in the `Configuration view` stay present but d
 
 The `Executable` row reflects the same readiness state through its `valid` or `missing` status and tooltip.
 
-`Run and Debug` entry availability is derived from the same manifest, active-context, matching-profile, and executable-artifact checks. Template-file problems, invalid template content, and unresolved tf-tools debug variables remain invocation-time failures rather than hidden availability conditions.
+`Run and Debug` entry availability is derived from the same manifest, active-context, matching-profile, and executable-artifact checks. Template-file problems, invalid template content, and unresolved tbench debug variables remain invocation-time failures rather than hidden availability conditions.
 
 #### Debug Profile Selection
 
@@ -909,7 +909,7 @@ The extension evaluates those profiles against the active build context and sele
 
 The manifest debug model does not support separate profile-priority fields or any other custom precedence layer. When multiple profiles match, declaration order alone decides which profile is selected.
 
-Unsupported legacy debug schema forms, such as top-level debug entries, profile-level executable overrides, priority fields, or obsolete tf-tools variable aliases, MUST be treated as invalid manifest content rather than silently remapped.
+Unsupported legacy debug schema forms, such as top-level debug entries, profile-level executable overrides, priority fields, or obsolete tbench variable aliases, MUST be treated as invalid manifest content rather than silently remapped.
 
 If no profile matches, debugging is treated as unavailable for the active build context.
 
@@ -917,7 +917,7 @@ If no profile matches, debugging is treated as unavailable for the active build 
 
 After a matching debug profile is selected, `Start Debugging` loads the profile's debugger template from the configured debug templates path for that invocation.
 
-The template is treated as an input file rather than persisted workspace configuration. The extension resolves tf-tools substitution variables for the active build context, applies them to the template, and launches the resulting configuration through the VS Code debug API.
+The template is treated as an input file rather than persisted workspace configuration. The extension resolves tbench substitution variables for the active build context, applies them to the template, and launches the resulting configuration through the VS Code debug API.
 
 The extension does not preload or cache debug templates across invocations. Changes to a template file take effect on the next `Start Debugging` attempt.
 
@@ -929,24 +929,24 @@ Template-file problems do not preemptively hide or disable visible `Start Debugg
 
 The built-in variables are:
 
-- `${tfTools.artifactPath}` for the active artifact folder path.
-- `${tfTools.model.id}` and `${tfTools.model.name}` for the selected model.
-- `${tfTools.target.id}` and `${tfTools.target.name}` for the selected target.
-- `${tfTools.component.id}` and `${tfTools.component.name}` for the selected component.
-- `${tfTools.executable}` for the derived executable file name.
-- `${tfTools.executablePath}` for the derived executable path.
-- `${tfTools.debugProfileName}` for the selected debug profile name.
+- `${tbench.artifactPath}` for the active artifact folder path.
+- `${tbench.model.id}` and `${tbench.model.name}` for the selected model.
+- `${tbench.target.id}` and `${tbench.target.name}` for the selected target.
+- `${tbench.component.id}` and `${tbench.component.name}` for the selected component.
+- `${tbench.executable}` for the derived executable file name.
+- `${tbench.executablePath}` for the derived executable path.
+- `${tbench.debugProfileName}` for the selected debug profile name.
 
-The selected debug profile can also contribute additional variables, exposed as `${tfTools.debug.var:<name>}`.
+The selected debug profile can also contribute additional variables, exposed as `${tbench.debug.var:<name>}`.
 
-Substitution is applied to string fields throughout the resolved template, including nested objects and arrays. It replaces only tf-tools variables, leaves non-tf-tools variable syntax unchanged for downstream handling, and runs as a single pass rather than repeatedly expanding replacement results.
+Substitution is applied to string fields throughout the resolved template, including nested objects and arrays. It replaces only tbench variables, leaves non-tbench variable syntax unchanged for downstream handling, and runs as a single pass rather than repeatedly expanding replacement results.
 
 For example, a debug template may look like this:
 
 ```jsonc
 {
-	"name": "${tfTools.model.id} | ${tfTools.component.name}",
-	"executable": "${tfTools.artifactPath}/kernel.elf",
+	"name": "${tbench.model.id} | ${tbench.component.name}",
+	"executable": "${tbench.artifactPath}/kernel.elf",
 	"request": "attach",
 	"type": "cortex-debug",
 	"runToEntryPoint": "main",
@@ -958,7 +958,7 @@ For example, a debug template may look like this:
 	"svdFile": ".vscode/STM32U5Gx.svd",
 	"postAttachCommands": [
 		"monitor adapter speed 8000",
-		"add-symbol-file ${tfTools.executablePath}"
+		"add-symbol-file ${tbench.executablePath}"
 	],
 	"presentation": {
 		"group": "STM32U5"
@@ -966,7 +966,7 @@ For example, a debug template may look like this:
 }
 ```
 
-Unknown, invalid, cyclic, or otherwise unresolved tf-tools variables block the launch attempt with a user-visible failure.
+Unknown, invalid, cyclic, or otherwise unresolved tbench variables block the launch attempt with a user-visible failure.
 
 #### Blocked And Failure Behavior
 
@@ -981,9 +981,9 @@ Blocked or failed launch attempts include cases such as:
 - Missing template file.
 - Template path escaping the configured templates root.
 - Invalid template content.
-- Unknown or unresolved tf-tools debug variables.
+- Unknown or unresolved tbench debug variables.
 - VS Code refusing to start the resolved debug configuration.
-- A tf-tools-generated `Run and Debug` entry being started after the active build context has changed.
+- A tbench-generated `Run and Debug` entry being started after the active build context has changed.
 
 When launch is blocked by debug-specific resolution, template, variable, or artifact problems, the extension shows an error message and records the failure in the log output. For most blocked debug-launch states, the extension also reveals the log output to direct the user to the detailed failure reason.
 
@@ -1062,7 +1062,7 @@ It is not exposed as a Configuration view header action, overflow action, artifa
 
 #### Result
 
-When invoked, `Show Logs` reveals the extension's `Trezor Firmware Tools` output channel in the VS Code panel.
+When invoked, `Show Logs` reveals the extension's `Trezor Bench` output channel in the VS Code panel.
 
 The command does not depend on the active build context, does not require a valid manifest or supported workflow state, and does not change extension state by itself. Its result is simply to bring the existing log output into view.
 
@@ -1299,7 +1299,7 @@ The extension reports problems through several user-facing channels, depending o
 - **Error, warning, and information popups**: The extension uses the standard VS Code notification popup area in the bottom-right corner for runtime issues that block or degrade behavior.
 - **Tree-view status**: Problems related to missing build artifacts are shown directly in the `Build Artifacts` part of the tree view and through disabled row actions or disabled workflow actions, rather than through separate popup notifications.
 - **Diagnostics**: Actionable file-backed problems, especially manifest validation errors, are shown as VS Code diagnostics so they are visible in the Problems view and in the affected editor.
-- **Log output**: Runtime warnings, runtime errors, manifest-load failures, task-launch failures, refresh failures, integration failures, and debug-launch failures are written to the dedicated `Trezor Firmware Tools` log output channel.
+- **Log output**: Runtime warnings, runtime errors, manifest-load failures, task-launch failures, refresh failures, integration failures, and debug-launch failures are written to the dedicated `Trezor Bench` log output channel.
 
 Manifest validation errors are surfaced as diagnostics on the manifest file itself and therefore appear in the Problems panel as well as in the manifest editor.
 
@@ -1314,7 +1314,7 @@ Problem occurs
 ├── Missing build artifact
 │   └── Build Artifacts row status and disabled actions
 └── Persistent runtime detail
-	└── Trezor Firmware Tools log output
+	└── Trezor Bench log output
 ```
 
 The extension also provides a `Trezor: Show Logs` command so the user can open the log output directly when more detail is needed.

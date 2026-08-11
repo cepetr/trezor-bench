@@ -1,6 +1,6 @@
-# Trezor Firmware Tools
+# Trezor Bench
 
-Trezor Firmware Tools brings the `trezor-firmware` build workflow into VS Code. Pick the active build context — model, target, component, preset — in a dedicated view, and the rest follows it:
+Trezor Bench brings the `trezor-firmware` build workflow into VS Code. Pick the active build context — model, target, component, preset — in a dedicated view, and the rest follows it:
 
 - **xtask integration** — build options and workflows in the UI instead of on the command line
   - run `build`, `clippy`, `check`, and `clean` as VS Code tasks
@@ -16,7 +16,7 @@ The extension is intended for use with the new cargo-based build system. It does
 
 The extension is not published in the VS Code Marketplace yet, so it must be installed manually as a `.vsix` package.
 
-Download the latest `.vsix` package from the [release page](https://github.com/cepetr/vscode-tf-tools/releases). Then, in VS Code, open the Command Palette, run `Extensions: Install from VSIX...`, and select the extension package file.
+Download the latest `.vsix` package from the [release page](https://github.com/cepetr/vscode-tbench/releases). Then, in VS Code, open the Command Palette, run `Extensions: Install from VSIX...`, and select the extension package file.
 
 **Enable this extension only in the `trezor-firmware` repository, and disable it in other workspaces.**
 
@@ -57,7 +57,7 @@ The extension does not require these VS Code settings, but they are recommended 
         "VIRTUAL_ENV": "${workspaceFolder}/.venv",
         "PYTHONPATH": "${workspaceFolder}/.venv/lib/python3.13/site-packages"
     },
-    "C_Cpp.default.configurationProvider": "cepetr.tf-tools",
+    "C_Cpp.default.configurationProvider": "cepetr.tbench",
     
     // The rest is not required, it is just an optimization
 
@@ -78,7 +78,7 @@ NOTE: `IS_RUST_ANALYZER` is not required by the extension. It is recommended bec
 
 ## How To Use
 
-Open the `Trezor Firmware Tools` activity-bar container and use the `Configuration` view:
+Open the `Trezor Bench` activity-bar container and use the `Configuration` view:
 
 - Choose the active build context in `Build Selection`.
 - Adjust build options in `Build Options` if needed.

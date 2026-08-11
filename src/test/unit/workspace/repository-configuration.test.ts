@@ -18,7 +18,7 @@ suite("Repository configuration", () => {
 
   setup(async () => {
     workspacePath = vscode.Uri.file(
-      await fs.mkdtemp(path.join(os.tmpdir(), "tf-tools-repository-configuration-"))
+      await fs.mkdtemp(path.join(os.tmpdir(), "tbench-repository-configuration-"))
     ).fsPath;
   });
 
@@ -27,9 +27,9 @@ suite("Repository configuration", () => {
   });
 
   test("resolves every supported path from a valid TOML file", async () => {
-    const absoluteTemplatesPath = path.join(os.tmpdir(), "tf-tools-debug-templates");
+    const absoluteTemplatesPath = path.join(os.tmpdir(), "tbench-debug-templates");
     await fs.writeFile(
-      path.join(workspacePath, "tf-tools.toml"),
+      path.join(workspacePath, "tbench.toml"),
       `[paths]
 cargo-workspace = "firmware/workspace"
 debug-templates = "${absoluteTemplatesPath}"
@@ -58,7 +58,7 @@ unused-future-entry = "ignored"
 
   test("retains VS Code variable text as a literal relative path", async () => {
     await fs.writeFile(
-      path.join(workspacePath, "tf-tools.toml"),
+      path.join(workspacePath, "tbench.toml"),
       '[paths]\nmanifest = "${workspaceFolder}/manifest.yaml"\n',
       "utf-8"
     );
@@ -92,7 +92,7 @@ unused-future-entry = "ignored"
 
   test("applies partial entries and explicit empty-value rules independently", async () => {
     await fs.writeFile(
-      path.join(workspacePath, "tf-tools.toml"),
+      path.join(workspacePath, "tbench.toml"),
       `[paths]
 cargo-workspace = ""
 debug-templates = ""
@@ -119,7 +119,7 @@ xtask-presets = ""
   });
 
   test("returns a blocking invalid state for malformed TOML", async () => {
-    await fs.writeFile(path.join(workspacePath, "tf-tools.toml"), "[paths\nmanifest = 'x'", "utf-8");
+    await fs.writeFile(path.join(workspacePath, "tbench.toml"), "[paths\nmanifest = 'x'", "utf-8");
 
     const state = await loadRepositoryConfiguration(workspaceFolder(workspacePath));
 
@@ -131,7 +131,7 @@ xtask-presets = ""
   });
 
   test("returns a blocking invalid state when paths is not a table", async () => {
-    await fs.writeFile(path.join(workspacePath, "tf-tools.toml"), 'paths = "invalid"', "utf-8");
+    await fs.writeFile(path.join(workspacePath, "tbench.toml"), 'paths = "invalid"', "utf-8");
 
     const state = await loadRepositoryConfiguration(workspaceFolder(workspacePath));
 
@@ -142,7 +142,7 @@ xtask-presets = ""
   });
 
   test("returns a blocking invalid state for a non-string supported path", async () => {
-    await fs.writeFile(path.join(workspacePath, "tf-tools.toml"), "[paths]\nmanifest = 42", "utf-8");
+    await fs.writeFile(path.join(workspacePath, "tbench.toml"), "[paths]\nmanifest = 42", "utf-8");
 
     const state = await loadRepositoryConfiguration(workspaceFolder(workspacePath));
 

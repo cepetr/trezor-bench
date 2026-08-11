@@ -1,7 +1,7 @@
 {
-  "tfTools.artifactsPath": "artifacts",
-  "tfTools.excludedFiles.grayInTree": true,
-  "tfTools.excludedFiles.showEditorOverlay": true,
-  "tfTools.excludedFiles.fileNamePatterns": ["*.c"],
-  "tfTools.excludedFiles.folderGlobs": ["core/embed/**", "core/vendor/**"]
+  "tbench.artifactsPath": "artifacts",
+  "tbench.excludedFiles.grayInTree": true,
+  "tbench.excludedFiles.showEditorOverlay": true,
+  "tbench.excludedFiles.fileNamePatterns": ["*.c"],
+  "tbench.excludedFiles.folderGlobs": ["core/embed/**", "core/vendor/**"]
 }

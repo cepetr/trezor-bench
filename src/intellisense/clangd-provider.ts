@@ -8,9 +8,9 @@ import { log } from "../observability/log-channel";
 // ---------------------------------------------------------------------------
 
 export const CLANGD_EXTENSION_ID = "llvm-vs-code-extensions.vscode-clangd";
-export const CLANGD_COMPILE_COMMANDS_DIR_NAME = ".tf-tools";
+export const CLANGD_COMPILE_COMMANDS_DIR_NAME = ".tbench";
 export const CLANGD_COMPILE_COMMANDS_LINK_NAME = "compile_commands.json";
-const TF_TOOLS_CLANGD_MARKER = "# Managed by Trezor Firmware Tools (tf-tools).";
+const TF_TOOLS_CLANGD_MARKER = "# Managed by Trezor Bench (tbench).";
 
 export type ClangdRestartCommand = () => Promise<void>;
 
@@ -39,7 +39,7 @@ export function getWorkspaceClangdConfigPath(
   return path.join(workspaceFolder.uri.fsPath, ".clangd");
 }
 
-export function buildTfToolsClangdConfig(): string {
+export function buildTbenchClangdConfig(): string {
   return `${TF_TOOLS_CLANGD_MARKER}
 CompileFlags:
   CompilationDatabase: ${CLANGD_COMPILE_COMMANDS_DIR_NAME}
@@ -70,7 +70,7 @@ export class ClangdProviderAdapter {
   }
 
   /**
-   * Whether a tf-tools-managed compile database link exists on disk for the
+   * Whether a tbench-managed compile database link exists on disk for the
    * workspace. Uses `lstat` so a dangling symlink (target artifact deleted)
    * still counts, and so a stale link left by a previous session is detected
    * even before `applyArtifact` records an in-memory path.
@@ -118,7 +118,7 @@ function ensureClangdCompilationDatabaseConfig(
   workspaceFolder: vscode.WorkspaceFolder
 ): void {
   const clangdPath = getWorkspaceClangdConfigPath(workspaceFolder);
-  const desiredConfig = buildTfToolsClangdConfig();
+  const desiredConfig = buildTbenchClangdConfig();
 
   if (!fs.existsSync(clangdPath)) {
     fs.writeFileSync(clangdPath, desiredConfig, "utf-8");
@@ -138,7 +138,7 @@ function ensureClangdCompilationDatabaseConfig(
   }
 
   log(
-    "[IntelliSense] [WARN] Workspace .clangd exists without a tf-tools CompilationDatabase entry. " +
+    "[IntelliSense] [WARN] Workspace .clangd exists without a tbench CompilationDatabase entry. " +
       `clangd may not discover ${CLANGD_COMPILE_COMMANDS_DIR_NAME}/compile_commands.json unless configured elsewhere.`
   );
 }
@@ -163,7 +163,7 @@ function updateCompileCommandsSymlink(
 
   // Prefer a relative symlink so it survives the workspace being moved. A
   // `..`-prefixed target is normal here (the artifact lives under the artifacts
-  // root, not under .tf-tools). Only fall back to an absolute target when a
+  // root, not under .tbench). Only fall back to an absolute target when a
   // relative one cannot be expressed — an empty result (same path) or, on
   // Windows, an absolute path because the two paths are on different drives.
   const relativeTarget = path.relative(linkDir, artifactPath);

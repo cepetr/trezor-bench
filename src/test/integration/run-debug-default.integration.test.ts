@@ -2,14 +2,14 @@
  * Integration tests for the default Run and Debug entry and F5 launch path.
  *
  * Covers (User Story 1):
- *  - TfToolsDebugConfigurationProvider.provideDebugConfigurations returns a default
+ *  - TbenchDebugConfigurationProvider.provideDebugConfigurations returns a default
  *    entry when the active build context has at least one matching profile and a
  *    valid executable artifact.
  *  - The default entry targets the first matching profile in declaration order.
  *  - provideDebugConfigurations returns an empty list when no profile matches.
  *  - provideDebugConfigurations returns an empty list when executable artifact is missing.
- *  - The default entry has type "tftools", request "launch", and tfToolsMode "default".
- *  - The default entry label uses the generic tf-tools name.
+ *  - The default entry has type "tbench", request "launch", and tbenchMode "default".
+ *  - The default entry label uses the generic tbench name.
  *  - resolveDebugConfiguration resolves a valid proxy config to the real debug configuration.
  *  - Launching through the provider succeeds without creating .vscode/launch.json.
  *  - The provider is registered as a command after extension activation.
@@ -21,8 +21,8 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import {
-  TfToolsDebugConfigurationProvider,
-  TFTOOLS_DEBUG_TYPE,
+  TbenchDebugConfigurationProvider,
+  TBENCH_DEBUG_TYPE,
   generateDebugConfigurations,
   labelForDefaultEntry,
 } from "../../debug/run-debug-provider";
@@ -30,7 +30,7 @@ import {
   makeComponentDebugProfile,
   makeIntelliSenseLoadedState,
   debugLaunchValidTemplatesRoot,
-  isTfToolsProxyConfig,
+  isTbenchProxyConfig,
 } from "../unit/workflow-test-helpers";
 import { ManifestStateLoaded, ManifestComponentDebugProfile } from "../../manifest/manifest-types";
 import { makeContextKey } from "../../intellisense/artifact-resolution";
@@ -88,7 +88,7 @@ suite("generateDebugConfigurations – default entry", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-qs1-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-qs1-"));
     fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
   });
 
@@ -110,17 +110,17 @@ suite("generateDebugConfigurations – default entry", () => {
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
     assert.strictEqual(entries.length, 1);
-    assert.strictEqual(entries[0].type, TFTOOLS_DEBUG_TYPE);
+    assert.strictEqual(entries[0].type, TBENCH_DEBUG_TYPE);
     assert.strictEqual(entries[0].request, "launch");
-    assert.strictEqual(entries[0]["tfToolsMode"], "default");
-    assert.strictEqual(entries[0]["tfToolsProfileId"], profile.id);
+    assert.strictEqual(entries[0]["tbenchMode"], "default");
+    assert.strictEqual(entries[0]["tbenchProfileId"], profile.id);
     assert.strictEqual(
-      entries[0]["tfToolsContextKey"],
+      entries[0]["tbenchContextKey"],
       makeContextKey(config)
     );
   });
 
-  test("default entry label uses the generic tf-tools name", () => {
+  test("default entry label uses the generic tbench name", () => {
     const profile = makeComponentDebugProfile({
       name: "GDB Remote",
       template: "gdb-remote.json",
@@ -193,7 +193,7 @@ suite("generateDebugConfigurations – default entry", () => {
     const config = makeConfig("T2T1");
 
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
-    assert.strictEqual(entries[0]["tfToolsContextKey"], "T2T1::hw::core");
+    assert.strictEqual(entries[0]["tbenchContextKey"], "T2T1::hw::core");
   });
 });
 
@@ -201,11 +201,11 @@ suite("generateDebugConfigurations – default entry", () => {
 // Suite: provideDebugConfigurations via provider instance
 // ---------------------------------------------------------------------------
 
-suite("TfToolsDebugConfigurationProvider – provideDebugConfigurations", () => {
+suite("TbenchDebugConfigurationProvider – provideDebugConfigurations", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-provider-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-provider-"));
     fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
   });
 
@@ -224,7 +224,7 @@ suite("TfToolsDebugConfigurationProvider – provideDebugConfigurations", () => 
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -236,13 +236,13 @@ suite("TfToolsDebugConfigurationProvider – provideDebugConfigurations", () => 
     const entries = result as vscode.DebugConfiguration[];
 
     assert.strictEqual(entries.length, 1);
-    assert.ok(isTfToolsProxyConfig(entries[0] as Record<string, unknown>));
-    assert.strictEqual(entries[0]["tfToolsMode"], "default");
+    assert.ok(isTbenchProxyConfig(entries[0] as Record<string, unknown>));
+    assert.strictEqual(entries[0]["tbenchMode"], "default");
   });
 
   test("returns empty list when manifest is not loaded", () => {
     const folder = makeWorkspaceFolder(tmpDir);
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => undefined,
       () => makeConfig("T2T1"),
       () => tmpDir,
@@ -260,7 +260,7 @@ suite("TfToolsDebugConfigurationProvider – provideDebugConfigurations", () => 
     const manifest = makeExeManifest([profile]);
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => undefined,
       () => tmpDir,
@@ -277,11 +277,11 @@ suite("TfToolsDebugConfigurationProvider – provideDebugConfigurations", () => 
 // Suite: resolveDebugConfiguration (launch resolution / F5 path)
 // ---------------------------------------------------------------------------
 
-suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration", () => {
+suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-resolve-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-resolve-"));
     fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
   });
 
@@ -302,7 +302,7 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration", () => {
     const folder = makeWorkspaceFolder(tmpDir);
     const templatesRoot = debugLaunchValidTemplatesRoot();
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -311,20 +311,20 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration", () => {
     );
 
     const proxyConfig: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: "Trezor: test",
-      tfToolsMode: "default",
-      tfToolsProfileId: profile.id,
-      tfToolsContextKey: makeContextKey(config),
+      tbenchMode: "default",
+      tbenchProfileId: profile.id,
+      tbenchContextKey: makeContextKey(config),
     };
 
     const resolved = provider.resolveDebugConfiguration(folder, proxyConfig, makeCancelToken());
 
     assert.ok(resolved !== undefined, "Resolved config should not be undefined");
     const resolvedConfig = resolved as vscode.DebugConfiguration;
-    // Real config should not be type "tftools" — it should be the template's type
-    assert.notStrictEqual(resolvedConfig.type, TFTOOLS_DEBUG_TYPE);
+    // Real config should not be type "tbench" — it should be the template's type
+    assert.notStrictEqual(resolvedConfig.type, TBENCH_DEBUG_TYPE);
   });
 
   test("resolved default entry keeps the proxy label for repeat F5 launches", () => {
@@ -340,7 +340,7 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration", () => {
     const folder = makeWorkspaceFolder(tmpDir);
     const templatesRoot = debugLaunchValidTemplatesRoot();
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -349,12 +349,12 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration", () => {
     );
 
     const proxyConfig: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: "Trezor",
-      tfToolsMode: "default",
-      tfToolsProfileId: profile.id,
-      tfToolsContextKey: makeContextKey(config),
+      tbenchMode: "default",
+      tbenchProfileId: profile.id,
+      tbenchContextKey: makeContextKey(config),
     };
 
     const resolved = provider.resolveDebugConfiguration(folder, proxyConfig, makeCancelToken());
@@ -375,7 +375,7 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration", () => {
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -384,12 +384,12 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration", () => {
     );
 
     const oldProxyConfig: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: "Trezor: Trezor Model T (v1) | HW | Core",
-      tfToolsMode: "default",
-      tfToolsProfileId: profile.id,
-      tfToolsContextKey: makeContextKey(config),
+      tbenchMode: "default",
+      tbenchProfileId: profile.id,
+      tbenchContextKey: makeContextKey(config),
     };
 
     const resolved = provider.resolveDebugConfiguration(folder, oldProxyConfig, makeCancelToken());
@@ -398,9 +398,9 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration", () => {
     assert.strictEqual((resolved as vscode.DebugConfiguration).name, "Trezor");
   });
 
-  test("resolving a non-tftools config returns it unchanged", () => {
+  test("resolving a non-tbench config returns it unchanged", () => {
     const folder = makeWorkspaceFolder(tmpDir);
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => undefined,
       () => undefined,
       () => tmpDir,
@@ -429,7 +429,7 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration", () => {
     const currentConfig = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => currentConfig, // current context is T2T1
       () => tmpDir,
@@ -438,12 +438,12 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration", () => {
     );
 
     const staleProxy: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: "Trezor: stale",
-      tfToolsMode: "default",
-      tfToolsProfileId: profile.id,
-      tfToolsContextKey: "T3W1::hw::core", // stale key
+      tbenchMode: "default",
+      tbenchProfileId: profile.id,
+      tbenchContextKey: "T3W1::hw::core", // stale key
     };
 
     const result = provider.resolveDebugConfiguration(folder, staleProxy, makeCancelToken());
@@ -452,12 +452,12 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: package contribution for tftools dynamic entries
+// Suite: package contribution for tbench dynamic entries
 // ---------------------------------------------------------------------------
 
 suite("Run and Debug – package contribution", () => {
-  test("package.json contributes the tftools debugger type used for dynamic entries", () => {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+  test("package.json contributes the tbench debugger type used for dynamic entries", () => {
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     if (!ext) {
       // Skip in unit test environment without extension host
       return;
@@ -466,7 +466,7 @@ suite("Run and Debug – package contribution", () => {
     const debuggers = pkg["contributes"] as Record<string, unknown> | undefined;
     // The debuggers contribution must exist for our proxy type
     const debuggerList = (debuggers?.["debuggers"] as Array<Record<string, unknown>> | undefined) ?? [];
-    const tfToolsDebugger = debuggerList.find((d) => d["type"] === TFTOOLS_DEBUG_TYPE);
-    assert.ok(tfToolsDebugger, "tftools debugger type must be contributed in package.json");
+    const tbenchDebugger = debuggerList.find((d) => d["type"] === TBENCH_DEBUG_TYPE);
+    assert.ok(tbenchDebugger, "tbench debugger type must be contributed in package.json");
   });
 });

@@ -1,5 +1,5 @@
 /**
- * IntelliSense domain types for the Trezor Firmware Tools extension.
+ * IntelliSense domain types for the Trezor Bench extension.
  *
  * Covers artifact-resolution inputs, the active compile-commands artifact state,
  * provider readiness, runtime IntelliSense state, and refresh request tracking.
@@ -60,7 +60,7 @@ export type ProviderWarningState = "none" | "missing-provider" | "wrong-provider
 export interface IntelliSenseProviderReadiness {
   /** Whether a compatible IntelliSense backend is installed and enabled. */
   readonly providerInstalled: boolean;
-  /** Whether tf-tools has configured IntelliSense in the workspace (either as the active cpptools provider, or via managed clangd configuration). */
+  /** Whether tbench has configured IntelliSense in the workspace (either as the active cpptools provider, or via managed clangd configuration). */
   readonly providerConfigured: boolean;
   /** Current warning condition, if any. */
   readonly warningState: ProviderWarningState;
@@ -188,7 +188,7 @@ export interface ProviderSettingFix {
   readonly section: string;
   /** Setting key within the section (default.configurationProvider). */
   readonly key: string;
-  /** Correct value to write (cepetr.tf-tools). */
+  /** Correct value to write (cepetr.tbench). */
   readonly correctValue: string;
 }
 

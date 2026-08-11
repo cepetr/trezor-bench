@@ -1,4 +1,4 @@
-# Valid basic tf-tools manifest for testing.
+# Valid basic tbench manifest for testing.
 # Provides two models, two targets (one with shortName), and two components.
 models:
   - id: T2T1

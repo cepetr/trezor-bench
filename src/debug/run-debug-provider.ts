@@ -1,13 +1,13 @@
 /**
- * TfTools Run and Debug Configuration Provider.
+ * Tbench Run and Debug Configuration Provider.
  *
- * Generates dynamic tf-tools-owned proxy debug configurations for the active
+ * Generates dynamic tbench-owned proxy debug configurations for the active
  * build context and resolves them into real debug configurations at launch time.
  *
  * Proxy configuration shape (see contracts/run-debug-configurations.md):
- *   { type: "tftools", request: "launch", name: string,
- *     tfToolsMode: "default" | "profile",
- *     tfToolsProfileId: string, tfToolsContextKey: string }
+ *   { type: "tbench", request: "launch", name: string,
+ *     tbenchMode: "default" | "profile",
+ *     tbenchProfileId: string, tbenchContextKey: string }
  *
  * Resolution replaces the proxy with the template-derived real configuration.
  */
@@ -28,14 +28,14 @@ import { logProviderDebugLaunchFailure, revealLogs } from "../observability/log-
 // Proxy debug type constant
 // ---------------------------------------------------------------------------
 
-export const TFTOOLS_DEBUG_TYPE = "tftools";
+export const TBENCH_DEBUG_TYPE = "tbench";
 
 // ---------------------------------------------------------------------------
 // Label helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Builds a display label for the default tf-tools Run and Debug entry.
+ * Builds a display label for the default tbench Run and Debug entry.
  * Format: "Trezor"
  */
 export function labelForDefaultEntry(): string {
@@ -60,9 +60,9 @@ function dedupeDebugConfigurations(
       config.type,
       config.request,
       config.name,
-      String(config["tfToolsMode"] ?? ""),
-      String(config["tfToolsProfileId"] ?? ""),
-      String(config["tfToolsContextKey"] ?? ""),
+      String(config["tbenchMode"] ?? ""),
+      String(config["tbenchProfileId"] ?? ""),
+      String(config["tbenchContextKey"] ?? ""),
     ].join("::");
     if (!unique.has(key)) {
       unique.set(key, config);
@@ -77,7 +77,7 @@ function dedupeDebugConfigurations(
 // ---------------------------------------------------------------------------
 
 /**
- * Generates the tf-tools Run and Debug configuration entries for the active
+ * Generates the tbench Run and Debug configuration entries for the active
  * build context.
  *
  * Returns a default entry when at least one profile matches and the executable
@@ -127,12 +127,12 @@ export function generateDebugConfigurations(
 
   // Default entry (always when any matching profiles and valid executable)
   const defaultConfig: vscode.DebugConfiguration = {
-    type: TFTOOLS_DEBUG_TYPE,
+    type: TBENCH_DEBUG_TYPE,
     request: "launch",
     name: labelForDefaultEntry(),
-    tfToolsMode: "default",
-    tfToolsProfileId: matchingSet.defaultProfile.id,
-    tfToolsContextKey: contextKey,
+    tbenchMode: "default",
+    tbenchProfileId: matchingSet.defaultProfile.id,
+    tbenchContextKey: contextKey,
   };
   configs.push(defaultConfig);
 
@@ -140,12 +140,12 @@ export function generateDebugConfigurations(
   if (matchingSet.profiles.length > 1) {
     for (const profile of matchingSet.profiles) {
       const profileConfig: vscode.DebugConfiguration = {
-        type: TFTOOLS_DEBUG_TYPE,
+        type: TBENCH_DEBUG_TYPE,
         request: "launch",
         name: labelForProfileEntry(profile.name),
-        tfToolsMode: "profile",
-        tfToolsProfileId: profile.id,
-        tfToolsContextKey: contextKey,
+        tbenchMode: "profile",
+        tbenchProfileId: profile.id,
+        tbenchContextKey: contextKey,
       };
       configs.push(profileConfig);
     }
@@ -159,12 +159,12 @@ export function generateDebugConfigurations(
 // ---------------------------------------------------------------------------
 
 /**
- * VS Code Debug Configuration Provider for tf-tools proxy configurations.
+ * VS Code Debug Configuration Provider for tbench proxy configurations.
  *
  * Registered with TriggerKind.Dynamic so Run and Debug shows generated
  * entries for the active build context.
  */
-export class TfToolsDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
+export class TbenchDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
   private readonly _getManifest: () => ManifestStateLoaded | undefined;
   private readonly _getActiveConfig: () => ActiveConfig | undefined;
   private readonly _getArtifactsRoot: () => string;
@@ -186,7 +186,7 @@ export class TfToolsDebugConfigurationProvider implements vscode.DebugConfigurat
   }
 
   /**
-   * Provides tf-tools-generated debug configurations for Run and Debug.
+   * Provides tbench-generated debug configurations for Run and Debug.
    * Called when VS Code populates the Run and Debug picker.
    */
   provideDebugConfigurations(
@@ -204,11 +204,11 @@ export class TfToolsDebugConfigurationProvider implements vscode.DebugConfigurat
   }
 
   /**
-   * Resolves a tf-tools proxy configuration by materializing the selected
+   * Resolves a tbench proxy configuration by materializing the selected
    * debug profile into a real VS Code debug configuration.
    *
-   * Called before VS Code variable substitution so tf-tools variables are
-   * resolved first; non-tf-tools variables (e.g. ${workspaceFolder}) are
+   * Called before VS Code variable substitution so tbench variables are
+   * resolved first; non-tbench variables (e.g. ${workspaceFolder}) are
    * left intact for VS Code to process.
    */
   resolveDebugConfiguration(
@@ -216,7 +216,7 @@ export class TfToolsDebugConfigurationProvider implements vscode.DebugConfigurat
     debugConfiguration: vscode.DebugConfiguration,
     _token: vscode.CancellationToken
   ): vscode.ProviderResult<vscode.DebugConfiguration> {
-    if (debugConfiguration.type !== TFTOOLS_DEBUG_TYPE) {
+    if (debugConfiguration.type !== TBENCH_DEBUG_TYPE) {
       return debugConfiguration;
     }
 
@@ -232,7 +232,7 @@ export class TfToolsDebugConfigurationProvider implements vscode.DebugConfigurat
     }
 
     // Stale-context check for generated dynamic entries.
-    const expectedContextKey = debugConfiguration["tfToolsContextKey"] as string | undefined;
+    const expectedContextKey = debugConfiguration["tbenchContextKey"] as string | undefined;
     const currentContextKey = makeContextKey(config);
     if (expectedContextKey !== currentContextKey) {
       const msg =
@@ -249,7 +249,7 @@ export class TfToolsDebugConfigurationProvider implements vscode.DebugConfigurat
       return undefined;
     }
 
-    const profileId = debugConfiguration["tfToolsProfileId"] as string | undefined;
+    const profileId = debugConfiguration["tbenchProfileId"] as string | undefined;
     const component = manifest.components.find((c) => c.id === config.componentId);
     const profile = component?.debug?.find((p) => p.id === profileId);
 
@@ -289,7 +289,7 @@ export class TfToolsDebugConfigurationProvider implements vscode.DebugConfigurat
     }
 
     const canonicalName =
-      debugConfiguration["tfToolsMode"] === "profile"
+      debugConfiguration["tbenchMode"] === "profile"
         ? labelForProfileEntry(profile.name)
         : labelForDefaultEntry();
 

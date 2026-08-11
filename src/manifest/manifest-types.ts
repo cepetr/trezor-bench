@@ -42,7 +42,7 @@ export interface ManifestComponentDebugProfile {
   readonly id: string;
   /** Owning component's identifier. */
   readonly componentId: string;
-  /** User-facing profile name, exposed as `${tfTools.debugProfileName}`. */
+  /** User-facing profile name, exposed as `${tbench.debugProfileName}`. */
   readonly name: string;
   /** Relative path under `[paths].debug-templates` for the JSONC template. */
   readonly template: string;
@@ -52,9 +52,9 @@ export interface ManifestComponentDebugProfile {
    */
   readonly when?: WhenExpression;
   /**
-  * Optional profile-defined tf-tools substitution variables.
-    * Keys are short names used as `${tfTools.debug.var:<key>}` in templates.
-   * Values are raw string templates that may reference built-in tf-tools variables.
+  * Optional profile-defined tbench substitution variables.
+    * Keys are short names used as `${tbench.debug.var:<key>}` in templates.
+   * Values are raw string templates that may reference built-in tbench variables.
    */
   readonly vars?: Readonly<Record<string, string>>;
   /** Zero-based position inside the owning component's `debug` array. */

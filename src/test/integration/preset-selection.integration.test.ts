@@ -64,7 +64,7 @@ function fixtureUris(fixtureName: string): { shared: vscode.Uri; user: vscode.Ur
 function makeManifest(overrides: Partial<ManifestStateLoaded> = {}): ManifestStateLoaded {
   return {
     status: "loaded",
-    manifestUri: vscode.Uri.file("/workspace/tf-tools-manifest.yaml"),
+    manifestUri: vscode.Uri.file("/workspace/tbench-manifest.yaml"),
     models: [{ kind: "model", id: "T2T1", name: "Trezor Model T" }],
     targets: [
       { kind: "target", id: "hw", name: "Hardware", shortName: "HW", flag: null },
@@ -157,7 +157,7 @@ suite("Preset selection – preset-no-defaults fixture", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Selection persists into tfTools.activeConfig
+// Selection persists into tbench.activeConfig
 // ---------------------------------------------------------------------------
 
 suite("Preset selection – select and persist", () => {
@@ -237,7 +237,7 @@ suite("Preset selection – legacy record migration", () => {
 
 /**
  * The one option `[[dev]]` moves, enough to show what a non-matching preset
- * calculates. Mirrors `test-fixtures/workspaces/preset-valid/tf-tools-manifest.yaml`.
+ * calculates. Mirrors `test-fixtures/workspaces/preset-valid/tbench-manifest.yaml`.
  */
 const PYOPT_OPTION: BuildOption = {
   key: "pyopt",

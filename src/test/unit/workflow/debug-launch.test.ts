@@ -8,10 +8,10 @@
  *  - loadDebugTemplate: valid JSONC loads, traversal blocked, missing file,
  *    malformed JSONC invalid, per-invocation fresh read
  *  - buildDebugVariableMap: built-in variables, entry vars referencing builtIns
- *    and each other, cyclic vars produce resolutionErrors, unknown tf-tools vars
+ *    and each other, cyclic vars produce resolutionErrors, unknown tbench vars
  *    produce resolutionErrors
- *  - applyTfToolsSubstitution: single-pass replacement, nested objects and arrays,
- *    non-tf-tools variables left unchanged, unknown tf-tools tokens collected,
+ *  - applyTbenchSubstitution: single-pass replacement, nested objects and arrays,
+ *    non-tbench variables left unchanged, unknown tbench tokens collected,
  *    non-string values pass through unchanged
  */
 
@@ -26,25 +26,25 @@ import {
   deriveExecutableFileName,
   loadDebugTemplate,
   buildDebugVariableMap,
-  applyTfToolsSubstitution,
+  applyTbenchSubstitution,
   materializeDebugConfiguration,
-  TFTOOLS_VAR_ARTIFACT_PATH,
-  TFTOOLS_VAR_MODEL_ID,
-  TFTOOLS_VAR_MODEL_NAME,
-  TFTOOLS_VAR_TARGET_ID,
-  TFTOOLS_VAR_TARGET_NAME,
-  TFTOOLS_VAR_COMPONENT_ID,
-  TFTOOLS_VAR_COMPONENT_NAME,
-  TFTOOLS_VAR_EXECUTABLE_PATH,
-  TFTOOLS_VAR_EXECUTABLE,
-  TFTOOLS_VAR_DEBUG_PROFILE_NAME,
+  TBENCH_VAR_ARTIFACT_PATH,
+  TBENCH_VAR_MODEL_ID,
+  TBENCH_VAR_MODEL_NAME,
+  TBENCH_VAR_TARGET_ID,
+  TBENCH_VAR_TARGET_NAME,
+  TBENCH_VAR_COMPONENT_ID,
+  TBENCH_VAR_COMPONENT_NAME,
+  TBENCH_VAR_EXECUTABLE_PATH,
+  TBENCH_VAR_EXECUTABLE,
+  TBENCH_VAR_DEBUG_PROFILE_NAME,
 } from "../../../commands/debug-launch";
 import { makeComponentDebugProfile, makeIntelliSenseLoadedState, debugLaunchValidTemplatesRoot, debugLaunchFailuresWorkspaceRoot } from "../workflow-test-helpers";
 import {
   generateDebugConfigurations,
   labelForDefaultEntry,
   labelForProfileEntry,
-  TFTOOLS_DEBUG_TYPE,
+  TBENCH_DEBUG_TYPE,
 } from "../../../debug/run-debug-provider";
 
 /**
@@ -157,7 +157,7 @@ suite("loadDebugTemplate", () => {
     assert.strictEqual(result.parseState, "loaded");
     const cfg = result.configuration!;
     assert.strictEqual(cfg.request, "launch");
-    assert.strictEqual(cfg.program, "${tfTools.executablePath}");
+    assert.strictEqual(cfg.program, "${tbench.executablePath}");
   });
 
   test("traversal-escaped path returns traversal-blocked", () => {
@@ -185,7 +185,7 @@ suite("loadDebugTemplate", () => {
   });
 
   test("per-invocation: each call reads from disk independently", async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-test-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-test-"));
     const templatePath = path.join(tmpDir, "test.json");
     try {
       fs.writeFileSync(templatePath, '{"type":"gdb","request":"launch"}');
@@ -204,7 +204,7 @@ suite("loadDebugTemplate", () => {
   });
 
   test("template that is not a single object returns invalid", async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-test-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-test-"));
     const templatePath = path.join(tmpDir, "array.json");
     try {
       fs.writeFileSync(templatePath, '[{"type":"gdb"}]');
@@ -250,46 +250,46 @@ suite("buildDebugVariableMap", () => {
 
   test("built-in variables are always populated", () => {
     const map = makeMap();
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_ARTIFACT_PATH], "/build/model-t");
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_MODEL_ID], "T2T1");
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_MODEL_NAME], "Trezor Model T (v1)");
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_TARGET_ID], "hw");
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_TARGET_NAME], "Hardware");
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_COMPONENT_ID], "core");
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_COMPONENT_NAME], "Core");
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_EXECUTABLE], "firmware.elf");
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_EXECUTABLE_PATH], executablePath);
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_DEBUG_PROFILE_NAME], "gdb-remote");
+    assert.strictEqual(map.builtIns[TBENCH_VAR_ARTIFACT_PATH], "/build/model-t");
+    assert.strictEqual(map.builtIns[TBENCH_VAR_MODEL_ID], "T2T1");
+    assert.strictEqual(map.builtIns[TBENCH_VAR_MODEL_NAME], "Trezor Model T (v1)");
+    assert.strictEqual(map.builtIns[TBENCH_VAR_TARGET_ID], "hw");
+    assert.strictEqual(map.builtIns[TBENCH_VAR_TARGET_NAME], "Hardware");
+    assert.strictEqual(map.builtIns[TBENCH_VAR_COMPONENT_ID], "core");
+    assert.strictEqual(map.builtIns[TBENCH_VAR_COMPONENT_NAME], "Core");
+    assert.strictEqual(map.builtIns[TBENCH_VAR_EXECUTABLE], "firmware.elf");
+    assert.strictEqual(map.builtIns[TBENCH_VAR_EXECUTABLE_PATH], executablePath);
+    assert.strictEqual(map.builtIns[TBENCH_VAR_DEBUG_PROFILE_NAME], "gdb-remote");
   });
 
   test("resolvedVars contains all built-ins when no entry vars", () => {
     const map = makeMap();
-    assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_MODEL_ID], "T2T1");
+    assert.strictEqual(map.resolvedVars[TBENCH_VAR_MODEL_ID], "T2T1");
     assert.strictEqual(map.resolutionErrors.length, 0);
   });
 
   test("entry vars referencing built-ins are resolved", () => {
-    const vars = { debugLabel: "debug-${tfTools.model.id}-${tfTools.target.id}" };
+    const vars = { debugLabel: "debug-${tbench.model.id}-${tbench.target.id}" };
     const map = makeMap(vars);
-    assert.strictEqual(map.resolvedVars["tfTools.debug.var:debugLabel"], "debug-T2T1-hw");
+    assert.strictEqual(map.resolvedVars["tbench.debug.var:debugLabel"], "debug-T2T1-hw");
     assert.strictEqual(map.resolutionErrors.length, 0);
   });
 
   test("entry vars referencing other entry vars are resolved", () => {
     const vars = {
       port: "3333",
-      serverArg: "--port ${tfTools.debug.var:port}",
+      serverArg: "--port ${tbench.debug.var:port}",
     };
     const map = makeMap(vars);
-    assert.strictEqual(map.resolvedVars["tfTools.debug.var:port"], "3333");
-    assert.strictEqual(map.resolvedVars["tfTools.debug.var:serverArg"], "--port 3333");
+    assert.strictEqual(map.resolvedVars["tbench.debug.var:port"], "3333");
+    assert.strictEqual(map.resolvedVars["tbench.debug.var:serverArg"], "--port 3333");
     assert.strictEqual(map.resolutionErrors.length, 0);
   });
 
   test("cyclic entry vars produce a resolution error", () => {
     const vars = {
-      a: "${tfTools.debug.var:b}",
-      b: "${tfTools.debug.var:a}",
+      a: "${tbench.debug.var:b}",
+      b: "${tbench.debug.var:a}",
     };
     const map = makeMap(vars);
     assert.ok(map.resolutionErrors.length > 0, "expected cycle error");
@@ -299,8 +299,8 @@ suite("buildDebugVariableMap", () => {
     );
   });
 
-  test("unknown tf-tools variable in entry var produces a resolution error", () => {
-    const vars = { x: "${tfTools.nonExistent}" };
+  test("unknown tbench variable in entry var produces a resolution error", () => {
+    const vars = { x: "${tbench.nonExistent}" };
     const map = makeMap(vars);
     assert.ok(map.resolutionErrors.length > 0, "expected unknown var error");
     assert.ok(
@@ -311,69 +311,69 @@ suite("buildDebugVariableMap", () => {
 
   test("executable variable contains filename (not full path)", () => {
     const map = buildDebugVariableMap(modelId, modelName, targetId, targetName, componentId, componentName, artifactPath, "my-firmware.elf", "/a/b/c/my-firmware.elf", debugProfileName, undefined);
-    assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_EXECUTABLE], "my-firmware.elf");
-    assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_EXECUTABLE_PATH], "/a/b/c/my-firmware.elf");
+    assert.strictEqual(map.resolvedVars[TBENCH_VAR_EXECUTABLE], "my-firmware.elf");
+    assert.strictEqual(map.resolvedVars[TBENCH_VAR_EXECUTABLE_PATH], "/a/b/c/my-firmware.elf");
   });
 
-  test("debugProfileName is exposed as tfTools.debugProfileName", () => {
+  test("debugProfileName is exposed as tbench.debugProfileName", () => {
     const map = buildDebugVariableMap(modelId, modelName, targetId, targetName, componentId, componentName, artifactPath, executableFileName, executablePath, "my-profile", undefined);
-    assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_DEBUG_PROFILE_NAME], "my-profile");
+    assert.strictEqual(map.resolvedVars[TBENCH_VAR_DEBUG_PROFILE_NAME], "my-profile");
   });
 });
 
 // ---------------------------------------------------------------------------
-// applyTfToolsSubstitution
+// applyTbenchSubstitution
 // ---------------------------------------------------------------------------
 
-suite("applyTfToolsSubstitution", () => {
+suite("applyTbenchSubstitution", () => {
   const resolvedVars: Readonly<Record<string, string>> = {
-    "tfTools.model.id": "T2T1",
-    "tfTools.executablePath": "/build/firmware.elf",
-    "tfTools.executable": "firmware.elf",
+    "tbench.model.id": "T2T1",
+    "tbench.executablePath": "/build/firmware.elf",
+    "tbench.executable": "firmware.elf",
   };
 
-  test("replaces a tf-tools token in a plain string", () => {
-    const { value, unknownVars } = applyTfToolsSubstitution("${tfTools.model.id}", resolvedVars);
+  test("replaces a tbench token in a plain string", () => {
+    const { value, unknownVars } = applyTbenchSubstitution("${tbench.model.id}", resolvedVars);
     assert.strictEqual(value, "T2T1");
     assert.strictEqual(unknownVars.length, 0);
   });
 
-  test("replaces multiple tf-tools tokens in a string", () => {
-    const { value } = applyTfToolsSubstitution(
-      "Debug ${tfTools.model.id}: ${tfTools.executablePath}",
+  test("replaces multiple tbench tokens in a string", () => {
+    const { value } = applyTbenchSubstitution(
+      "Debug ${tbench.model.id}: ${tbench.executablePath}",
       resolvedVars
     );
     assert.strictEqual(value, "Debug T2T1: /build/firmware.elf");
   });
 
-  test("non-tf-tools variable syntax is left unchanged", () => {
-    const { value, unknownVars } = applyTfToolsSubstitution(
-      "${workspaceFolder}/scripts/${tfTools.model.id}.sh",
+  test("non-tbench variable syntax is left unchanged", () => {
+    const { value, unknownVars } = applyTbenchSubstitution(
+      "${workspaceFolder}/scripts/${tbench.model.id}.sh",
       resolvedVars
     );
     assert.strictEqual(value, "${workspaceFolder}/scripts/T2T1.sh");
     assert.strictEqual(unknownVars.length, 0);
   });
 
-  test("unknown tf-tools token is reported in unknownVars", () => {
-    const { value, unknownVars } = applyTfToolsSubstitution(
-      "${tfTools.unknownVar}",
+  test("unknown tbench token is reported in unknownVars", () => {
+    const { value, unknownVars } = applyTbenchSubstitution(
+      "${tbench.unknownVar}",
       resolvedVars
     );
-    assert.ok(unknownVars.includes("tfTools.unknownVar"), "expected unknownVar recorded");
+    assert.ok(unknownVars.includes("tbench.unknownVar"), "expected unknownVar recorded");
     // Token left in place since it was unknown
-    assert.strictEqual(value, "${tfTools.unknownVar}");
+    assert.strictEqual(value, "${tbench.unknownVar}");
   });
 
   test("nested object string fields are all substituted", () => {
     const template = {
-      name: "Debug ${tfTools.model.id}",
-      program: "${tfTools.executablePath}",
+      name: "Debug ${tbench.model.id}",
+      program: "${tbench.executablePath}",
       nested: {
-        label: "label-${tfTools.model.id}",
+        label: "label-${tbench.model.id}",
       },
     };
-    const { value, unknownVars } = applyTfToolsSubstitution(template, resolvedVars);
+    const { value, unknownVars } = applyTbenchSubstitution(template, resolvedVars);
     const result = value as typeof template;
     assert.strictEqual(result.name, "Debug T2T1");
     assert.strictEqual(result.program, "/build/firmware.elf");
@@ -383,9 +383,9 @@ suite("applyTfToolsSubstitution", () => {
 
   test("array string elements are all substituted", () => {
     const template = {
-      args: ["--model", "${tfTools.model.id}", "--exe", "${tfTools.executablePath}"],
+      args: ["--model", "${tbench.model.id}", "--exe", "${tbench.executablePath}"],
     };
-    const { value } = applyTfToolsSubstitution(template, resolvedVars);
+    const { value } = applyTbenchSubstitution(template, resolvedVars);
     const result = value as typeof template;
     assert.deepStrictEqual(result.args, ["--model", "T2T1", "--exe", "/build/firmware.elf"]);
   });
@@ -395,9 +395,9 @@ suite("applyTfToolsSubstitution", () => {
       enabled: true,
       port: 3333,
       rate: null,
-      program: "${tfTools.executablePath}",
+      program: "${tbench.executablePath}",
     };
-    const { value } = applyTfToolsSubstitution(template, resolvedVars);
+    const { value } = applyTbenchSubstitution(template, resolvedVars);
     const result = value as typeof template;
     assert.strictEqual(result.enabled, true);
     assert.strictEqual(result.port, 3333);
@@ -407,21 +407,21 @@ suite("applyTfToolsSubstitution", () => {
 
   test("single-pass: resolved values are not re-expanded", () => {
     const tricky: Readonly<Record<string, string>> = {
-      "tfTools.model.id": "${tfTools.executablePath}",
-      "tfTools.executablePath": "/build/firmware.elf",
+      "tbench.model.id": "${tbench.executablePath}",
+      "tbench.executablePath": "/build/firmware.elf",
     };
-    const { value } = applyTfToolsSubstitution("${tfTools.model.id}", tricky);
-    assert.strictEqual(value, "${tfTools.executablePath}");
+    const { value } = applyTbenchSubstitution("${tbench.model.id}", tricky);
+    assert.strictEqual(value, "${tbench.executablePath}");
   });
 
   test("deeply nested array-of-objects substitution", () => {
     const template = {
       environment: [
-        { name: "TARGET", value: "${tfTools.model.id}" },
-        { name: "EXE", value: "${tfTools.executable}" },
+        { name: "TARGET", value: "${tbench.model.id}" },
+        { name: "EXE", value: "${tbench.executable}" },
       ],
     };
-    const { value } = applyTfToolsSubstitution(template, resolvedVars);
+    const { value } = applyTbenchSubstitution(template, resolvedVars);
     const result = value as typeof template;
     assert.strictEqual(result.environment[0].value, "T2T1");
     assert.strictEqual(result.environment[1].value, "firmware.elf");
@@ -541,7 +541,7 @@ suite("generateDebugConfigurations – entry set rules", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-gdc-unit-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-gdc-unit-"));
     fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
   });
 
@@ -578,8 +578,8 @@ suite("generateDebugConfigurations – entry set rules", () => {
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
     assert.strictEqual(entries.length, 1, "should have exactly 1 entry for single match");
-    assert.strictEqual(entries[0]["tfToolsMode"], "default");
-    assert.strictEqual(entries[0].type, TFTOOLS_DEBUG_TYPE);
+    assert.strictEqual(entries[0]["tbenchMode"], "default");
+    assert.strictEqual(entries[0].type, TBENCH_DEBUG_TYPE);
   });
 
   test("three matching profiles → 1 default + 3 profile-specific entries (4 total)", () => {
@@ -592,8 +592,8 @@ suite("generateDebugConfigurations – entry set rules", () => {
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
     assert.strictEqual(entries.length, 4, "should have 1 default + 3 profile entries");
-    const defaultEntries = entries.filter((e) => e["tfToolsMode"] === "default");
-    const profileEntries = entries.filter((e) => e["tfToolsMode"] === "profile");
+    const defaultEntries = entries.filter((e) => e["tbenchMode"] === "default");
+    const profileEntries = entries.filter((e) => e["tbenchMode"] === "profile");
     assert.strictEqual(defaultEntries.length, 1);
     assert.strictEqual(profileEntries.length, 3);
   });
@@ -606,8 +606,8 @@ suite("generateDebugConfigurations – entry set rules", () => {
 
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
-    assert.strictEqual(entries[0]["tfToolsMode"], "default");
-    assert.strictEqual(entries[0]["tfToolsProfileId"], p1.id);
+    assert.strictEqual(entries[0]["tbenchMode"], "default");
+    assert.strictEqual(entries[0]["tbenchProfileId"], p1.id);
   });
 
   test("profile-specific entries follow declaration order", () => {
@@ -619,10 +619,10 @@ suite("generateDebugConfigurations – entry set rules", () => {
 
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
-    const profileEntries = entries.filter((e) => e["tfToolsMode"] === "profile");
-    assert.strictEqual(profileEntries[0]["tfToolsProfileId"], p1.id);
-    assert.strictEqual(profileEntries[1]["tfToolsProfileId"], p2.id);
-    assert.strictEqual(profileEntries[2]["tfToolsProfileId"], p3.id);
+    const profileEntries = entries.filter((e) => e["tbenchMode"] === "profile");
+    assert.strictEqual(profileEntries[0]["tbenchProfileId"], p1.id);
+    assert.strictEqual(profileEntries[1]["tbenchProfileId"], p2.id);
+    assert.strictEqual(profileEntries[2]["tbenchProfileId"], p3.id);
   });
 
   test("profile-specific entry has correct shape (type, request, mode, profileId, contextKey)", () => {
@@ -633,12 +633,12 @@ suite("generateDebugConfigurations – entry set rules", () => {
 
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
-    const profileEntry = entries.find((e) => e["tfToolsMode"] === "profile");
+    const profileEntry = entries.find((e) => e["tbenchMode"] === "profile");
     assert.ok(profileEntry, "profile-specific entry should exist");
-    assert.strictEqual(profileEntry.type, TFTOOLS_DEBUG_TYPE);
+    assert.strictEqual(profileEntry.type, TBENCH_DEBUG_TYPE);
     assert.strictEqual(profileEntry.request, "launch");
-    assert.ok(typeof profileEntry["tfToolsProfileId"] === "string");
-    assert.ok(typeof profileEntry["tfToolsContextKey"] === "string");
+    assert.ok(typeof profileEntry["tbenchProfileId"] === "string");
+    assert.ok(typeof profileEntry["tbenchContextKey"] === "string");
   });
 
   test("profile-specific entry label includes profile name", () => {
@@ -650,7 +650,7 @@ suite("generateDebugConfigurations – entry set rules", () => {
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
     const profileEntry = entries.find(
-      (e) => e["tfToolsMode"] === "profile" && (e["tfToolsProfileId"] as string) === p1.id
+      (e) => e["tbenchMode"] === "profile" && (e["tbenchProfileId"] as string) === p1.id
     );
     assert.ok(profileEntry);
     assert.ok(profileEntry.name.includes("GDB Remote"), `label '${profileEntry.name}' should contain profile name`);
@@ -674,8 +674,8 @@ suite("generateDebugConfigurations – entry set rules", () => {
     // 2 matching: 1 default + 2 profile-specific = 3 total
     assert.strictEqual(entries.length, 3);
     const profileEntryIds = entries
-      .filter((e) => e["tfToolsMode"] === "profile")
-      .map((e) => e["tfToolsProfileId"] as string);
+      .filter((e) => e["tbenchMode"] === "profile")
+      .map((e) => e["tbenchProfileId"] as string);
     assert.ok(!profileEntryIds.some((id) => id === nonMatching.id),
       "non-matching profiles should not appear in profile-specific entries");
   });
@@ -689,7 +689,7 @@ suite("materializeDebugConfiguration – failure paths", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-mat-unit-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-mat-unit-"));
     fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
   });
 
@@ -785,7 +785,7 @@ suite("materializeDebugConfiguration – failure paths", () => {
   });
 
   test("invalid JSON template → ok: false, reason: 'invalid-template'", () => {
-    const badTemplatesDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-bad-tmpl-"));
+    const badTemplatesDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-bad-tmpl-"));
     try {
       fs.writeFileSync(path.join(badTemplatesDir, "bad.json"), "{ this is not valid json {{ }}");
       const manifest = makeManifestForMat();
@@ -848,7 +848,7 @@ suite("materializeDebugConfiguration – failure paths", () => {
     assert.strictEqual(result.ok, true);
     if (result.ok) {
       assert.ok(typeof result.configuration === "object");
-      assert.ok(result.configuration.type !== TFTOOLS_DEBUG_TYPE);
+      assert.ok(result.configuration.type !== TBENCH_DEBUG_TYPE);
     }
   });
 });

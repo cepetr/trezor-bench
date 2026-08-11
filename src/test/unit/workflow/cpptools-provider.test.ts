@@ -425,7 +425,7 @@ suite("PROVIDER_SETTING_FIX", () => {
     assert.strictEqual(PROVIDER_SETTING_FIX.key, "default.configurationProvider");
   });
 
-  test("correctValue is cepetr.tf-tools", () => {
-    assert.strictEqual(PROVIDER_SETTING_FIX.correctValue, "cepetr.tf-tools");
+  test("correctValue is cepetr.tbench", () => {
+    assert.strictEqual(PROVIDER_SETTING_FIX.correctValue, "cepetr.tbench");
   });
 });

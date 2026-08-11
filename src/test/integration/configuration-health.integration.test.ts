@@ -38,7 +38,7 @@ suite("ManifestService - health states", () => {
   let tmpDir: string;
 
   setup(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "tf-tools-test-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "tbench-test-"));
   });
 
   teardown(async () => {
@@ -46,7 +46,7 @@ suite("ManifestService - health states", () => {
   });
 
   test("status is 'loaded' when manifest is valid", async () => {
-    const manifestPath = path.join(tmpDir, "tf-tools.yaml");
+    const manifestPath = path.join(tmpDir, "tbench.yaml");
     await fs.writeFile(manifestPath, VALID_MANIFEST, "utf-8");
 
     const uri = vscode.Uri.file(manifestPath);
@@ -65,7 +65,7 @@ suite("ManifestService - health states", () => {
   });
 
   test("status is 'missing' when manifest file does not exist", async () => {
-    const manifestPath = path.join(tmpDir, "tf-tools.yaml"); // not created
+    const manifestPath = path.join(tmpDir, "tbench.yaml"); // not created
     const uri = vscode.Uri.file(manifestPath);
     const service = new ManifestService(uri);
     const state = await service.start();
@@ -76,7 +76,7 @@ suite("ManifestService - health states", () => {
   });
 
   test("status is 'invalid' when manifest has structural errors", async () => {
-    const manifestPath = path.join(tmpDir, "tf-tools.yaml");
+    const manifestPath = path.join(tmpDir, "tbench.yaml");
     await fs.writeFile(manifestPath, INVALID_MANIFEST, "utf-8");
 
     const uri = vscode.Uri.file(manifestPath);
@@ -92,7 +92,7 @@ suite("ManifestService - health states", () => {
 
   test("status is 'invalid' when manifest has malformed YAML", async () => {
     const malformedYaml = "models:\n  - id: T2T1\n    bad: [unclosed";
-    const manifestPath = path.join(tmpDir, "tf-tools.yaml");
+    const manifestPath = path.join(tmpDir, "tbench.yaml");
     await fs.writeFile(manifestPath, malformedYaml, "utf-8");
 
     const uri = vscode.Uri.file(manifestPath);
@@ -107,7 +107,7 @@ suite("ManifestService - health states", () => {
   });
 
   test("fires onDidChangeState when manifest changes", async () => {
-    const manifestPath = path.join(tmpDir, "tf-tools.yaml");
+    const manifestPath = path.join(tmpDir, "tbench.yaml");
     await fs.writeFile(manifestPath, VALID_MANIFEST, "utf-8");
 
     const uri = vscode.Uri.file(manifestPath);
@@ -127,7 +127,7 @@ suite("ManifestService - health states", () => {
   });
 
   test("transitions from missing to loaded when manifest is created", async () => {
-    const manifestPath = path.join(tmpDir, "tf-tools.yaml"); // not yet created
+    const manifestPath = path.join(tmpDir, "tbench.yaml"); // not yet created
     const uri = vscode.Uri.file(manifestPath);
     const service = new ManifestService(uri);
     const initialState = await service.start();
@@ -149,7 +149,7 @@ suite("ManifestService - health states", () => {
 function makeIntellisenseLoadedState(overrides: Partial<ManifestStateLoaded> = {}): ManifestStateLoaded {
   return {
     status: "loaded",
-    manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+    manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
     models: [{ kind: "model", id: "T2T1", name: "Trezor Model T", artifactFolder: "model-t" }],
     targets: [
       { kind: "target", id: "hw", name: "Hardware", shortName: "HW" },
@@ -174,7 +174,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
   let tmpDir: string;
 
   setup(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "tf-tools-intellisense-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "tbench-intellisense-"));
   });
 
   teardown(async () => {
@@ -495,7 +495,7 @@ suite("IntelliSenseService – artifacts-path change regression", () => {
   function makeManifest(): ManifestStateLoaded {
     return {
       status: "loaded",
-      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+      manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
       models: [{ kind: "model", id: "T2T1", name: "Trezor Model T", artifactFolder: "model-t" }],
       targets: [
         { kind: "target", id: "hw", name: "Hardware", shortName: "HW" },

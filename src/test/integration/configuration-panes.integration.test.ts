@@ -18,8 +18,8 @@ import * as vscode from "vscode";
 // ---------------------------------------------------------------------------
 
 function getExtPackageJson(): Record<string, unknown> {
-  const ext = vscode.extensions.getExtension("cepetr.tf-tools");
-  assert.ok(ext, "cepetr.tf-tools extension must be present");
+  const ext = vscode.extensions.getExtension("cepetr.tbench");
+  assert.ok(ext, "cepetr.tbench extension must be present");
   return ext.packageJSON as Record<string, unknown>;
 }
 
@@ -36,9 +36,9 @@ interface ViewContribution {
   when?: string;
 }
 
-function getTfToolsViews(): ViewContribution[] {
+function getTbenchViews(): ViewContribution[] {
   const views = getContributes().views as Record<string, ViewContribution[]>;
-  return views["tf-tools"] ?? [];
+  return views["tbench"] ?? [];
 }
 
 interface ViewContainerContribution {
@@ -55,9 +55,9 @@ function getActivityBarContainers(): ViewContainerContribution[] {
   return containers?.activitybar ?? [];
 }
 
-const INHERITED_VIEW_ID = "tfTools.configuration";
-const BUILD_OPTIONS_VIEW_ID = "tfTools.buildOptions";
-const BUILD_ARTIFACTS_VIEW_ID = "tfTools.buildArtifacts";
+const INHERITED_VIEW_ID = "tbench.configuration";
+const BUILD_OPTIONS_VIEW_ID = "tbench.buildOptions";
+const BUILD_ARTIFACTS_VIEW_ID = "tbench.buildArtifacts";
 
 interface MenuEntry {
   command: string;
@@ -76,31 +76,31 @@ function getMenuEntries(menuId: string): MenuEntry[] {
 // ---------------------------------------------------------------------------
 
 suite("Configuration panes – view container", () => {
-  test("contributes exactly one activity-bar container, with the tf-tools id and icon", () => {
+  test("contributes exactly one activity-bar container, with the tbench id and icon", () => {
     const containers = getActivityBarContainers();
     assert.strictEqual(
       containers.length,
       1,
       `expected exactly 1 activity-bar container, got ${containers.length}`
     );
-    assert.strictEqual(containers[0].id, "tf-tools");
-    assert.strictEqual(containers[0].icon, "images/tf-tools.svg");
+    assert.strictEqual(containers[0].id, "tbench");
+    assert.strictEqual(containers[0].icon, "images/tbench.svg");
   });
 
   test("the container title is the formal product name", () => {
     const [container] = getActivityBarContainers();
-    assert.strictEqual(container.title, "Trezor Firmware Tools");
+    assert.strictEqual(container.title, "Trezor Bench");
   });
 });
 
 suite("Configuration panes – view contributions (US1)", () => {
-  test("contributes exactly three views for the tf-tools container", () => {
-    const views = getTfToolsViews();
+  test("contributes exactly three views for the tbench container", () => {
+    const views = getTbenchViews();
     assert.strictEqual(views.length, 3, `expected exactly 3 views, got ${views.length}`);
   });
 
   test("declares the three views in the contract's exact order: Build Selection, Build Artifacts, Build Options", () => {
-    const views = getTfToolsViews();
+    const views = getTbenchViews();
     assert.deepStrictEqual(
       views.map((v) => v.name),
       ["Build Selection", "Build Artifacts", "Build Options"]
@@ -108,14 +108,14 @@ suite("Configuration panes – view contributions (US1)", () => {
   });
 
   test("entry 1 reuses the inherited view id (FR-017)", () => {
-    const [first] = getTfToolsViews();
+    const [first] = getTbenchViews();
     assert.strictEqual(first.id, INHERITED_VIEW_ID);
   });
 
-  test("entry 2 and entry 3 declare new tfTools.-prefixed ids, distinct from the inherited id and each other", () => {
-    const [, second, third] = getTfToolsViews();
-    assert.ok(second.id.startsWith("tfTools."));
-    assert.ok(third.id.startsWith("tfTools."));
+  test("entry 2 and entry 3 declare new tbench.-prefixed ids, distinct from the inherited id and each other", () => {
+    const [, second, third] = getTbenchViews();
+    assert.ok(second.id.startsWith("tbench."));
+    assert.ok(third.id.startsWith("tbench."));
     assert.notStrictEqual(second.id, INHERITED_VIEW_ID);
     assert.notStrictEqual(third.id, INHERITED_VIEW_ID);
     assert.notStrictEqual(second.id, third.id);
@@ -123,13 +123,13 @@ suite("Configuration panes – view contributions (US1)", () => {
 
   test("the id order matches the title order: inherited, Build Artifacts, Build Options", () => {
     assert.deepStrictEqual(
-      getTfToolsViews().map((v) => v.id),
+      getTbenchViews().map((v) => v.id),
       [INHERITED_VIEW_ID, BUILD_ARTIFACTS_VIEW_ID, BUILD_OPTIONS_VIEW_ID]
     );
   });
 
   test("every view id stays under 25 characters (constitution principle V)", () => {
-    for (const view of getTfToolsViews()) {
+    for (const view of getTbenchViews()) {
       assert.ok(
         view.id.length < 25,
         `expected '${view.id}' to be under 25 characters, got ${view.id.length}`
@@ -137,19 +137,19 @@ suite("Configuration panes – view contributions (US1)", () => {
     }
   });
 
-  test("every view declares type 'tree' and the tf-tools icon", () => {
-    for (const view of getTfToolsViews()) {
+  test("every view declares type 'tree' and the tbench icon", () => {
+    for (const view of getTbenchViews()) {
       assert.strictEqual(view.type, "tree", `expected '${view.id}' to declare type 'tree'`);
       assert.strictEqual(
         view.icon,
-        "images/tf-tools.svg",
-        `expected '${view.id}' to use the tf-tools icon`
+        "images/tbench.svg",
+        `expected '${view.id}' to use the tbench icon`
       );
     }
   });
 
   test("no view declares a 'when' clause — all three panes are always contributed (FR-012)", () => {
-    for (const view of getTfToolsViews()) {
+    for (const view of getTbenchViews()) {
       assert.strictEqual(view.when, undefined, `expected '${view.id}' to omit 'when'`);
     }
   });
@@ -185,21 +185,21 @@ suite("Configuration panes – host-constraint guardrails (FR-009c)", () => {
 
 suite("Configuration panes – initial collapse state (US2)", () => {
   test("Build Options declares visibility: collapsed", () => {
-    const views = getTfToolsViews();
+    const views = getTbenchViews();
     const buildOptions = views.find((v) => v.name === "Build Options");
     assert.ok(buildOptions, "expected a Build Options view entry");
     assert.strictEqual(buildOptions!.visibility, "collapsed");
   });
 
   test("Build Selection omits visibility (defaults to visible)", () => {
-    const views = getTfToolsViews();
+    const views = getTbenchViews();
     const buildSelection = views.find((v) => v.name === "Build Selection");
     assert.ok(buildSelection, "expected a Build Selection view entry");
     assert.strictEqual(buildSelection!.visibility, undefined);
   });
 
   test("Build Artifacts omits visibility (defaults to visible)", () => {
-    const views = getTfToolsViews();
+    const views = getTbenchViews();
     const buildArtifacts = views.find((v) => v.name === "Build Artifacts");
     assert.ok(buildArtifacts, "expected a Build Artifacts view entry");
     assert.strictEqual(buildArtifacts!.visibility, undefined);
@@ -265,16 +265,16 @@ suite("Configuration panes – view/title toolbar targets only Build Selection (
 
   test("matches the contract's command/group/enablement table exactly, in order", () => {
     const expected: Array<{ command: string; group: string; enablement?: string }> = [
-      { command: "tfTools.build", group: "navigation@1", enablement: "!tfTools.workflowBlocked && !tfTools.presetBlocked" },
-      { command: "tfTools.startDebugging", group: "navigation@2", enablement: "tfTools.startDebuggingEnabled" },
-      { command: "tfTools.build", group: "overflow@1", enablement: "!tfTools.workflowBlocked && !tfTools.presetBlocked" },
-      { command: "tfTools.clippy", group: "overflow@2", enablement: "!tfTools.workflowBlocked && !tfTools.presetBlocked" },
-      { command: "tfTools.check", group: "overflow@3", enablement: "!tfTools.workflowBlocked && !tfTools.presetBlocked" },
-      { command: "tfTools.clean", group: "overflow@4", enablement: "!tfTools.workflowBlocked" },
-      { command: "tfTools.flash", group: "overflow@5", enablement: "tfTools.binaryExists" },
-      { command: "tfTools.upload", group: "overflow@6", enablement: "tfTools.binaryExists" },
-      { command: "tfTools.startDebugging", group: "overflow@7", enablement: "tfTools.startDebuggingEnabled" },
-      { command: "tfTools.refreshIntelliSense", group: "overflow@8" },
+      { command: "tbench.build", group: "navigation@1", enablement: "!tbench.workflowBlocked && !tbench.presetBlocked" },
+      { command: "tbench.startDebugging", group: "navigation@2", enablement: "tbench.startDebuggingEnabled" },
+      { command: "tbench.build", group: "overflow@1", enablement: "!tbench.workflowBlocked && !tbench.presetBlocked" },
+      { command: "tbench.clippy", group: "overflow@2", enablement: "!tbench.workflowBlocked && !tbench.presetBlocked" },
+      { command: "tbench.check", group: "overflow@3", enablement: "!tbench.workflowBlocked && !tbench.presetBlocked" },
+      { command: "tbench.clean", group: "overflow@4", enablement: "!tbench.workflowBlocked" },
+      { command: "tbench.flash", group: "overflow@5", enablement: "tbench.binaryExists" },
+      { command: "tbench.upload", group: "overflow@6", enablement: "tbench.binaryExists" },
+      { command: "tbench.startDebugging", group: "overflow@7", enablement: "tbench.startDebuggingEnabled" },
+      { command: "tbench.refreshIntelliSense", group: "overflow@8" },
     ];
     const actual = getMenuEntries("view/title").map((e) =>
       e.enablement === undefined
@@ -323,10 +323,10 @@ suite("Configuration panes – view/item/context targets only Build Artifacts (U
 
   test("matches the contract's command/viewItem/group/enablement table exactly", () => {
     const expected: Array<{ command: string; viewItem: string; group: string; enablement?: string }> = [
-      { command: "tfTools.flash", viewItem: "artifact-binary", group: "inline@1", enablement: "tfTools.binaryExists" },
-      { command: "tfTools.upload", viewItem: "artifact-binary", group: "inline@2", enablement: "tfTools.binaryExists" },
-      { command: "tfTools.openMapFile", viewItem: "artifact-map", group: "inline@1", enablement: "tfTools.mapExists" },
-      { command: "tfTools.startDebugging", viewItem: "artifact-executable", group: "inline@1", enablement: "tfTools.startDebuggingEnabled" },
+      { command: "tbench.flash", viewItem: "artifact-binary", group: "inline@1", enablement: "tbench.binaryExists" },
+      { command: "tbench.upload", viewItem: "artifact-binary", group: "inline@2", enablement: "tbench.binaryExists" },
+      { command: "tbench.openMapFile", viewItem: "artifact-map", group: "inline@1", enablement: "tbench.mapExists" },
+      { command: "tbench.startDebugging", viewItem: "artifact-executable", group: "inline@1", enablement: "tbench.startDebuggingEnabled" },
     ];
     const actual = getMenuEntries("view/item/context").map((e) => {
       const viewItemMatch = /viewItem == ([\w-]+)/.exec(e.when ?? "");

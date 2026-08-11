@@ -26,7 +26,7 @@ function makeLoadedState(
 ): ManifestStateLoaded {
   return {
     status: "loaded",
-    manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+    manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
     models: [
       { kind: "model", id: "T2T1", name: "Trezor Model T" },
       { kind: "model", id: "T3W1", name: "Trezor Model T3" },
@@ -121,7 +121,7 @@ suite("ConfigurationTreeProvider – selector rendering", () => {
   test("build-context shows WarningItem when manifest is missing", () => {
     provider.update({
       status: "missing",
-      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+      manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
     });
     const children = getBuildContextChildren(provider);
     assert.ok(children.some((c) => c instanceof WarningItem), "expected WarningItem");

@@ -239,7 +239,7 @@ components:
 // ---------------------------------------------------------------------------
 
 suite("validateManifest", () => {
-  const dummyUri = vscode.Uri.file("/workspace/tf-tools.yaml");
+  const dummyUri = vscode.Uri.file("/workspace/tbench.yaml");
 
   test("returns loaded state for a valid manifest", () => {
     const source = `

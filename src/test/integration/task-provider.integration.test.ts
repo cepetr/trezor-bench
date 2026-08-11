@@ -71,7 +71,7 @@ suite("Build Task Provider – task label construction", () => {
 suite("Build Task Provider – VS Code registration", () => {
   test("fetchTasks returns tasks with correct labels for valid state", async () => {
     // This test verifies the provider is registered and returns tasks when active.
-    const tasks = await vscode.tasks.fetchTasks({ type: "tfTools" });
+    const tasks = await vscode.tasks.fetchTasks({ type: "tbench" });
     assert.ok(Array.isArray(tasks), "fetchTasks should return an array");
   });
 });
@@ -107,7 +107,7 @@ suite("Build Task Provider – task failure visibility", () => {
     };
     const state: ManifestStateLoaded = {
       status: "loaded",
-      manifestUri: vscode.Uri.file("/fake/tf-tools.yaml"),
+      manifestUri: vscode.Uri.file("/fake/tbench.yaml"),
       models: [{ kind: "model" as const, id: "model-t2t1", name: "T2T1" }],
       targets: [{ kind: "target" as const, id: "hw", name: "Hardware", shortName: "HW" }],
       components: [{ kind: "component" as const, id: "core", name: "Core" }],

@@ -15,9 +15,9 @@ import {
 export type IntelliSenseBackend = "cpptools" | "clangd";
 
 /**
- * Returns the IntelliSense backend tf-tools should use for the current workspace.
+ * Returns the IntelliSense backend tbench should use for the current workspace.
  *
- * Prefers cpptools when its custom-configuration API is available and tf-tools
+ * Prefers cpptools when its custom-configuration API is available and tbench
  * is configured as the provider. Falls back to clangd when the Microsoft C/C++
  * extension is unavailable — for example in editors such as Cursor that ship a
  * different C/C++ extension and rely on clangd instead.
@@ -85,6 +85,6 @@ export function checkProviderReadiness(): IntelliSenseProviderReadiness {
     warningState: "missing-provider",
     lastWarningMessage:
       `IntelliSense integration is unavailable: install Microsoft C/C++ (${CPPTOOLS_EXTENSION_ID}) ` +
-      `with cepetr.tf-tools as the configuration provider, or install the clangd extension (${CLANGD_EXTENSION_ID}).`,
+      `with cepetr.tbench as the configuration provider, or install the clangd extension (${CLANGD_EXTENSION_ID}).`,
   };
 }

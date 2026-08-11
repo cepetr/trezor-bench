@@ -31,7 +31,7 @@ components:
         template: malformed-template.json
         when: all(model(T2T1), target(emu))
 
-      # T3W1+hw → template with unknown tf-tools variable
+      # T3W1+hw → template with unknown tbench variable
       - name: Debug (unknown variable)
         template: unknown-var-template.json
         when: all(model(T3W1), target(hw))

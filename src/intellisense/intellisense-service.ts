@@ -351,7 +351,7 @@ export class IntelliSenseService {
 
 function buildMissingReasonNoInputs(artifactsRoot: string): string {
   if (!artifactsRoot) {
-    return "[paths].build-artifacts is empty in tf-tools.toml; cannot resolve the compile-commands artifact.";
+    return "[paths].build-artifacts is empty in tbench.toml; cannot resolve the compile-commands artifact.";
   }
   return "Cannot resolve the compile-commands artifact: check manifest artifactFolder and artifactName fields.";
 }

@@ -6,10 +6,10 @@
  *  - missing-executable: executable file absent, executeDebugLaunch returns gracefully
  *  - missing-template: loadDebugTemplate returns "missing" for non-existent template
  *  - malformed-template: loadDebugTemplate returns "invalid" for malformed JSONC
- *  - unresolved-variable: applyTfToolsSubstitution reports unknown tf-tools variables
+ *  - unresolved-variable: applyTbenchSubstitution reports unknown tbench variables
  *  - ambiguous-profile: resolveActiveExecutableArtifact returns ambiguous state
  *  - traversal: loadDebugTemplate returns "traversal-blocked" for escaping paths
- *  - unsupported-workspace: tfTools.startDebugging completes without throwing
+ *  - unsupported-workspace: tbench.startDebugging completes without throwing
  *  - each blocked executeDebugLaunch call resolves without throwing
  */
 
@@ -24,7 +24,7 @@ import {
 import {
   loadDebugTemplate,
   buildDebugVariableMap,
-  applyTfToolsSubstitution,
+  applyTbenchSubstitution,
   executeDebugLaunch,
 } from "../../commands/debug-launch";
 import {
@@ -157,7 +157,7 @@ suite("Debug Launch Failures – missing-executable", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-missing-exe-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-missing-exe-"));
   });
 
   teardown(() => {
@@ -211,7 +211,7 @@ suite("Debug Launch Failures – missing-template", () => {
       return;
     }
 
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-missing-tpl-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-missing-tpl-"));
     try {
       // Create the executable so we get past missing-executable check
       const exeDir = path.join(tmpDir, "model-t");
@@ -254,7 +254,7 @@ suite("Debug Launch Failures – malformed-template", () => {
       return;
     }
 
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-malformed-tpl-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-malformed-tpl-"));
     try {
       const exeDir = path.join(tmpDir, "model-t");
       fs.mkdirSync(exeDir);
@@ -279,21 +279,21 @@ suite("Debug Launch Failures – malformed-template", () => {
 // ---------------------------------------------------------------------------
 
 suite("Debug Launch Failures – unresolved-variable", () => {
-  test("unknown-var-template.json fixture contains a non-existent tfTools variable", () => {
+  test("unknown-var-template.json fixture contains a non-existent tbench variable", () => {
     const result = loadDebugTemplate("unknown-var-template.json", failuresTemplatesRoot);
     assert.strictEqual(result.parseState, "loaded");
     // Verify the template contains the unknown var token
     const cfg = result.configuration!;
-    const hasUnknownVar = JSON.stringify(cfg).includes("tfTools.nonExistentVariable");
-    assert.ok(hasUnknownVar, "expected unknown-var-template.json to contain tfTools.nonExistentVariable");
+    const hasUnknownVar = JSON.stringify(cfg).includes("tbench.nonExistentVariable");
+    assert.ok(hasUnknownVar, "expected unknown-var-template.json to contain tbench.nonExistentVariable");
   });
 
-  test("applyTfToolsSubstitution reports unknownVars for the unknown-var template content", () => {
+  test("applyTbenchSubstitution reports unknownVars for the unknown-var template content", () => {
     const result = loadDebugTemplate("unknown-var-template.json", failuresTemplatesRoot);
     assert.strictEqual(result.parseState, "loaded");
 
     const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb", undefined);
-    const { unknownVars } = applyTfToolsSubstitution(result.configuration, varMap.resolvedVars);
+    const { unknownVars } = applyTbenchSubstitution(result.configuration, varMap.resolvedVars);
     assert.ok(
       unknownVars.some((v) => v.includes("nonExistentVariable")),
       `expected nonExistentVariable in unknownVars, got: ${unknownVars.join(", ")}`
@@ -306,7 +306,7 @@ suite("Debug Launch Failures – unresolved-variable", () => {
       return;
     }
 
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-unknown-var-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-unknown-var-"));
     try {
       const exeDir = path.join(tmpDir, "model-t");
       fs.mkdirSync(exeDir);
@@ -343,7 +343,7 @@ suite("Debug Launch Failures – traversal", () => {
       return;
     }
 
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-traversal-test-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-traversal-test-"));
     try {
       const exeDir = path.join(tmpDir, "model-t");
       fs.mkdirSync(exeDir);
@@ -396,17 +396,17 @@ suite("Debug Launch Failures – manifest-invalid", () => {
 // ---------------------------------------------------------------------------
 
 suite("Debug Launch Failures – unsupported-workspace", () => {
-  test("tfTools.startDebugging command is registered and completes without throwing", async () => {
+  test("tbench.startDebugging command is registered and completes without throwing", async () => {
     const cmds = await vscode.commands.getCommands(false);
     assert.ok(
-      cmds.includes("tfTools.startDebugging"),
-      "expected tfTools.startDebugging to be registered"
+      cmds.includes("tbench.startDebugging"),
+      "expected tbench.startDebugging to be registered"
     );
 
     // Execute without a loaded manifest state — should return without throwing
     await assert.doesNotReject(
-      () => Promise.resolve(vscode.commands.executeCommand("tfTools.startDebugging")),
-      "expected tfTools.startDebugging to execute without throwing in unsupported state"
+      () => Promise.resolve(vscode.commands.executeCommand("tbench.startDebugging")),
+      "expected tbench.startDebugging to execute without throwing in unsupported state"
     );
   });
 });

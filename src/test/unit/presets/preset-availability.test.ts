@@ -19,7 +19,7 @@ import { ActiveConfig } from "../../../configuration/active-config";
 function manifest(targets: ManifestStateLoaded["targets"]): ManifestStateLoaded {
   return {
     status: "loaded",
-    manifestUri: vscode.Uri.file("/workspace/tf-tools-manifest.yaml"),
+    manifestUri: vscode.Uri.file("/workspace/tbench-manifest.yaml"),
     models: [{ kind: "model", id: "T2T1", name: "Trezor Model T" }],
     targets,
     components: [{ kind: "component", id: "firmware", name: "Firmware" }],

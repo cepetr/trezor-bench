@@ -4,7 +4,7 @@ import * as fsNative from "fs";
 import * as path from "path";
 import { parse as parseToml, TomlError } from "smol-toml";
 
-export const REPOSITORY_CONFIGURATION_FILE = "tf-tools.toml";
+export const REPOSITORY_CONFIGURATION_FILE = "tbench.toml";
 
 export const REPOSITORY_PATH_DEFAULTS = {
   cargoWorkspace: "core/embed",
@@ -186,7 +186,7 @@ function parseConfigurationPaths(source: string):
 }
 
 /**
- * Reads the root-level optional `tf-tools.toml` for one workspace folder.
+ * Reads the root-level optional `tbench.toml` for one workspace folder.
  * VS Code variables are deliberately not expanded: values are repository data.
  */
 export async function loadRepositoryConfiguration(

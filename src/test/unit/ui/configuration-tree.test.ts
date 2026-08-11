@@ -76,9 +76,9 @@ suite("SelectorChoiceItem icons", () => {
     assert.ok((item.iconPath as vscode.Uri).fsPath.endsWith("images/blank-tree-icon.svg"));
   });
 
-  test("selects tfTools.selectPreset as the command for a preset choice", () => {
+  test("selects tbench.selectPreset as the command for a preset choice", () => {
     const item = new SelectorChoiceItem("preset", "test", "test", false);
-    assert.strictEqual(item.command?.command, "tfTools.selectPreset");
+    assert.strictEqual(item.command?.command, "tbench.selectPreset");
   });
 });
 
@@ -268,7 +268,7 @@ suite("BuildOptionMultistateHeaderItem mismatch rendering", () => {
 suite("BuildOptionStateItem selectability", () => {
   test("has a select command by default", () => {
     const item = new BuildOptionStateItem("opt", "swo", "SWO", false);
-    assert.strictEqual(item.command?.command, "tfTools.selectBuildOptionState");
+    assert.strictEqual(item.command?.command, "tbench.selectBuildOptionState");
   });
 
   test("omits the select command when not selectable (unresolved option, Edge Cases)", () => {
@@ -904,7 +904,7 @@ suite("ConfigurationTreeProvider – Executable row", () => {
 function makeManifestState(): ManifestStateLoaded {
   return {
     status: "loaded",
-    manifestUri: vscode.Uri.file("/workspace/tf-tools-manifest.yaml"),
+    manifestUri: vscode.Uri.file("/workspace/tbench-manifest.yaml"),
     models: [{ kind: "model", id: "T2T1", name: "Trezor Model T" }],
     targets: [{ kind: "target", id: "hw", name: "Hardware", shortName: "HW" }],
     components: [{ kind: "component", id: "firmware", name: "Firmware" }],
@@ -1125,7 +1125,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
       ["default", "test", "prodtest"]
     );
     for (const child of children.slice(1)) {
-      assert.strictEqual(child.command?.command, "tfTools.selectPreset");
+      assert.strictEqual(child.command?.command, "tbench.selectPreset");
       assert.strictEqual(child.description, undefined);
       assert.strictEqual(child.resourceUri, undefined);
     }
@@ -1317,7 +1317,7 @@ suite("ConfigurationTreeProvider – paneRootChildren('build-selection')", () =>
   test("missing: renders the missing-manifest warning and placeholder", () => {
     provider.update({
       status: "missing",
-      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+      manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
     });
     const children = provider.paneRootChildren("build-selection");
     assert.ok(children[0] instanceof WarningItem);
@@ -1327,7 +1327,7 @@ suite("ConfigurationTreeProvider – paneRootChildren('build-selection')", () =>
   test("invalid: renders the validation-error warning and placeholder", () => {
     provider.update({
       status: "invalid",
-      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+      manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
       validationIssues: [{ severity: "error", code: "invalid-type", message: "bad" }],
       loadedAt: new Date(),
     });
@@ -1369,7 +1369,7 @@ suite("ConfigurationTreeProvider – paneRootChildren('build-options')", () => {
   test("missing: renders the unavailable-manifest placeholder", () => {
     provider.update({
       status: "missing",
-      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+      manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
     });
     const children = provider.paneRootChildren("build-options");
     assert.strictEqual(children.length, 1);
@@ -1380,7 +1380,7 @@ suite("ConfigurationTreeProvider – paneRootChildren('build-options')", () => {
   test("invalid: renders the invalid-manifest placeholder", () => {
     provider.update({
       status: "invalid",
-      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+      manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
       validationIssues: [{ severity: "error", code: "invalid-type", message: "bad" }],
       loadedAt: new Date(),
     });
@@ -1802,7 +1802,7 @@ suite("ConfigurationTreeProvider – no section rows inside any pane (FR-003)", 
   });
 
   test("missing manifest: no pane renders a forbidden section-name row", () => {
-    provider.update({ status: "missing", manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml") });
+    provider.update({ status: "missing", manifestUri: vscode.Uri.file("/workspace/tbench.yaml") });
     for (const paneId of PANE_IDS) {
       for (const row of collectAllRows(provider, paneId)) {
         assert.ok(!FORBIDDEN_LABELS.has(labelText(row)), `pane '${paneId}' rendered forbidden row '${labelText(row)}'`);
@@ -1813,7 +1813,7 @@ suite("ConfigurationTreeProvider – no section rows inside any pane (FR-003)", 
   test("invalid manifest: no pane renders a forbidden section-name row", () => {
     provider.update({
       status: "invalid",
-      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+      manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
       validationIssues: [{ severity: "error", code: "invalid-type", message: "bad" }],
       loadedAt: new Date(),
     });

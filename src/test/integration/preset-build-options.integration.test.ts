@@ -57,7 +57,7 @@ function fixtureUris(fixtureName: string): { shared: vscode.Uri; user: vscode.Ur
   };
 }
 
-// Mirrors test-fixtures/workspaces/preset-valid/tf-tools-manifest.yaml.
+// Mirrors test-fixtures/workspaces/preset-valid/tbench-manifest.yaml.
 const BUILD_OPTIONS: BuildOption[] = [
   { key: "frozen", id: "frozen", label: "Frozen", flag: "--frozen", kind: "checkbox" },
   { key: "btc_only", id: "btc-only", label: "BTC Only", flag: "--btc-only", kind: "checkbox" },
@@ -90,7 +90,7 @@ const BUILD_OPTIONS: BuildOption[] = [
 function manifest(): ManifestStateLoaded {
   return {
     status: "loaded",
-    manifestUri: vscode.Uri.file("/workspace/tf-tools-manifest.yaml"),
+    manifestUri: vscode.Uri.file("/workspace/tbench-manifest.yaml"),
     models: [
       { kind: "model", id: "T2T1", name: "Trezor Model T" },
       { kind: "model", id: "T3W1", name: "Trezor Model T3" },

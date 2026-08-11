@@ -20,8 +20,8 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import {
-  TfToolsDebugConfigurationProvider,
-  TFTOOLS_DEBUG_TYPE,
+  TbenchDebugConfigurationProvider,
+  TBENCH_DEBUG_TYPE,
   generateDebugConfigurations,
   labelForProfileEntry,
   labelForDefaultEntry,
@@ -93,7 +93,7 @@ suite("generateDebugConfigurations – multi-profile entry set", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-mp-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-mp-"));
     fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
   });
 
@@ -109,8 +109,8 @@ suite("generateDebugConfigurations – multi-profile entry set", () => {
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
     assert.strictEqual(entries.length, 4);
-    assert.strictEqual(entries.filter((e) => e["tfToolsMode"] === "default").length, 1);
-    assert.strictEqual(entries.filter((e) => e["tfToolsMode"] === "profile").length, 3);
+    assert.strictEqual(entries.filter((e) => e["tbenchMode"] === "default").length, 1);
+    assert.strictEqual(entries.filter((e) => e["tbenchMode"] === "profile").length, 3);
   });
 
   test("2 matching profiles → 3 total entries (1 default + 2 profile-specific)", () => {
@@ -121,7 +121,7 @@ suite("generateDebugConfigurations – multi-profile entry set", () => {
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
     assert.strictEqual(entries.length, 3);
-    assert.strictEqual(entries.filter((e) => e["tfToolsMode"] === "profile").length, 2);
+    assert.strictEqual(entries.filter((e) => e["tbenchMode"] === "profile").length, 2);
   });
 
   test("1 matching profile → 1 entry only (default, no profile-specific)", () => {
@@ -132,7 +132,7 @@ suite("generateDebugConfigurations – multi-profile entry set", () => {
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
     assert.strictEqual(entries.length, 1);
-    assert.strictEqual(entries[0]["tfToolsMode"], "default");
+    assert.strictEqual(entries[0]["tbenchMode"], "default");
   });
 
   test("default entry profile is first matching profile in declaration order", () => {
@@ -144,8 +144,8 @@ suite("generateDebugConfigurations – multi-profile entry set", () => {
 
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
-    const defaultEntry = entries.find((e) => e["tfToolsMode"] === "default");
-    assert.strictEqual(defaultEntry!["tfToolsProfileId"], firstProfile.id);
+    const defaultEntry = entries.find((e) => e["tbenchMode"] === "default");
+    assert.strictEqual(defaultEntry!["tbenchProfileId"], firstProfile.id);
   });
 
   test("profile-specific entries follow declaration order, ordered by id", () => {
@@ -157,10 +157,10 @@ suite("generateDebugConfigurations – multi-profile entry set", () => {
 
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
-    const profileEntries = entries.filter((e) => e["tfToolsMode"] === "profile");
-    assert.strictEqual(profileEntries[0]["tfToolsProfileId"], profiles[0].id);
-    assert.strictEqual(profileEntries[1]["tfToolsProfileId"], profiles[1].id);
-    assert.strictEqual(profileEntries[2]["tfToolsProfileId"], profiles[2].id);
+    const profileEntries = entries.filter((e) => e["tbenchMode"] === "profile");
+    assert.strictEqual(profileEntries[0]["tbenchProfileId"], profiles[0].id);
+    assert.strictEqual(profileEntries[1]["tbenchProfileId"], profiles[1].id);
+    assert.strictEqual(profileEntries[2]["tbenchProfileId"], profiles[2].id);
   });
 
   test("all entries share the same contextKey", () => {
@@ -171,7 +171,7 @@ suite("generateDebugConfigurations – multi-profile entry set", () => {
 
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
-    assert.ok(entries.every((e) => e["tfToolsContextKey"] === expectedKey));
+    assert.ok(entries.every((e) => e["tbenchContextKey"] === expectedKey));
   });
 
   test("profile-specific entry label includes profile name", () => {
@@ -184,7 +184,7 @@ suite("generateDebugConfigurations – multi-profile entry set", () => {
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
     const profileEntryForFirst = entries.find(
-      (e) => e["tfToolsMode"] === "profile" && e["tfToolsProfileId"] === firstProfile.id
+      (e) => e["tbenchMode"] === "profile" && e["tbenchProfileId"] === firstProfile.id
     );
     assert.ok(profileEntryForFirst, "profile-specific entry for first profile should exist");
     assert.ok(profileEntryForFirst.name.includes(firstProfile.name),
@@ -200,9 +200,9 @@ suite("generateDebugConfigurations – multi-profile entry set", () => {
 
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
-    const defaultEntry = entries.find((e) => e["tfToolsMode"] === "default");
+    const defaultEntry = entries.find((e) => e["tbenchMode"] === "default");
     const profileEntry = entries.find(
-      (e) => e["tfToolsMode"] === "profile" && e["tfToolsProfileId"] === firstProfile.id
+      (e) => e["tbenchMode"] === "profile" && e["tbenchProfileId"] === firstProfile.id
     );
     // default label is shorter than profile label (no profile name prefix)
     assert.ok(defaultEntry!.name.length < profileEntry!.name.length);
@@ -237,11 +237,11 @@ suite("generateDebugConfigurations – multi-profile entry set", () => {
 // Suite: Provider multi-profile – provideDebugConfigurations
 // ---------------------------------------------------------------------------
 
-suite("TfToolsDebugConfigurationProvider – multi-profile provideDebugConfigurations", () => {
+suite("TbenchDebugConfigurationProvider – multi-profile provideDebugConfigurations", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-mp-provider-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-mp-provider-"));
     fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
   });
 
@@ -255,7 +255,7 @@ suite("TfToolsDebugConfigurationProvider – multi-profile provideDebugConfigura
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -274,11 +274,11 @@ suite("TfToolsDebugConfigurationProvider – multi-profile provideDebugConfigura
 // Suite: Provider resolveDebugConfiguration – profile-specific launch
 // ---------------------------------------------------------------------------
 
-suite("TfToolsDebugConfigurationProvider – profile-specific resolveDebugConfiguration", () => {
+suite("TbenchDebugConfigurationProvider – profile-specific resolveDebugConfiguration", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-mp-resolve-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-mp-resolve-"));
     fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
   });
 
@@ -295,7 +295,7 @@ suite("TfToolsDebugConfigurationProvider – profile-specific resolveDebugConfig
     const folder = makeWorkspaceFolder(tmpDir);
     const templatesRoot = debugLaunchValidTemplatesRoot();
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -304,19 +304,19 @@ suite("TfToolsDebugConfigurationProvider – profile-specific resolveDebugConfig
     );
 
     const profileProxy: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: `Trezor: ${secondProfile.name}`,
-      tfToolsMode: "profile",
-      tfToolsProfileId: secondProfile.id,
-      tfToolsContextKey: makeContextKey(config),
+      tbenchMode: "profile",
+      tbenchProfileId: secondProfile.id,
+      tbenchContextKey: makeContextKey(config),
     };
 
     const resolved = provider.resolveDebugConfiguration(folder, profileProxy, makeCancelToken());
 
     assert.ok(resolved !== undefined, "profile-specific entry should resolve to real config");
     const resolvedConfig = resolved as vscode.DebugConfiguration;
-    assert.notStrictEqual(resolvedConfig.type, TFTOOLS_DEBUG_TYPE);
+    assert.notStrictEqual(resolvedConfig.type, TBENCH_DEBUG_TYPE);
   });
 
   test("resolved profile-specific entry keeps the selected proxy label for repeat F5 launches", () => {
@@ -327,7 +327,7 @@ suite("TfToolsDebugConfigurationProvider – profile-specific resolveDebugConfig
     const secondProfile = component.debug![1];
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -336,12 +336,12 @@ suite("TfToolsDebugConfigurationProvider – profile-specific resolveDebugConfig
     );
 
     const profileProxy: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: labelForProfileEntry(secondProfile.name),
-      tfToolsMode: "profile",
-      tfToolsProfileId: secondProfile.id,
-      tfToolsContextKey: makeContextKey(config),
+      tbenchMode: "profile",
+      tbenchProfileId: secondProfile.id,
+      tbenchContextKey: makeContextKey(config),
     };
 
     const resolved = provider.resolveDebugConfiguration(folder, profileProxy, makeCancelToken());
@@ -358,7 +358,7 @@ suite("TfToolsDebugConfigurationProvider – profile-specific resolveDebugConfig
     const secondProfile = component.debug![1];
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -367,12 +367,12 @@ suite("TfToolsDebugConfigurationProvider – profile-specific resolveDebugConfig
     );
 
     const oldProfileProxy: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: `Trezor: ${secondProfile.name} | T2T1 | HW | Core`,
-      tfToolsMode: "profile",
-      tfToolsProfileId: secondProfile.id,
-      tfToolsContextKey: makeContextKey(config),
+      tbenchMode: "profile",
+      tbenchProfileId: secondProfile.id,
+      tbenchContextKey: makeContextKey(config),
     };
 
     const resolved = provider.resolveDebugConfiguration(folder, oldProfileProxy, makeCancelToken());
@@ -387,7 +387,7 @@ suite("TfToolsDebugConfigurationProvider – profile-specific resolveDebugConfig
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -396,12 +396,12 @@ suite("TfToolsDebugConfigurationProvider – profile-specific resolveDebugConfig
     );
 
     const profileProxy: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: "Trezor: gone",
-      tfToolsMode: "profile",
-      tfToolsProfileId: "nonexistent:debug[99]",
-      tfToolsContextKey: makeContextKey(config),
+      tbenchMode: "profile",
+      tbenchProfileId: "nonexistent:debug[99]",
+      tbenchContextKey: makeContextKey(config),
     };
 
     const resolved = provider.resolveDebugConfiguration(folder, profileProxy, makeCancelToken());
@@ -420,7 +420,7 @@ suite("label helpers – multi-profile labels", () => {
     assert.notStrictEqual(l1, l2);
   });
 
-  test("default and profile-specific labels use the tf-tools prefix", () => {
+  test("default and profile-specific labels use the tbench prefix", () => {
     const def = labelForDefaultEntry();
     const prof = labelForProfileEntry("MyProfile");
     assert.strictEqual(def, "Trezor");
@@ -428,7 +428,7 @@ suite("label helpers – multi-profile labels", () => {
     assert.ok(prof.includes("MyProfile"));
   });
 
-  test("profile label includes only the profile name after the tf-tools prefix", () => {
+  test("profile label includes only the profile name after the tbench prefix", () => {
     const label = labelForProfileEntry("GDB Remote (T2T1)");
     assert.ok(label.includes("GDB Remote (T2T1)"));
     assert.strictEqual(label, "Trezor: GDB Remote (T2T1)");
@@ -443,7 +443,7 @@ suite("executeDebugLaunch – multi-profile selection", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-mp-launch-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-mp-launch-"));
     fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
     fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
   });
@@ -477,9 +477,9 @@ suite("executeDebugLaunch – multi-profile selection", () => {
 
       assert.strictEqual(pickerShown, false);
       assert.strictEqual(launchCount, 1);
-      assert.strictEqual(launchedConfig?.type, TFTOOLS_DEBUG_TYPE);
+      assert.strictEqual(launchedConfig?.type, TBENCH_DEBUG_TYPE);
       assert.strictEqual(launchedConfig?.name, "Trezor");
-      assert.strictEqual(launchedConfig?.["tfToolsMode"], "default");
+      assert.strictEqual(launchedConfig?.["tbenchMode"], "default");
     } finally {
       (vscode.window as { showQuickPick: typeof vscode.window.showQuickPick }).showQuickPick = originalShowQuickPick;
       (vscode.debug as { startDebugging: typeof vscode.debug.startDebugging }).startDebugging = originalStartDebugging;
@@ -511,9 +511,9 @@ suite("executeDebugLaunch – multi-profile selection", () => {
 
       assert.strictEqual(pickedLabel, "Profile B");
       assert.ok(launchedConfig, "expected selected profile to be launched");
-      assert.strictEqual(launchedConfig?.type, TFTOOLS_DEBUG_TYPE);
+      assert.strictEqual(launchedConfig?.type, TBENCH_DEBUG_TYPE);
       assert.strictEqual(launchedConfig?.name, "Trezor: Profile B");
-      assert.strictEqual(launchedConfig?.["tfToolsMode"], "profile");
+      assert.strictEqual(launchedConfig?.["tbenchMode"], "profile");
     } finally {
       (vscode.window as { showQuickPick: typeof vscode.window.showQuickPick }).showQuickPick = originalShowQuickPick;
       (vscode.debug as { startDebugging: typeof vscode.debug.startDebugging }).startDebugging = originalStartDebugging;

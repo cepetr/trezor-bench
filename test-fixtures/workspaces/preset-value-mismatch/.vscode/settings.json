@@ -1,4 +1,4 @@
 {
-  "tfTools.manifestPath": "tf-tools-manifest.yaml",
-  "tfTools.cargoWorkspacePath": ""
+  "tbench.manifestPath": "tbench-manifest.yaml",
+  "tbench.cargoWorkspacePath": ""
 }

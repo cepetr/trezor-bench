@@ -9,7 +9,7 @@ export function requireWorkspaceFolder(): vscode.WorkspaceFolder {
   const folders = vscode.workspace.workspaceFolders;
   if (!folders || folders.length === 0) {
     throw new Error(
-      "Trezor Firmware Tools requires an open workspace folder. Please open a folder and try again."
+      "Trezor Bench requires an open workspace folder. Please open a folder and try again."
     );
   }
   return folders[0];

@@ -187,7 +187,7 @@ export function blockReasonMessage(reason: WorkflowBlockReason): string {
     case "workspace-unsupported":
       return "Build Workflow requires exactly one open workspace folder. Multi-root workspaces and empty windows are not supported.";
     case "manifest-missing":
-      return "Build Workflow is blocked: the manifest file (tf-tools.yaml) was not found. Create or restore it to enable build actions.";
+      return "Build Workflow is blocked: the manifest file (tbench.yaml) was not found. Create or restore it to enable build actions.";
     case "manifest-invalid":
       return "Build Workflow is blocked: the manifest has validation errors or invalid availability rules. Check the Problems view and fix all errors to enable build actions.";
     case "presets-unavailable":

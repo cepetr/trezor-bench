@@ -38,14 +38,14 @@ export class StatusBarPresenter implements vscode.Disposable {
       vscode.StatusBarAlignment.Left,
       100
     );
-    this._item.command = "tfTools.configuration.focus";
+    this._item.command = "tbench.configuration.focus";
   }
 
   /**
    * Updates visibility and text of the status-bar item.
    *
    * The item is visible only when the manifest is loaded, an active
-   * configuration is set, and the setting `tfTools.showConfigurationInStatusBar`
+   * configuration is set, and the setting `tbench.showConfigurationInStatusBar`
    * is `true`.
    */
   update(

@@ -18,19 +18,19 @@ import {
 } from "../unit/workflow-test-helpers";
 import { executeDebugLaunch } from "../../commands/debug-launch";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
-import { TfToolsDebugConfigurationProvider, TFTOOLS_DEBUG_TYPE } from "../../debug/run-debug-provider";
+import { TbenchDebugConfigurationProvider, TBENCH_DEBUG_TYPE } from "../../debug/run-debug-provider";
 import { makeContextKey } from "../../intellisense/artifact-resolution";
 
 /** Commands that must never be registered in any current slice. */
 const BANNED_COMMAND_PATTERNS = [
-  /^tfTools\.debug\b/i,
-  /^tfTools\.intellisense\b/i,
+  /^tbench\.debug\b/i,
+  /^tbench\.intellisense\b/i,
 ];
 
 suite("Scope guard — no cross-slice commands", () => {
   test("package.json does not use eager '*' activation", () => {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
-    assert.ok(ext, "expected cepetr.tf-tools extension to be available in the test host");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
+    assert.ok(ext, "expected cepetr.tbench extension to be available in the test host");
 
     const activationEvents = (ext.packageJSON?.activationEvents ?? []) as string[];
     assert.ok(
@@ -40,8 +40,8 @@ suite("Scope guard — no cross-slice commands", () => {
   });
 
   async function activateExtension(): Promise<void> {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
-    assert.ok(ext, "expected cepetr.tf-tools extension to be available in the test host");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
+    assert.ok(ext, "expected cepetr.tbench extension to be available in the test host");
     if (!ext.isActive) {
       await ext.activate();
     }
@@ -60,51 +60,51 @@ suite("Scope guard — no cross-slice commands", () => {
     );
   });
 
-  test("only expected tfTools commands are registered", async () => {
+  test("only expected tbench commands are registered", async () => {
     await activateExtension();
     const allCommands = await vscode.commands.getCommands(true);
     // Each contributed view auto-generates its own `<viewId>.focus` and
     // `<viewId>.resetViewLocation` commands; the three configuration panes'
     // ids are host-generated, not contributed, and must be excluded here.
     const VIEW_COMMAND_PREFIXES = [
-      "tfTools.configuration.",
-      "tfTools.buildOptions.",
-      "tfTools.buildArtifacts.",
+      "tbench.configuration.",
+      "tbench.buildOptions.",
+      "tbench.buildArtifacts.",
     ];
     const tfCommands = allCommands
-      .filter((cmd) => cmd.startsWith("tfTools."))
+      .filter((cmd) => cmd.startsWith("tbench."))
       .filter((cmd) => !VIEW_COMMAND_PREFIXES.some((prefix) => cmd.startsWith(prefix)));
 
     // Allowed commands through Debug Launch (Feature 6) and earlier slices
     const ALLOWED = new Set([
-      "tfTools.showLogs",
-      "tfTools.selectModel",
-      "tfTools.selectTarget",
-      "tfTools.selectComponent",
-      "tfTools.selectPreset",
-      "tfTools.build",
-      "tfTools.clippy",
-      "tfTools.check",
-      "tfTools.clean",
-      "tfTools.toggleBuildOption",
-      "tfTools.selectBuildOptionState",
-      "tfTools.refreshIntelliSense",
-      "tfTools.flash",
-      "tfTools.upload",
-      "tfTools.openMapFile",
-      "tfTools.startDebugging",
+      "tbench.showLogs",
+      "tbench.selectModel",
+      "tbench.selectTarget",
+      "tbench.selectComponent",
+      "tbench.selectPreset",
+      "tbench.build",
+      "tbench.clippy",
+      "tbench.check",
+      "tbench.clean",
+      "tbench.toggleBuildOption",
+      "tbench.selectBuildOptionState",
+      "tbench.refreshIntelliSense",
+      "tbench.flash",
+      "tbench.upload",
+      "tbench.openMapFile",
+      "tbench.startDebugging",
     ]);
 
     const unexpected = tfCommands.filter((cmd) => !ALLOWED.has(cmd));
     assert.deepStrictEqual(
       unexpected,
       [],
-      `Unexpected tfTools commands found: ${unexpected.join(", ")}`
+      `Unexpected tbench commands found: ${unexpected.join(", ")}`
     );
   });
 
   test("configuration view header does not expose unnamed Debug actions", async () => {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     if (!ext) {
       return; // Skip gracefully when extension not installed in test host
     }
@@ -112,9 +112,9 @@ suite("Scope guard — no cross-slice commands", () => {
       ext.packageJSON?.contributes?.menus ?? {};
     const viewTitleMenus: unknown[] = (menus["view/title"] as unknown[]) ?? [];
 
-    // Only tfTools.startDebugging is the allowed debug-related header action;
-    // any tfTools.debug.* commands in the header would be cross-slice
-    const BANNED_VIEW_TITLE_COMMANDS = [/^tfTools\.debug\b/];
+    // Only tbench.startDebugging is the allowed debug-related header action;
+    // any tbench.debug.* commands in the header would be cross-slice
+    const BANNED_VIEW_TITLE_COMMANDS = [/^tbench\.debug\b/];
     const offenders = viewTitleMenus.filter((entry) => {
       const e = entry as { command?: string };
       return BANNED_VIEW_TITLE_COMMANDS.some((re) => e.command && re.test(e.command));
@@ -127,7 +127,7 @@ suite("Scope guard — no cross-slice commands", () => {
   });
 
   test("configuration view keeps Clippy/Check/Clean out of primary header slots", async () => {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     if (!ext) {
       return;
     }
@@ -143,11 +143,11 @@ suite("Scope guard — no cross-slice commands", () => {
       .map((entry) => entry.command)
       .filter((command): command is string => Boolean(command));
 
-    assert.ok(!primaryCommands.includes("tfTools.clippy"), "tfTools.clippy must stay out of the primary header");
-    assert.ok(!primaryCommands.includes("tfTools.check"), "tfTools.check must stay out of the primary header");
-    assert.ok(!primaryCommands.includes("tfTools.clean"), "tfTools.clean must stay out of the primary header");
-    assert.ok(!primaryCommands.includes("tfTools.flash"), "tfTools.flash must stay out of the primary header");
-    assert.ok(!primaryCommands.includes("tfTools.upload"), "tfTools.upload must stay out of the primary header");
+    assert.ok(!primaryCommands.includes("tbench.clippy"), "tbench.clippy must stay out of the primary header");
+    assert.ok(!primaryCommands.includes("tbench.check"), "tbench.check must stay out of the primary header");
+    assert.ok(!primaryCommands.includes("tbench.clean"), "tbench.clean must stay out of the primary header");
+    assert.ok(!primaryCommands.includes("tbench.flash"), "tbench.flash must stay out of the primary header");
+    assert.ok(!primaryCommands.includes("tbench.upload"), "tbench.upload must stay out of the primary header");
   });
 });
 
@@ -157,14 +157,14 @@ suite("Scope guard — no cross-slice commands", () => {
 
 suite("Debug Launch scope boundaries", () => {
   function getExtPackageJson(): Record<string, unknown> {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     if (!ext) {
       return {};
     }
     return ext.packageJSON as Record<string, unknown>;
   }
 
-  test("only tfTools.startDebugging is the debug-related command in package.json", () => {
+  test("only tbench.startDebugging is the debug-related command in package.json", () => {
     const pkg = getExtPackageJson();
     const commands = (pkg.contributes as { commands?: Array<{ command: string }> } | undefined)
       ?.commands ?? [];
@@ -173,17 +173,17 @@ suite("Debug Launch scope boundaries", () => {
       .filter((cmd) => cmd.toLowerCase().includes("debug"));
     assert.deepStrictEqual(
       debugCommands,
-      ["tfTools.startDebugging"],
-      "Only tfTools.startDebugging must be contributed as a debug-related command"
+      ["tbench.startDebugging"],
+      "Only tbench.startDebugging must be contributed as a debug-related command"
     );
   });
 
-  test("tfTools.startDebugging has Trezor category and correct title in package.json", () => {
+  test("tbench.startDebugging has Trezor category and correct title in package.json", () => {
     const pkg = getExtPackageJson();
     const commands = (pkg.contributes as { commands?: Array<{ command: string; title: string; category?: string }> } | undefined)
       ?.commands ?? [];
-    const entry = commands.find((c) => c.command === "tfTools.startDebugging");
-    assert.ok(entry, "expected tfTools.startDebugging in package.json commands");
+    const entry = commands.find((c) => c.command === "tbench.startDebugging");
+    assert.ok(entry, "expected tbench.startDebugging in package.json commands");
     assert.ok(
       entry.title.includes("Start Debugging") || entry.title.includes("Debug"),
       `expected debug-related title, got: ${entry.title}`
@@ -192,12 +192,12 @@ suite("Debug Launch scope boundaries", () => {
     assert.strictEqual(entry.category, "Trezor", "startDebugging must use Trezor category");
   });
 
-  test("no tfTools.debug.* settings are contributed", () => {
+  test("no tbench.debug.* settings are contributed", () => {
     const pkg = getExtPackageJson();
     const conf = (pkg.contributes as { configuration?: { properties?: Record<string, unknown> } } | undefined)
       ?.configuration;
     const propKeys = Object.keys(conf?.properties ?? {});
-    const illegalKeys = propKeys.filter((k) => /^tfTools\.debug\./.test(k));
+    const illegalKeys = propKeys.filter((k) => /^tbench\.debug\./.test(k));
     assert.deepStrictEqual(
       illegalKeys,
       [],
@@ -274,7 +274,7 @@ suite("Debug Launch – no launch.json persistence", () => {
     const templatesRoot = debugLaunchValidTemplatesRoot();
     const profile = (manifest.components[0].debug ?? [])[0];
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => artifactsRoot,
@@ -283,12 +283,12 @@ suite("Debug Launch – no launch.json persistence", () => {
     );
 
     const proxyConfig: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: "Trezor: test",
-      tfToolsMode: "default",
-      tfToolsProfileId: profile?.id ?? "",
-      tfToolsContextKey: makeContextKey(config),
+      tbenchMode: "default",
+      tbenchProfileId: profile?.id ?? "",
+      tbenchContextKey: makeContextKey(config),
     };
 
     try {

@@ -109,7 +109,7 @@ suite("PresetService – watching and reload", () => {
   let tmpDir: string;
 
   setup(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "tf-tools-preset-service-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "tbench-preset-service-"));
   });
 
   teardown(async () => {
@@ -234,8 +234,8 @@ suite("PresetService – cargoWorkspacePath re-resolution", () => {
   let tmpDirB: string;
 
   setup(async () => {
-    tmpDirA = await fs.mkdtemp(path.join(os.tmpdir(), "tf-tools-preset-cwp-a-"));
-    tmpDirB = await fs.mkdtemp(path.join(os.tmpdir(), "tf-tools-preset-cwp-b-"));
+    tmpDirA = await fs.mkdtemp(path.join(os.tmpdir(), "tbench-preset-cwp-a-"));
+    tmpDirB = await fs.mkdtemp(path.join(os.tmpdir(), "tbench-preset-cwp-b-"));
   });
 
   teardown(async () => {

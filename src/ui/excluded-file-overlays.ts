@@ -4,7 +4,7 @@
  * Applies a first-line warning `TextEditorDecorationType` to open editors
  * whose files are currently excluded from the active build configuration and
  * clears it as soon as a file is no longer excluded or the
- * `tfTools.excludedFiles.showEditorOverlay` preference is disabled.
+ * `tbench.excludedFiles.showEditorOverlay` preference is disabled.
  *
  * Implementation notes:
  *  - One shared `TextEditorDecorationType` is created at construction time

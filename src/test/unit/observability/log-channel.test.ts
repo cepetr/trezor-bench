@@ -17,13 +17,13 @@ suite("log-channel", () => {
     assert.doesNotThrow(() => {
       initLogChannel();
       log("test message");
-      logWorkflowFailure("Build", "manifest file (tf-tools.yaml) was not found");
+      logWorkflowFailure("Build", "manifest file (tbench.yaml) was not found");
       logArtifactActionBlocked("Flash", "manifest file is missing");
     });
   });
 
   test("logManifestState covers missing and invalid states", () => {
-    const manifestUri = { fsPath: "/workspace/tf-tools.yaml" } as import("vscode").Uri;
+    const manifestUri = { fsPath: "/workspace/tbench.yaml" } as import("vscode").Uri;
 
     assert.doesNotThrow(() => {
       logManifestState({ status: "missing", manifestUri });

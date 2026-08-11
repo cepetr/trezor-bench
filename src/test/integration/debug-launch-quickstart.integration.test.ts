@@ -7,7 +7,7 @@
  *   S3: Ambiguous and unmatched contexts stay discoverable but blocked (enablement)
  *   S4: Executable row explains readiness with tooltip
  *   S5: Template failures at invocation time, not during enablement
- *   S6: tf-tools substitution resolves nested values, preserves non-tf-tools variables
+ *   S6: tbench substitution resolves nested values, preserves non-tbench variables
  *   S7: Template-root traversal is rejected at invocation time
  */
 
@@ -24,7 +24,7 @@ import {
   deriveExecutableFileName,
   loadDebugTemplate,
   buildDebugVariableMap,
-  applyTfToolsSubstitution,
+  applyTbenchSubstitution,
   executeDebugLaunch,
 } from "../../commands/debug-launch";
 import {
@@ -73,7 +73,7 @@ suite("QS1 – Unique matching profile", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-qs1-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-qs1-"));
   });
 
   teardown(() => {
@@ -236,7 +236,7 @@ suite("QS4 – Executable row explains readiness", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-qs4-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-qs4-"));
   });
 
   teardown(() => {
@@ -304,7 +304,7 @@ suite("QS5 – Template failures at invocation time", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-qs5-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-qs5-"));
   });
 
   teardown(() => {
@@ -369,29 +369,29 @@ suite("QS5 – Template failures at invocation time", () => {
 });
 
 // ---------------------------------------------------------------------------
-// S6: tf-tools substitution in nested values; non-tf-tools vars preserved
+// S6: tbench substitution in nested values; non-tbench vars preserved
 // ---------------------------------------------------------------------------
 
-suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through", () => {
-  test("buildDebugVariableMap includes all built-in tf-tools variables", () => {
+suite("QS6 – tbench substitution and non-tbench variable pass-through", () => {
+  test("buildDebugVariableMap includes all built-in tbench variables", () => {
     const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/artifacts/model-t", "firmware.elf", "/artifacts/model-t/firmware.elf", "gdb-remote", undefined);
-    assert.strictEqual(varMap.resolvedVars["tfTools.model.id"], "T2T1");
-    assert.strictEqual(varMap.resolvedVars["tfTools.target.id"], "hw");
-    assert.strictEqual(varMap.resolvedVars["tfTools.component.id"], "core");
-    assert.strictEqual(varMap.resolvedVars["tfTools.artifactPath"], "/artifacts/model-t");
-    assert.strictEqual(varMap.resolvedVars["tfTools.executablePath"], "/artifacts/model-t/firmware.elf");
-    assert.strictEqual(varMap.resolvedVars["tfTools.executable"], "firmware.elf");
+    assert.strictEqual(varMap.resolvedVars["tbench.model.id"], "T2T1");
+    assert.strictEqual(varMap.resolvedVars["tbench.target.id"], "hw");
+    assert.strictEqual(varMap.resolvedVars["tbench.component.id"], "core");
+    assert.strictEqual(varMap.resolvedVars["tbench.artifactPath"], "/artifacts/model-t");
+    assert.strictEqual(varMap.resolvedVars["tbench.executablePath"], "/artifacts/model-t/firmware.elf");
+    assert.strictEqual(varMap.resolvedVars["tbench.executable"], "firmware.elf");
   });
 
-  test("applyTfToolsSubstitution resolves nested object and array string fields", () => {
+  test("applyTbenchSubstitution resolves nested object and array string fields", () => {
     const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb-remote", undefined);
     const template = {
       type: "cortex-debug",
-      executable: "${tfTools.executablePath}",
-      args: ["--model", "${tfTools.model.id}"],
-      nested: { label: "Debug ${tfTools.component.id}" },
+      executable: "${tbench.executablePath}",
+      args: ["--model", "${tbench.model.id}"],
+      nested: { label: "Debug ${tbench.component.id}" },
     };
-    const { value, unknownVars } = applyTfToolsSubstitution(template, varMap.resolvedVars);
+    const { value, unknownVars } = applyTbenchSubstitution(template, varMap.resolvedVars);
     const resolved = value as typeof template;
 
     assert.strictEqual(resolved.executable, "/build/firmware.elf");
@@ -400,35 +400,35 @@ suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through", ()
     assert.strictEqual(unknownVars.length, 0);
   });
 
-  test("applyTfToolsSubstitution leaves non-tf-tools VS Code variables untouched", () => {
+  test("applyTbenchSubstitution leaves non-tbench VS Code variables untouched", () => {
     const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "fw.elf", "/build/fw.elf", "gdb-remote", undefined);
     const template = {
       cwd: "${workspaceFolder}",
       serverPath: "${env:OPENOCD_PATH}",
-      executable: "${tfTools.executablePath}",
+      executable: "${tbench.executablePath}",
     };
-    const { value, unknownVars } = applyTfToolsSubstitution(template, varMap.resolvedVars);
+    const { value, unknownVars } = applyTbenchSubstitution(template, varMap.resolvedVars);
     const resolved = value as typeof template;
 
-    assert.strictEqual(resolved.cwd, "${workspaceFolder}", "non-tf-tools var must pass through");
+    assert.strictEqual(resolved.cwd, "${workspaceFolder}", "non-tbench var must pass through");
     assert.strictEqual(resolved.serverPath, "${env:OPENOCD_PATH}", "env var must pass through");
     assert.strictEqual(resolved.executable, "/build/fw.elf");
-    assert.strictEqual(unknownVars.length, 0, "non-tf-tools vars must not appear in unknownVars");
+    assert.strictEqual(unknownVars.length, 0, "non-tbench vars must not appear in unknownVars");
   });
 
-  test("applyTfToolsSubstitution reports unknown tf-tools variables", () => {
+  test("applyTbenchSubstitution reports unknown tbench variables", () => {
     const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "fw.elf", "/build/fw.elf", "gdb-remote", undefined);
-    const template = { serverPort: "${tfTools.nonExistentPort}" };
-    const { unknownVars } = applyTfToolsSubstitution(template, varMap.resolvedVars);
+    const template = { serverPort: "${tbench.nonExistentPort}" };
+    const { unknownVars } = applyTbenchSubstitution(template, varMap.resolvedVars);
 
     assert.ok(
-      unknownVars.includes("tfTools.nonExistentPort"),
-      `expected tfTools.nonExistentPort in unknownVars, got: ${unknownVars.join(", ")}`
+      unknownVars.includes("tbench.nonExistentPort"),
+      `expected tbench.nonExistentPort in unknownVars, got: ${unknownVars.join(", ")}`
     );
   });
 
   test("buildDebugVariableMap surface cyclic profile vars as resolution errors", () => {
-    const vars = { a: "${tfTools.debug.var:b}", b: "${tfTools.debug.var:a}" };
+    const vars = { a: "${tbench.debug.var:b}", b: "${tbench.debug.var:a}" };
     const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "fw.elf", "/build/fw.elf", "gdb-remote", vars);
 
     assert.ok(
@@ -469,7 +469,7 @@ suite("QS7 – Template-root traversal rejection", () => {
       return;
     }
 
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-qs7-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-qs7-"));
     try {
       const exeDir = path.join(tmpDir, "model-t");
       fs.mkdirSync(exeDir);

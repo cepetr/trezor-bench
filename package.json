@@ -1,53 +1,53 @@
 {
-  "name": "tf-tools",
-  "displayName": "Trezor Firmware Tools",
+  "name": "tbench",
+  "displayName": "Trezor Bench",
   "description": "Manage build configurations, artifacts, IntelliSense, and debugging in trezor-firmware.",
   "version": "0.3.2",
   "publisher": "cepetr",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cepetr/vscode-tf-tools.git"
+    "url": "https://github.com/cepetr/vscode-tbench.git"
   },
   "engines": {
     "vscode": "^1.105.0"
   },
-  "icon": "images/tf-tools-logo.png",
+  "icon": "images/tbench-logo.png",
   "categories": [
     "Other"
   ],
   "activationEvents": [
     "onStartupFinished",
-    "onDebugResolve:tftools"
+    "onDebugResolve:tbench"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "tf-tools",
-          "title": "Trezor Firmware Tools",
-          "icon": "images/tf-tools.svg"
+          "id": "tbench",
+          "title": "Trezor Bench",
+          "icon": "images/tbench.svg"
         }
       ]
     },
     "views": {
-      "tf-tools": [
+      "tbench": [
         {
-          "id": "tfTools.configuration",
+          "id": "tbench.configuration",
           "name": "Build Selection",
-          "icon": "images/tf-tools.svg",
+          "icon": "images/tbench.svg",
           "type": "tree"
         },
         {
-          "id": "tfTools.buildArtifacts",
+          "id": "tbench.buildArtifacts",
           "name": "Build Artifacts",
-          "icon": "images/tf-tools.svg",
+          "icon": "images/tbench.svg",
           "type": "tree"
         },
         {
-          "id": "tfTools.buildOptions",
+          "id": "tbench.buildOptions",
           "name": "Build Options",
-          "icon": "images/tf-tools.svg",
+          "icon": "images/tbench.svg",
           "type": "tree",
           "visibility": "collapsed"
         }
@@ -55,60 +55,60 @@
     },
     "commands": [
       {
-        "command": "tfTools.showLogs",
+        "command": "tbench.showLogs",
         "title": "Show Logs",
         "category": "Trezor"
       },
       {
-        "command": "tfTools.build",
+        "command": "tbench.build",
         "title": "Build",
         "category": "Trezor",
         "icon": "$(tools)"
       },
       {
-        "command": "tfTools.clippy",
+        "command": "tbench.clippy",
         "title": "Run Clippy",
         "category": "Trezor",
         "icon": "$(checklist)"
       },
       {
-        "command": "tfTools.check",
+        "command": "tbench.check",
         "title": "Run Check",
         "category": "Trezor",
         "icon": "$(check-all)"
       },
       {
-        "command": "tfTools.clean",
+        "command": "tbench.clean",
         "title": "Run Clean",
         "category": "Trezor",
         "icon": "$(trash)"
       },
       {
-        "command": "tfTools.refreshIntelliSense",
+        "command": "tbench.refreshIntelliSense",
         "title": "Refresh IntelliSense",
         "category": "Trezor",
         "icon": "$(refresh)"
       },
       {
-        "command": "tfTools.flash",
+        "command": "tbench.flash",
         "title": "Flash to Device",
         "category": "Trezor",
         "icon": "$(zap)"
       },
       {
-        "command": "tfTools.upload",
+        "command": "tbench.upload",
         "title": "Upload to Device",
         "category": "Trezor",
         "icon": "$(arrow-up)"
       },
       {
-        "command": "tfTools.openMapFile",
+        "command": "tbench.openMapFile",
         "title": "Open Map File",
         "category": "Trezor",
         "icon": "$(go-to-file)"
       },
       {
-        "command": "tfTools.startDebugging",
+        "command": "tbench.startDebugging",
         "title": "Start Debugging",
         "category": "Trezor",
         "icon": "$(debug-alt)"
@@ -117,141 +117,141 @@
     "menus": {
       "commandPalette": [
         {
-          "command": "tfTools.flash",
-          "when": "tfTools.flashApplicable"
+          "command": "tbench.flash",
+          "when": "tbench.flashApplicable"
         },
         {
-          "command": "tfTools.upload",
-          "when": "tfTools.uploadApplicable"
+          "command": "tbench.upload",
+          "when": "tbench.uploadApplicable"
         },
         {
-          "command": "tfTools.openMapFile",
+          "command": "tbench.openMapFile",
           "when": "false"
         },
         {
-          "command": "tfTools.startDebugging",
-          "when": "tfTools.startDebuggingEnabled"
+          "command": "tbench.startDebugging",
+          "when": "tbench.startDebuggingEnabled"
         }
       ],
       "view/item/context": [
         {
-          "command": "tfTools.flash",
-          "when": "view == tfTools.buildArtifacts && viewItem == artifact-binary && tfTools.flashApplicable",
+          "command": "tbench.flash",
+          "when": "view == tbench.buildArtifacts && viewItem == artifact-binary && tbench.flashApplicable",
           "group": "inline@1",
-          "enablement": "tfTools.binaryExists"
+          "enablement": "tbench.binaryExists"
         },
         {
-          "command": "tfTools.upload",
-          "when": "view == tfTools.buildArtifacts && viewItem == artifact-binary && tfTools.uploadApplicable",
+          "command": "tbench.upload",
+          "when": "view == tbench.buildArtifacts && viewItem == artifact-binary && tbench.uploadApplicable",
           "group": "inline@2",
-          "enablement": "tfTools.binaryExists"
+          "enablement": "tbench.binaryExists"
         },
         {
-          "command": "tfTools.openMapFile",
-          "when": "view == tfTools.buildArtifacts && viewItem == artifact-map",
+          "command": "tbench.openMapFile",
+          "when": "view == tbench.buildArtifacts && viewItem == artifact-map",
           "group": "inline@1",
-          "enablement": "tfTools.mapExists"
+          "enablement": "tbench.mapExists"
         },
         {
-          "command": "tfTools.startDebugging",
-          "when": "view == tfTools.buildArtifacts && viewItem == artifact-executable",
+          "command": "tbench.startDebugging",
+          "when": "view == tbench.buildArtifacts && viewItem == artifact-executable",
           "group": "inline@1",
-          "enablement": "tfTools.startDebuggingEnabled"
+          "enablement": "tbench.startDebuggingEnabled"
         }
       ],
       "view/title": [
         {
-          "command": "tfTools.build",
-          "when": "view == tfTools.configuration",
+          "command": "tbench.build",
+          "when": "view == tbench.configuration",
           "group": "navigation@1",
-          "enablement": "!tfTools.workflowBlocked && !tfTools.presetBlocked"
+          "enablement": "!tbench.workflowBlocked && !tbench.presetBlocked"
         },
         {
-          "command": "tfTools.startDebugging",
-          "when": "view == tfTools.configuration",
+          "command": "tbench.startDebugging",
+          "when": "view == tbench.configuration",
           "group": "navigation@2",
-          "enablement": "tfTools.startDebuggingEnabled"
+          "enablement": "tbench.startDebuggingEnabled"
         },
         {
-          "command": "tfTools.build",
-          "when": "view == tfTools.configuration",
+          "command": "tbench.build",
+          "when": "view == tbench.configuration",
           "group": "overflow@1",
-          "enablement": "!tfTools.workflowBlocked && !tfTools.presetBlocked"
+          "enablement": "!tbench.workflowBlocked && !tbench.presetBlocked"
         },
         {
-          "command": "tfTools.clippy",
-          "when": "view == tfTools.configuration",
+          "command": "tbench.clippy",
+          "when": "view == tbench.configuration",
           "group": "overflow@2",
-          "enablement": "!tfTools.workflowBlocked && !tfTools.presetBlocked"
+          "enablement": "!tbench.workflowBlocked && !tbench.presetBlocked"
         },
         {
-          "command": "tfTools.check",
-          "when": "view == tfTools.configuration",
+          "command": "tbench.check",
+          "when": "view == tbench.configuration",
           "group": "overflow@3",
-          "enablement": "!tfTools.workflowBlocked && !tfTools.presetBlocked"
+          "enablement": "!tbench.workflowBlocked && !tbench.presetBlocked"
         },
         {
-          "command": "tfTools.clean",
-          "when": "view == tfTools.configuration",
+          "command": "tbench.clean",
+          "when": "view == tbench.configuration",
           "group": "overflow@4",
-          "enablement": "!tfTools.workflowBlocked"
+          "enablement": "!tbench.workflowBlocked"
         },
         {
-          "command": "tfTools.flash",
-          "when": "view == tfTools.configuration && tfTools.flashApplicable",
+          "command": "tbench.flash",
+          "when": "view == tbench.configuration && tbench.flashApplicable",
           "group": "overflow@5",
-          "enablement": "tfTools.binaryExists"
+          "enablement": "tbench.binaryExists"
         },
         {
-          "command": "tfTools.upload",
-          "when": "view == tfTools.configuration && tfTools.uploadApplicable",
+          "command": "tbench.upload",
+          "when": "view == tbench.configuration && tbench.uploadApplicable",
           "group": "overflow@6",
-          "enablement": "tfTools.binaryExists"
+          "enablement": "tbench.binaryExists"
         },
         {
-          "command": "tfTools.startDebugging",
-          "when": "view == tfTools.configuration",
+          "command": "tbench.startDebugging",
+          "when": "view == tbench.configuration",
           "group": "overflow@7",
-          "enablement": "tfTools.startDebuggingEnabled"
+          "enablement": "tbench.startDebuggingEnabled"
         },
         {
-          "command": "tfTools.refreshIntelliSense",
-          "when": "view == tfTools.configuration",
+          "command": "tbench.refreshIntelliSense",
+          "when": "view == tbench.configuration",
           "group": "overflow@8"
         }
       ]
     },
     "configuration": {
-      "title": "Trezor Firmware Tools",
+      "title": "Trezor Bench",
       "properties": {
-        "tfTools.taskExtraEnv": {
+        "tbench.taskExtraEnv": {
           "type": "object",
           "default": {},
           "additionalProperties": {
             "type": "string"
           },
-          "description": "(Trezor) Extra environment variables merged into the process environment when running tf-tools tasks (Build, Clippy, Check, Clean, Flash, Upload). Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
+          "description": "(Trezor) Extra environment variables merged into the process environment when running tbench tasks (Build, Clippy, Check, Clean, Flash, Upload). Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
           "scope": "resource"
         },
-        "tfTools.showConfigurationInStatusBar": {
+        "tbench.showConfigurationInStatusBar": {
           "type": "boolean",
           "default": true,
           "description": "(Trezor) Show the active build configuration in the status bar.",
           "scope": "resource"
         },
-        "tfTools.excludedFiles.grayInTree": {
+        "tbench.excludedFiles.grayInTree": {
           "type": "boolean",
           "default": true,
           "description": "(Trezor) Gray excluded files in the Explorer in addition to showing the exclusion badge.",
           "scope": "resource"
         },
-        "tfTools.excludedFiles.showEditorOverlay": {
+        "tbench.excludedFiles.showEditorOverlay": {
           "type": "boolean",
           "default": true,
           "description": "(Trezor) Show a first-line warning overlay in editors for files that are excluded from the active build configuration.",
           "scope": "resource"
         },
-        "tfTools.excludedFiles.fileNamePatterns": {
+        "tbench.excludedFiles.fileNamePatterns": {
           "type": "array",
           "items": {
             "type": "string"
@@ -262,7 +262,7 @@
           "description": "(Trezor) Basename-only glob patterns (name + extension) for files eligible to be marked excluded. Case-sensitive. Subpath globbing is not supported. Excluded-file marking is disabled when this list is empty. Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
           "scope": "resource"
         },
-        "tfTools.excludedFiles.folderGlobs": {
+        "tbench.excludedFiles.folderGlobs": {
           "type": "array",
           "items": {
             "type": "string"
@@ -278,8 +278,8 @@
     },
     "debuggers": [
       {
-        "type": "tftools",
-        "label": "Trezor Firmware Tools",
+        "type": "tbench",
+        "label": "Trezor Bench",
         "configurationAttributes": {
           "launch": {
             "required": [
@@ -291,35 +291,35 @@
               "type": {
                 "type": "string",
                 "enum": [
-                  "tftools"
+                  "tbench"
                 ],
-                "description": "Debugger type for Trezor Firmware Tools generated launch configurations."
+                "description": "Debugger type for Trezor Bench generated launch configurations."
               },
               "request": {
                 "type": "string",
                 "enum": [
                   "launch"
                 ],
-                "description": "Launch request for a tf-tools generated configuration."
+                "description": "Launch request for a tbench generated configuration."
               },
               "name": {
                 "type": "string",
-                "description": "User-visible label for the tf-tools launch configuration."
+                "description": "User-visible label for the tbench launch configuration."
               },
-              "tfToolsMode": {
+              "tbenchMode": {
                 "type": "string",
                 "enum": [
                   "active",
                   "default",
                   "profile"
                 ],
-                "description": "tf-tools launch mode: stable active configuration, generated default entry, or generated profile-specific entry."
+                "description": "tbench launch mode: stable active configuration, generated default entry, or generated profile-specific entry."
               },
-              "tfToolsProfileId": {
+              "tbenchProfileId": {
                 "type": "string",
                 "description": "Stable manifest debug-profile identifier used to resolve a generated profile-specific or default entry at launch time."
               },
-              "tfToolsContextKey": {
+              "tbenchContextKey": {
                 "type": "string",
                 "description": "Active build-context identity captured when a generated Run and Debug entry was produced."
               }

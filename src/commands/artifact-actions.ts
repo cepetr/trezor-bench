@@ -183,9 +183,9 @@ const BLOCK_REASON_MESSAGES: Record<
   string
 > = {
   "workspace-unsupported":
-    "Trezor Firmware Tools requires an open workspace folder.",
+    "Trezor Bench requires an open workspace folder.",
   "manifest-missing":
-    "Cannot start: the manifest file is missing. Check [paths].manifest in tf-tools.toml.",
+    "Cannot start: the manifest file is missing. Check [paths].manifest in tbench.toml.",
   "manifest-invalid":
     "Cannot start: the manifest file has validation errors. Check the Problems view.",
   "action-inapplicable":
@@ -211,8 +211,8 @@ export function reportArtifactActionBlocked(
 // Task construction
 // ---------------------------------------------------------------------------
 
-const TASK_TYPE = "tfTools";
-const TASK_SOURCE = "Trezor Firmware Tools";
+const TASK_TYPE = "tbench";
+const TASK_SOURCE = "Trezor Bench";
 
 /**
  * Creates an on-demand VS Code Task for the Flash action.

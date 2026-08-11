@@ -11,7 +11,7 @@ Removed sections:
 Follow-up TODOs:
 - None
 -->
-# Trezor Firmware Tools Constitution
+# Trezor Bench Constitution
 
 ## Core Principles
 
@@ -24,7 +24,7 @@ implementation and test effort focused on the supported host.
 
 ### II. Manifest-Driven Behavior
 Available build context, build options, artifact resolution, and debug selection MUST
-derive from workspace settings and repository data such as `tf-tools.yaml`. Features
+derive from workspace settings and repository data such as `tbench.yaml`. Features
 MUST NOT hardcode firmware matrices, silently infer alternate artifacts, or retain
 stale state once the manifest or settings disallow it. Invalid or missing source data
 MUST trigger visible normalization or failure handling.

@@ -22,7 +22,7 @@ import { PresetEffectiveValue } from "../presets/preset-resolution";
 // ---------------------------------------------------------------------------
 
 /** Workspace-state key for persisted build-option selections. */
-export const BUILD_OPTIONS_KEY = "tfTools.buildOptions";
+export const BUILD_OPTIONS_KEY = "tbench.buildOptions";
 
 export interface BuildOptionsState {
   /** Map of option key → persisted value. */

@@ -9,7 +9,7 @@ function fail(message) {
 }
 
 function ensureBundleLoads(bundlePath) {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-smoke-"));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-smoke-"));
   const vscodeDir = path.join(tempDir, "node_modules", "vscode");
 
   fs.mkdirSync(vscodeDir, { recursive: true });
@@ -81,8 +81,8 @@ function ensureVsixHasExpectedFiles(vsixPath) {
     "extension/package.json",
     "extension/out/extension.js",
     "extension/images/blank-tree-icon.svg",
-    "extension/images/tf-tools-logo.png",
-    "extension/images/tf-tools.svg",
+    "extension/images/tbench-logo.png",
+    "extension/images/tbench.svg",
   ];
 
   for (const entry of requiredEntries) {
@@ -93,7 +93,7 @@ function ensureVsixHasExpectedFiles(vsixPath) {
 }
 
 function ensureVsixBundleLoads(vsixPath) {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-vsix-smoke-"));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-vsix-smoke-"));
 
   try {
     execFileSync("unzip", ["-q", vsixPath, "-d", tempDir], {

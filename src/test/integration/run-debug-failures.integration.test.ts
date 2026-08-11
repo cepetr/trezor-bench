@@ -6,7 +6,7 @@
  *  - provideDebugConfigurations returns [] when no profiles match the active config.
  *  - provideDebugConfigurations returns [] when the executable artifact is missing.
  *  - resolveDebugConfiguration returns undefined for a proxy config whose
- *    tfToolsContextKey is stale (no longer matches the current active config).
+ *    tbenchContextKey is stale (no longer matches the current active config).
  *  - resolveDebugConfiguration returns undefined when the debug template is missing.
  *  - resolveDebugConfiguration returns undefined when the debug template is invalid.
  *  - resolveDebugConfiguration returns undefined when the template path escapes root.
@@ -20,8 +20,8 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import {
-  TfToolsDebugConfigurationProvider,
-  TFTOOLS_DEBUG_TYPE,
+  TbenchDebugConfigurationProvider,
+  TBENCH_DEBUG_TYPE,
   generateDebugConfigurations,
 } from "../../debug/run-debug-provider";
 import {
@@ -77,11 +77,11 @@ function makeCancelToken(): vscode.CancellationToken {
 // Suite: provideDebugConfigurations – blocked/empty availability
 // ---------------------------------------------------------------------------
 
-suite("TfToolsDebugConfigurationProvider – provideDebugConfigurations blocked", () => {
+suite("TbenchDebugConfigurationProvider – provideDebugConfigurations blocked", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-fail-provide-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-fail-provide-"));
     fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
   });
 
@@ -100,7 +100,7 @@ suite("TfToolsDebugConfigurationProvider – provideDebugConfigurations blocked"
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -124,7 +124,7 @@ suite("TfToolsDebugConfigurationProvider – provideDebugConfigurations blocked"
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -147,7 +147,7 @@ suite("TfToolsDebugConfigurationProvider – provideDebugConfigurations blocked"
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -178,11 +178,11 @@ suite("TfToolsDebugConfigurationProvider – provideDebugConfigurations blocked"
 // Suite: resolveDebugConfiguration – failure paths
 // ---------------------------------------------------------------------------
 
-suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration failures", () => {
+suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration failures", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-fail-resolve-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-fail-resolve-"));
     fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
   });
 
@@ -190,7 +190,7 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration failures"
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  test("returns undefined when tfToolsContextKey is stale", () => {
+  test("returns undefined when tbenchContextKey is stale", () => {
     const profile = makeComponentDebugProfile({
       name: "GDB Remote",
       template: "gdb-remote.json",
@@ -201,7 +201,7 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration failures"
     const currentConfig = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => currentConfig,
       () => tmpDir,
@@ -210,12 +210,12 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration failures"
     );
 
     const staleProxy: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: "Trezor: stale",
-      tfToolsMode: "default",
-      tfToolsProfileId: profile.id,
-      tfToolsContextKey: "T3W1::hw::core", // different from T2T1::hw::core
+      tbenchMode: "default",
+      tbenchProfileId: profile.id,
+      tbenchContextKey: "T3W1::hw::core", // different from T2T1::hw::core
     };
 
     const result = provider.resolveDebugConfiguration(folder, staleProxy, makeCancelToken());
@@ -233,7 +233,7 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration failures"
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -242,12 +242,12 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration failures"
     );
 
     const proxy: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: "Trezor: test",
-      tfToolsMode: "default",
-      tfToolsProfileId: profile.id,
-      tfToolsContextKey: makeContextKey(config),
+      tbenchMode: "default",
+      tbenchProfileId: profile.id,
+      tbenchContextKey: makeContextKey(config),
     };
 
     const result = provider.resolveDebugConfiguration(folder, proxy, makeCancelToken());
@@ -266,7 +266,7 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration failures"
     const folder = makeWorkspaceFolder(tmpDir);
     const failuresTemplatesRoot = path.join(debugLaunchFailuresWorkspaceRoot(), "debug-templates");
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -275,12 +275,12 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration failures"
     );
 
     const proxy: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: "Trezor: test",
-      tfToolsMode: "default",
-      tfToolsProfileId: profile.id,
-      tfToolsContextKey: makeContextKey(config),
+      tbenchMode: "default",
+      tbenchProfileId: profile.id,
+      tbenchContextKey: makeContextKey(config),
     };
 
     const result = provider.resolveDebugConfiguration(folder, proxy, makeCancelToken());
@@ -298,7 +298,7 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration failures"
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -307,12 +307,12 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration failures"
     );
 
     const proxy: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: "Trezor: test",
-      tfToolsMode: "default",
-      tfToolsProfileId: profile.id,
-      tfToolsContextKey: makeContextKey(config),
+      tbenchMode: "default",
+      tbenchProfileId: profile.id,
+      tbenchContextKey: makeContextKey(config),
     };
 
     const result = provider.resolveDebugConfiguration(folder, proxy, makeCancelToken());
@@ -332,7 +332,7 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration failures"
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => manifestNoProfiles,
       () => config,
       () => tmpDir,
@@ -341,12 +341,12 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration failures"
     );
 
     const proxy: vscode.DebugConfiguration = {
-      type: TFTOOLS_DEBUG_TYPE,
+      type: TBENCH_DEBUG_TYPE,
       request: "launch",
       name: "Trezor: test",
-      tfToolsMode: "default",
-      tfToolsProfileId: profile.id, // profile ID from a former manifest state
-      tfToolsContextKey: makeContextKey(config),
+      tbenchMode: "default",
+      tbenchProfileId: profile.id, // profile ID from a former manifest state
+      tbenchContextKey: makeContextKey(config),
     };
 
     const result = provider.resolveDebugConfiguration(folder, proxy, makeCancelToken());
@@ -354,9 +354,9 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration failures"
     assert.strictEqual(result, undefined);
   });
 
-  test("passes through non-tftools configs unchanged", () => {
+  test("passes through non-tbench configs unchanged", () => {
     const folder = makeWorkspaceFolder(tmpDir);
-    const provider = new TfToolsDebugConfigurationProvider(
+    const provider = new TbenchDebugConfigurationProvider(
       () => undefined,
       () => undefined,
       () => tmpDir,

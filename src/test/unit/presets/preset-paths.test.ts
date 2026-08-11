@@ -28,7 +28,7 @@ suite("resolvePresetUris", () => {
 
   test("uses a repository snapshot's direct preset URIs", () => {
     setRepositoryConfiguration(MOCK_WORKSPACE_FOLDER, {
-      configurationUri: vscode.Uri.file("/workspace/tf-tools.toml"),
+      configurationUri: vscode.Uri.file("/workspace/tbench.toml"),
       cargoWorkspacePath: "/workspace/core/embed",
       debugTemplatesPath: "/workspace/core/embed/xtask/tf-tools/debug",
       artifactsPath: "/workspace/core/build-xtask/artifacts",

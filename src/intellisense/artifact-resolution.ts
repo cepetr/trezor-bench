@@ -287,7 +287,7 @@ function buildMissingReasonForUnresolvablePath(
   inputs: ArtifactResolutionInputs
 ): string {
   if (!inputs.artifactsRoot) {
-    return "[paths].build-artifacts is empty in tf-tools.toml; cannot resolve the compile-commands artifact.";
+    return "[paths].build-artifacts is empty in tbench.toml; cannot resolve the compile-commands artifact.";
   }
   if (!inputs.artifactFolder) {
     return `The active model does not define artifactFolder in the manifest; cannot resolve the compile-commands artifact.`;
@@ -300,7 +300,7 @@ function buildMissingReasonForUnresolvablePath(
 
 function buildBinaryMissingReason(inputs: ArtifactResolutionInputs): string {
   if (!inputs.artifactsRoot) {
-    return "[paths].build-artifacts is empty in tf-tools.toml; cannot resolve the binary artifact.";
+    return "[paths].build-artifacts is empty in tbench.toml; cannot resolve the binary artifact.";
   }
   if (!inputs.artifactFolder) {
     return "The active model does not define artifactFolder in the manifest; cannot resolve the binary artifact.";
@@ -313,7 +313,7 @@ function buildBinaryMissingReason(inputs: ArtifactResolutionInputs): string {
 
 function buildMapMissingReason(inputs: ArtifactResolutionInputs): string {
   if (!inputs.artifactsRoot) {
-    return "[paths].build-artifacts is empty in tf-tools.toml; cannot resolve the map artifact.";
+    return "[paths].build-artifacts is empty in tbench.toml; cannot resolve the map artifact.";
   }
   if (!inputs.artifactFolder) {
     return "The active model does not define artifactFolder in the manifest; cannot resolve the map artifact.";
@@ -443,7 +443,7 @@ export function resolveActiveExecutableArtifact(
   if (!artifactsRoot || !artifactFolder || !executableFileName) {
     let reason: string;
     if (!artifactsRoot) {
-      reason = "[paths].build-artifacts is empty in tf-tools.toml; cannot resolve the executable artifact.";
+      reason = "[paths].build-artifacts is empty in tbench.toml; cannot resolve the executable artifact.";
     } else if (!artifactFolder) {
       reason = "The active model does not define artifactFolder in the manifest; cannot resolve the executable artifact.";
     } else {

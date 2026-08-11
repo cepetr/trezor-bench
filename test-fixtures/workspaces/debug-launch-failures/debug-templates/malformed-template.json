@@ -2,13 +2,13 @@
   // Intentionally malformed JSONC fixture for invocation-time parse failure coverage.
   "type": "gdb",
   "request": "launch",
-  "name": "Malformed ${tfTools.model.id}",
-  "program": "${tfTools.executablePath}",
+  "name": "Malformed ${tbench.model.id}",
+  "program": "${tbench.executablePath}",
   "cwd": "${workspaceFolder}",
   "environment": [
     {
       "name": "TARGET",
-      "value": "${tfTools.target.id}"
+      "value": "${tbench.target.id}"
     }
   ],
   "stopAtEntry": false

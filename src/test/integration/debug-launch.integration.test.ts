@@ -5,11 +5,11 @@
  *  - resolveActiveExecutableArtifact returns "valid" when executable exists on disk
  *  - resolveActiveExecutableArtifact returns "selected" profile state for a unique match
  *  - loadDebugTemplate loads the valid workspace fixture template successfully
- *  - buildDebugVariableMap + applyTfToolsSubstitution produce the expected resolved config
- *  - Non-tf-tools variables in the template pass through unchanged after substitution
- *  - tfTools.startDebugging is registered as a VS Code command after activation
- *  - Executing tfTools.startDebugging in unsupported-workspace state resolves without throwing
- *  - package.json commandPalette entry for tfTools.startDebugging uses tfTools.startDebuggingEnabled
+ *  - buildDebugVariableMap + applyTbenchSubstitution produce the expected resolved config
+ *  - Non-tbench variables in the template pass through unchanged after substitution
+ *  - tbench.startDebugging is registered as a VS Code command after activation
+ *  - Executing tbench.startDebugging in unsupported-workspace state resolves without throwing
+ *  - package.json commandPalette entry for tbench.startDebugging uses tbench.startDebuggingEnabled
  */
 
 import * as assert from "assert";
@@ -23,7 +23,7 @@ import {
 import {
   loadDebugTemplate,
   buildDebugVariableMap,
-  applyTfToolsSubstitution,
+  applyTbenchSubstitution,
   executeDebugLaunch,
 } from "../../commands/debug-launch";
 import {
@@ -34,7 +34,7 @@ import {
 } from "../unit/workflow-test-helpers";
 import { ManifestStateLoaded, ManifestComponentDebugProfile } from "../../manifest/manifest-types";
 import {
-  TFTOOLS_DEBUG_TYPE,
+  TBENCH_DEBUG_TYPE,
 } from "../../debug/run-debug-provider";
 
 // ---------------------------------------------------------------------------
@@ -42,7 +42,7 @@ import {
 // ---------------------------------------------------------------------------
 
 async function activateExtension(): Promise<boolean> {
-  const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+  const ext = vscode.extensions.getExtension("cepetr.tbench");
   if (!ext) {
     return false;
   }
@@ -53,8 +53,8 @@ async function activateExtension(): Promise<boolean> {
 }
 
 function getExtPackageJson(): Record<string, unknown> {
-  const ext = vscode.extensions.getExtension("cepetr.tf-tools");
-  assert.ok(ext, "cepetr.tf-tools extension must be present");
+  const ext = vscode.extensions.getExtension("cepetr.tbench");
+  assert.ok(ext, "cepetr.tbench extension must be present");
   return ext.packageJSON as Record<string, unknown>;
 }
 
@@ -89,7 +89,7 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration",
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-debug-test-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-debug-test-"));
   });
 
   teardown(() => {
@@ -209,7 +209,7 @@ suite("Debug Launch – loadDebugTemplate integration", () => {
 suite("Debug Launch – substitution pipeline integration", () => {
   const templatesRoot = debugLaunchValidTemplatesRoot();
 
-  test("tf-tools variables in gdb-remote.json template are substituted correctly", () => {
+  test("tbench variables in gdb-remote.json template are substituted correctly", () => {
     const templateResult = loadDebugTemplate("gdb-remote.json", templatesRoot);
     assert.strictEqual(templateResult.parseState, "loaded");
 
@@ -228,7 +228,7 @@ suite("Debug Launch – substitution pipeline integration", () => {
     );
     assert.strictEqual(varMap.resolutionErrors.length, 0);
 
-    const { value, unknownVars } = applyTfToolsSubstitution(
+    const { value, unknownVars } = applyTbenchSubstitution(
       templateResult.configuration,
       varMap.resolvedVars
     );
@@ -239,15 +239,15 @@ suite("Debug Launch – substitution pipeline integration", () => {
     assert.strictEqual(cfg.program, "/build/model-t/firmware.elf");
   });
 
-  test("non-tf-tools variables in gdb-remote.json are left unchanged", () => {
+  test("non-tbench variables in gdb-remote.json are left unchanged", () => {
     const templateResult = loadDebugTemplate("gdb-remote.json", templatesRoot);
     assert.strictEqual(templateResult.parseState, "loaded");
 
     const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb-remote", undefined);
-    const { value } = applyTfToolsSubstitution(templateResult.configuration, varMap.resolvedVars);
+    const { value } = applyTbenchSubstitution(templateResult.configuration, varMap.resolvedVars);
     const cfg = value as Record<string, unknown>;
 
-    // ${workspaceFolder} is a non-tf-tools variable and must pass through unchanged
+    // ${workspaceFolder} is a non-tbench variable and must pass through unchanged
     assert.strictEqual(cfg.cwd, "${workspaceFolder}");
   });
 
@@ -256,7 +256,7 @@ suite("Debug Launch – substitution pipeline integration", () => {
     assert.strictEqual(templateResult.parseState, "loaded");
 
     const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb-remote", undefined);
-    const { value } = applyTfToolsSubstitution(templateResult.configuration, varMap.resolvedVars);
+    const { value } = applyTbenchSubstitution(templateResult.configuration, varMap.resolvedVars);
     const cfg = value as { environment: Array<{ name: string; value: string }> };
     const targetEnv = cfg.environment.find((e) => e.name === "TARGET");
     assert.ok(targetEnv, "expected TARGET environment entry");
@@ -275,7 +275,7 @@ suite("Debug Launch – substitution pipeline integration", () => {
     const varMap = buildDebugVariableMap(
       "T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", entry.name, entry.vars
     );
-    assert.strictEqual(varMap.resolvedVars["tfTools.debug.var:debugPort"], "3333");
+    assert.strictEqual(varMap.resolvedVars["tbench.debug.var:debugPort"], "3333");
     assert.strictEqual(varMap.resolutionErrors.length, 0);
   });
 });
@@ -290,24 +290,24 @@ suite("Debug Launch – command registration", () => {
     assert.strictEqual(activated, true, "expected extension to activate");
   });
 
-  test("tfTools.startDebugging is registered as a VS Code command", async () => {
+  test("tbench.startDebugging is registered as a VS Code command", async () => {
     await activateExtension();
     const cmds = await vscode.commands.getCommands(false);
     assert.ok(
-      cmds.includes("tfTools.startDebugging"),
-      "expected 'tfTools.startDebugging' to be registered in VS Code commands"
+      cmds.includes("tbench.startDebugging"),
+      "expected 'tbench.startDebugging' to be registered in VS Code commands"
     );
   });
 
-  test("executing tfTools.startDebugging in unsupported-workspace state resolves without throwing", async () => {
+  test("executing tbench.startDebugging in unsupported-workspace state resolves without throwing", async () => {
     await activateExtension();
     let threw = false;
     try {
-      await vscode.commands.executeCommand("tfTools.startDebugging");
+      await vscode.commands.executeCommand("tbench.startDebugging");
     } catch {
       threw = true;
     }
-    assert.strictEqual(threw, false, "tfTools.startDebugging must not throw");
+    assert.strictEqual(threw, false, "tbench.startDebugging must not throw");
   });
 
   test("executeDebugLaunch reveals the Run and Debug view after a successful launch", async () => {
@@ -316,7 +316,7 @@ suite("Debug Launch – command registration", () => {
       return;
     }
 
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-debug-view-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-debug-view-"));
     const originalStartDebugging = vscode.debug.startDebugging;
     const originalExecuteCommand = vscode.commands.executeCommand;
     const invokedCommands: string[] = [];
@@ -352,26 +352,26 @@ suite("Debug Launch – command registration", () => {
 // ---------------------------------------------------------------------------
 
 suite("Debug Launch – package.json contributions", () => {
-  test("tfTools.startDebugging command is listed in package.json contributions", () => {
+  test("tbench.startDebugging command is listed in package.json contributions", () => {
     const pkg = getExtPackageJson();
     const commands = (pkg.contributes as { commands: Array<{ command: string }> }).commands;
-    const entry = commands.find((c) => c.command === "tfTools.startDebugging");
-    assert.ok(entry, "expected tfTools.startDebugging in package.json commands");
+    const entry = commands.find((c) => c.command === "tbench.startDebugging");
+    assert.ok(entry, "expected tbench.startDebugging in package.json commands");
   });
 
-  test("commandPalette entry for tfTools.startDebugging uses tfTools.startDebuggingEnabled", () => {
+  test("commandPalette entry for tbench.startDebugging uses tbench.startDebuggingEnabled", () => {
     const pkg = getExtPackageJson();
     const menus = pkg.contributes as { menus: Record<string, unknown[]> };
     const paletteEntries = (menus.menus["commandPalette"] ?? []) as Array<{
       command: string;
       when?: string;
     }>;
-    const entry = paletteEntries.find((e) => e.command === "tfTools.startDebugging");
-    assert.ok(entry, "expected commandPalette entry for tfTools.startDebugging");
+    const entry = paletteEntries.find((e) => e.command === "tbench.startDebugging");
+    assert.ok(entry, "expected commandPalette entry for tbench.startDebugging");
     assert.strictEqual(
       entry.when,
-      "tfTools.startDebuggingEnabled",
-      "startDebugging palette entry must use when: tfTools.startDebuggingEnabled"
+      "tbench.startDebuggingEnabled",
+      "startDebugging palette entry must use when: tbench.startDebuggingEnabled"
     );
   });
 
@@ -384,12 +384,12 @@ suite("Debug Launch – package.json contributions", () => {
       group?: string;
     }>;
     const headerEntry = titleEntries.find(
-      (e) => e.command === "tfTools.startDebugging" && e.group?.startsWith("navigation@")
+      (e) => e.command === "tbench.startDebugging" && e.group?.startsWith("navigation@")
     );
-    assert.ok(headerEntry, "expected view/title navigation entry for tfTools.startDebugging");
+    assert.ok(headerEntry, "expected view/title navigation entry for tbench.startDebugging");
     assert.ok(
-      headerEntry.when?.includes("view == tfTools.configuration"),
-      `expected 'view == tfTools.configuration' in when-clause, got: ${headerEntry.when}`
+      headerEntry.when?.includes("view == tbench.configuration"),
+      `expected 'view == tbench.configuration' in when-clause, got: ${headerEntry.when}`
     );
   });
 
@@ -401,9 +401,9 @@ suite("Debug Launch – package.json contributions", () => {
       when?: string;
     }>;
     const entry = contextEntries.find(
-      (e) => e.command === "tfTools.startDebugging" && e.when?.includes("artifact-executable")
+      (e) => e.command === "tbench.startDebugging" && e.when?.includes("artifact-executable")
     );
-    assert.ok(entry, "expected view/item/context entry for tfTools.startDebugging on Executable row");
+    assert.ok(entry, "expected view/item/context entry for tbench.startDebugging on Executable row");
   });
 });
 
@@ -413,7 +413,7 @@ suite("Debug Launch – package.json contributions", () => {
 
 suite("Debug Launch – scope boundaries", () => {
   function getPackageJson(): Record<string, unknown> {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     if (!ext) {
       return {};
     }
@@ -427,7 +427,7 @@ suite("Debug Launch – scope boundaries", () => {
       ...(menus["view/title"] as Array<{ command: string }> ?? []),
       ...(menus["view/item/context"] as Array<{ command: string }> ?? []),
     ];
-    const WORKFLOW_CMD_PATTERNS = [/^tfTools\.build$/, /^tfTools\.clippy$/, /^tfTools\.check$/, /^tfTools\.clean$/];
+    const WORKFLOW_CMD_PATTERNS = [/^tbench\.build$/, /^tbench\.clippy$/, /^tbench\.check$/, /^tbench\.clean$/];
     // Workflow commands may appear in view/title but must not appear in
     // view/item/context (where only artifact-row actions belong)
     const contextEntries = (menus["view/item/context"] as Array<{ command: string }> ?? []);
@@ -447,11 +447,11 @@ suite("Debug Launch – scope boundaries", () => {
     const conf = (pkg.contributes as { configuration?: { properties?: Record<string, unknown> } } | undefined)
       ?.configuration;
     const propKeys = Object.keys(conf?.properties ?? {});
-    const debugSettingKeys = propKeys.filter((k) => k.startsWith("tfTools.debug."));
+    const debugSettingKeys = propKeys.filter((k) => k.startsWith("tbench.debug."));
     assert.deepStrictEqual(
       debugSettingKeys,
       [],
-      `No tfTools.debug settings must be contributed; found: ${debugSettingKeys.join(", ")}`
+      `No tbench.debug settings must be contributed; found: ${debugSettingKeys.join(", ")}`
     );
   });
 
@@ -467,10 +467,10 @@ suite("Debug Launch – scope boundaries", () => {
       });
 
     const cmdOrder = overflowEntries.map((e) => e.command);
-    const flashIdx = cmdOrder.indexOf("tfTools.flash");
-    const uploadIdx = cmdOrder.indexOf("tfTools.upload");
-    const startDebugIdx = cmdOrder.indexOf("tfTools.startDebugging");
-    const refreshIdx = cmdOrder.indexOf("tfTools.refreshIntelliSense");
+    const flashIdx = cmdOrder.indexOf("tbench.flash");
+    const uploadIdx = cmdOrder.indexOf("tbench.upload");
+    const startDebugIdx = cmdOrder.indexOf("tbench.startDebugging");
+    const refreshIdx = cmdOrder.indexOf("tbench.refreshIntelliSense");
 
     // startDebugging must come after flash/upload (when present) and before refreshIntelliSense
     if (flashIdx !== -1) {
@@ -492,32 +492,32 @@ suite("Debug Launch – scope boundaries", () => {
 
 suite("Run and Debug provider – package contribution regressions", () => {
   function getExtPackageJson(): Record<string, unknown> {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     if (!ext) {
       return {};
     }
     return ext.packageJSON as Record<string, unknown>;
   }
 
-  test("contributes a 'tftools' debugger type in package.json", () => {
+  test("contributes a 'tbench' debugger type in package.json", () => {
     const pkg = getExtPackageJson();
     const debuggers = (
       pkg.contributes as { debuggers?: Array<{ type: string }> } | undefined
     )?.debuggers ?? [];
-    const entry = debuggers.find((d) => d.type === "tftools");
-    assert.ok(entry, "expected 'tftools' debugger type in package.json contributes.debuggers");
+    const entry = debuggers.find((d) => d.type === "tbench");
+    assert.ok(entry, "expected 'tbench' debugger type in package.json contributes.debuggers");
   });
 
-  test("tftools debugger has a non-empty label", () => {
+  test("tbench debugger has a non-empty label", () => {
     const pkg = getExtPackageJson();
     const debuggers = (
       pkg.contributes as { debuggers?: Array<{ type: string; label?: string }> } | undefined
     )?.debuggers ?? [];
-    const entry = debuggers.find((d) => d.type === "tftools");
-    assert.ok(entry?.label, "tftools debugger must have a label in package.json");
+    const entry = debuggers.find((d) => d.type === "tbench");
+    assert.ok(entry?.label, "tbench debugger must have a label in package.json");
   });
 
-  test("tftools debugger contributes launch configurationAttributes for proxy fields", () => {
+  test("tbench debugger contributes launch configurationAttributes for proxy fields", () => {
     const pkg = getExtPackageJson();
     const debuggers = (
       pkg.contributes as {
@@ -531,30 +531,30 @@ suite("Run and Debug provider – package contribution regressions", () => {
         }>;
       } | undefined
     )?.debuggers ?? [];
-    const entry = debuggers.find((d) => d.type === "tftools");
+    const entry = debuggers.find((d) => d.type === "tbench");
     const properties = entry?.configurationAttributes?.launch?.properties ?? {};
 
-    assert.ok(properties["tfToolsMode"], "expected tfToolsMode launch schema property");
-    assert.ok(properties["tfToolsProfileId"], "expected tfToolsProfileId launch schema property");
-    assert.ok(properties["tfToolsContextKey"], "expected tfToolsContextKey launch schema property");
+    assert.ok(properties["tbenchMode"], "expected tbenchMode launch schema property");
+    assert.ok(properties["tbenchProfileId"], "expected tbenchProfileId launch schema property");
+    assert.ok(properties["tbenchContextKey"], "expected tbenchContextKey launch schema property");
   });
 
-  test("onDebugResolve:tftools activation event is present", () => {
+  test("onDebugResolve:tbench activation event is present", () => {
     const pkg = getExtPackageJson();
     const activationEvents = (pkg.activationEvents as string[] | undefined) ?? [];
     assert.ok(
-      activationEvents.includes("onDebugResolve:tftools"),
-      `expected 'onDebugResolve:tftools' in activationEvents, got: [${activationEvents.join(", ")}]`
+      activationEvents.includes("onDebugResolve:tbench"),
+      `expected 'onDebugResolve:tbench' in activationEvents, got: [${activationEvents.join(", ")}]`
     );
   });
 
-  test("tftools debug type is not the same as an existing debugger type", () => {
-    // The tftools type is a proxy type and must not collide with real debugger types
+  test("tbench debug type is not the same as an existing debugger type", () => {
+    // The tbench type is a proxy type and must not collide with real debugger types
     // like 'cppdbg', 'cortex-debug', 'gdb', etc.
     const RESERVED_TYPES = ["cppdbg", "cortex-debug", "gdb", "lldb", "node", "python", "go"];
     assert.ok(
-      !RESERVED_TYPES.includes(TFTOOLS_DEBUG_TYPE),
-      `TFTOOLS_DEBUG_TYPE '${TFTOOLS_DEBUG_TYPE}' must not collide with a standard debugger type`
+      !RESERVED_TYPES.includes(TBENCH_DEBUG_TYPE),
+      `TBENCH_DEBUG_TYPE '${TBENCH_DEBUG_TYPE}' must not collide with a standard debugger type`
     );
   });
 });

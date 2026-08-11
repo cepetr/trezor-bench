@@ -7,8 +7,8 @@
  *  - loadDebugTemplate: JSONC parse failures for null/number/boolean/string root values
  *  - loadDebugTemplate: valid JSONC with comments and trailing commas parses successfully
  *  - buildDebugVariableMap: 3-way cyclic vars, self-referencing var, multiple cycles
- *  - applyTfToolsSubstitution: duplicate unknown var reported once, non-tf-tools
- *    vars with similar syntax pass through, mixed tf-tools and non-tf-tools in same string
+ *  - applyTbenchSubstitution: duplicate unknown var reported once, non-tbench
+ *    vars with similar syntax pass through, mixed tbench and non-tbench in same string
  */
 
 import * as assert from "assert";
@@ -18,8 +18,8 @@ import * as os from "os";
 import {
   loadDebugTemplate,
   buildDebugVariableMap,
-  applyTfToolsSubstitution,
-  TFTOOLS_VAR_MODEL_ID,
+  applyTbenchSubstitution,
+  TBENCH_VAR_MODEL_ID,
 } from "../../../commands/debug-launch";
 
 // ---------------------------------------------------------------------------
@@ -30,7 +30,7 @@ suite("loadDebugTemplate – traversal edge cases", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-traversal-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-traversal-"));
     fs.writeFileSync(path.join(tmpDir, "valid.json"), '{"type":"gdb","request":"launch"}');
   });
 
@@ -94,7 +94,7 @@ suite("loadDebugTemplate – JSONC non-object root values", () => {
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-jsonc-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-jsonc-"));
   });
 
   teardown(() => {
@@ -187,7 +187,7 @@ suite("buildDebugVariableMap – cyclic variable edge cases", () => {
   const PROFILE_NAME = "gdb-remote";
 
   test("self-referencing var (a → a) produces a resolution error", () => {
-    const vars = { a: "${tfTools.debug.var:a}" };
+    const vars = { a: "${tbench.debug.var:a}" };
     const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
     assert.ok(result.resolutionErrors.length > 0, "expected a resolution error for self-cycle");
     assert.ok(
@@ -198,9 +198,9 @@ suite("buildDebugVariableMap – cyclic variable edge cases", () => {
 
   test("3-way cycle (a → b → c → a) produces a resolution error", () => {
     const vars = {
-      a: "${tfTools.debug.var:b}",
-      b: "${tfTools.debug.var:c}",
-      c: "${tfTools.debug.var:a}",
+      a: "${tbench.debug.var:b}",
+      b: "${tbench.debug.var:c}",
+      c: "${tbench.debug.var:a}",
     };
     const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
     assert.ok(result.resolutionErrors.length > 0, "expected resolution error for 3-way cycle");
@@ -209,25 +209,25 @@ suite("buildDebugVariableMap – cyclic variable edge cases", () => {
   test("non-cyclic chain (a → b → literal) resolves without error", () => {
     const vars = {
       b: "hello",
-      a: "${tfTools.debug.var:b}-world",
+      a: "${tbench.debug.var:b}-world",
     };
     const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
     assert.strictEqual(result.resolutionErrors.length, 0);
-    assert.strictEqual(result.resolvedVars["tfTools.debug.var:a"], "hello-world");
-    assert.strictEqual(result.resolvedVars["tfTools.debug.var:b"], "hello");
+    assert.strictEqual(result.resolvedVars["tbench.debug.var:a"], "hello-world");
+    assert.strictEqual(result.resolvedVars["tbench.debug.var:b"], "hello");
   });
 
   test("built-in vars are unaffected by profile var cycles", () => {
     const vars = {
-      x: "${tfTools.debug.var:x}", // self-cycle
+      x: "${tbench.debug.var:x}", // self-cycle
     };
     const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
     // Built-ins must still be present even when profile vars cycle
-    assert.strictEqual(result.resolvedVars[TFTOOLS_VAR_MODEL_ID], MODEL);
+    assert.strictEqual(result.resolvedVars[TBENCH_VAR_MODEL_ID], MODEL);
   });
 
-  test("profile var referencing undefined tfTools var produces a resolution error", () => {
-    const vars = { foo: "${tfTools.undefined_key}" };
+  test("profile var referencing undefined tbench var produces a resolution error", () => {
+    const vars = { foo: "${tbench.undefined_key}" };
     const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
     assert.ok(result.resolutionErrors.length > 0);
     assert.ok(
@@ -238,61 +238,61 @@ suite("buildDebugVariableMap – cyclic variable edge cases", () => {
 });
 
 // ---------------------------------------------------------------------------
-// applyTfToolsSubstitution: unknown var and mixed-syntax edge cases
+// applyTbenchSubstitution: unknown var and mixed-syntax edge cases
 // ---------------------------------------------------------------------------
 
-suite("applyTfToolsSubstitution – unknown and mixed variable edge cases", () => {
-  const RESOLVED = { [TFTOOLS_VAR_MODEL_ID]: "T2T1" };
+suite("applyTbenchSubstitution – unknown and mixed variable edge cases", () => {
+  const RESOLVED = { [TBENCH_VAR_MODEL_ID]: "T2T1" };
 
-  test("duplicate unknown tf-tools token is reported", () => {
-    const template = "${tfTools.x} and ${tfTools.x}";
-    const { unknownVars } = applyTfToolsSubstitution(template, RESOLVED);
+  test("duplicate unknown tbench token is reported", () => {
+    const template = "${tbench.x} and ${tbench.x}";
+    const { unknownVars } = applyTbenchSubstitution(template, RESOLVED);
     // At least one occurrence should be reported
     assert.ok(unknownVars.length > 0, "expected at least one unknown var report");
     assert.ok(
-      unknownVars.some((v) => v.includes("x") || v === "tfTools.x"),
+      unknownVars.some((v) => v.includes("x") || v === "tbench.x"),
       `expected 'x' in unknownVars, got: ${unknownVars.join(", ")}`
     );
   });
 
-  test("non-tf-tools VS Code variable is passed through unchanged", () => {
+  test("non-tbench VS Code variable is passed through unchanged", () => {
     const template = "${workspaceFolder}/build";
-    const { value, unknownVars } = applyTfToolsSubstitution(template, RESOLVED);
+    const { value, unknownVars } = applyTbenchSubstitution(template, RESOLVED);
     assert.strictEqual(value, "${workspaceFolder}/build");
     assert.strictEqual(unknownVars.length, 0);
   });
 
   test("${env:VAR} syntax is passed through unchanged", () => {
     const template = "${env:HOME}";
-    const { value, unknownVars } = applyTfToolsSubstitution(template, RESOLVED);
+    const { value, unknownVars } = applyTbenchSubstitution(template, RESOLVED);
     assert.strictEqual(value, "${env:HOME}");
     assert.strictEqual(unknownVars.length, 0);
   });
 
-  test("string with both known tf-tools token and non-tf-tools token substitutes correctly", () => {
-    const resolvedVars = { "tfTools.model.id": "T2T1" };
-    const template = "${tfTools.model.id} at ${workspaceFolder}";
-    const { value, unknownVars } = applyTfToolsSubstitution(template, resolvedVars);
+  test("string with both known tbench token and non-tbench token substitutes correctly", () => {
+    const resolvedVars = { "tbench.model.id": "T2T1" };
+    const template = "${tbench.model.id} at ${workspaceFolder}";
+    const { value, unknownVars } = applyTbenchSubstitution(template, resolvedVars);
     assert.strictEqual(value, "T2T1 at ${workspaceFolder}");
     assert.strictEqual(unknownVars.length, 0);
   });
 
-  test("substitution in nested object with only non-tf-tools vars produces no unknownVars", () => {
+  test("substitution in nested object with only non-tbench vars produces no unknownVars", () => {
     const template = { cwd: "${workspaceFolder}", program: "${command:someCmd}" };
-    const { value, unknownVars } = applyTfToolsSubstitution(template, RESOLVED);
+    const { value, unknownVars } = applyTbenchSubstitution(template, RESOLVED);
     assert.deepStrictEqual(value, { cwd: "${workspaceFolder}", program: "${command:someCmd}" });
     assert.strictEqual(unknownVars.length, 0);
   });
 
-  test("single-pass: resolved value is not re-expanded for tf-tools tokens", () => {
-    // If 'tfTools.model.id' resolves to '${tfTools.target.id}', the result should NOT be re-expanded
+  test("single-pass: resolved value is not re-expanded for tbench tokens", () => {
+    // If 'tbench.model.id' resolves to '${tbench.target.id}', the result should NOT be re-expanded
     const resolvedVars = {
-      "tfTools.model.id": "${tfTools.target.id}",
-      "tfTools.target.id": "hw",
+      "tbench.model.id": "${tbench.target.id}",
+      "tbench.target.id": "hw",
     };
-    const template = "${tfTools.model.id}";
-    const { value } = applyTfToolsSubstitution(template, resolvedVars);
-    // Single-pass: the result is "${tfTools.target.id}", not "hw"
-    assert.strictEqual(value, "${tfTools.target.id}");
+    const template = "${tbench.model.id}";
+    const { value } = applyTbenchSubstitution(template, resolvedVars);
+    // Single-pass: the result is "${tbench.target.id}", not "hw"
+    assert.strictEqual(value, "${tbench.target.id}");
   });
 });

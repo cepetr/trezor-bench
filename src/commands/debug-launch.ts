@@ -1,6 +1,6 @@
 /**
  * Debug Launch helpers: profile resolution, executable path derivation,
- * template loading, variable-map construction, and tf-tools substitution.
+ * template loading, variable-map construction, and tbench substitution.
  *
  * Covers debug launch behavior for the active build context.
  */
@@ -64,10 +64,10 @@ interface DebugProfileQuickPickItem extends vscode.QuickPickItem {
   readonly profile: ManifestComponentDebugProfile;
 }
 
-interface TfToolsProxyDebugConfiguration extends vscode.DebugConfiguration {
-  readonly tfToolsMode: "default" | "profile";
-  readonly tfToolsProfileId: string;
-  readonly tfToolsContextKey: string;
+interface TbenchProxyDebugConfiguration extends vscode.DebugConfiguration {
+  readonly tbenchMode: "default" | "profile";
+  readonly tbenchProfileId: string;
+  readonly tbenchContextKey: string;
 }
 
 /**
@@ -200,23 +200,23 @@ export function loadDebugTemplate(
 // Variable map
 // ---------------------------------------------------------------------------
 
-/** Built-in tf-tools substitution variable qualified names. */
-export const TFTOOLS_VAR_ARTIFACT_PATH = "tfTools.artifactPath";
-export const TFTOOLS_VAR_MODEL_ID = "tfTools.model.id";
-export const TFTOOLS_VAR_MODEL_NAME = "tfTools.model.name";
-export const TFTOOLS_VAR_TARGET_ID = "tfTools.target.id";
-export const TFTOOLS_VAR_TARGET_NAME = "tfTools.target.name";
-export const TFTOOLS_VAR_COMPONENT_ID = "tfTools.component.id";
-export const TFTOOLS_VAR_COMPONENT_NAME = "tfTools.component.name";
-export const TFTOOLS_VAR_EXECUTABLE_PATH = "tfTools.executablePath";
-export const TFTOOLS_VAR_EXECUTABLE = "tfTools.executable";
-export const TFTOOLS_VAR_DEBUG_PROFILE_NAME = "tfTools.debugProfileName";
-const TFTOOLS_DEBUG_VAR_PREFIX = "tfTools.debug.var:";
+/** Built-in tbench substitution variable qualified names. */
+export const TBENCH_VAR_ARTIFACT_PATH = "tbench.artifactPath";
+export const TBENCH_VAR_MODEL_ID = "tbench.model.id";
+export const TBENCH_VAR_MODEL_NAME = "tbench.model.name";
+export const TBENCH_VAR_TARGET_ID = "tbench.target.id";
+export const TBENCH_VAR_TARGET_NAME = "tbench.target.name";
+export const TBENCH_VAR_COMPONENT_ID = "tbench.component.id";
+export const TBENCH_VAR_COMPONENT_NAME = "tbench.component.name";
+export const TBENCH_VAR_EXECUTABLE_PATH = "tbench.executablePath";
+export const TBENCH_VAR_EXECUTABLE = "tbench.executable";
+export const TBENCH_VAR_DEBUG_PROFILE_NAME = "tbench.debugProfileName";
+const TBENCH_DEBUG_VAR_PREFIX = "tbench.debug.var:";
 
-/** Matches `${tfTools.varName}` tokens inside template strings. */
-const TFTOOLS_TOKEN_RE = /\$\{(tfTools\.[^}]+)\}/g;
+/** Matches `${tbench.varName}` tokens inside template strings. */
+const TBENCH_TOKEN_RE = /\$\{(tbench\.[^}]+)\}/g;
 
-/** Resolved tf-tools variable values available for template substitution. */
+/** Resolved tbench variable values available for template substitution. */
 export interface DebugVariableMap {
   readonly builtIns: Readonly<Record<string, string>>;
   readonly profileVars: Readonly<Record<string, string>>;
@@ -225,12 +225,12 @@ export interface DebugVariableMap {
 }
 
 /**
- * Builds the complete tf-tools variable map for the active debug context.
+ * Builds the complete tbench variable map for the active debug context.
  *
  * Built-in variables derive from the active model, target, component,
  * derived executable file name and path, and the selected debug profile name.
  * Profile-defined `vars` may reference built-ins and other profile vars; cycles and
- * unknown tf-tools references in profile vars are reported as resolution errors
+ * unknown tbench references in profile vars are reported as resolution errors
  * that block launch.
  */
 export function buildDebugVariableMap(
@@ -247,16 +247,16 @@ export function buildDebugVariableMap(
   profileVars: Readonly<Record<string, string>> | undefined
 ): DebugVariableMap {
   const builtIns: Readonly<Record<string, string>> = {
-    [TFTOOLS_VAR_ARTIFACT_PATH]: artifactPath,
-    [TFTOOLS_VAR_MODEL_ID]: modelId,
-    [TFTOOLS_VAR_MODEL_NAME]: modelName,
-    [TFTOOLS_VAR_TARGET_ID]: targetId,
-    [TFTOOLS_VAR_TARGET_NAME]: targetName,
-    [TFTOOLS_VAR_COMPONENT_ID]: componentId,
-    [TFTOOLS_VAR_COMPONENT_NAME]: componentName,
-    [TFTOOLS_VAR_EXECUTABLE]: executableFileName,
-    [TFTOOLS_VAR_EXECUTABLE_PATH]: executablePath,
-    [TFTOOLS_VAR_DEBUG_PROFILE_NAME]: debugProfileName,
+    [TBENCH_VAR_ARTIFACT_PATH]: artifactPath,
+    [TBENCH_VAR_MODEL_ID]: modelId,
+    [TBENCH_VAR_MODEL_NAME]: modelName,
+    [TBENCH_VAR_TARGET_ID]: targetId,
+    [TBENCH_VAR_TARGET_NAME]: targetName,
+    [TBENCH_VAR_COMPONENT_ID]: componentId,
+    [TBENCH_VAR_COMPONENT_NAME]: componentName,
+    [TBENCH_VAR_EXECUTABLE]: executableFileName,
+    [TBENCH_VAR_EXECUTABLE_PATH]: executablePath,
+    [TBENCH_VAR_DEBUG_PROFILE_NAME]: debugProfileName,
   };
 
   const rawVars = profileVars ?? {};
@@ -272,7 +272,7 @@ export function buildDebugVariableMap(
   }
 
   // Work map starts with all built-ins; resolved profile vars are added as
-  // we process them ("tfTools.shortName" → resolved string).
+  // we process them ("tbench.shortName" → resolved string).
   const resolvedVars: Record<string, string> = { ...builtIns };
   const cycleErrors = new Set<string>();
   const unknownErrors = new Set<string>();
@@ -284,7 +284,7 @@ export function buildDebugVariableMap(
   }
 
   function resolveProfileVar(shortName: string): string | undefined {
-    const qualifiedName = `${TFTOOLS_DEBUG_VAR_PREFIX}${shortName}`;
+    const qualifiedName = `${TBENCH_DEBUG_VAR_PREFIX}${shortName}`;
 
     // Already resolved (built-in or previously computed profile var)
     if (Object.prototype.hasOwnProperty.call(resolvedVars, qualifiedName)) {
@@ -309,15 +309,15 @@ export function buildDebugVariableMap(
     const rawValue = rawVars[shortName];
     let hadError = false;
 
-    const resolvedValue = rawValue.replace(TFTOOLS_TOKEN_RE, (original, tokenName: string) => {
+    const resolvedValue = rawValue.replace(TBENCH_TOKEN_RE, (original, tokenName: string) => {
       // Already resolved (built-in or previously computed profile var)
       if (Object.prototype.hasOwnProperty.call(resolvedVars, tokenName)) {
         return resolvedVars[tokenName];
       }
 
-      // Unresolved tf-tools.* token — check if it is a profile var
-      if (tokenName.startsWith(TFTOOLS_DEBUG_VAR_PREFIX)) {
-        const depShort = tokenName.slice(TFTOOLS_DEBUG_VAR_PREFIX.length);
+      // Unresolved tbench.* token — check if it is a profile var
+      if (tokenName.startsWith(TBENCH_DEBUG_VAR_PREFIX)) {
+        const depShort = tokenName.slice(TBENCH_DEBUG_VAR_PREFIX.length);
         if (varState.has(depShort)) {
           const dep = resolveProfileVar(depShort);
           if (dep !== undefined) {
@@ -328,7 +328,7 @@ export function buildDebugVariableMap(
         }
       }
 
-      // Unknown tf-tools variable
+      // Unknown tbench variable
       unknownErrors.add(tokenName);
       hadError = true;
       return original;
@@ -352,7 +352,7 @@ export function buildDebugVariableMap(
     resolutionErrors.push(`Cyclic dependency detected for debug variable: \${${v}}`);
   }
   for (const v of unknownErrors) {
-    resolutionErrors.push(`Unknown tf-tools variable referenced in debug vars: \${${v}}`);
+    resolutionErrors.push(`Unknown tbench variable referenced in debug vars: \${${v}}`);
   }
 
   return {
@@ -367,22 +367,22 @@ export function buildDebugVariableMap(
 // Substitution
 // ---------------------------------------------------------------------------
 
-/** Result of applying tf-tools substitutions to a template value. */
+/** Result of applying tbench substitutions to a template value. */
 export interface SubstitutionResult {
   readonly value: unknown;
   readonly unknownVars: ReadonlyArray<string>;
 }
 
 /**
- * Applies tf-tools substitutions to all string fields in `value` recursively.
+ * Applies tbench substitutions to all string fields in `value` recursively.
  *
- * - `${tfTools.X}` tokens are replaced with `resolvedVars["tfTools.X"]`.
- * - Unknown `${tfTools.X}` tokens are recorded in `unknownVars` and block launch.
- * - Non-tf-tools variable syntax (e.g. `${workspaceFolder}`) is left unchanged.
+ * - `${tbench.X}` tokens are replaced with `resolvedVars["tbench.X"]`.
+ * - Unknown `${tbench.X}` tokens are recorded in `unknownVars` and block launch.
+ * - Non-tbench variable syntax (e.g. `${workspaceFolder}`) is left unchanged.
  * - Replacement results are NOT re-expanded (single pass).
  * - Non-string values pass through unchanged.
  */
-export function applyTfToolsSubstitution(
+export function applyTbenchSubstitution(
   value: unknown,
   resolvedVars: Readonly<Record<string, string>>
 ): SubstitutionResult {
@@ -390,7 +390,7 @@ export function applyTfToolsSubstitution(
 
   function walk(v: unknown): unknown {
     if (typeof v === "string") {
-      return v.replace(TFTOOLS_TOKEN_RE, (original, tokenName: string) => {
+      return v.replace(TBENCH_TOKEN_RE, (original, tokenName: string) => {
         if (Object.prototype.hasOwnProperty.call(resolvedVars, tokenName)) {
           return resolvedVars[tokenName];
         }
@@ -434,8 +434,8 @@ export type DebugMaterializationResult =
  * debug sessions:
  *  1. Derives and verifies the executable artifact path.
  *  2. Loads and parses the JSONC debug template from `templatesRoot`.
- *  3. Builds the tf-tools variable map (built-ins + profile vars).
- *  4. Applies single-pass tf-tools substitution to the template.
+ *  3. Builds the tbench variable map (built-ins + profile vars).
+ *  4. Applies single-pass tbench substitution to the template.
  *
  * Does NOT call `vscode.debug.startDebugging` — that is left to the caller.
  * Does NOT resolve the profile — the caller must provide the selected profile.
@@ -511,7 +511,7 @@ export function materializeDebugConfiguration(
 
   const configuration = templateResult.configuration!;
 
-  // Build tf-tools variable map
+  // Build tbench variable map
   const varMap = buildDebugVariableMap(
     config.modelId,
     model.name,
@@ -535,8 +535,8 @@ export function materializeDebugConfiguration(
     };
   }
 
-  // Apply single-pass tf-tools substitution
-  const { value: resolvedConfig, unknownVars } = applyTfToolsSubstitution(
+  // Apply single-pass tbench substitution
+  const { value: resolvedConfig, unknownVars } = applyTbenchSubstitution(
     configuration,
     varMap.resolvedVars
   );
@@ -546,7 +546,7 @@ export function materializeDebugConfiguration(
     return {
       ok: false,
       reason: "unknown-template-variables",
-      message: `Cannot start debugging: unknown tf-tools variable(s) in template: ${detail}`,
+      message: `Cannot start debugging: unknown tbench variable(s) in template: ${detail}`,
       detail,
     };
   }
@@ -571,18 +571,18 @@ async function pickDebugProfile(
   return selected?.profile;
 }
 
-function buildTfToolsProxyDebugConfiguration(
+function buildTbenchProxyDebugConfiguration(
   config: ActiveConfig,
   profile: ManifestComponentDebugProfile,
   mode: "default" | "profile"
-): TfToolsProxyDebugConfiguration {
+): TbenchProxyDebugConfiguration {
   return {
-    type: "tftools",
+    type: "tbench",
     request: "launch",
     name: mode === "default" ? "Trezor" : `Trezor: ${profile.name}`,
-    tfToolsMode: mode,
-    tfToolsProfileId: profile.id,
-    tfToolsContextKey: `${config.modelId}::${config.targetId}::${config.componentId}`,
+    tbenchMode: mode,
+    tbenchProfileId: profile.id,
+    tbenchContextKey: `${config.modelId}::${config.targetId}::${config.componentId}`,
   };
 }
 
@@ -611,8 +611,8 @@ function reportDebugLaunchFailure(
  *
  * On each invocation:
  *  1. Validates manifest debug state and resolves the selected debug profile.
- *  2. Builds a tf-tools proxy debug configuration for the selected profile.
- *  3. Starts it via `vscode.debug.startDebugging`. The registered tf-tools debug
+ *  2. Builds a tbench proxy debug configuration for the selected profile.
+ *  3. Starts it via `vscode.debug.startDebugging`. The registered tbench debug
  *     provider materializes the real debugger configuration — resolving the
  *     executable artifact and debug template — so VS Code can keep the selected
  *     Run and Debug entry in sync.
@@ -683,13 +683,13 @@ export async function executeDebugLaunch(
 
   const launchMode: "default" | "profile" =
     matchingSet.defaultProfile.id === selectedProfile.id ? "default" : "profile";
-  const proxyConfiguration = buildTfToolsProxyDebugConfiguration(
+  const proxyConfiguration = buildTbenchProxyDebugConfiguration(
     config,
     selectedProfile,
     launchMode
   );
 
-  // 4. Launch via VS Code debug API using the tf-tools proxy configuration.
+  // 4. Launch via VS Code debug API using the tbench proxy configuration.
   const launched = await vscode.debug.startDebugging(
     workspaceFolder,
     proxyConfiguration

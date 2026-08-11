@@ -486,9 +486,9 @@ suite("IntelliSenseService — clangd backend", () => {
     // Simulate a workspace where a previous session left a managed compile
     // database link behind; the freshly constructed adapter has no in-memory
     // record of it.
-    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-clangd-stale-"));
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-clangd-stale-"));
     try {
-      const linkDir = path.join(tmpRoot, ".tf-tools");
+      const linkDir = path.join(tmpRoot, ".tbench");
       fs.mkdirSync(linkDir, { recursive: true });
       fs.symlinkSync(
         path.join(tmpRoot, "gone", "compile_commands.json"),

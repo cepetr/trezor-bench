@@ -1,2 +1,2 @@
-# This directory intentionally contains no tf-tools.yaml.
+# This directory intentionally contains no tbench.yaml.
 # It is used to test the missing-manifest scenario.

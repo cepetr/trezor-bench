@@ -3,7 +3,7 @@
  * Runs inside the VS Code extension host via @vscode/test-electron.
  *
  * Covers:
- *  - The `tfTools.refreshIntelliSense` command is registered after extension activation
+ *  - The `tbench.refreshIntelliSense` command is registered after extension activation
  *  - Invoking the command resolves without throwing
  *  - IntelliSenseService scheduleRefresh via the "manual" trigger works end-to-end
  */
@@ -23,9 +23,9 @@ function drainRefresh(ms = 80): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Ensure the tf-tools extension is activated before running command tests. */
+/** Ensure the tbench extension is activated before running command tests. */
 async function activateExtension(): Promise<boolean> {
-  const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+  const ext = vscode.extensions.getExtension("cepetr.tbench");
   if (!ext) {
     return false;
   }
@@ -36,13 +36,13 @@ async function activateExtension(): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
-// Suite: tfTools.refreshIntelliSense command
+// Suite: tbench.refreshIntelliSense command
 // ---------------------------------------------------------------------------
 
-suite("tfTools.refreshIntelliSense – command registration and execution", () => {
-  test("extension cepetr.tf-tools is available in development host", async () => {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
-    assert.ok(ext, "expected cepetr.tf-tools extension to be available in the test host");
+suite("tbench.refreshIntelliSense – command registration and execution", () => {
+  test("extension cepetr.tbench is available in development host", async () => {
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
+    assert.ok(ext, "expected cepetr.tbench extension to be available in the test host");
   });
 
   test("extension activates without error", async () => {
@@ -50,30 +50,30 @@ suite("tfTools.refreshIntelliSense – command registration and execution", () =
     assert.strictEqual(activated, true, "expected extension to activate");
   });
 
-  test("tfTools.refreshIntelliSense is registered as a VS Code command", async () => {
+  test("tbench.refreshIntelliSense is registered as a VS Code command", async () => {
     await activateExtension();
     const cmds = await vscode.commands.getCommands(/* filterInternal */ false);
     assert.ok(
-      cmds.includes("tfTools.refreshIntelliSense"),
-      "expected 'tfTools.refreshIntelliSense' to be registered in VS Code commands"
+      cmds.includes("tbench.refreshIntelliSense"),
+      "expected 'tbench.refreshIntelliSense' to be registered in VS Code commands"
     );
   });
 
-  test("executing tfTools.refreshIntelliSense resolves without throwing", async () => {
+  test("executing tbench.refreshIntelliSense resolves without throwing", async () => {
     await activateExtension();
     let threw = false;
     try {
-      await vscode.commands.executeCommand("tfTools.refreshIntelliSense");
+      await vscode.commands.executeCommand("tbench.refreshIntelliSense");
     } catch {
       threw = true;
     }
     assert.strictEqual(threw, false, "expected executeCommand to resolve without error");
   });
 
-  test("other tf-tools commands are also registered after activation", async () => {
+  test("other tbench commands are also registered after activation", async () => {
     await activateExtension();
     const cmds = await vscode.commands.getCommands(false);
-    const requiredCmds = ["tfTools.build", "tfTools.clippy", "tfTools.check", "tfTools.clean", "tfTools.showLogs"];
+    const requiredCmds = ["tbench.build", "tbench.clippy", "tbench.check", "tbench.clean", "tbench.showLogs"];
     for (const cmd of requiredCmds) {
       assert.ok(cmds.includes(cmd), `expected '${cmd}' to be registered`);
     }
@@ -93,7 +93,7 @@ suite("IntelliSenseService – manual refresh trigger", () => {
   function makeManifest(): ManifestStateLoaded {
     return {
       status: "loaded",
-      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+      manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
       models: [{ kind: "model", id: "model-t2t1", name: "T2T1", artifactFolder: "artifacts-t2t1" }],
       targets: [{ kind: "target", id: "hw", name: "Hardware", shortName: "HW" }],
       components: [{ kind: "component", id: "component-core", name: "Core", artifactName: "cc-core" }],

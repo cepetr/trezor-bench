@@ -6,10 +6,10 @@ This glossary defines the preferred product and documentation terms used by the 
 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
-| **Trezor Firmware Tools** | The formal product name of the extension. | Use in the title, introduction, the activity bar container title, the log output channel name, and places where the official product name matters. |
+| **Trezor Bench** | The formal product name of the extension. | Use in the title, introduction, the activity bar container title, the log output channel name, and places where the official product name matters. |
 | **Trezor** | The compact user-facing label used in space-constrained UI surfaces. | Use for the command category prefix and other compact UI labels. Not used for the activity bar container title, which carries the formal product name. Do not use it as a replacement for the formal product name in general prose. |
-| **the extension** | The default prose reference to Trezor Firmware Tools after first mention. | Preferred term for most requirement and behavior statements throughout the specification. |
-| **tf-tools** | Short internal identifier for the product. | Use for file names, setting prefixes, variable names, command ids, and compact references. Do not use as the main product name in user-facing prose. |
+| **the extension** | The default prose reference to Trezor Bench after first mention. | Preferred term for most requirement and behavior statements throughout the specification. |
+| **tbench** | Short internal identifier for the product. | Use for file names, setting prefixes, variable names, command ids, and compact references. Do not use as the main product name in user-facing prose. |
 | **workspace** | The single opened VS Code workspace folder in which the extension operates. | The product assumes a single-root workspace. |
 | **workspace root** | The root directory of the opened workspace folder. | Use when describing how relative settings or manifest paths are resolved. |
 | **workspace maintainer** | A person who authors or updates the manifest, templates, and workspace-specific settings consumed by the extension. | Useful when requirements address repository configuration rather than day-to-day usage. |
@@ -21,7 +21,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | --- | --- | --- |
 | **active build context** | The currently selected combination of model, target, and component that drives visible UI state and runtime behaviors. | Preferred product term when behavior depends on the current selection. Stays separate from the active preset, which never appears in build-context display text. |
 | **active configuration** | The persisted workspace-state record that stores the selected model id, target id, component id, active preset id, and save timestamp. | Use for persistence and normalization behavior; avoid using it as a synonym for any visible UI section. Records persisted before preset support was added have no preset id and are read as the default preset. |
-| **Configuration view** | The collective term for the three sibling tree-view panes — `Build Selection`, `Build Artifacts`, `Build Options`, in that order — contributed by the extension inside the `Trezor Firmware Tools` activity bar container. | Preferred term for the extension's main side-bar surface as a whole; use the individual pane name when a statement applies to only one pane. |
+| **Configuration view** | The collective term for the three sibling tree-view panes — `Build Selection`, `Build Artifacts`, `Build Options`, in that order — contributed by the extension inside the `Trezor Bench` activity bar container. | Preferred term for the extension's main side-bar surface as a whole; use the individual pane name when a statement applies to only one pane. |
 | **Build Selection** | The Configuration view pane that shows the current model, target, component, and preset selectors. | Use this exact capitalization for the UI surface. |
 | **preset** | A named, ordered collection of build-option value fragments defined in the required shared `presets.toml` file or the optional `user-presets.toml` file. Each fragment is matched against the active model, component, and target-derived emulator state; the preset itself is always offered, whatever the active build context. | Use for the named choices offered under the `Preset` selector, distinct from the always-present default preset. Matching decides which fragments a preset contributes, never whether it is listed: a preset with no matching fragment stays selectable and contributes nothing beyond the preset-file defaults. When `presets.toml` is absent, the repository's `xtask` does not support presets: no choices are offered at all and `Build`, `Clippy`, and `Check` are blocked. |
 | **active preset** | The single preset selection — a named preset or the default preset — used to derive preset-effective build-option values for `Build`, `Clippy`, and `Check`. | Its id is stored in the active configuration but stays separate from the active build context and its display text. |
@@ -37,10 +37,10 @@ This glossary defines the preferred product and documentation terms used by the 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
 | **manifest** | The YAML file that defines available models, targets, components, build options, debug profiles, and related rules. | This is the runtime source of truth for product behavior. |
-| **repository configuration file** | The optional root-level `tf-tools.toml` file that commits repository-dependent tf-tools paths. | Its `[paths]` entries are resolved from the workspace root; it is authoritative when present and valid. Unknown `[paths]` keys are ignored. |
+| **repository configuration file** | The optional root-level `tbench.toml` file that commits repository-dependent tbench paths. | Its `[paths]` entries are resolved from the workspace root; it is authoritative when present and valid. Unknown `[paths]` keys are ignored. |
 | **repository configuration status** | The current state of the repository configuration file: absent and using defaults, valid and resolved, or invalid and blocking. | A present malformed file or wrong-typed supported path entry is blocking and is never treated as absent. |
-| **manifest path** | The repository-configuration path that points to the manifest file. | Defined by `[paths].manifest` in `tf-tools.toml`, or its built-in default when absent. |
-| **tf-tools manifest** | Shorthand for the manifest file used by Trezor Firmware Tools. | Acceptable short form when the file itself is the subject. |
+| **manifest path** | The repository-configuration path that points to the manifest file. | Defined by `[paths].manifest` in `tbench.toml`, or its built-in default when absent. |
+| **tbench manifest** | Shorthand for the manifest file used by Trezor Bench. | Acceptable short form when the file itself is the subject. |
 | **manifest status** | The current load state of the manifest: `loaded`, `missing`, or `invalid`. | Use when describing command gating and warning surfaces. |
 | **validation issue** | A concrete manifest problem found during parsing or validation. | Use for structured problems that may become diagnostics or logs. |
 | **when expression** | A manifest-defined availability rule composed from `model(...)`, `target(...)`, `component(...)`, `all(...)`, `any(...)`, and `not(...)`. | Use this term consistently for option and debug availability rules. Avoid looser names like "condition string". |
@@ -65,7 +65,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
 | **Build Artifacts** | The Configuration view pane that reports artifact status and exposes artifact-related actions. | Use this exact capitalization for the UI surface. |
-| **artifacts root** | The directory configured by `[paths].build-artifacts` in `tf-tools.toml` that contains model-specific artifact folders. | An absent entry uses the built-in default; an empty entry disables artifact-based IntelliSense resolution. |
+| **artifacts root** | The directory configured by `[paths].build-artifacts` in `tbench.toml` that contains model-specific artifact folders. | An absent entry uses the built-in default; an empty entry disables artifact-based IntelliSense resolution. |
 | **artifact folder** | The model-defined subfolder under the artifacts root where that model's derived files are expected. | Comes from `model.artifactFolder`. |
 | **artifact basename** | The shared base filename stem formed from `component.artifactName` plus `target.artifactSuffix`. | Useful when describing compile commands, binary, and map file derivation. |
 | **compile commands artifact** | The `.cc.json` file that represents the expected compile database for the active build context. | Preferred product term over raw filename references when discussing IntelliSense. |
@@ -74,9 +74,9 @@ This glossary defines the preferred product and documentation terms used by the 
 | **executable artifact** | The executable file derived for debug launch from artifact name, suffix, and executable extension. | Preferred term when discussing debug readiness. |
 | **artifact status** | The user-facing presence state of an artifact row: `valid` or `missing`. | Use for tree row descriptions, not for low-level file existence checks. |
 | **xtask** | The workspace's Cargo-based task runner used by the extension to launch build-related firmware workflows. | Use this term when referring to the command backend that receives model, target, component, and build-option arguments. |
-| **workflow task environment** | The process environment used when the extension launches a `cargo xtask` workflow task. | Formed from the VS Code session environment plus entries from `tfTools.taskExtraEnv` after configuration variable references are resolved. |
-| **task extra environment** | The workspace setting object that supplies additional environment variables for workflow tasks. | Exposed as `tfTools.taskExtraEnv`. |
-| **configuration variable reference** | A `${...}` placeholder in a tf-tools setting value that the extension resolves when reading that setting. | Covers supported VS Code variable-reference forms such as `${workspaceFolder}` and `${env:NAME}`. Distinct from tf-tools debug substitution tokens in debug templates. |
+| **workflow task environment** | The process environment used when the extension launches a `cargo xtask` workflow task. | Formed from the VS Code session environment plus entries from `tbench.taskExtraEnv` after configuration variable references are resolved. |
+| **task extra environment** | The workspace setting object that supplies additional environment variables for workflow tasks. | Exposed as `tbench.taskExtraEnv`. |
+| **configuration variable reference** | A `${...}` placeholder in a tbench setting value that the extension resolves when reading that setting. | Covers supported VS Code variable-reference forms such as `${workspaceFolder}` and `${env:NAME}`. Distinct from tbench debug substitution tokens in debug templates. |
 | **Build** | The primary command and task that runs the active firmware build workflow. | Capitalize when referring to the named command. |
 | **Clippy** | The command and task that runs lint-oriented firmware checks for the active build context. | Capitalize as the task/command name. |
 | **Check** | The command and task that runs non-building validation for the active build context. | Capitalize as the task/command name. |
@@ -90,10 +90,10 @@ This glossary defines the preferred product and documentation terms used by the 
 | --- | --- | --- |
 | **IntelliSense** | The editor assistance aligned to the active compile database and delivered through the configured C/C++ provider. | Keep the VS Code spelling and capitalization. |
 | **compile database** | The parsed compile-commands data used to derive per-file C/C++ configuration. | Product-facing equivalent of the compile commands artifact contents. |
-| **configuration provider** | The C/C++ IntelliSense provider that tf-tools integrates with. | In this product, this is either the cpptools custom configuration provider contract or the clangd language server driven through a managed compile database. |
-| **IntelliSense backend** | The C/C++ tooling tf-tools drives to deliver IntelliSense: either Microsoft C/C++ (`cpptools`) or clangd (`llvm-vs-code-extensions.vscode-clangd`). | cpptools is preferred; clangd is the fallback used when cpptools cannot be used and the clangd extension is installed. |
-| **managed compile database** | The `.tf-tools/compile_commands.json` link maintained in the workspace root that points the clangd backend at the active compile-commands artifact. | Use when describing how the clangd backend discovers the active compile database. |
-| **provider readiness** | Whether a supported IntelliSense backend is installed and usable for tf-tools: cpptools configured with `cepetr.tf-tools` as the provider, or the clangd extension installed. | Use when describing prerequisite warnings. |
+| **configuration provider** | The C/C++ IntelliSense provider that tbench integrates with. | In this product, this is either the cpptools custom configuration provider contract or the clangd language server driven through a managed compile database. |
+| **IntelliSense backend** | The C/C++ tooling tbench drives to deliver IntelliSense: either Microsoft C/C++ (`cpptools`) or clangd (`llvm-vs-code-extensions.vscode-clangd`). | cpptools is preferred; clangd is the fallback used when cpptools cannot be used and the clangd extension is installed. |
+| **managed compile database** | The `.tbench/compile_commands.json` link maintained in the workspace root that points the clangd backend at the active compile-commands artifact. | Use when describing how the clangd backend discovers the active compile database. |
+| **provider readiness** | Whether a supported IntelliSense backend is installed and usable for tbench: cpptools configured with `cepetr.tbench` as the provider, or the clangd extension installed. | Use when describing prerequisite warnings. |
 | **excluded file** | A file that falls within excluded-file scope but is not included in the active compile database. | Preferred user-facing term for the feature. |
 | **excluded-file scope** | The combination of configured filename patterns and folder globs that limits where excluded-file marking applies. | Prefer this term over "rules" when describing the overall scope behavior. |
 | **Explorer badge** | The exclusion marker shown in the VS Code Explorer for excluded files. | Use for the explorer surface specifically. |
@@ -109,13 +109,13 @@ This glossary defines the preferred product and documentation terms used by the 
 | **matching debug profile set** | The ordered collection of component-owned debug profiles whose `when` expressions evaluate to true for the active build context. | Use when describing how Run and Debug entries are generated or how the default profile is derived. |
 | **default debug profile** | The first matching debug profile in declaration order for the selected component, used by direct `Start Debugging` actions and by the default Run and Debug entry. | Use when contrasting the default choice from profile-specific Run and Debug entries. |
 | **debug template** | The JSONC file referenced by a debug profile and loaded at launch time. | Preferred term over "launch template" in this product. |
-| **debug templates path** | The repository-configuration path that points to the directory containing debug templates. | Defined by `[paths].debug-templates` in `tf-tools.toml`, or its built-in default when absent. |
-| **debug variable** | A tf-tools substitution variable available during template resolution. | Covers built-in variables and profile-defined `tfTools.debug.var:<name>` entries. |
+| **debug templates path** | The repository-configuration path that points to the directory containing debug templates. | Defined by `[paths].debug-templates` in `tbench.toml`, or its built-in default when absent. |
+| **debug variable** | A tbench substitution variable available during template resolution. | Covers built-in variables and profile-defined `tbench.debug.var:<name>` entries. |
 | **built-in debug variable** | A substitution variable derived from the active model, target, component, artifact path, executable, or debug profile name. | Use when distinguishing built-ins from profile-defined variables. |
 | **profile-defined debug variable** | A substitution variable declared in a manifest debug profile under `vars`. | Use this term instead of just "custom variable" for precision. |
-| **substitution token** | A `${...}` placeholder found in a debug template before tf-tools substitution runs. | Use when describing template inputs rather than resolved values. |
+| **substitution token** | A `${...}` placeholder found in a debug template before tbench substitution runs. | Use when describing template inputs rather than resolved values. |
 | **declaration order** | The order in which debug profiles appear in the manifest. The first matching profile in declaration order is the default debug profile. No separate priority field or other precedence mechanism overrides this order. | Use when describing default profile selection and why declaration position determines the default choice. |
-| **debug resolution failure** | A launch-blocking failure that occurs while selecting a matching debug profile, loading its template, or resolving tf-tools debug variables. | Use for failures before VS Code starts the debug session. |
+| **debug resolution failure** | A launch-blocking failure that occurs while selecting a matching debug profile, loading its template, or resolving tbench debug variables. | Use for failures before VS Code starts the debug session. |
 
 ## Availability Terms
 
@@ -131,11 +131,11 @@ This glossary defines the preferred product and documentation terms used by the 
 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
-| **resource-scoped setting** | A VS Code setting that can vary by workspace rather than being globally fixed. | Use when describing tf-tools configuration settings. |
-| **configuration variable resolution** | The extension behavior that expands supported `${...}` references while reading eligible string-based tf-tools settings. | VS Code does not perform this automatically for extension settings; tf-tools resolves supported references in `tfTools.taskExtraEnv` and excluded-file glob settings. It never expands values in `tf-tools.toml`. |
+| **resource-scoped setting** | A VS Code setting that can vary by workspace rather than being globally fixed. | Use when describing tbench configuration settings. |
+| **configuration variable resolution** | The extension behavior that expands supported `${...}` references while reading eligible string-based tbench settings. | VS Code does not perform this automatically for extension settings; tbench resolves supported references in `tbench.taskExtraEnv` and excluded-file glob settings. It never expands values in `tbench.toml`. |
 | **command surface** | A user-facing place where a command is exposed, such as the Command Palette, a view header, an overflow menu, or an inline row action. | Use when describing shared command availability and visibility rules across multiple entry points. |
 | **invalid when expression** | A manifest `when`, `flashWhen`, or `uploadWhen` expression that cannot be parsed, validated, or resolved against known ids. | Use for manifest validation failures rather than runtime false results. |
-| **status bar configuration item** | The status bar entry that shows the active build context and, when selected, opens the `Trezor Firmware Tools` container and expands and focuses `Build Selection`. | Preferred product phrase over generic "status bar text". |
+| **status bar configuration item** | The status bar entry that shows the active build context and, when selected, opens the `Trezor Bench` container and expands and focuses `Build Selection`. | Preferred product phrase over generic "status bar text". |
 | **diagnostic** | A persistent file-backed problem shown through the Problems view and relevant editors. | Use for manifest-backed validation issues. |
-| **log output** | The dedicated `Trezor Firmware Tools` output channel that records runtime warnings, errors, and detail. | Preferred term over generic "logs" when the VS Code output channel is meant. |
+| **log output** | The dedicated `Trezor Bench` output channel that records runtime warnings, errors, and detail. | Preferred term over generic "logs" when the VS Code output channel is meant. |
 | **user-visible error** | An error surfaced directly in the UI, typically as a VS Code notification or disabled action state. | Use when distinguishing transient UX feedback from persistent diagnostics or logs. |

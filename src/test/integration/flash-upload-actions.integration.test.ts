@@ -2,8 +2,8 @@
  * Integration tests for Flash/Upload Actions.
  *
  * Covers:
- *  - `tfTools.flash` and `tfTools.upload` commands are registered after activation
- *  - `tfTools.openMapFile` is registered after activation
+ *  - `tbench.flash` and `tbench.upload` commands are registered after activation
+ *  - `tbench.openMapFile` is registered after activation
  *  - Executing flash/upload when blocked by workspace-unsupported state resolves without throwing
  *  - package.json commandPalette entries exist for flash and upload with correct when-expressions
  *  - package.json commandPalette entry for openMapFile has `when: "false"` (row-only action)
@@ -20,7 +20,7 @@ import { evaluateArtifactActionPreconditions } from "../../commands/artifact-act
 // ---------------------------------------------------------------------------
 
 async function activateExtension(): Promise<boolean> {
-  const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+  const ext = vscode.extensions.getExtension("cepetr.tbench");
   if (!ext) {
     return false;
   }
@@ -40,64 +40,64 @@ suite("Flash/Upload Actions – command registration", () => {
     assert.strictEqual(activated, true, "expected extension to activate");
   });
 
-  test("tfTools.flash is registered as a VS Code command", async () => {
+  test("tbench.flash is registered as a VS Code command", async () => {
     await activateExtension();
     const cmds = await vscode.commands.getCommands(false);
     assert.ok(
-      cmds.includes("tfTools.flash"),
-      "expected 'tfTools.flash' to be registered in VS Code commands"
+      cmds.includes("tbench.flash"),
+      "expected 'tbench.flash' to be registered in VS Code commands"
     );
   });
 
-  test("tfTools.upload is registered as a VS Code command", async () => {
+  test("tbench.upload is registered as a VS Code command", async () => {
     await activateExtension();
     const cmds = await vscode.commands.getCommands(false);
     assert.ok(
-      cmds.includes("tfTools.upload"),
-      "expected 'tfTools.upload' to be registered in VS Code commands"
+      cmds.includes("tbench.upload"),
+      "expected 'tbench.upload' to be registered in VS Code commands"
     );
   });
 
-  test("tfTools.openMapFile is registered as a VS Code command", async () => {
+  test("tbench.openMapFile is registered as a VS Code command", async () => {
     await activateExtension();
     const cmds = await vscode.commands.getCommands(false);
     assert.ok(
-      cmds.includes("tfTools.openMapFile"),
-      "expected 'tfTools.openMapFile' to be registered in VS Code commands"
+      cmds.includes("tbench.openMapFile"),
+      "expected 'tbench.openMapFile' to be registered in VS Code commands"
     );
   });
 
-  test("executing tfTools.flash in unsupported-workspace state resolves without throwing", async () => {
+  test("executing tbench.flash in unsupported-workspace state resolves without throwing", async () => {
     await activateExtension();
     let threw = false;
     try {
-      await vscode.commands.executeCommand("tfTools.flash");
+      await vscode.commands.executeCommand("tbench.flash");
     } catch {
       threw = true;
     }
-    assert.strictEqual(threw, false, "tfTools.flash command must not throw");
+    assert.strictEqual(threw, false, "tbench.flash command must not throw");
   });
 
-  test("executing tfTools.upload in unsupported-workspace state resolves without throwing", async () => {
+  test("executing tbench.upload in unsupported-workspace state resolves without throwing", async () => {
     await activateExtension();
     let threw = false;
     try {
-      await vscode.commands.executeCommand("tfTools.upload");
+      await vscode.commands.executeCommand("tbench.upload");
     } catch {
       threw = true;
     }
-    assert.strictEqual(threw, false, "tfTools.upload command must not throw");
+    assert.strictEqual(threw, false, "tbench.upload command must not throw");
   });
 
-  test("executing tfTools.openMapFile in unsupported-workspace state resolves without throwing", async () => {
+  test("executing tbench.openMapFile in unsupported-workspace state resolves without throwing", async () => {
     await activateExtension();
     let threw = false;
     try {
-      await vscode.commands.executeCommand("tfTools.openMapFile");
+      await vscode.commands.executeCommand("tbench.openMapFile");
     } catch {
       threw = true;
     }
-    assert.strictEqual(threw, false, "tfTools.openMapFile command must not throw");
+    assert.strictEqual(threw, false, "tbench.openMapFile command must not throw");
   });
 });
 
@@ -107,40 +107,40 @@ suite("Flash/Upload Actions – command registration", () => {
 
 suite("Flash/Upload Actions – package.json menu contributions", () => {
   function getExtPackageJson(): Record<string, unknown> {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
-    assert.ok(ext, "cepetr.tf-tools extension must be present");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
+    assert.ok(ext, "cepetr.tbench extension must be present");
     return ext.packageJSON as Record<string, unknown>;
   }
 
-  test("commandPalette entry for tfTools.flash has when: tfTools.flashApplicable", () => {
+  test("commandPalette entry for tbench.flash has when: tbench.flashApplicable", () => {
     const pkg = getExtPackageJson();
     const menus = pkg.contributes as { menus: Record<string, unknown[]> };
     const paletteEntries = (menus.menus["commandPalette"] ?? []) as Array<{
       command: string;
       when?: string;
     }>;
-    const entry = paletteEntries.find((e) => e.command === "tfTools.flash");
-    assert.ok(entry, "expected commandPalette entry for tfTools.flash");
+    const entry = paletteEntries.find((e) => e.command === "tbench.flash");
+    assert.ok(entry, "expected commandPalette entry for tbench.flash");
     assert.strictEqual(
       entry.when,
-      "tfTools.flashApplicable",
-      "flash palette entry must use when: tfTools.flashApplicable"
+      "tbench.flashApplicable",
+      "flash palette entry must use when: tbench.flashApplicable"
     );
   });
 
-  test("commandPalette entry for tfTools.upload has when: tfTools.uploadApplicable", () => {
+  test("commandPalette entry for tbench.upload has when: tbench.uploadApplicable", () => {
     const pkg = getExtPackageJson();
     const menus = pkg.contributes as { menus: Record<string, unknown[]> };
     const paletteEntries = (menus.menus["commandPalette"] ?? []) as Array<{
       command: string;
       when?: string;
     }>;
-    const entry = paletteEntries.find((e) => e.command === "tfTools.upload");
-    assert.ok(entry, "expected commandPalette entry for tfTools.upload");
+    const entry = paletteEntries.find((e) => e.command === "tbench.upload");
+    assert.ok(entry, "expected commandPalette entry for tbench.upload");
     assert.strictEqual(
       entry.when,
-      "tfTools.uploadApplicable",
-      "upload palette entry must use when: tfTools.uploadApplicable"
+      "tbench.uploadApplicable",
+      "upload palette entry must use when: tbench.uploadApplicable"
     );
   });
 
@@ -149,19 +149,19 @@ suite("Flash/Upload Actions – package.json menu contributions", () => {
     const commands = (pkg.contributes as { commands: Array<{ command: string; title?: string }> }).commands;
     const byId = new Map(commands.map((entry) => [entry.command, entry.title]));
 
-    assert.strictEqual(byId.get("tfTools.flash"), "Flash to Device");
-    assert.strictEqual(byId.get("tfTools.upload"), "Upload to Device");
+    assert.strictEqual(byId.get("tbench.flash"), "Flash to Device");
+    assert.strictEqual(byId.get("tbench.upload"), "Upload to Device");
   });
 
-  test("commandPalette entry for tfTools.openMapFile has when: false (row-only)", () => {
+  test("commandPalette entry for tbench.openMapFile has when: false (row-only)", () => {
     const pkg = getExtPackageJson();
     const menus = pkg.contributes as { menus: Record<string, unknown[]> };
     const paletteEntries = (menus.menus["commandPalette"] ?? []) as Array<{
       command: string;
       when?: string;
     }>;
-    const entry = paletteEntries.find((e) => e.command === "tfTools.openMapFile");
-    assert.ok(entry, "expected commandPalette entry for tfTools.openMapFile");
+    const entry = paletteEntries.find((e) => e.command === "tbench.openMapFile");
+    assert.ok(entry, "expected commandPalette entry for tbench.openMapFile");
     assert.strictEqual(
       entry.when,
       "false",
@@ -177,11 +177,11 @@ suite("Flash/Upload Actions – package.json menu contributions", () => {
       when?: string;
     }>;
     const flashEntry = contextEntries.find(
-      (e) => e.command === "tfTools.flash" && e.when?.includes("artifact-binary")
+      (e) => e.command === "tbench.flash" && e.when?.includes("artifact-binary")
     );
     assert.ok(
       flashEntry,
-      "expected view/item/context entry for tfTools.flash scoped to artifact-binary"
+      "expected view/item/context entry for tbench.flash scoped to artifact-binary"
     );
   });
 
@@ -193,11 +193,11 @@ suite("Flash/Upload Actions – package.json menu contributions", () => {
       when?: string;
     }>;
     const uploadEntry = contextEntries.find(
-      (e) => e.command === "tfTools.upload" && e.when?.includes("artifact-binary")
+      (e) => e.command === "tbench.upload" && e.when?.includes("artifact-binary")
     );
     assert.ok(
       uploadEntry,
-      "expected view/item/context entry for tfTools.upload scoped to artifact-binary"
+      "expected view/item/context entry for tbench.upload scoped to artifact-binary"
     );
   });
 
@@ -209,15 +209,15 @@ suite("Flash/Upload Actions – package.json menu contributions", () => {
       when?: string;
     }>;
     const mapEntry = contextEntries.find(
-      (e) => e.command === "tfTools.openMapFile" && e.when?.includes("artifact-map")
+      (e) => e.command === "tbench.openMapFile" && e.when?.includes("artifact-map")
     );
     assert.ok(
       mapEntry,
-      "expected view/item/context entry for tfTools.openMapFile scoped to artifact-map"
+      "expected view/item/context entry for tbench.openMapFile scoped to artifact-map"
     );
   });
 
-  test("view/title has conditional overflow entry for tfTools.flash", () => {
+  test("view/title has conditional overflow entry for tbench.flash", () => {
     const pkg = getExtPackageJson();
     const menus = pkg.contributes as { menus: Record<string, unknown[]> };
     const titleEntries = (menus.menus["view/title"] ?? []) as Array<{
@@ -226,17 +226,17 @@ suite("Flash/Upload Actions – package.json menu contributions", () => {
       group?: string;
       enablement?: string;
     }>;
-    const entry = titleEntries.find((e) => e.command === "tfTools.flash");
-    assert.ok(entry, "expected view/title entry for tfTools.flash");
+    const entry = titleEntries.find((e) => e.command === "tbench.flash");
+    assert.ok(entry, "expected view/title entry for tbench.flash");
     assert.strictEqual(
       entry?.when,
-      "view == tfTools.configuration && tfTools.flashApplicable"
+      "view == tbench.configuration && tbench.flashApplicable"
     );
     assert.strictEqual(entry?.group, "overflow@5");
-    assert.strictEqual(entry?.enablement, "tfTools.binaryExists");
+    assert.strictEqual(entry?.enablement, "tbench.binaryExists");
   });
 
-  test("view/title has conditional overflow entry for tfTools.upload", () => {
+  test("view/title has conditional overflow entry for tbench.upload", () => {
     const pkg = getExtPackageJson();
     const menus = pkg.contributes as { menus: Record<string, unknown[]> };
     const titleEntries = (menus.menus["view/title"] ?? []) as Array<{
@@ -245,14 +245,14 @@ suite("Flash/Upload Actions – package.json menu contributions", () => {
       group?: string;
       enablement?: string;
     }>;
-    const entry = titleEntries.find((e) => e.command === "tfTools.upload");
-    assert.ok(entry, "expected view/title entry for tfTools.upload");
+    const entry = titleEntries.find((e) => e.command === "tbench.upload");
+    assert.ok(entry, "expected view/title entry for tbench.upload");
     assert.strictEqual(
       entry?.when,
-      "view == tfTools.configuration && tfTools.uploadApplicable"
+      "view == tbench.configuration && tbench.uploadApplicable"
     );
     assert.strictEqual(entry?.group, "overflow@6");
-    assert.strictEqual(entry?.enablement, "tfTools.binaryExists");
+    assert.strictEqual(entry?.enablement, "tbench.binaryExists");
   });
 });
 

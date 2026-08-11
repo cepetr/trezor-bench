@@ -56,7 +56,7 @@ suite("Repository configuration integration", () => {
 
   setup(async () => {
     workspacePath = vscode.Uri.file(
-      await fs.mkdtemp(path.join(os.tmpdir(), "tf-tools-repository-configuration-"))
+      await fs.mkdtemp(path.join(os.tmpdir(), "tbench-repository-configuration-"))
     ).fsPath;
   });
 
@@ -71,7 +71,7 @@ suite("Repository configuration integration", () => {
     await fs.writeFile(path.join(workspacePath, "firmware/config/manifest.yaml"), MANIFEST, "utf-8");
     await fs.writeFile(path.join(workspacePath, "firmware/presets/presets.toml"), "[[test]]\nfrozen = true\n", "utf-8");
     await fs.writeFile(
-      path.join(workspacePath, "tf-tools.toml"),
+      path.join(workspacePath, "tbench.toml"),
       `[paths]
 cargo-workspace = "firmware/workspace"
 debug-templates = "firmware/debug/templates"
@@ -136,7 +136,7 @@ xtask-presets = "firmware/presets"
 
   test("uses empty cargo and artifacts paths while defaulting omitted entries", async () => {
     await fs.writeFile(
-      path.join(workspacePath, "tf-tools.toml"),
+      path.join(workspacePath, "tbench.toml"),
       '[paths]\ncargo-workspace = ""\nbuild-artifacts = ""\n',
       "utf-8"
     );
@@ -162,7 +162,7 @@ xtask-presets = "firmware/presets"
     const initial = await service.start();
     assert.strictEqual(initial.status, "absent");
 
-    const configurationPath = path.join(workspacePath, "tf-tools.toml");
+    const configurationPath = path.join(workspacePath, "tbench.toml");
     const created = waitForState(service, "loaded");
     await fs.writeFile(configurationPath, '[paths]\nmanifest = "firmware/manifest.yaml"', "utf-8");
     await created;

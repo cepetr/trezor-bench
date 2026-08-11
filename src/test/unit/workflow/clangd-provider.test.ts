@@ -11,7 +11,7 @@ import {
   ClangdProviderAdapter,
   CLANGD_COMPILE_COMMANDS_DIR_NAME,
   CLANGD_COMPILE_COMMANDS_LINK_NAME,
-  buildTfToolsClangdConfig,
+  buildTbenchClangdConfig,
   getClangdCompileCommandsLinkPath,
   getWorkspaceClangdConfigPath,
 } from "../../../intellisense/clangd-provider";
@@ -28,10 +28,10 @@ function makeWorkspaceFolder(root: string): vscode.WorkspaceFolder {
 }
 
 suite("clangd compile-database helpers", () => {
-  test("buildTfToolsClangdConfig points clangd at the tf-tools compile database dir", () => {
-    const config = buildTfToolsClangdConfig();
-    assert.ok(config.includes("CompilationDatabase: .tf-tools"));
-    assert.ok(config.includes("Trezor Firmware Tools"));
+  test("buildTbenchClangdConfig points clangd at the tbench compile database dir", () => {
+    const config = buildTbenchClangdConfig();
+    assert.ok(config.includes("CompilationDatabase: .tbench"));
+    assert.ok(config.includes("Trezor Bench"));
   });
 });
 
@@ -42,7 +42,7 @@ suite("ClangdProviderAdapter", () => {
   let restartCount: number;
 
   setup(() => {
-    tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-clangd-"));
+    tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-clangd-"));
     workspaceFolder = makeWorkspaceFolder(tmpRoot);
     artifactPath = path.join(tmpRoot, "artifacts", "model-t", "compile_commands_core.cc.json");
     fs.mkdirSync(path.dirname(artifactPath), { recursive: true });
@@ -68,7 +68,7 @@ suite("ClangdProviderAdapter", () => {
     assert.strictEqual(restartCount, 1);
     assert.strictEqual(
       fs.readFileSync(getWorkspaceClangdConfigPath(workspaceFolder), "utf-8"),
-      buildTfToolsClangdConfig()
+      buildTbenchClangdConfig()
     );
   });
 
@@ -118,7 +118,7 @@ suite("ClangdProviderAdapter", () => {
     assert.strictEqual(adapter.getLinkedArtifactPath(), secondArtifactPath);
   });
 
-  test("managed compile database lives under .tf-tools/compile_commands.json", async () => {
+  test("managed compile database lives under .tbench/compile_commands.json", async () => {
     const adapter = new ClangdProviderAdapter(async () => {});
     await adapter.applyArtifact(workspaceFolder, artifactPath);
 

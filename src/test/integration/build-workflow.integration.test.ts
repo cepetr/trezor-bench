@@ -28,13 +28,13 @@ function fixtureManifestSource(fixtureName: string): string {
     __dirname,
     "../../../test-fixtures/manifests",
     fixtureName,
-    "tf-tools.yaml"
+    "tbench.yaml"
   );
   return fs.readFileSync(fixturePath, "utf-8");
 }
 
 async function activateExtension(): Promise<boolean> {
-  const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+  const ext = vscode.extensions.getExtension("cepetr.tbench");
   if (!ext) {
     return false;
   }
@@ -109,45 +109,45 @@ suite("Build Workflow – evaluateWorkflowPreconditions", () => {
 // ---------------------------------------------------------------------------
 
 suite("Build Workflow – command registration", () => {
-  test("tfTools.build command is registered", async () => {
+  test("tbench.build command is registered", async () => {
     await activateExtension();
     const all = await vscode.commands.getCommands(true);
-    assert.ok(all.includes("tfTools.build"), "expected tfTools.build to be registered");
+    assert.ok(all.includes("tbench.build"), "expected tbench.build to be registered");
   });
 
-  test("tfTools.clippy command is registered", async () => {
+  test("tbench.clippy command is registered", async () => {
     await activateExtension();
     const all = await vscode.commands.getCommands(true);
-    assert.ok(all.includes("tfTools.clippy"), "expected tfTools.clippy to be registered");
+    assert.ok(all.includes("tbench.clippy"), "expected tbench.clippy to be registered");
   });
 
-  test("tfTools.check command is registered", async () => {
+  test("tbench.check command is registered", async () => {
     await activateExtension();
     const all = await vscode.commands.getCommands(true);
-    assert.ok(all.includes("tfTools.check"), "expected tfTools.check to be registered");
+    assert.ok(all.includes("tbench.check"), "expected tbench.check to be registered");
   });
 
-  test("tfTools.clean command is registered", async () => {
+  test("tbench.clean command is registered", async () => {
     await activateExtension();
     const all = await vscode.commands.getCommands(true);
-    assert.ok(all.includes("tfTools.clean"), "expected tfTools.clean to be registered");
+    assert.ok(all.includes("tbench.clean"), "expected tbench.clean to be registered");
   });
 
-  test("tfTools.toggleBuildOption command is registered", async () => {
+  test("tbench.toggleBuildOption command is registered", async () => {
     await activateExtension();
     const all = await vscode.commands.getCommands(true);
     assert.ok(
-      all.includes("tfTools.toggleBuildOption"),
-      "expected tfTools.toggleBuildOption to be registered"
+      all.includes("tbench.toggleBuildOption"),
+      "expected tbench.toggleBuildOption to be registered"
     );
   });
 
-  test("tfTools.selectBuildOptionState command is registered", async () => {
+  test("tbench.selectBuildOptionState command is registered", async () => {
     await activateExtension();
     const all = await vscode.commands.getCommands(true);
     assert.ok(
-      all.includes("tfTools.selectBuildOptionState"),
-      "expected tfTools.selectBuildOptionState to be registered"
+      all.includes("tbench.selectBuildOptionState"),
+      "expected tbench.selectBuildOptionState to be registered"
     );
   });
 });
@@ -187,7 +187,7 @@ suite("Build Workflow – blocked manifest", () => {
   });
 
   test("package.json keeps Build as the primary view/title action", () => {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     if (!ext) {
       return; // Skip gracefully when not installed
     }
@@ -211,13 +211,13 @@ suite("Build Workflow – blocked manifest", () => {
     assert.ok(primaryCommands.length > 0, "expected at least one primary view/title action");
     assert.strictEqual(
       primaryCommands[0],
-      "tfTools.build",
-      `expected tfTools.build as the first primary view/title action, found: ${primaryCommands.join(", ")}`
+      "tbench.build",
+      `expected tbench.build as the first primary view/title action, found: ${primaryCommands.join(", ")}`
     );
   });
 
   test("package.json exposes Build/Clippy/Check/Clean in the view/title overflow menu", () => {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     if (!ext) {
       return; // Skip gracefully when not installed
     }
@@ -233,14 +233,14 @@ suite("Build Workflow – blocked manifest", () => {
       .map((entry) => entry.command)
       .filter((command): command is string => Boolean(command));
 
-    assert.ok(overflowCommands.includes("tfTools.build"), "expected tfTools.build in overflow");
-    assert.ok(overflowCommands.includes("tfTools.clippy"), "expected tfTools.clippy in overflow");
-    assert.ok(overflowCommands.includes("tfTools.check"), "expected tfTools.check in overflow");
-    assert.ok(overflowCommands.includes("tfTools.clean"), "expected tfTools.clean in overflow");
+    assert.ok(overflowCommands.includes("tbench.build"), "expected tbench.build in overflow");
+    assert.ok(overflowCommands.includes("tbench.clippy"), "expected tbench.clippy in overflow");
+    assert.ok(overflowCommands.includes("tbench.check"), "expected tbench.check in overflow");
+    assert.ok(overflowCommands.includes("tbench.clean"), "expected tbench.clean in overflow");
   });
 
   test("package.json uses the tools icon for Build", () => {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     if (!ext) {
       return;
     }
@@ -249,13 +249,13 @@ suite("Build Workflow – blocked manifest", () => {
       icon?: string;
     }>) ?? []);
 
-    const buildCommand = commands.find((entry) => entry.command === "tfTools.build");
-    assert.ok(buildCommand, "expected tfTools.build command contribution");
+    const buildCommand = commands.find((entry) => entry.command === "tbench.build");
+    assert.ok(buildCommand, "expected tbench.build command contribution");
     assert.strictEqual(buildCommand?.icon, "$(tools)");
   });
 
   test("package.json uses Run-prefixed titles for Clippy/Check/Clean commands", () => {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     if (!ext) {
       return;
     }
@@ -265,13 +265,13 @@ suite("Build Workflow – blocked manifest", () => {
     }>) ?? []);
 
     const byId = new Map(commands.map((entry) => [entry.command, entry.title]));
-    assert.strictEqual(byId.get("tfTools.clippy"), "Run Clippy");
-    assert.strictEqual(byId.get("tfTools.check"), "Run Check");
-    assert.strictEqual(byId.get("tfTools.clean"), "Run Clean");
+    assert.strictEqual(byId.get("tbench.clippy"), "Run Clippy");
+    assert.strictEqual(byId.get("tbench.check"), "Run Check");
+    assert.strictEqual(byId.get("tbench.clean"), "Run Clean");
   });
 
   test("package.json orders overflow actions with Flash/Upload before Refresh IntelliSense", () => {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     if (!ext) {
       return;
     }
@@ -293,14 +293,14 @@ suite("Build Workflow – blocked manifest", () => {
     assert.deepStrictEqual(
       overflowEntries.map((entry) => entry.command),
       [
-        "tfTools.build",
-        "tfTools.clippy",
-        "tfTools.check",
-        "tfTools.clean",
-        "tfTools.flash",
-        "tfTools.upload",
-        "tfTools.startDebugging",
-        "tfTools.refreshIntelliSense",
+        "tbench.build",
+        "tbench.clippy",
+        "tbench.check",
+        "tbench.clean",
+        "tbench.flash",
+        "tbench.upload",
+        "tbench.startDebugging",
+        "tbench.refreshIntelliSense",
       ]
     );
   });
@@ -311,8 +311,8 @@ suite("Build Workflow – blocked manifest", () => {
 // ---------------------------------------------------------------------------
 
 suite("Refresh IntelliSense – command contributions", () => {
-  test("package.json declares tfTools.refreshIntelliSense command", () => {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+  test("package.json declares tbench.refreshIntelliSense command", () => {
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     if (!ext) {
       return; // Skip gracefully when not installed
     }
@@ -320,13 +320,13 @@ suite("Refresh IntelliSense – command contributions", () => {
       ext.packageJSON?.contributes?.commands ?? [];
     const ids = commands.map((c) => c.command);
     assert.ok(
-      ids.includes("tfTools.refreshIntelliSense"),
-      `expected tfTools.refreshIntelliSense in package.json contributes.commands, found: ${ids.join(", ")}`
+      ids.includes("tbench.refreshIntelliSense"),
+      `expected tbench.refreshIntelliSense in package.json contributes.commands, found: ${ids.join(", ")}`
     );
   });
 
-  test("package.json exposes tfTools.refreshIntelliSense in view/title overflow menu", () => {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+  test("package.json exposes tbench.refreshIntelliSense in view/title overflow menu", () => {
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     if (!ext) {
       return; // Skip gracefully when not installed
     }
@@ -337,20 +337,20 @@ suite("Refresh IntelliSense – command contributions", () => {
       .map((e) => (e as { command?: string }).command)
       .filter(Boolean);
     assert.ok(
-      commands.includes("tfTools.refreshIntelliSense"),
-      `expected tfTools.refreshIntelliSense in view/title menus, found: ${commands.join(", ")}`
+      commands.includes("tbench.refreshIntelliSense"),
+      `expected tbench.refreshIntelliSense in view/title menus, found: ${commands.join(", ")}`
     );
   });
 
   test("package.json refresh command has a category and icon", () => {
-    const ext = vscode.extensions.getExtension("trezor.tf-tools");
+    const ext = vscode.extensions.getExtension("trezor.tbench");
     if (!ext) {
       return;
     }
     const commands: Array<{ command: string; category?: string; icon?: string }> =
       ext.packageJSON?.contributes?.commands ?? [];
-    const refreshCmd = commands.find((c) => c.command === "tfTools.refreshIntelliSense");
-    assert.ok(refreshCmd, "expected tfTools.refreshIntelliSense to be declared");
+    const refreshCmd = commands.find((c) => c.command === "tbench.refreshIntelliSense");
+    assert.ok(refreshCmd, "expected tbench.refreshIntelliSense to be declared");
     assert.ok(refreshCmd!.category, "expected category to be set on refreshIntelliSense");
     assert.ok(refreshCmd!.icon, "expected icon to be set on refreshIntelliSense");
   });

@@ -64,14 +64,14 @@ async function waitFor(predicate: () => boolean): Promise<void> {
 
 suite("Artifact file watcher", () => {
   test("watches the parent of the artifacts root for externally recreated artifacts", () => {
-    const artifactsRoot = path.join("/tmp", "tf-tools-artifacts");
+    const artifactsRoot = path.join("/tmp", "tbench-artifacts");
     const scopes = resolveArtifactWatchScopes(makeManifest(), activeConfig, artifactsRoot);
 
     assert.strictEqual(scopes.length, 1);
     assert.strictEqual(scopes[0].folderPath, path.dirname(artifactsRoot));
     assert.ok(
       scopes[0].relativePaths.has(
-        path.join("tf-tools-artifacts", "model-a-out", "component-a-target-a.bin")
+        path.join("tbench-artifacts", "model-a-out", "component-a-target-a.bin")
       )
     );
   });
@@ -103,7 +103,7 @@ suite("Artifact file watcher", () => {
   });
 
   test("refreshes when an external process creates an expected artifact without a watcher event", async () => {
-    const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-artifacts-"));
+    const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-artifacts-"));
     const artifactsRoot = path.join(temporaryRoot, "artifacts");
     let refreshCount = 0;
     const watcher = new ActiveArtifactFileWatcher(

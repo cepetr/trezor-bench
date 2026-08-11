@@ -4,7 +4,7 @@
  * Covers:
  *  - missing-provider warning when cpptools is not installed
  *  - wrong-provider warning when a different provider is configured
- *  - ready (none) state when cpptools is present and provider is unconfigured or set to tf-tools
+ *  - ready (none) state when cpptools is present and provider is unconfigured or set to tbench
  *  - lastWarningMessage content for each warning state
  *  - providerInstalled and providerConfigured flags for each state
  */
@@ -182,14 +182,14 @@ suite("checkProviderReadiness – missing-provider", () => {
 
   test("warningState is 'missing-provider' when cpptools API is unsupported and clangd is absent", () => {
     stubExtensionInstalledWithUnsupportedApi();
-    stubConfigurationProvider("cepetr.tf-tools");
+    stubConfigurationProvider("cepetr.tbench");
     const result = checkProviderReadiness();
     assert.strictEqual(result.warningState, "missing-provider");
   });
 
   test("unsupported cpptools API message names cpptools and clangd when clangd is absent", () => {
     stubExtensionInstalledWithUnsupportedApi();
-    stubConfigurationProvider("cepetr.tf-tools");
+    stubConfigurationProvider("cepetr.tbench");
     const result = checkProviderReadiness();
     assert.strictEqual(result.warningState, "missing-provider");
     assert.ok(
@@ -205,7 +205,7 @@ suite("checkProviderReadiness – missing-provider", () => {
   test("warningState is 'none' when cpptools API is unsupported but clangd is installed", () => {
     stubExtensionInstalledWithUnsupportedApi();
     stubClangdExtensionInstalled();
-    stubConfigurationProvider("cepetr.tf-tools");
+    stubConfigurationProvider("cepetr.tbench");
     const result = checkProviderReadiness();
     assert.strictEqual(result.warningState, "none");
     assert.strictEqual(result.providerInstalled, true);
@@ -294,19 +294,19 @@ suite("checkProviderReadiness – ready (none)", () => {
     restoreExtensionMocks();
   });
 
-  test("warningState is 'none' when provider is set to cepetr.tf-tools", () => {
+  test("warningState is 'none' when provider is set to cepetr.tbench", () => {
     stubExtensionInstalled();
-    stubConfigurationProvider("cepetr.tf-tools");
+    stubConfigurationProvider("cepetr.tbench");
     const result = checkProviderReadiness();
     assert.strictEqual(result.warningState, "none");
   });
 
-  test("warningState is 'none' when provider is set to CEPETR.TF-TOOLS (case-insensitive)", () => {
-    stubExtensionInstalled();
-    stubConfigurationProvider("CEPETR.TF-TOOLS");
-    const result = checkProviderReadiness();
-    assert.strictEqual(result.warningState, "none");
-  });
+    test("warningState is 'none' when provider is set to CEPETR.TBENCH (case-insensitive)", () => {
+      stubExtensionInstalled();
+      stubConfigurationProvider("CEPETR.TBENCH");
+      const result = checkProviderReadiness();
+      assert.strictEqual(result.warningState, "none");
+    });
 
   test("providerInstalled is true when cpptools is present", () => {
     stubExtensionInstalled();
@@ -317,21 +317,21 @@ suite("checkProviderReadiness – ready (none)", () => {
 
   test("providerConfigured is true when prerequisites are satisfied", () => {
     stubExtensionInstalled();
-    stubConfigurationProvider("cepetr.tf-tools");
+    stubConfigurationProvider("cepetr.tbench");
     const result = checkProviderReadiness();
     assert.strictEqual(result.providerConfigured, true);
   });
 
   test("lastWarningMessage is undefined when warningState is 'none'", () => {
     stubExtensionInstalled();
-    stubConfigurationProvider("cepetr.tf-tools");
+    stubConfigurationProvider("cepetr.tbench");
     const result = checkProviderReadiness();
     assert.strictEqual(result.lastWarningMessage, undefined);
   });
 
   test("warningState stays 'none' when cpptools is installed but not yet activated", () => {
     stubExtensionInstalledButInactive();
-    stubConfigurationProvider("cepetr.tf-tools");
+    stubConfigurationProvider("cepetr.tbench");
     const result = checkProviderReadiness();
     assert.strictEqual(result.warningState, "none");
     assert.strictEqual(result.providerInstalled, true);

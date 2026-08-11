@@ -161,11 +161,11 @@ suite("Flash/Upload artifacts – MapArtifactItem", () => {
 
 suite("Flash/Upload artifacts – menu enablement rules", () => {
   function getExtPackageJson(): Record<string, unknown> | undefined {
-    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tbench");
     return ext?.packageJSON as Record<string, unknown> | undefined;
   }
 
-  test("Binary-row flash entry has enablement: tfTools.binaryExists", () => {
+  test("Binary-row flash entry has enablement: tbench.binaryExists", () => {
     const pkg = getExtPackageJson();
     if (!pkg) { return; } // Skip if extension not loaded
     const menus = pkg.contributes as { menus: Record<string, unknown[]> };
@@ -175,17 +175,17 @@ suite("Flash/Upload artifacts – menu enablement rules", () => {
       enablement?: string;
     }>;
     const flashEntry = contextEntries.find(
-      (e) => e.command === "tfTools.flash" && e.when?.includes("artifact-binary")
+      (e) => e.command === "tbench.flash" && e.when?.includes("artifact-binary")
     );
     assert.ok(flashEntry, "expected view/item/context flash entry for artifact-binary");
     assert.strictEqual(
       flashEntry.enablement,
-      "tfTools.binaryExists",
-      "flash enablement must be 'tfTools.binaryExists'"
+      "tbench.binaryExists",
+      "flash enablement must be 'tbench.binaryExists'"
     );
   });
 
-  test("Binary-row upload entry has enablement: tfTools.binaryExists", () => {
+  test("Binary-row upload entry has enablement: tbench.binaryExists", () => {
     const pkg = getExtPackageJson();
     if (!pkg) { return; }
     const menus = pkg.contributes as { menus: Record<string, unknown[]> };
@@ -195,17 +195,17 @@ suite("Flash/Upload artifacts – menu enablement rules", () => {
       enablement?: string;
     }>;
     const uploadEntry = contextEntries.find(
-      (e) => e.command === "tfTools.upload" && e.when?.includes("artifact-binary")
+      (e) => e.command === "tbench.upload" && e.when?.includes("artifact-binary")
     );
     assert.ok(uploadEntry, "expected view/item/context upload entry for artifact-binary");
     assert.strictEqual(
       uploadEntry.enablement,
-      "tfTools.binaryExists",
-      "upload enablement must be 'tfTools.binaryExists'"
+      "tbench.binaryExists",
+      "upload enablement must be 'tbench.binaryExists'"
     );
   });
 
-  test("Map-row openMapFile entry has enablement: tfTools.mapExists", () => {
+  test("Map-row openMapFile entry has enablement: tbench.mapExists", () => {
     const pkg = getExtPackageJson();
     if (!pkg) { return; }
     const menus = pkg.contributes as { menus: Record<string, unknown[]> };
@@ -215,13 +215,13 @@ suite("Flash/Upload artifacts – menu enablement rules", () => {
       enablement?: string;
     }>;
     const mapEntry = contextEntries.find(
-      (e) => e.command === "tfTools.openMapFile" && e.when?.includes("artifact-map")
+      (e) => e.command === "tbench.openMapFile" && e.when?.includes("artifact-map")
     );
     assert.ok(mapEntry, "expected view/item/context openMapFile entry for artifact-map");
     assert.strictEqual(
       mapEntry.enablement,
-      "tfTools.mapExists",
-      "openMapFile enablement must be 'tfTools.mapExists'"
+      "tbench.mapExists",
+      "openMapFile enablement must be 'tbench.mapExists'"
     );
   });
 });

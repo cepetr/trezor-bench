@@ -13,7 +13,7 @@ import { PresetChoice } from "../presets/preset-resolution";
 // ---------------------------------------------------------------------------
 
 /**
- * Identifies one of the three sibling panes in the `tf-tools` container.
+ * Identifies one of the three sibling panes in the `tbench` container.
  * `build-selection` is the retitled, id-inheriting successor of the section
  * that used to be called `build-context`.
  */
@@ -175,18 +175,18 @@ export class SelectorHeaderItem extends vscode.TreeItem {
 // ---------------------------------------------------------------------------
 
 export const SELECT_COMMANDS: Readonly<Record<SelectorKind, string>> = {
-  model: "tfTools.selectModel",
-  target: "tfTools.selectTarget",
-  component: "tfTools.selectComponent",
-  preset: "tfTools.selectPreset",
+  model: "tbench.selectModel",
+  target: "tbench.selectTarget",
+  component: "tbench.selectComponent",
+  preset: "tbench.selectPreset",
 };
 
 // ---------------------------------------------------------------------------
 // Command identifiers for build-option interaction.
 // ---------------------------------------------------------------------------
 
-export const TOGGLE_BUILD_OPTION_COMMAND = "tfTools.toggleBuildOption";
-export const SELECT_BUILD_OPTION_STATE_COMMAND = "tfTools.selectBuildOptionState";
+export const TOGGLE_BUILD_OPTION_COMMAND = "tbench.toggleBuildOption";
+export const SELECT_BUILD_OPTION_STATE_COMMAND = "tbench.selectBuildOptionState";
 
 // ---------------------------------------------------------------------------
 // Build Option tree items

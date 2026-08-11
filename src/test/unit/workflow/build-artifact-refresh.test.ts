@@ -9,7 +9,7 @@ function makeEvent(overrides: Partial<TaskProcessEndLike> = {}): TaskProcessEndL
     exitCode: 0,
     execution: {
       task: {
-        definition: { type: "tfTools" },
+        definition: { type: "tbench" },
         name: "Build Trezor Model T (v1) | HW | Core",
       },
     },
@@ -18,17 +18,17 @@ function makeEvent(overrides: Partial<TaskProcessEndLike> = {}): TaskProcessEndL
 }
 
 suite("isSuccessfulArtifactRefreshTaskProcess", () => {
-  test("returns true for a successful tfTools Build task", () => {
+  test("returns true for a successful tbench Build task", () => {
     assert.strictEqual(isSuccessfulArtifactRefreshTaskProcess(makeEvent()), true);
   });
 
-  test("returns true for a successful tfTools Clean task", () => {
+  test("returns true for a successful tbench Clean task", () => {
     assert.strictEqual(
       isSuccessfulArtifactRefreshTaskProcess(
         makeEvent({
           execution: {
             task: {
-              definition: { type: "tfTools" },
+              definition: { type: "tbench" },
               name: "Clean",
             },
           },
@@ -45,13 +45,13 @@ suite("isSuccessfulArtifactRefreshTaskProcess", () => {
     );
   });
 
-  test("returns false for non-artifact-producing tfTools tasks", () => {
+  test("returns false for non-artifact-producing tbench tasks", () => {
     assert.strictEqual(
       isSuccessfulArtifactRefreshTaskProcess(
         makeEvent({
           execution: {
             task: {
-              definition: { type: "tfTools" },
+              definition: { type: "tbench" },
               name: "Check Trezor Model T (v1) | HW | Core",
             },
           },
@@ -61,7 +61,7 @@ suite("isSuccessfulArtifactRefreshTaskProcess", () => {
     );
   });
 
-  test("returns false for non-tfTools tasks", () => {
+  test("returns false for non-tbench tasks", () => {
     assert.strictEqual(
       isSuccessfulArtifactRefreshTaskProcess(
         makeEvent({

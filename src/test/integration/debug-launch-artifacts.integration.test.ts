@@ -7,7 +7,7 @@
  *  - Executable row stays visible (not removed) when executable is missing
  *  - resolveActiveExecutableArtifact reflects correct state when model/target/component changes
  *  - resolveActiveExecutableArtifact reflects correct state when artifactsRoot changes (artifacts-path)
- *  - tfTools.startDebugging Command Palette entry uses tfTools.startDebuggingEnabled when-clause
+ *  - tbench.startDebugging Command Palette entry uses tbench.startDebuggingEnabled when-clause
  *  - package.json header and overflow menu entries have correct enablement
  *  - package.json Executable row context entry targets artifact-executable contextValue
  */
@@ -57,8 +57,8 @@ function makeValidArtifact(): import("../../intellisense/intellisense-types").Ac
 }
 
 function getExtPackageJson(): Record<string, unknown> {
-  const ext = vscode.extensions.getExtension("cepetr.tf-tools");
-  assert.ok(ext, "cepetr.tf-tools extension must be present");
+  const ext = vscode.extensions.getExtension("cepetr.tbench");
+  assert.ok(ext, "cepetr.tbench extension must be present");
   return ext.packageJSON as Record<string, unknown>;
 }
 
@@ -89,7 +89,7 @@ suite("Debug Launch – Executable row rendering under resolution states", () =>
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-debug-artifacts-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-debug-artifacts-"));
   });
 
   teardown(() => {
@@ -254,7 +254,7 @@ suite("Debug Launch – Executable availability refresh after context change", (
   let tmpDir: string;
 
   setup(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-debug-refresh-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-debug-refresh-"));
   });
 
   teardown(() => {
@@ -341,15 +341,15 @@ suite("Debug Launch – Executable availability refresh after context change", (
 // ---------------------------------------------------------------------------
 
 suite("Debug Launch – package.json executable menu contributions", () => {
-  test("commandPalette entry for tfTools.startDebugging uses tfTools.startDebuggingEnabled when-clause", () => {
+  test("commandPalette entry for tbench.startDebugging uses tbench.startDebuggingEnabled when-clause", () => {
     const pkg = getExtPackageJson();
     const menus = pkg?.contributes as { menus: Record<string, unknown[]> };
     const commandPalette = (menus?.menus["commandPalette"] ?? []) as Array<{ command: string; when?: string }>;
-    const entry = commandPalette?.find((c) => c.command === "tfTools.startDebugging");
-    assert.ok(entry, "expected commandPalette entry for tfTools.startDebugging");
+    const entry = commandPalette?.find((c) => c.command === "tbench.startDebugging");
+    assert.ok(entry, "expected commandPalette entry for tbench.startDebugging");
     assert.ok(
-      entry.when?.includes("tfTools.startDebuggingEnabled"),
-      `expected 'tfTools.startDebuggingEnabled' in when-clause, got: ${entry.when}`
+      entry.when?.includes("tbench.startDebuggingEnabled"),
+      `expected 'tbench.startDebuggingEnabled' in when-clause, got: ${entry.when}`
     );
   });
 
@@ -358,16 +358,16 @@ suite("Debug Launch – package.json executable menu contributions", () => {
     const menus = (pkg?.contributes as Record<string, unknown>)?.menus as Record<string, unknown>;
     const viewTitle = menus?.["view/title"] as Array<Record<string, unknown>>;
     const navEntry = viewTitle?.find(
-      (e) => e.command === "tfTools.startDebugging" && String(e.group ?? "").startsWith("navigation")
+      (e) => e.command === "tbench.startDebugging" && String(e.group ?? "").startsWith("navigation")
     );
-    assert.ok(navEntry, "expected view/title navigation entry for tfTools.startDebugging");
+    assert.ok(navEntry, "expected view/title navigation entry for tbench.startDebugging");
     assert.ok(
-      String(navEntry.when ?? "").includes("view == tfTools.configuration"),
+      String(navEntry.when ?? "").includes("view == tbench.configuration"),
       `expected view condition, got: ${navEntry.when}`
     );
     assert.ok(
-      String(navEntry.enablement ?? "").includes("tfTools.startDebuggingEnabled"),
-      `expected enablement via tfTools.startDebuggingEnabled, got: ${navEntry.enablement}`
+      String(navEntry.enablement ?? "").includes("tbench.startDebuggingEnabled"),
+      `expected enablement via tbench.startDebuggingEnabled, got: ${navEntry.enablement}`
     );
   });
 
@@ -376,11 +376,11 @@ suite("Debug Launch – package.json executable menu contributions", () => {
     const menus = (pkg?.contributes as Record<string, unknown>)?.menus as Record<string, unknown>;
     const viewTitle = menus?.["view/title"] as Array<Record<string, unknown>>;
     const overflowEntry = viewTitle?.find(
-      (e) => e.command === "tfTools.startDebugging" && String(e.group ?? "").startsWith("overflow")
+      (e) => e.command === "tbench.startDebugging" && String(e.group ?? "").startsWith("overflow")
     );
-    assert.ok(overflowEntry, "expected view/title overflow entry for tfTools.startDebugging");
+    assert.ok(overflowEntry, "expected view/title overflow entry for tbench.startDebugging");
     assert.ok(
-      String(overflowEntry.enablement ?? "").includes("tfTools.startDebuggingEnabled"),
+      String(overflowEntry.enablement ?? "").includes("tbench.startDebuggingEnabled"),
       `expected enablement, got: ${overflowEntry.enablement}`
     );
   });
@@ -389,8 +389,8 @@ suite("Debug Launch – package.json executable menu contributions", () => {
     const pkg = getExtPackageJson();
     const menus = (pkg?.contributes as Record<string, unknown>)?.menus as Record<string, unknown>;
     const itemContext = menus?.["view/item/context"] as Array<Record<string, unknown>>;
-    const entry = itemContext?.find((e) => e.command === "tfTools.startDebugging");
-    assert.ok(entry, "expected view/item/context entry for tfTools.startDebugging");
+    const entry = itemContext?.find((e) => e.command === "tbench.startDebugging");
+    assert.ok(entry, "expected view/item/context entry for tbench.startDebugging");
     assert.ok(
       String(entry.when ?? "").includes("viewItem == artifact-executable"),
       `expected 'viewItem == artifact-executable' in when-clause, got: ${entry.when}`

@@ -21,13 +21,13 @@ export function resolveManifestUri(
 export function isStatusBarEnabled(
   workspaceFolder: vscode.WorkspaceFolder
 ): boolean {
-  const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
+  const cfg = vscode.workspace.getConfiguration("tbench", workspaceFolder.uri);
   return cfg.get<boolean>("showConfigurationInStatusBar") ?? true;
 }
 
 /**
  * Returns the cargo workspace directory for the given workspace folder.
- * Uses `tfTools.cargoWorkspacePath` when set; falls back to the workspace
+ * Uses `tbench.cargoWorkspacePath` when set; falls back to the workspace
  * folder root so the extension works without explicit configuration.
  */
 export function resolveCargoWorkspacePath(
@@ -37,14 +37,14 @@ export function resolveCargoWorkspacePath(
 }
 
 /**
- * Returns extra environment variables to merge into tf-tools task processes.
- * Uses `tfTools.taskExtraEnv` when set; returns an empty object when absent.
+ * Returns extra environment variables to merge into tbench task processes.
+ * Uses `tbench.taskExtraEnv` when set; returns an empty object when absent.
  * String keys and values support VS Code variable references.
  */
 export function readTaskExtraEnv(
   workspaceFolder: vscode.WorkspaceFolder
 ): Readonly<Record<string, string>> {
-  const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
+  const cfg = vscode.workspace.getConfiguration("tbench", workspaceFolder.uri);
   const raw = cfg.get<unknown>("taskExtraEnv") ?? {};
 
   if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
@@ -68,7 +68,7 @@ export function readTaskExtraEnv(
 
 /**
  * Returns the resolved absolute artifacts root path for the given workspace folder.
- * Uses `tfTools.artifactsPath` when set (resolved relative to the workspace root
+ * Uses `tbench.artifactsPath` when set (resolved relative to the workspace root
  * when it is not an absolute path); returns an empty string when the setting is absent.
  */
 export function resolveArtifactsPath(
@@ -83,7 +83,7 @@ export function resolveArtifactsPath(
 
 /**
  * Normalized excluded-file settings derived from all four resource-scoped
- * `tfTools.excludedFiles.*` preferences.
+ * `tbench.excludedFiles.*` preferences.
  */
 export interface ExcludedFilesSettings {
   /** Gray excluded entries in the Explorer tree (in addition to the badge). */
@@ -103,7 +103,7 @@ export interface ExcludedFilesSettings {
 }
 
 /**
- * Reads the four `tfTools.excludedFiles.*` settings for the given workspace
+ * Reads the four `tbench.excludedFiles.*` settings for the given workspace
  * folder and returns a normalized snapshot. Defaults match the contract:
  *   grayInTree = true, showEditorOverlay = true,
  *   fileNamePatterns = ["*.c"], folderGlobs = ["core/embed/**", "core/vendor/**"]
@@ -111,7 +111,7 @@ export interface ExcludedFilesSettings {
 export function readExcludedFilesSettings(
   workspaceFolder: vscode.WorkspaceFolder
 ): ExcludedFilesSettings {
-  const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
+  const cfg = vscode.workspace.getConfiguration("tbench", workspaceFolder.uri);
   return {
     grayInTree: cfg.get<boolean>("excludedFiles.grayInTree") ?? true,
     showEditorOverlay: cfg.get<boolean>("excludedFiles.showEditorOverlay") ?? true,
@@ -132,7 +132,7 @@ export function readExcludedFilesSettings(
 
 /**
  * Returns the resolved absolute path to the debug templates directory for the
- * given workspace folder. Uses `tfTools.debug.templatesPath` when set (resolved
+ * given workspace folder. Uses `tbench.debug.templatesPath` when set (resolved
  * relative to the workspace root when it is not an absolute path); falls back to
  * the default `"core/embed/xtask/tf-tools/debug"` joined to the workspace root.
  */
@@ -153,9 +153,8 @@ export interface PresetUris {
 }
 
 /**
- * Resolves both preset input URIs as `<resolveCargoWorkspacePath(folder)>/xtask/tf-tools/presets.toml`
- * and `.../user-presets.toml`. Deliberately derived from `tfTools.cargoWorkspacePath` — the same
- * directory `xtask` itself reads — never from `tfTools.manifestPath` (research Decision 2).
+ * Resolves both preset input URIs from the configured `xtask-presets` directory
+ * by appending `presets.toml` and `user-presets.toml`.
  */
 export function resolvePresetUris(workspaceFolder: vscode.WorkspaceFolder): PresetUris {
   return getRepositoryConfiguration(workspaceFolder).presetUris;
@@ -171,9 +170,9 @@ export function excludedFilesSettingsChanged(
 ): boolean {
   const scope = workspaceFolder.uri;
   return (
-    event.affectsConfiguration("tfTools.excludedFiles.grayInTree", scope) ||
-    event.affectsConfiguration("tfTools.excludedFiles.showEditorOverlay", scope) ||
-    event.affectsConfiguration("tfTools.excludedFiles.fileNamePatterns", scope) ||
-    event.affectsConfiguration("tfTools.excludedFiles.folderGlobs", scope)
+    event.affectsConfiguration("tbench.excludedFiles.grayInTree", scope) ||
+    event.affectsConfiguration("tbench.excludedFiles.showEditorOverlay", scope) ||
+    event.affectsConfiguration("tbench.excludedFiles.fileNamePatterns", scope) ||
+    event.affectsConfiguration("tbench.excludedFiles.folderGlobs", scope)
   );
 }

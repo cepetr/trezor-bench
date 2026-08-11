@@ -67,7 +67,7 @@ const BUILD_CONTEXT_ADAPTER = { modelId: "T2T1", targetId: "hw", componentId: "f
 const PRESET_CTX = { modelId: "T2T1", projectId: "firmware", emulator: false };
 
 /**
- * Mirrors extension.ts's `tfTools.presetBlocked` / `_presetsUnavailable`
+ * Mirrors extension.ts's `tbench.presetBlocked` / `_presetsUnavailable`
  * computation: an absent shared file blocks and is reported specifically,
  * and it also implies the general preset-blocked flag.
  */
@@ -82,7 +82,7 @@ async function computePresetBlocking(
   return { presetsInvalid, presetsUnavailable: state.status === "unavailable" };
 }
 
-/** Mirrors extension.ts's tfTools.presetBlocked computation. */
+/** Mirrors extension.ts's tbench.presetBlocked computation. */
 async function computePresetsInvalid(fixtureName: string): Promise<boolean> {
   const { shared, user } = fixtureUris(fixtureName);
   const service = new PresetService(shared, user);

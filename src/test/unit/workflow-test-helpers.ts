@@ -28,7 +28,7 @@ export function fixtureUri(relPath: string): vscode.Uri {
 }
 
 export function manifestUri(fixtureName: string): vscode.Uri {
-  return fixtureUri(`manifests/${fixtureName}/tf-tools.yaml`);
+  return fixtureUri(`manifests/${fixtureName}/tbench.yaml`);
 }
 
 // ---------------------------------------------------------------------------
@@ -477,28 +477,28 @@ export function makeRunDebugMultiProfileState(
 }
 
 /**
- * Proxy config shape produced by TfToolsDebugConfigurationProvider.
+ * Proxy config shape produced by TbenchDebugConfigurationProvider.
  * Mirrors the contract defined in contracts/run-debug-configurations.md.
  */
-export interface TfToolsProxyConfig {
-  type: "tftools";
+export interface TbenchProxyConfig {
+  type: "tbench";
   request: "launch";
   name: string;
-  tfToolsMode: "default" | "profile";
-  tfToolsProfileId: string;
-  tfToolsContextKey: string;
+  tbenchMode: "default" | "profile";
+  tbenchProfileId: string;
+  tbenchContextKey: string;
 }
 
 /**
- * Returns true when a debug configuration matches the tftools proxy shape.
+ * Returns true when a debug configuration matches the tbench proxy shape.
  */
-export function isTfToolsProxyConfig(config: Record<string, unknown>): boolean {
+export function isTbenchProxyConfig(config: Record<string, unknown>): boolean {
   return (
-    config["type"] === "tftools" &&
+    config["type"] === "tbench" &&
     config["request"] === "launch" &&
     typeof config["name"] === "string" &&
-    (config["tfToolsMode"] === "default" || config["tfToolsMode"] === "profile") &&
-    typeof config["tfToolsProfileId"] === "string" &&
-    typeof config["tfToolsContextKey"] === "string"
+    (config["tbenchMode"] === "default" || config["tbenchMode"] === "profile") &&
+    typeof config["tbenchProfileId"] === "string" &&
+    typeof config["tbenchContextKey"] === "string"
   );
 }

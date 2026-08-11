@@ -1,4 +1,4 @@
 {
-  "tfTools.artifactsPath": "artifacts",
-  "tfTools.manifestPath": "tf-tools-manifest.yaml"
+  "tbench.artifactsPath": "artifacts",
+  "tbench.manifestPath": "tbench-manifest.yaml"
 }

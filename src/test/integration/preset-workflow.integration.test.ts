@@ -81,7 +81,7 @@ const BUILD_OPTIONS: BuildOption[] = [
 function manifest(): ManifestStateLoaded {
   return {
     status: "loaded",
-    manifestUri: vscode.Uri.file("/workspace/tf-tools-manifest.yaml"),
+    manifestUri: vscode.Uri.file("/workspace/tbench-manifest.yaml"),
     models: [{ kind: "model", id: "T2T1", name: "Trezor Model T" }],
     targets: [{ kind: "target", id: "hw", name: "Hardware", shortName: "HW", flag: null }],
     components: [{ kind: "component", id: "firmware", name: "Firmware" }],
@@ -211,7 +211,7 @@ suite("Preset-aware workflow – recalculation before launch", () => {
   let tmpDir: string;
 
   setup(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "tf-tools-preset-workflow-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "tbench-preset-workflow-"));
   });
 
   teardown(async () => {

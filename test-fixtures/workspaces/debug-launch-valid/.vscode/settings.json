@@ -1,5 +1,5 @@
 {
-  "tfTools.manifestPath": "tf-tools-manifest.yaml",
-  "tfTools.artifactsPath": "artifacts",
-  "tfTools.debug.templatesPath": "debug-templates"
+  "tbench.manifestPath": "tbench-manifest.yaml",
+  "tbench.artifactsPath": "artifacts",
+  "tbench.debug.templatesPath": "debug-templates"
 }

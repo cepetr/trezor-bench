@@ -6,14 +6,14 @@ import { ProviderPayload, ProviderSettingFix } from "./intellisense-types";
 // ---------------------------------------------------------------------------
 
 export const CPPTOOLS_EXTENSION_ID = "ms-vscode.cpptools";
-const TF_TOOLS_PROVIDER_ID = "cepetr.tf-tools";
+const TF_TOOLS_PROVIDER_ID = "cepetr.tbench";
 const CPPTOOLS_API_VERSION_LATEST = 7;
 
 // ---------------------------------------------------------------------------
 // Minimal cpptools custom configuration provider API types
 //
 // Defined inline to avoid a hard runtime dependency on the vscode-cpptools-api
-// package. These mirror the subset of the published API that tf-tools consumes.
+// package. These mirror the subset of the published API that tbench consumes.
 // ---------------------------------------------------------------------------
 
 export interface CpptoolsSourceFileConfiguration {
@@ -51,7 +51,7 @@ interface CpptoolsExtensionExports {
   getApi(version: number): CpptoolsApi;
 }
 
-/** Interface tf-tools implements to serve per-file IntelliSense configuration. */
+/** Interface tbench implements to serve per-file IntelliSense configuration. */
 export interface CpptoolsCustomConfigurationProvider {
   readonly name: string;
   readonly extensionId: string;
@@ -75,7 +75,7 @@ export type CpptoolsReadinessResult =
   | { readonly status: "wrong-provider"; readonly message: string };
 
 /**
- * Evaluates whether cpptools can serve IntelliSense through tf-tools.
+ * Evaluates whether cpptools can serve IntelliSense through tbench.
  *
  * Returns `unsupported` when a known C/C++ extension is installed but does not
  * expose the supported custom-configuration API.
@@ -107,8 +107,8 @@ export function evaluateCpptoolsReadiness(): CpptoolsReadinessResult {
       status: "wrong-provider",
       message:
         `IntelliSense integration unavailable: the workspace C_Cpp.default.configurationProvider is ` +
-        `"${currentValue}" instead of Trezor Firmware Tools. ` +
-        `Update the setting to "cepetr.tf-tools" or use the workspace fix to let tf-tools provide IntelliSense.`,
+        `"${currentValue}" instead of Trezor Bench. ` +
+        `Update the setting to "cepetr.tbench" or use the workspace fix to let tbench provide IntelliSense.`,
     };
   }
 
@@ -127,7 +127,7 @@ export const PROVIDER_SETTING_FIX: ProviderSettingFix = {
 };
 
 /**
- * Writes `C_Cpp.default.configurationProvider = cepetr.tf-tools` to the
+ * Writes `C_Cpp.default.configurationProvider = cepetr.tbench` to the
  * workspace folder settings (WorkspaceFolder scope), then calls `onFixed`.
  */
 export async function applyProviderSettingFix(
@@ -158,7 +158,7 @@ export async function applyProviderSettingFix(
  *  - Accepts an injected `apiAccessor` factory for test injection.
  */
 export class CpptoolsProviderAdapter implements CpptoolsCustomConfigurationProvider {
-  readonly name = "Trezor Firmware Tools";
+  readonly name = "Trezor Bench";
   readonly extensionId = TF_TOOLS_PROVIDER_ID;
 
   private _cpptoolsApi: CpptoolsApi | undefined;

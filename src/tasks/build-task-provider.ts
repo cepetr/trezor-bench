@@ -28,8 +28,8 @@ import { createCargoTaskExecution } from "./xtask-execution";
 // Task type identifier
 // ---------------------------------------------------------------------------
 
-export const TASK_TYPE = "tfTools";
-export const TASK_SOURCE = "Trezor Firmware Tools";
+export const TASK_TYPE = "tbench";
+export const TASK_SOURCE = "Trezor Bench";
 
 // ---------------------------------------------------------------------------
 // Label builder (also used by integration tests)

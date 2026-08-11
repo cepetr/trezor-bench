@@ -4,7 +4,7 @@ import { PresetState } from "../presets/preset-types";
 import { PresetContext } from "../presets/preset-resolution";
 import { RepositoryConfigurationState } from "../workspace/repository-configuration";
 
-const CHANNEL_NAME = "Trezor Firmware Tools";
+const CHANNEL_NAME = "Trezor Bench";
 let _channel: vscode.OutputChannel | undefined;
 
 /**
@@ -22,7 +22,7 @@ export function getLogChannel(): vscode.OutputChannel {
  * Call once at the start of extension activation.
  */
 export function initLogChannel(): void {
-  log("Trezor Firmware Tools extension activated.");
+  log("Trezor Bench extension activated.");
 }
 
 /**
@@ -294,7 +294,7 @@ export function logDebugLaunchFailure(
 
 /**
  * Logs a persistent output-channel entry for a blocked or failed debug launch
- * originating from the tf-tools Run and Debug provider rather than a direct command.
+ * originating from the tbench Run and Debug provider rather than a direct command.
  * Includes a "[PROVIDER]" tag to distinguish provider launches from direct command launches.
  */
 export function logProviderDebugLaunchFailure(

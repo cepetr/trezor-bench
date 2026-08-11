@@ -4,7 +4,7 @@ import { normalizeActiveConfig, normalizePresetId } from "./normalize-config";
 import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 
 // Active configuration storage key in workspace state
-export const ACTIVE_CONFIG_KEY = "tfTools.activeConfig";
+export const ACTIVE_CONFIG_KEY = "tbench.activeConfig";
 
 export { DEFAULT_PRESET_ID };
 
