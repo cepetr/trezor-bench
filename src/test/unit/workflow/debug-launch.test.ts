@@ -338,6 +338,12 @@ suite("applyTbenchSubstitution", () => {
     assert.strictEqual(unknownVars.length, 0);
   });
 
+  test("accepts a legacy tfTools token in a template", () => {
+    const { value, unknownVars } = applyTbenchSubstitution("${tfTools.model.id}", resolvedVars);
+    assert.strictEqual(value, "T2T1");
+    assert.strictEqual(unknownVars.length, 0);
+  });
+
   test("replaces multiple tbench tokens in a string", () => {
     const { value } = applyTbenchSubstitution(
       "Debug ${tbench.model.id}: ${tbench.executablePath}",

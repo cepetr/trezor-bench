@@ -939,7 +939,9 @@ The built-in variables are:
 
 The selected debug profile can also contribute additional variables, exposed as `${tbench.debug.var:<name>}`.
 
-Substitution is applied to string fields throughout the resolved template, including nested objects and arrays. It replaces only tbench variables, leaves non-tbench variable syntax unchanged for downstream handling, and runs as a single pass rather than repeatedly expanding replacement results.
+For compatibility with existing debug template files, `${tfTools.*}` is accepted as a template-only alias for the corresponding `${tbench.*}` variable. The extension resolves and stores only the canonical `tbench.*` names; legacy aliases are not accepted in manifest schema fields.
+
+Substitution is applied to string fields throughout the resolved template, including nested objects and arrays. It replaces tbench variables and their legacy template aliases, leaves non-extension variable syntax unchanged for downstream handling, and runs as a single pass rather than repeatedly expanding replacement results.
 
 For example, a debug template may look like this:
 

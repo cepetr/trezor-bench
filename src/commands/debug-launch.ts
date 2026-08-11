@@ -213,8 +213,18 @@ export const TBENCH_VAR_EXECUTABLE = "tbench.executable";
 export const TBENCH_VAR_DEBUG_PROFILE_NAME = "tbench.debugProfileName";
 const TBENCH_DEBUG_VAR_PREFIX = "tbench.debug.var:";
 
-/** Matches `${tbench.varName}` tokens inside template strings. */
-const TBENCH_TOKEN_RE = /\$\{(tbench\.[^}]+)\}/g;
+/** Matches canonical and legacy extension-variable tokens inside template strings. */
+const TBENCH_TOKEN_RE = /\$\{((?:tbench|tfTools)\.[^}]+)\}/g;
+
+/**
+ * Normalizes legacy debug-template variables at the substitution boundary.
+ *
+ * Existing repositories can retain `${tfTools.*}` in their JSONC templates,
+ * while the extension stores and resolves only canonical `tbench.*` names.
+ */
+function canonicalizeTemplateVariableName(tokenName: string): string {
+  return tokenName.startsWith("tfTools.") ? `tbench.${tokenName.slice("tfTools.".length)}` : tokenName;
+}
 
 /** Resolved tbench variable values available for template substitution. */
 export interface DebugVariableMap {
@@ -377,8 +387,9 @@ export interface SubstitutionResult {
  * Applies tbench substitutions to all string fields in `value` recursively.
  *
  * - `${tbench.X}` tokens are replaced with `resolvedVars["tbench.X"]`.
- * - Unknown `${tbench.X}` tokens are recorded in `unknownVars` and block launch.
- * - Non-tbench variable syntax (e.g. `${workspaceFolder}`) is left unchanged.
+ * - Legacy `${tfTools.X}` template tokens are accepted as aliases for `${tbench.X}`.
+ * - Unknown extension-variable tokens are recorded in `unknownVars` and block launch.
+ * - Non-extension variable syntax (e.g. `${workspaceFolder}`) is left unchanged.
  * - Replacement results are NOT re-expanded (single pass).
  * - Non-string values pass through unchanged.
  */
@@ -391,8 +402,9 @@ export function applyTbenchSubstitution(
   function walk(v: unknown): unknown {
     if (typeof v === "string") {
       return v.replace(TBENCH_TOKEN_RE, (original, tokenName: string) => {
-        if (Object.prototype.hasOwnProperty.call(resolvedVars, tokenName)) {
-          return resolvedVars[tokenName];
+        const canonicalName = canonicalizeTemplateVariableName(tokenName);
+        if (Object.prototype.hasOwnProperty.call(resolvedVars, canonicalName)) {
+          return resolvedVars[canonicalName];
         }
         if (!unknownVars.includes(tokenName)) {
           unknownVars.push(tokenName);
