@@ -1,6 +1,8 @@
 # Trezor Bench
 
-Trezor Bench brings the `trezor-firmware` build workflow into VS Code. Pick the active build context — model, target, component, preset — in a dedicated view, and the rest follows it:
+Trezor Bench is a VS Code extension for building and debugging [Trezor firmware](https://github.com/trezor/trezor-firmware). It is intended for developers working in the `trezor-firmware` repository and brings its cargo-based build workflow into VS Code.
+
+Choose the active build context — model, target, component, preset — in a dedicated view, and the rest follows it:
 
 - **xtask integration** — build options and workflows in the UI instead of on the command line
   - run `build`, `clippy`, `check`, and `clean` as VS Code tasks
