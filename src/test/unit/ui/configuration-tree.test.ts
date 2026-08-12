@@ -188,39 +188,47 @@ suite("BuildOptionGroupItem bold label", () => {
   });
 });
 
+function markdownTooltipValue(item: vscode.TreeItem): string {
+  const { tooltip } = item;
+  if (!(tooltip instanceof vscode.MarkdownString)) {
+    throw new Error("Expected a MarkdownString tooltip");
+  }
+  return (tooltip as vscode.MarkdownString).value;
+}
+
 suite("BuildOptionCheckboxItem tooltip", () => {
-  test("tooltip is set when description is provided", () => {
-    const item = new BuildOptionCheckboxItem("opt", "Verbose", false, false, "Enables verbose output");
-    assert.strictEqual(item.tooltip, "Enables verbose output");
+  test("shows the command-line flag above its description rather than the internal key", () => {
+    const item = new BuildOptionCheckboxItem("bootloader_devel", "Bootloader development", false, false, "Enables verbose output", undefined, "--bootloader-devel");
+    assert.strictEqual(markdownTooltipValue(item), "**--bootloader-devel**  \nEnables verbose output");
   });
 
-  test("tooltip is undefined when description is omitted", () => {
+  test("contains the bold command-line option when description is omitted", () => {
     const item = new BuildOptionCheckboxItem("opt", "Verbose", false);
-    assert.strictEqual(item.tooltip, undefined);
+    assert.strictEqual(markdownTooltipValue(item), "**--opt**");
   });
 });
 
 suite("BuildOptionMultistateHeaderItem tooltip", () => {
-  test("tooltip is set when description is provided", () => {
-    const item = new BuildOptionMultistateHeaderItem("opt", "Level", "Off", [], false, false, "Sets verbosity level");
-    assert.strictEqual(item.tooltip, "Sets verbosity level");
+  test("shows the command-line flag above its description rather than the internal key", () => {
+    const item = new BuildOptionMultistateHeaderItem("debug_console", "Level", "Off", [], false, false, "Sets verbosity level", undefined, "--debug-console");
+    assert.strictEqual(markdownTooltipValue(item), "**--debug-console**  \nSets verbosity level");
   });
 
-  test("tooltip is undefined when description is omitted", () => {
+  test("contains the bold command-line option when description is omitted", () => {
     const item = new BuildOptionMultistateHeaderItem("opt", "Level", "Off", [], false, false);
-    assert.strictEqual(item.tooltip, undefined);
+    assert.strictEqual(markdownTooltipValue(item), "**--opt**");
   });
 });
 
 suite("BuildOptionStateItem tooltip", () => {
-  test("tooltip is set when state description is provided", () => {
-    const item = new BuildOptionStateItem("opt", "swo", "SWO", false, "Route the debug console over SWO.");
-    assert.strictEqual(item.tooltip, "Route the debug console over SWO.");
+  test("shows the selected state flag above its description rather than internal keys", () => {
+    const item = new BuildOptionStateItem("dbg_console", "vcp", "VCP", false, "Routes the debug console over VCP.", true, "--dbg-console=vcp");
+    assert.strictEqual(markdownTooltipValue(item), "**--dbg-console=vcp**  \nRoutes the debug console over VCP.");
   });
 
-  test("tooltip is undefined when state description is omitted", () => {
+  test("shows the full bold command-line option when state description is omitted", () => {
     const item = new BuildOptionStateItem("opt", "swo", "SWO", false);
-    assert.strictEqual(item.tooltip, undefined);
+    assert.strictEqual(markdownTooltipValue(item), "**--opt swo**");
   });
 });
 
@@ -1210,6 +1218,17 @@ suite("ConfigurationTreeProvider – Build Options preset-relative emphasis", ()
     );
     const [item] = getBuildOptionsChildren(provider) as BuildOptionCheckboxItem[];
     assert.strictEqual(item.label, "frozen");
+  });
+
+  test("checkbox tooltip uses the manifest flag instead of its internal key", () => {
+    const opt = checkboxOption("bootloader_devel", "--bootloader-devel");
+    provider.update(
+      makeManifestState(),
+      makeActiveConfig(),
+      [resolved(opt, { presetState: "resolved" })]
+    );
+    const [item] = getBuildOptionsChildren(provider) as BuildOptionCheckboxItem[];
+    assert.strictEqual(markdownTooltipValue(item), "**--bootloader-devel**");
   });
 
   test("multistate row is emphasized only when isOverride is true", () => {

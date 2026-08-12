@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+### Changed
+- Build-option tooltip descriptions now appear on a new line below the command-line option or multistate value.
+
 ## 0.4.1 - 2026-08-11
 ### Fixed
 - Restored the existing repository URL in extension package metadata and README links so the bundled README image resolves correctly.

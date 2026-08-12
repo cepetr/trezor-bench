@@ -222,6 +222,11 @@ function mismatchDescription(mismatch: BuildOptionMismatchInfo): string {
   return `Unrepresentable value: ${JSON.stringify(mismatch.rawValue)}`;
 }
 
+function formatBuildOptionTooltip(option: string, description?: string): vscode.MarkdownString {
+  const tooltipDescription = description?.trim();
+  return new vscode.MarkdownString(`**${option}**${tooltipDescription ? `  \n${tooltipDescription}` : ""}`);
+}
+
 /** A single checkbox-style build option row. Emphasis is driven by `isOverride`, not by `checked` (FR-015). */
 export class BuildOptionCheckboxItem extends vscode.TreeItem {
   constructor(
@@ -230,7 +235,8 @@ export class BuildOptionCheckboxItem extends vscode.TreeItem {
     checked: boolean,
     isOverride: boolean = false,
     description?: string,
-    mismatch?: BuildOptionMismatchInfo
+    mismatch?: BuildOptionMismatchInfo,
+    displayFlag: string = `--${optionKey}`
   ) {
     super(
       isOverride ? { label, highlights: [[0, label.length]] } : label,
@@ -241,9 +247,7 @@ export class BuildOptionCheckboxItem extends vscode.TreeItem {
     this.checkboxState = checked
       ? vscode.TreeItemCheckboxState.Checked
       : vscode.TreeItemCheckboxState.Unchecked;
-    if (description) {
-      this.tooltip = description;
-    }
+    this.tooltip = formatBuildOptionTooltip(displayFlag, description);
     if (mismatch) {
       this.iconPath = new vscode.ThemeIcon("warning");
       this.description = mismatchDescription(mismatch);
@@ -261,7 +265,8 @@ export class BuildOptionMultistateHeaderItem extends vscode.TreeItem {
     expanded: boolean,
     isOverride: boolean = false,
     description?: string,
-    mismatch?: BuildOptionMismatchInfo
+    mismatch?: BuildOptionMismatchInfo,
+    displayFlag: string = `--${optionKey}`
   ) {
     super(
       isOverride ? { label, highlights: [[0, label.length]] } : label,
@@ -273,9 +278,7 @@ export class BuildOptionMultistateHeaderItem extends vscode.TreeItem {
     this.contextValue = "build-option-multistate";
     this.description = mismatch ? mismatchDescription(mismatch) : activeStateLabel;
     this.iconPath = new vscode.ThemeIcon(mismatch ? "warning" : "list-selection");
-    if (description) {
-      this.tooltip = description;
-    }
+    this.tooltip = formatBuildOptionTooltip(displayFlag, description);
   }
 }
 
@@ -287,15 +290,14 @@ export class BuildOptionStateItem extends vscode.TreeItem {
     label: string,
     isActive: boolean,
     description?: string,
-    selectable: boolean = true
+    selectable: boolean = true,
+    displayFlag: string = `--${optionKey} ${stateId}`
   ) {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.id = `build-option-state:${optionKey}:${stateId}`;
     this.contextValue = selectable ? "build-option-state" : "build-option-state-disabled";
     this.iconPath = isActive ? new vscode.ThemeIcon("check") : INACTIVE_CHOICE_ICON;
-    if (description) {
-      this.tooltip = description;
-    }
+    this.tooltip = formatBuildOptionTooltip(displayFlag, description);
     if (selectable) {
       this.command = {
         title: `Select ${label}`,
@@ -773,7 +775,8 @@ export class ConfigurationTreeProvider
         value === true,
         isOverride,
         option.description,
-        mismatch
+        mismatch,
+        option.flag
       );
     }
 
@@ -784,7 +787,7 @@ export class ConfigurationTreeProvider
     const selectable = presetState !== "unresolved";
     const stateChildren = (option.states ?? []).map(
       (s) =>
-        new BuildOptionStateItem(option.key, s.id, s.label, s.id === activeStateId, s.description, selectable)
+        new BuildOptionStateItem(option.key, s.id, s.label, s.id === activeStateId, s.description, selectable, s.flag)
     );
     const expanded = this._expandedMultistateKey === option.key;
     return new BuildOptionMultistateHeaderItem(
@@ -795,7 +798,8 @@ export class ConfigurationTreeProvider
       expanded,
       isOverride,
       option.description,
-      mismatch
+      mismatch,
+      option.flag
     );
   }
 
