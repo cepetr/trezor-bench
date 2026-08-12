@@ -3,6 +3,7 @@
 ## Unreleased
 ### Changed
 - Build-option tooltip descriptions now appear on a new line below the command-line option or multistate value.
+- Build artifact rows now show `present` instead of `valid`, with a consolidated `Updated` row showing the newest artifact's relative age.
 
 ## 0.4.1 - 2026-08-11
 ### Fixed

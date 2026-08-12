@@ -39,6 +39,8 @@ export interface ActiveCompileCommandsArtifact {
   readonly path: string;
   /** Whether the file exists on disk. */
   readonly exists: boolean;
+  /** File modification time when the artifact exists and metadata can be read. */
+  readonly modifiedAt?: Date;
   /** Artifact presence status. */
   readonly status: CompileCommandsStatus;
   /** User-facing explanation when the artifact is absent. */

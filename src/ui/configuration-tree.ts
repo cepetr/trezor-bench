@@ -61,13 +61,42 @@ function isRedundantMissingReason(reason: string, artifactPath: string): boolean
     ;
 }
 
+export function formatArtifactAge(modifiedAt: Date, now: Date = new Date()): string {
+  const elapsedMinutes = Math.max(0, Math.floor((now.getTime() - modifiedAt.getTime()) / 60_000));
+  if (elapsedMinutes === 0) {
+    return "just now";
+  }
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes} min${elapsedMinutes === 1 ? "" : "s"} ago`;
+  }
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) {
+    return `${elapsedHours} hour${elapsedHours === 1 ? "" : "s"} ago`;
+  }
+
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  return `${elapsedDays} day${elapsedDays === 1 ? "" : "s"} ago`;
+}
+
+export class ArtifactUpdatedItem extends vscode.TreeItem {
+  constructor(modifiedAt: Date, now: Date = new Date()) {
+    super("Updated", vscode.TreeItemCollapsibleState.None);
+    this.id = "artifact:updated";
+    this.contextValue = "artifact-updated";
+    this.iconPath = new vscode.ThemeIcon("clock");
+    this.description = formatArtifactAge(modifiedAt, now);
+    this.tooltip = `Last modified: ${modifiedAt.toISOString().replace("T", " ").slice(0, 16)} UTC`;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Build Artifacts section items
 // ---------------------------------------------------------------------------
 
 /**
  * The Compile Commands row in the Build Artifacts section.
- * Shows `valid` or `missing` as description and the expected path as tooltip.
+ * Shows `present` or `missing` as description and the expected path as tooltip.
  */
 export class CompileCommandsArtifactItem extends vscode.TreeItem {
   constructor(artifact: ActiveCompileCommandsArtifact) {
@@ -77,7 +106,7 @@ export class CompileCommandsArtifactItem extends vscode.TreeItem {
     this.iconPath = new vscode.ThemeIcon(
       artifact.status === "valid" ? "pass" : "error"
     );
-    this.description = artifact.status;
+    this.description = artifact.status === "valid" ? "present" : "missing";
     this.tooltip = formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason);
   }
 }
@@ -94,7 +123,7 @@ export class BinaryArtifactItem extends vscode.TreeItem {
     this.iconPath = new vscode.ThemeIcon(
       artifact.status === "valid" ? "pass" : "error"
     );
-    this.description = artifact.status;
+    this.description = artifact.status === "valid" ? "present" : "missing";
     this.tooltip = formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason);
   }
 }
@@ -111,7 +140,7 @@ export class MapArtifactItem extends vscode.TreeItem {
     this.iconPath = new vscode.ThemeIcon(
       artifact.status === "valid" ? "pass" : "error"
     );
-    this.description = artifact.status;
+    this.description = artifact.status === "valid" ? "present" : "missing";
     this.tooltip = formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason);
   }
 }
@@ -131,7 +160,7 @@ export class ExecutableArtifactItem extends vscode.TreeItem {
     this.iconPath = new vscode.ThemeIcon(
       artifact.status === "valid" ? "pass" : "error"
     );
-    this.description = artifact.status;
+    this.description = artifact.status === "valid" ? "present" : "missing";
     this.tooltip = artifact.tooltip;
   }
 }
@@ -361,6 +390,12 @@ export class ConfigurationTreeProvider
    */
   private readonly _onDidChangePane = new vscode.EventEmitter<PaneId>();
   readonly onDidChangePane: vscode.Event<PaneId> = this._onDidChangePane.event;
+  private readonly _artifactAgeRefresh = setInterval(() => {
+    if (this._newestArtifactModifiedAt()) {
+      this._onDidChangeTreeData.fire(undefined);
+      this.firePanes("build-artifacts");
+    }
+  }, 60_000);
 
   private firePanes(...panes: PaneId[]): void {
     for (const pane of panes) {
@@ -804,6 +839,7 @@ export class ConfigurationTreeProvider
   }
 
   dispose(): void {
+    clearInterval(this._artifactAgeRefresh);
     this._onDidChangeTreeData.dispose();
     this._onDidChangePane.dispose();
   }
@@ -817,7 +853,11 @@ export class ConfigurationTreeProvider
     if (!artifact) {
       return [new PlaceholderItem("IntelliSense not yet evaluated")];
     }
-    const items: vscode.TreeItem[] = [new CompileCommandsArtifactItem(artifact)];
+
+    const newestModifiedAt = this._newestArtifactModifiedAt();
+
+    const items: vscode.TreeItem[] = newestModifiedAt ? [new ArtifactUpdatedItem(newestModifiedAt)] : [];
+    items.push(new CompileCommandsArtifactItem(artifact));
     if (this._binaryArtifact) {
       items.push(new BinaryArtifactItem(this._binaryArtifact));
     }
@@ -828,6 +868,17 @@ export class ConfigurationTreeProvider
       items.push(new ExecutableArtifactItem(this._executableArtifact));
     }
     return items;
+  }
+
+  private _newestArtifactModifiedAt(): Date | undefined {
+    return [this._artifact, this._binaryArtifact, this._mapArtifact, this._executableArtifact]
+      .reduce<Date | undefined>((newest, current) => {
+        const modifiedAt = current?.modifiedAt;
+        if (!modifiedAt || (newest && modifiedAt <= newest)) {
+          return newest;
+        }
+        return modifiedAt;
+      }, undefined);
   }
 }
 

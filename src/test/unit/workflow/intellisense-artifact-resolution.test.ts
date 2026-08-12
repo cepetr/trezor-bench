@@ -546,6 +546,7 @@ suite("resolveActiveExecutableArtifact", () => {
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
     assert.strictEqual(result.expectedPath, __filename);
+    assert.ok(result.modifiedAt instanceof Date);
   });
 
   test("returns missing when artifactsRoot is empty", () => {

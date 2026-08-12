@@ -14,8 +14,10 @@ import {
   BinaryArtifactItem,
   MapArtifactItem,
   ExecutableArtifactItem,
+  ArtifactUpdatedItem,
   PlaceholderItem,
   WarningItem,
+  formatArtifactAge,
 } from "../../../ui/configuration-tree";
 import { ActiveCompileCommandsArtifact } from "../../../intellisense/intellisense-types";
 import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../../../intellisense/artifact-resolution";
@@ -310,6 +312,24 @@ function makeMissingArtifact(overrides: Partial<ActiveCompileCommandsArtifact> =
   };
 }
 
+suite("ArtifactUpdatedItem", () => {
+  const now = new Date("2026-08-12T12:00:00Z");
+
+  test("formats artifact age in minutes, hours, and days", () => {
+    assert.strictEqual(formatArtifactAge(new Date("2026-08-12T11:59:30Z"), now), "just now");
+    assert.strictEqual(formatArtifactAge(new Date("2026-08-12T11:58:00Z"), now), "2 min ago");
+    assert.strictEqual(formatArtifactAge(new Date("2026-08-12T09:00:00Z"), now), "3 hours ago");
+    assert.strictEqual(formatArtifactAge(new Date("2026-08-08T12:00:00Z"), now), "4 days ago");
+  });
+
+  test("uses a clock icon and relative-age description", () => {
+    const item = new ArtifactUpdatedItem(new Date("2026-08-12T11:58:00Z"), now);
+    assert.strictEqual(item.label, "Updated");
+    assert.strictEqual(item.description, "2 min ago");
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "clock");
+  });
+});
+
 suite("CompileCommandsArtifactItem – label and identity", () => {
   test("label is 'Compile Commands'", () => {
     const item = new CompileCommandsArtifactItem(makeValidArtifact());
@@ -333,9 +353,9 @@ suite("CompileCommandsArtifactItem – label and identity", () => {
 });
 
 suite("CompileCommandsArtifactItem – valid artifact", () => {
-  test("description is 'valid'", () => {
+  test("description is 'present'", () => {
     const item = new CompileCommandsArtifactItem(makeValidArtifact());
-    assert.strictEqual(item.description, "valid");
+    assert.strictEqual(item.description, "present");
   });
 
   test("icon is 'pass' theme icon", () => {
@@ -438,9 +458,9 @@ suite("BinaryArtifactItem – label and identity", () => {
 });
 
 suite("BinaryArtifactItem – valid artifact", () => {
-  test("description is 'valid'", () => {
+  test("description is 'present'", () => {
     const item = new BinaryArtifactItem(makeValidBinaryArtifact());
-    assert.strictEqual(item.description, "valid");
+    assert.strictEqual(item.description, "present");
   });
 
   test("icon is 'pass' theme icon", () => {
@@ -547,9 +567,9 @@ suite("MapArtifactItem – label and identity", () => {
 });
 
 suite("MapArtifactItem – valid artifact", () => {
-  test("description is 'valid'", () => {
+  test("description is 'present'", () => {
     const item = new MapArtifactItem(makeValidMapArtifact());
-    assert.strictEqual(item.description, "valid");
+    assert.strictEqual(item.description, "present");
   });
 
   test("icon is 'pass' theme icon", () => {
@@ -694,6 +714,27 @@ suite("ConfigurationTreeProvider – Binary/Map artifact refresh", () => {
     assert.strictEqual(children.length, 1, "only compile-commands row should remain");
     assert.ok(children[0] instanceof CompileCommandsArtifactItem);
   });
+
+  test("prepends the newest artifact modification time as an Updated row", () => {
+    provider.updateArtifact(makeValidArtifact({ modifiedAt: new Date("2026-08-12T09:00:00Z") }));
+    provider.updateBinaryArtifact(makeValidBinaryArtifact({ modifiedAt: new Date("2026-08-12T11:00:00Z") }));
+    provider.updateMapArtifact(makeValidMapArtifact({ modifiedAt: new Date("2026-08-12T10:00:00Z") }));
+
+    const children = getBuildArtifactsChildren();
+    const updated = children[0] as ArtifactUpdatedItem;
+    assert.ok(updated instanceof ArtifactUpdatedItem);
+    assert.strictEqual(updated.label, "Updated");
+    assert.strictEqual(updated.tooltip, "Last modified: 2026-08-12 11:00 UTC");
+  });
+
+  test("omits the Updated row when no artifact is present", () => {
+    provider.updateArtifact(makeMissingArtifact());
+    provider.updateBinaryArtifact(makeMissingBinaryArtifact());
+    provider.updateMapArtifact(makeMissingMapArtifact());
+
+    const children = getBuildArtifactsChildren();
+    assert.ok(!children.some((child) => child instanceof ArtifactUpdatedItem));
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -755,9 +796,9 @@ suite("ExecutableArtifactItem – valid status rendering", () => {
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "pass");
   });
 
-  test("description is 'valid'", () => {
+  test("description is 'present'", () => {
     const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
-    assert.strictEqual(item.description, "valid");
+    assert.strictEqual(item.description, "present");
   });
 
   test("tooltip contains the executable path", () => {

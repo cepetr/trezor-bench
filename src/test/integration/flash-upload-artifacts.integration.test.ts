@@ -89,9 +89,9 @@ suite("Flash/Upload artifacts – BinaryArtifactItem", () => {
     assert.strictEqual(item.id, "artifact:binary");
   });
 
-  test("valid binary shows 'valid' description", () => {
+  test("valid binary shows 'present' description", () => {
     const item = new BinaryArtifactItem(makeValidBinaryArtifact());
-    assert.strictEqual(item.description, "valid");
+    assert.strictEqual(item.description, "present");
   });
 
   test("missing binary shows 'missing' description", () => {
@@ -136,9 +136,9 @@ suite("Flash/Upload artifacts – MapArtifactItem", () => {
     assert.strictEqual(item.id, "artifact:map");
   });
 
-  test("valid map shows 'valid' description", () => {
+  test("valid map shows 'present' description", () => {
     const item = new MapArtifactItem(makeValidMapArtifact());
-    assert.strictEqual(item.description, "valid");
+    assert.strictEqual(item.description, "present");
   });
 
   test("missing map shows 'missing' description", () => {

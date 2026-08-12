@@ -136,6 +136,7 @@ export type MapArtifactStatus = "valid" | "missing";
 export interface ActiveBinaryArtifact {
   readonly path: string;
   readonly exists: boolean;
+  readonly modifiedAt?: Date;
   readonly status: BinaryArtifactStatus;
   readonly missingReason?: string;
   readonly contextKey: string;
@@ -144,6 +145,7 @@ export interface ActiveBinaryArtifact {
 export interface ActiveMapArtifact {
   readonly path: string;
   readonly exists: boolean;
+  readonly modifiedAt?: Date;
   readonly status: MapArtifactStatus;
   readonly missingReason?: string;
   readonly contextKey: string;
@@ -154,6 +156,14 @@ function checkFileExists(filePath: string): boolean {
     return fs.existsSync(filePath);
   } catch {
     return false;
+  }
+}
+
+function readFileModifiedAt(filePath: string): Date | undefined {
+  try {
+    return fs.statSync(filePath).mtime;
+  } catch {
+    return undefined;
   }
 }
 
@@ -180,7 +190,13 @@ export function resolveActiveBinaryArtifact(
 
   const exists = checkFileExists(artifactPath);
   if (exists) {
-    return { path: artifactPath, exists: true, status: "valid", contextKey };
+    return {
+      path: artifactPath,
+      exists: true,
+      modifiedAt: readFileModifiedAt(artifactPath),
+      status: "valid",
+      contextKey,
+    };
   }
   return {
     path: artifactPath,
@@ -214,7 +230,13 @@ export function resolveActiveMapArtifact(
 
   const exists = checkFileExists(artifactPath);
   if (exists) {
-    return { path: artifactPath, exists: true, status: "valid", contextKey };
+    return {
+      path: artifactPath,
+      exists: true,
+      modifiedAt: readFileModifiedAt(artifactPath),
+      status: "valid",
+      contextKey,
+    };
   }
   return {
     path: artifactPath,
@@ -265,6 +287,7 @@ export function resolveActiveArtifact(
     return {
       path: artifactPath,
       exists: true,
+      modifiedAt: readFileModifiedAt(artifactPath),
       status: "valid",
       contextKey,
     };
@@ -336,6 +359,7 @@ export interface ActiveExecutableArtifact {
   readonly profileResolutionState: DebugProfileResolutionState | "manifest-invalid";
   readonly expectedPath: string;
   readonly exists: boolean;
+  readonly modifiedAt?: Date;
   readonly status: ExecutableArtifactStatus;
   readonly missingReason?: string;
   readonly tooltip: string;
@@ -470,6 +494,7 @@ export function resolveActiveExecutableArtifact(
       profileResolutionState: "selected",
       expectedPath,
       exists: true,
+      modifiedAt: readFileModifiedAt(expectedPath),
       status: "valid",
       tooltip: formatExecutableArtifactTooltip(expectedPath),
       matchingProfileCount: matchingSet.profiles.length,

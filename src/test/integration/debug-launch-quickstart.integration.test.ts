@@ -107,7 +107,7 @@ suite("QS1 – Unique matching profile", () => {
     const artifact = resolveActiveExecutableArtifact(manifest, config, tmpDir);
     const item = new ExecutableArtifactItem(artifact);
 
-    assert.strictEqual(item.description, "valid");
+    assert.strictEqual(item.description, "present");
     assert.ok(
       (item.iconPath as vscode.ThemeIcon).id === "pass",
       "expected pass icon for valid executable"

@@ -320,7 +320,7 @@ suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", ()
     assert.strictEqual(children.length, 1);
     assert.ok(children[0] instanceof CompileCommandsArtifactItem, "expected CompileCommandsArtifactItem");
     const item = children[0] as CompileCommandsArtifactItem;
-    assert.strictEqual(item.description, "valid");
+    assert.strictEqual(item.description, "present");
   });
 
   test("shows CompileCommandsArtifactItem with missing status after updateArtifact", () => {

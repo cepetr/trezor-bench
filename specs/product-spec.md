@@ -42,6 +42,7 @@ Trezor Bench
 │   ├── Target
 │   └── Component
 ├── Build Artifacts
+│   ├── Updated
 │   ├── Compile Commands
 │   ├── Binary
 │   ├── Map File
@@ -182,6 +183,7 @@ At a high level, this part of the tree view is organized like this:
 
 ```text
 Build Artifacts
+├── Updated        18 min ago
 ├── Compile Commands
 ├── Binary         [Flash to Device] [Upload to Device]
 ├── Map File       [Open]
@@ -193,7 +195,9 @@ Build Artifacts
 - **Map File**: Represents the map file artifact associated with the active build context and exposes a row-level open action when the map file exists.
 - **Executable**: Represents the executable artifact for the active build context and is used by `Start Debugging` when debugging is available.
 
-Each artifact row uses its row description to show the current availability state for the active build context. When the artifact exists, the description shows `valid`. When it does not exist, the description shows `missing`.
+When at least one artifact exists, an `Updated` row appears before the artifact rows. Its description shows the relative age of the newest artifact modification time across Compile Commands, Binary, Map File, and Executable. The age uses minutes, hours, or days and refreshes once per minute while at least one timestamped artifact is present.
+
+Each artifact row uses its row description to show the current availability state for the active build context. When the artifact exists, the description shows `present`. When it does not exist, the description shows `missing`.
 
 Each artifact row also shows a tooltip containing the resolved artifact path for the active build context. When the artifact is missing, the tooltip must make clear that the artifact is missing and still show the resolved path that was checked.
 
@@ -307,7 +311,7 @@ The extension resolves the expected compile-commands artifact for the active bui
 
 The expected compile-commands path is constructed as `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix>.cc.json`, where `artifacts-root` comes from the resolved repository configuration, `artifactFolder` comes from the selected model, `artifactName` comes from the selected component, and `artifactSuffix` comes from the selected target and defaults to an empty string when omitted.
 
-The `Compile Commands` row in `Build Artifacts` shows whether that artifact is currently available for the active build context. When the artifact exists, the row shows `valid` and its tooltip shows the resolved artifact path. When it does not exist, the row shows `missing` and its tooltip states that the artifact is missing and shows the resolved artifact path that was checked.
+The `Compile Commands` row in `Build Artifacts` shows whether that artifact is currently available for the active build context. When the artifact exists, the row shows `present` and its tooltip shows the resolved artifact path. When it does not exist, the row shows `missing` and its tooltip states that the artifact is missing and shows the resolved artifact path that was checked.
 
 When IntelliSense refresh runs and the active compile-commands artifact is available, the extension parses the active compile database and applies the resulting configuration through the active IntelliSense backend so editor assistance follows the currently selected model, target, and component.
 
@@ -897,7 +901,7 @@ The executable path is derived from the active build context and the manifest-de
 
 Visible `Start Debugging` actions in the `Configuration view` stay present but disabled when a matching debug profile cannot be resolved or when the executable artifact is missing.
 
-The `Executable` row reflects the same readiness state through its `valid` or `missing` status and tooltip.
+The `Executable` row reflects the same readiness state through its `present` or `missing` status and tooltip.
 
 `Run and Debug` entry availability is derived from the same manifest, active-context, matching-profile, and executable-artifact checks. Template-file problems, invalid template content, and unresolved tbench debug variables remain invocation-time failures rather than hidden availability conditions.
 
