@@ -1,23 +1,23 @@
 # Changelog
 
-## 0.1.1 - 2026-04-22
-### Changed
-- Lowered the minimum supported VS Code version to 1.105.0
-
-## 0.1.2 - 2026-05-15
-### Changed
-- Changed the default manifest and debug templates location to core/embed/xtask/tf-tools
-
-## 0.2.0 - 2026-07-19
-### Added
-- Added configuration variable expansion for tf-tools path settings, excluded-file scope settings, and task environment settings.
-- Added clangd IntelliSense backend support when cpptools is unavailable.
-- Added `tfTools.taskExtraEnv` for extra environment variables passed to Build, Clippy, Check, Clean, Flash, and Upload workflow tasks.
-- Added persistent log output for extension activation and key failure paths, including manifest load failures, blocked Flash/Upload actions, map-file open failures, and debug launch failures.
-### Changed
-- Workflow tasks now launch `cargo xtask` through `ProcessExecution`, inheriting the VS Code session environment without shell-mediated startup.
+## 0.4.1 - 2026-08-11
 ### Fixed
-- Build artifact status and related actions now refresh after running `cargo xtask build` or `cargo xtask clean` outside the extension.
+- Restored the existing repository URL in extension package metadata and README links so the bundled README image resolves correctly.
+
+## 0.4.0 - 2026-08-11
+### Changed
+- Renamed the extension from Trezor Firmware Tools to Trezor Bench. This is a breaking change: the extension id is now `cepetr.tbench`, and its commands, settings, context keys, debugger and task types, debug variables, persisted workspace state, repository configuration file, and managed IntelliSense directory now use the `tbench` prefix.
+- Retained upstream Trezor firmware contract paths under `xtask/tf-tools/`, including the manifest, preset, and debug-template locations.
+
+## 0.3.2 - 2026-08-06
+### Fixed
+- Multistate build options without an applicable preset value now use their first declared state, so their state choices remain selectable instead of becoming unavailable.
+
+## 0.3.1 - 2026-08-05
+### Added
+- Added optional root-level `tf-tools.toml` repository configuration for cargo workspace, manifest, build artifacts, debug templates, and xtask preset input paths. Relative paths resolve from the workspace root; changes are applied without reloading the VS Code window.
+### Changed
+- Removed the `tfTools.cargoWorkspacePath`, `tfTools.debug.templatesPath`, `tfTools.artifactsPath`, and `tfTools.manifestPath` VS Code settings. Their values are not migrated; configure repository paths in `tf-tools.toml` instead.
 
 ## 0.3.0 - 2026-08-03
 ### Added
@@ -33,21 +33,21 @@
 - Renamed the activity-bar container from `Trezor` to `Trezor Firmware Tools`.
 - Multistate build options no longer require manifest-authored defaults; the selected state is inferred from the preset-effective value when no override exists.
 
-## 0.3.1 - 2026-08-05
+## 0.2.0 - 2026-07-19
 ### Added
-- Added optional root-level `tf-tools.toml` repository configuration for cargo workspace, manifest, build artifacts, debug templates, and xtask preset input paths. Relative paths resolve from the workspace root; changes are applied without reloading the VS Code window.
+- Added configuration variable expansion for tf-tools path settings, excluded-file scope settings, and task environment settings.
+- Added clangd IntelliSense backend support when cpptools is unavailable.
+- Added `tfTools.taskExtraEnv` for extra environment variables passed to Build, Clippy, Check, Clean, Flash, and Upload workflow tasks.
+- Added persistent log output for extension activation and key failure paths, including manifest load failures, blocked Flash/Upload actions, map-file open failures, and debug launch failures.
 ### Changed
-- Removed the `tfTools.cargoWorkspacePath`, `tfTools.debug.templatesPath`, `tfTools.artifactsPath`, and `tfTools.manifestPath` VS Code settings. Their values are not migrated; configure repository paths in `tf-tools.toml` instead.
-
-## 0.3.2 - 2026-08-06
+- Workflow tasks now launch `cargo xtask` through `ProcessExecution`, inheriting the VS Code session environment without shell-mediated startup.
 ### Fixed
-- Multistate build options without an applicable preset value now use their first declared state, so their state choices remain selectable instead of becoming unavailable.
+- Build artifact status and related actions now refresh after running `cargo xtask build` or `cargo xtask clean` outside the extension.
 
-## 0.4.0 - 2026-08-11
+## 0.1.2 - 2026-05-15
 ### Changed
-- Renamed the extension from Trezor Firmware Tools to Trezor Bench. This is a breaking change: the extension id is now `cepetr.tbench`, and its commands, settings, context keys, debugger and task types, debug variables, persisted workspace state, repository configuration file, and managed IntelliSense directory now use the `tbench` prefix.
-- Retained upstream Trezor firmware contract paths under `xtask/tf-tools/`, including the manifest, preset, and debug-template locations.
+- Changed the default manifest and debug templates location to core/embed/xtask/tf-tools
 
-## 0.4.1 - 2026-08-11
-### Fixed
-- Restored the existing repository URL in extension package metadata and README links so the bundled README image resolves correctly.
+## 0.1.1 - 2026-04-22
+### Changed
+- Lowered the minimum supported VS Code version to 1.105.0
