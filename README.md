@@ -16,9 +16,9 @@ The extension is intended for use with the new cargo-based build system. It does
 
 ## How to Install
 
-The extension is not published in the VS Code Marketplace yet, so it must be installed manually as a `.vsix` package.
+Install [Trezor Bench from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=cepetr.tbench) to receive automatic updates.
 
-Download the latest `.vsix` package from the [release page](https://github.com/cepetr/vscode-tf-tools/releases). Then, in VS Code, open the Command Palette, run `Extensions: Install from VSIX...`, and select the extension package file.
+Alternatively, download the latest `.vsix` package from the [release page](https://github.com/cepetr/vscode-tf-tools/releases). Then, in VS Code, open the Command Palette, run `Extensions: Install from VSIX...`, and select the extension package file.
 
 **Enable this extension only in the `trezor-firmware` repository, and disable it in other workspaces.**
 
