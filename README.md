@@ -69,8 +69,10 @@ The extension does not require these VS Code settings, but they are recommended 
     "npm.autoDetect": "off",
     "js/ts.tsc.autoDetect": "off",
     "files.watcherExclude": {
-        "${workspaceFolder}/core/build-xtask/**": true,
-        "${workspaceFolder}/core/build/**": true,
+        "core/build-xtask/**": true,
+        "core/build/**": true,
+        "tests/ui_tests/reporting/master_cache/**": true,
+        "tests/ui_tests/screens/**": true,        
         "**/.git/**": true,
     },
 }
