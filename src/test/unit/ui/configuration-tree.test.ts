@@ -855,6 +855,10 @@ suite("ConfigurationTreeProvider – Executable row", () => {
     provider = new ConfigurationTreeProvider();
   });
 
+  teardown(() => {
+    provider.dispose();
+  });
+
   function getBuildArtifactsChildrenExec(): vscode.TreeItem[] {
     return provider.paneRootChildren("build-artifacts");
   }
