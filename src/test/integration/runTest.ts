@@ -14,7 +14,8 @@ async function main(): Promise<void> {
       launchArgs: ["--disable-extensions"],
     });
   } catch (err) {
-    console.error("Integration test run failed:", err);
+    const details = err instanceof Error ? (err.stack ?? err.message) : String(err);
+    process.stderr.write(`Integration test run failed: ${details}\n`);
     process.exit(1);
   }
 }

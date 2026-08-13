@@ -196,7 +196,7 @@ suite("parseEntry – flag extraction", () => {
 
   test("extracts -I attached flag", () => {
     const entry = makeRawEntry("gcc -Iinclude/headers -c src/foo.c");
-    const parsed = parseEntry(entry as any, 0);
+    const parsed = parseEntry(entry, 0);
     assert.ok(parsed !== undefined);
     assert.ok(
       parsed.includePaths.some(p => p.endsWith("include/headers")),
@@ -206,7 +206,7 @@ suite("parseEntry – flag extraction", () => {
 
   test("extracts -I space-separated flag", () => {
     const entry = makeRawEntry("gcc -I include/headers -c src/foo.c");
-    const parsed = parseEntry(entry as any, 0);
+    const parsed = parseEntry(entry, 0);
     assert.ok(parsed !== undefined);
     assert.ok(
       parsed.includePaths.some(p => p.endsWith("include/headers")),
@@ -216,7 +216,7 @@ suite("parseEntry – flag extraction", () => {
 
   test("extracts -D attached define", () => {
     const entry = makeRawEntry("gcc -DFOO=1 -DBAR -c src/foo.c");
-    const parsed = parseEntry(entry as any, 0);
+    const parsed = parseEntry(entry, 0);
     assert.ok(parsed !== undefined);
     assert.ok(parsed.defines.includes("FOO=1"), "expected FOO=1 in defines");
     assert.ok(parsed.defines.includes("BAR"), "expected BAR in defines");
@@ -224,14 +224,14 @@ suite("parseEntry – flag extraction", () => {
 
   test("extracts -D space-separated define", () => {
     const entry = makeRawEntry("gcc -D FOO=1 -c src/foo.c");
-    const parsed = parseEntry(entry as any, 0);
+    const parsed = parseEntry(entry, 0);
     assert.ok(parsed !== undefined);
     assert.ok(parsed.defines.includes("FOO=1"), "expected FOO=1 in defines");
   });
 
   test("extracts -include forced include", () => {
     const entry = makeRawEntry("gcc -include config/product.h -c src/foo.c");
-    const parsed = parseEntry(entry as any, 0);
+    const parsed = parseEntry(entry, 0);
     assert.ok(parsed !== undefined);
     assert.ok(
       parsed.forcedIncludes.some(fi => fi.endsWith("config/product.h")),
@@ -241,7 +241,7 @@ suite("parseEntry – flag extraction", () => {
 
   test("source file token is not included in remainingArgs", () => {
     const entry = makeRawEntry("gcc -std=c11 -Wall -c src/foo.c");
-    const parsed = parseEntry(entry as any, 0);
+    const parsed = parseEntry(entry, 0);
     assert.ok(parsed !== undefined);
     assert.ok(
       !parsed.arguments.includes("src/foo.c"),
@@ -255,32 +255,32 @@ suite("parseEntry – flag extraction", () => {
 
   test("-std= flag is preserved in remainingArgs", () => {
     const entry = makeRawEntry("gcc -std=gnu11 -c src/foo.c");
-    const parsed = parseEntry(entry as any, 0);
+    const parsed = parseEntry(entry, 0);
     assert.ok(parsed !== undefined);
     assert.ok(parsed.arguments.includes("-std=gnu11"), "expected -std=gnu11 in remainingArgs");
   });
 
   test("rawIndex is recorded correctly", () => {
     const entry = makeRawEntry("gcc -c src/foo.c");
-    const parsed = parseEntry(entry as any, 7);
+    const parsed = parseEntry(entry, 7);
     assert.strictEqual(parsed?.rawIndex, 7);
   });
 
   test("compilerPath is the first token", () => {
     const entry = makeRawEntry("arm-none-eabi-gcc -c src/foo.c");
-    const parsed = parseEntry(entry as any, 0);
+    const parsed = parseEntry(entry, 0);
     assert.strictEqual(parsed?.compilerPath, "arm-none-eabi-gcc");
   });
 
   test("returns undefined for entry with empty command", () => {
     const entry = { directory: "/workspace", command: "", file: "src/foo.c" };
-    const parsed = parseEntry(entry as any, 0);
+    const parsed = parseEntry(entry, 0);
     assert.strictEqual(parsed, undefined);
   });
 
   test("directory is resolved to absolute path", () => {
     const entry = { directory: "/workspace", command: "gcc -c src/foo.c", file: "src/foo.c" };
-    const parsed = parseEntry(entry as any, 0);
+    const parsed = parseEntry(entry, 0);
     assert.strictEqual(parsed?.directory, "/workspace");
   });
 });

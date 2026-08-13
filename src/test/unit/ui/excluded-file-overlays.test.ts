@@ -73,7 +73,6 @@ function makeSnapshot(
 // ---------------------------------------------------------------------------
 // The vscode-mock exposes `window.visibleTextEditors` as a mutable array.
 // We replace it per test and restore after.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const windowMock: { visibleTextEditors: unknown[] } = (vscode as unknown as { window: { visibleTextEditors: unknown[] } }).window;
 
 // ---------------------------------------------------------------------------
