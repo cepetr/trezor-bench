@@ -202,6 +202,10 @@ class ThemeIcon {
   constructor(public readonly id: string) {}
 }
 
+class MarkdownString {
+  constructor(public readonly value: string = "") {}
+}
+
 const TreeItemCollapsibleState = { None: 0, Collapsed: 1, Expanded: 2 };
 const TreeItemCheckboxState = { Unchecked: 0, Checked: 1 };
 const StatusBarAlignment = { Left: 1, Right: 2 };
@@ -262,6 +266,7 @@ module.exports = {
   RelativePattern,
   TreeItem,
   ThemeIcon,
+  MarkdownString,
   ThemeColor,
   FileDecoration,
   TreeItemCollapsibleState,

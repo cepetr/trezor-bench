@@ -67,7 +67,7 @@ export function formatArtifactAge(modifiedAt: Date, now: Date = new Date()): str
     return "just now";
   }
   if (elapsedMinutes < 60) {
-    return `${elapsedMinutes} min${elapsedMinutes === 1 ? "" : "s"} ago`;
+    return `${elapsedMinutes} min ago`;
   }
 
   const elapsedHours = Math.floor(elapsedMinutes / 60);
