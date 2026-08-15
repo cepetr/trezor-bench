@@ -20,8 +20,8 @@ import { ActiveConfig } from "../configuration/active-config";
 import { evaluateWhenExpression, EvalContext } from "../manifest/when-expressions";
 import { createCargoTaskExecution } from "../tasks/xtask-execution";
 import {
-  log,
   logArtifactActionBlocked,
+  logMapFileOpenFailure,
   logWorkflowFailure,
 } from "../observability/log-channel";
 
@@ -320,7 +320,7 @@ export async function openMapFile(mapFilePath: string): Promise<void> {
     await vscode.window.showTextDocument(uri);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    log(`[ERROR] Cannot open map file — ${message}`);
+    logMapFileOpenFailure(message);
     vscode.window.showErrorMessage(
       `Trezor: Cannot open map file — ${message}`
     );

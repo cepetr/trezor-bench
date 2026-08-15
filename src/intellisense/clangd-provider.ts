@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
-import { log } from "../observability/log-channel";
+import { logIntelliSense } from "../observability/log-channel";
 
 // ---------------------------------------------------------------------------
 // clangd extension constants
@@ -92,7 +92,7 @@ export class ClangdProviderAdapter {
     updateCompileCommandsSymlink(workspaceFolder, artifactPath);
     await this._restartClangd();
     this._linkedArtifactPath = artifactPath;
-    log(`[IntelliSense] Applied clangd compile database: ${artifactPath}`);
+    logIntelliSense(`Applied clangd compile database: ${artifactPath}`);
   }
 
   async clear(workspaceFolder: vscode.WorkspaceFolder): Promise<void> {
@@ -137,8 +137,8 @@ function ensureClangdCompilationDatabaseConfig(
     return;
   }
 
-  log(
-    "[IntelliSense] [WARN] Workspace .clangd exists without a tbench CompilationDatabase entry. " +
+  logIntelliSense(
+    "[WARN] Workspace .clangd exists without a tbench CompilationDatabase entry. " +
       `clangd may not discover ${CLANGD_COMPILE_COMMANDS_DIR_NAME}/compile_commands.json unless configured elsewhere.`
   );
 }

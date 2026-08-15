@@ -272,6 +272,13 @@ export function logArtifactActionBlocked(actionName: string, detail: string): vo
   log(`[ERROR] ${actionName} blocked — ${detail}`);
 }
 
+/**
+ * Logs a persistent failure record for a map file that could not be opened.
+ */
+export function logMapFileOpenFailure(detail: string): void {
+  log(`[ERROR] Cannot open map file — ${detail}`);
+}
+
 // ---------------------------------------------------------------------------
 // Debug launch failure logging
 // ---------------------------------------------------------------------------
@@ -321,12 +328,20 @@ export function logProviderDebugLaunchFailure(
 // ---------------------------------------------------------------------------
 
 /**
+ * Appends an `[IntelliSense]`-prefixed log line. The single entry point for
+ * IntelliSense event records, so the prefix is written in one place only.
+ */
+export function logIntelliSense(message: string): void {
+  log(`[IntelliSense] ${message}`);
+}
+
+/**
  * Logs a persistent output-channel entry for a compile-commands artifact that
  * was expected for the given build context but not found on disk.
  */
 export function logMissingArtifact(expectedPath: string, contextKey: string): void {
-  log(
-    `[IntelliSense] Compile-commands artifact missing for context ${contextKey}: expected at ${expectedPath}`
+  logIntelliSense(
+    `Compile-commands artifact missing for context ${contextKey}: expected at ${expectedPath}`
   );
 }
 
@@ -336,7 +351,7 @@ export function logMissingArtifact(expectedPath: string, contextKey: string): vo
  * condition is not silent.
  */
 export function logProviderWarning(message: string): void {
-  log(`[IntelliSense] [WARN] ${message}`);
+  logIntelliSense(`[WARN] ${message}`);
   vscode.window.showWarningMessage(message);
 }
 
@@ -345,6 +360,6 @@ export function logProviderWarning(message: string): void {
  * a previous warning state. Does NOT show a notification — recovery is silent.
  */
 export function logProviderRecovery(): void {
-  log("[IntelliSense] Provider prerequisites satisfied. IntelliSense is now active.");
+  logIntelliSense("Provider prerequisites satisfied. IntelliSense is now active.");
 }
 

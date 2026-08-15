@@ -18,7 +18,7 @@ import { parseCompileCommandsFile } from "./compile-commands-parser";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
 import {
-  log,
+  logIntelliSense,
   logMissingArtifact,
   logProviderWarning,
   logProviderRecovery,
@@ -168,7 +168,7 @@ export class IntelliSenseService {
   }
 
   private async _doRefresh(trigger: RefreshTrigger): Promise<void> {
-    log(`[IntelliSense] Refresh triggered by: ${trigger}`);
+    logIntelliSense(`Refresh triggered by: ${trigger}`);
 
     // Ensure cpptools registration is attempted when that backend is active.
     if (resolveIntelliSenseBackend() === "cpptools") {
@@ -186,7 +186,7 @@ export class IntelliSenseService {
           "IntelliSense integration is unavailable: see output channel for details.";
         if (readiness.warningState === "wrong-provider") {
           // Log only — extension.ts surfaces the notification with workspace-setting fix action.
-          log(`[IntelliSense] [WARN] ${msg}`);
+          logIntelliSense(`[WARN] ${msg}`);
         } else {
           logProviderWarning(msg);
         }
@@ -250,7 +250,7 @@ export class IntelliSenseService {
     const payload = parseCompileCommandsFile(artifactPath, contextKey);
 
     if (!payload) {
-      log(`[IntelliSense] Failed to parse compile-commands: ${artifactPath}`);
+      logIntelliSense(`Failed to parse compile-commands: ${artifactPath}`);
       await this._clearProviderState();
       this._lastPayload = null;
       return;
@@ -260,7 +260,7 @@ export class IntelliSenseService {
     if (backend === "clangd") {
       const workspaceFolder = this._workspaceFolder;
       if (!workspaceFolder) {
-        log("[IntelliSense] Cannot apply clangd compile database: workspace folder unavailable.");
+        logIntelliSense("Cannot apply clangd compile database: workspace folder unavailable.");
         await this._clearProviderState();
         this._lastPayload = null;
         return;
@@ -269,8 +269,8 @@ export class IntelliSenseService {
       try {
         await this._clangdAdapter.applyArtifact(workspaceFolder, artifactPath);
       } catch (error) {
-        log(
-          `[IntelliSense] Failed to apply clangd compile database: ${
+        logIntelliSense(
+          `Failed to apply clangd compile database: ${
             error instanceof Error ? error.message : String(error)
           }`
         );
@@ -289,8 +289,8 @@ export class IntelliSenseService {
       clearedAt: null,
       providerState: "applied",
     };
-    log(
-      `[IntelliSense] Applied compile-commands (${backend ?? "unknown"}): ${artifactPath} ` +
+    logIntelliSense(
+      `Applied compile-commands (${backend ?? "unknown"}): ${artifactPath} ` +
       `(${payload.entriesByFile.size} entries)`
     );
   }
@@ -320,8 +320,8 @@ export class IntelliSenseService {
       try {
         await this._clangdAdapter.clear(workspaceFolder);
       } catch (error) {
-        log(
-          `[IntelliSense] Failed to clear clangd compile database: ${
+        logIntelliSense(
+          `Failed to clear clangd compile database: ${
             error instanceof Error ? error.message : String(error)
           }`
         );
@@ -334,7 +334,7 @@ export class IntelliSenseService {
       clearedAt: new Date(),
       providerState: "cleared",
     };
-    log("[IntelliSense] Cleared stale compile-commands configuration.");
+    logIntelliSense("Cleared stale compile-commands configuration.");
   }
 
   dispose(): void {
