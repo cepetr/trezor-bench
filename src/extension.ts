@@ -6,7 +6,7 @@
 import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder, isWorkflowWorkspaceSupported } from "./workspace/workspace-guard";
 import { resolveManifestUri, isStatusBarEnabled, resolveArtifactsPath, resolveDebugTemplatesPath, resolvePresetUris } from "./workspace/settings";
-import { RepositoryConfigurationService, loadRepositoryConfiguration, setRepositoryConfiguration } from "./workspace/repository-configuration";
+import { RepositoryConfigService, loadRepositoryConfiguration, setRepositoryConfiguration } from "./workspace/repository-configuration";
 import { ManifestService } from "./manifest/manifest-service";
 import { PresetService } from "./presets/preset-service";
 import { PresetState } from "./presets/preset-types";
@@ -1080,11 +1080,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  const repositoryConfigurationService = new RepositoryConfigurationService(workspaceFolder);
-  context.subscriptions.push(repositoryConfigurationService);
+  const repositoryConfigService = new RepositoryConfigService(workspaceFolder);
+  context.subscriptions.push(repositoryConfigService);
   let repositoryConfigurationWasInvalid = false;
   const applyRepositoryConfigurationState = async (): Promise<void> => {
-    const state = repositoryConfigurationService.state;
+    const state = repositoryConfigService.state;
     if (!state) {
       return;
     }
@@ -1128,13 +1128,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     await _presetService.start();
   };
   context.subscriptions.push(
-    repositoryConfigurationService.onDidChangeState(() => {
+    repositoryConfigService.onDidChangeState(() => {
       void applyRepositoryConfigurationState();
     })
   );
 
   // --- Start root configuration and its dependent services. ---
-  await repositoryConfigurationService.start();
+  await repositoryConfigService.start();
 
   // Schedule IntelliSense refresh on activation.
   refreshArtifactFileWatcher();

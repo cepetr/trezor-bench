@@ -8,7 +8,7 @@ import { PresetService } from "../../presets/preset-service";
 import { createCargoTaskExecution } from "../../tasks/xtask-execution";
 import {
   loadRepositoryConfiguration,
-  RepositoryConfigurationService,
+  RepositoryConfigService,
   setRepositoryConfiguration,
 } from "../../workspace/repository-configuration";
 
@@ -33,7 +33,7 @@ function workspaceFolder(workspacePath: string): vscode.WorkspaceFolder {
 }
 
 async function waitForState(
-  service: RepositoryConfigurationService,
+  service: RepositoryConfigService,
   expectedStatus: "absent" | "loaded" | "invalid"
 ): Promise<void> {
   await new Promise<void>((resolve, reject) => {
@@ -158,7 +158,7 @@ xtask-presets = "firmware/presets"
 
   test("watches create, invalid change, valid replacement, and deletion", async () => {
     const folder = workspaceFolder(workspacePath);
-    const service = new RepositoryConfigurationService(folder);
+    const service = new RepositoryConfigService(folder);
     const initial = await service.start();
     assert.strictEqual(initial.status, "absent");
 

@@ -236,7 +236,7 @@ export async function loadRepositoryConfiguration(
   };
 }
 
-export class RepositoryConfigurationService implements vscode.Disposable {
+export class RepositoryConfigService implements vscode.Disposable {
   private readonly onDidChangeStateEmitter = new vscode.EventEmitter<RepositoryConfigurationState>();
   private readonly watcher: fsNative.FSWatcher;
   private readonly configurationPath: string;
