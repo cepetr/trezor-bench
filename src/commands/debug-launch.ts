@@ -45,7 +45,7 @@ interface DebugProfileQuickPickItem extends vscode.QuickPickItem {
   readonly profile: ManifestComponentDebugProfile;
 }
 
-interface TbenchProxyDebugConfiguration extends vscode.DebugConfiguration {
+export interface TbenchProxyDebugConfiguration extends vscode.DebugConfiguration {
   readonly tbenchMode: "default" | "profile";
   readonly tbenchProfileId: string;
   readonly tbenchContextKey: string;
@@ -69,7 +69,12 @@ async function pickDebugProfile(
   return selected?.profile;
 }
 
-function buildTbenchProxyDebugConfiguration(
+/**
+ * Builds the tbench proxy debug configuration for one profile — the shape
+ * shared by the Start Debugging command and the Run and Debug entries the
+ * provider generates.
+ */
+export function buildTbenchProxyDebugConfiguration(
   buildContext: BuildContext,
   profile: ManifestComponentDebugProfile,
   mode: "default" | "profile"

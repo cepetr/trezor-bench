@@ -18,17 +18,18 @@ import {
   TBENCH_DEBUG_TYPE,
   labelForDefaultEntry,
   labelForProfileEntry,
+  buildTbenchProxyDebugConfiguration,
 } from "../commands/debug-launch";
 import { materializeDebugConfiguration } from "./debug-template";
 import {
   resolveMatchingDebugProfiles,
   MatchingDebugProfileSet,
 } from "../manifest/debug-profiles";
-
-export { TBENCH_DEBUG_TYPE, labelForDefaultEntry, labelForProfileEntry };
 import { makeContextKey, resolveExecutableArtifact } from "../build/artifact-resolution";
 import { BuildContext } from "../manifest/manifest-types";
 import { logProviderDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
+
+export { TBENCH_DEBUG_TYPE, labelForDefaultEntry, labelForProfileEntry };
 
 function dedupeDebugConfigurations(
   configs: ReadonlyArray<vscode.DebugConfiguration>
@@ -94,32 +95,17 @@ export function generateDebugConfigurations(
     return [];
   }
 
-  const contextKey = makeContextKey(buildContext);
   const configs: vscode.DebugConfiguration[] = [];
 
   // Default entry (always when any matching profiles and valid executable)
-  const defaultConfig: vscode.DebugConfiguration = {
-    type: TBENCH_DEBUG_TYPE,
-    request: "launch",
-    name: labelForDefaultEntry(),
-    tbenchMode: "default",
-    tbenchProfileId: matchingSet.defaultProfile.id,
-    tbenchContextKey: contextKey,
-  };
-  configs.push(defaultConfig);
+  configs.push(
+    buildTbenchProxyDebugConfiguration(buildContext, matchingSet.defaultProfile, "default")
+  );
 
   // Profile-specific entries (only when more than one profile matches)
   if (matchingSet.profiles.length > 1) {
     for (const profile of matchingSet.profiles) {
-      const profileConfig: vscode.DebugConfiguration = {
-        type: TBENCH_DEBUG_TYPE,
-        request: "launch",
-        name: labelForProfileEntry(profile.name),
-        tbenchMode: "profile",
-        tbenchProfileId: profile.id,
-        tbenchContextKey: contextKey,
-      };
-      configs.push(profileConfig);
+      configs.push(buildTbenchProxyDebugConfiguration(buildContext, profile, "profile"));
     }
   }
 
