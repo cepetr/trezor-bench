@@ -94,17 +94,16 @@ export function logManifestState(state: ManifestState): void {
     case "loaded":
       log(
         `Manifest loaded: ${path} — ` +
-          `${(state as Extract<ManifestState, { status: "loaded" }>).models.length} model(s), ` +
-          `${(state as Extract<ManifestState, { status: "loaded" }>).targets.length} target(s), ` +
-          `${(state as Extract<ManifestState, { status: "loaded" }>).components.length} component(s)`
+          `${state.models.length} model(s), ` +
+          `${state.targets.length} target(s), ` +
+          `${state.components.length} component(s)`
       );
       break;
     case "missing":
       log(`[WARN] Manifest missing: ${path}`);
       break;
     case "invalid": {
-      const issues = (state as Extract<ManifestState, { status: "invalid" }>)
-        .validationIssues;
+      const issues = state.validationIssues;
       log(`[ERROR] Manifest invalid: ${path} — ${issues.length} issue(s)`);
       for (const issue of issues) {
         log(`  [${issue.severity}] ${issue.message} (${issue.code})`);
@@ -275,22 +274,33 @@ export function logArtifactActionBlocked(actionName: string, detail: string): vo
 // Debug launch failure logging
 // ---------------------------------------------------------------------------
 
+interface DebugLaunchFailureContext {
+  modelId?: string;
+  targetId?: string;
+  componentId?: string;
+  detail?: string;
+}
+
+function logDebugLaunchFailureEntry(
+  tag: string,
+  reason: string,
+  context: DebugLaunchFailureContext
+): void {
+  const ctx = [context.modelId, context.targetId, context.componentId].filter(Boolean).join("/");
+  const detail = context.detail ? ` — ${context.detail}` : "";
+  log(`[DEBUG-LAUNCH-FAILURE] ${tag}${reason}${ctx ? ` [${ctx}]` : ""}${detail}`);
+}
+
 /**
  * Logs a persistent output-channel entry for a blocked or failed debug launch.
  * Called from executeDebugLaunch before each early-return error path.
  */
 export function logDebugLaunchFailure(
   reason: string,
-  context: { modelId?: string; targetId?: string; componentId?: string; detail?: string } = {}
+  context: DebugLaunchFailureContext = {}
 ): void {
-  const ctx = [context.modelId, context.targetId, context.componentId].filter(Boolean).join("/");
-  const detail = context.detail ? ` — ${context.detail}` : "";
-  log(`[DEBUG-LAUNCH-FAILURE] ${reason}${ctx ? ` [${ctx}]` : ""}${detail}`);
+  logDebugLaunchFailureEntry("", reason, context);
 }
-
-// ---------------------------------------------------------------------------
-// IntelliSense event logging
-// ---------------------------------------------------------------------------
 
 /**
  * Logs a persistent output-channel entry for a blocked or failed debug launch
@@ -299,14 +309,19 @@ export function logDebugLaunchFailure(
  */
 export function logProviderDebugLaunchFailure(
   reason: string,
-  context: { modelId?: string; targetId?: string; componentId?: string; detail?: string } = {}
+  context: DebugLaunchFailureContext = {}
 ): void {
-  const ctx = [context.modelId, context.targetId, context.componentId].filter(Boolean).join("/");
-  const detail = context.detail ? ` — ${context.detail}` : "";
-  log(`[DEBUG-LAUNCH-FAILURE] [PROVIDER] ${reason}${ctx ? ` [${ctx}]` : ""}${detail}`);
+  logDebugLaunchFailureEntry("[PROVIDER] ", reason, context);
 }
 
+// ---------------------------------------------------------------------------
+// IntelliSense event logging
+// ---------------------------------------------------------------------------
 
+/**
+ * Logs a persistent output-channel entry for a compile-commands artifact that
+ * was expected for the given build context but not found on disk.
+ */
 export function logMissingArtifact(expectedPath: string, contextKey: string): void {
   log(
     `[IntelliSense] Compile-commands artifact missing for context ${contextKey}: expected at ${expectedPath}`
