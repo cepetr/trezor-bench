@@ -23,6 +23,7 @@ import {
   logArtifactActionBlocked,
   logMapFileOpenFailure,
   logWorkflowFailure,
+  notifyError,
 } from "../observability/log-channel";
 
 // ---------------------------------------------------------------------------
@@ -214,7 +215,7 @@ export function reportArtifactActionBlocked(
   const actionName = kind === "flash" ? "Flash" : "Upload";
   const detail = BLOCK_REASON_MESSAGES[reason];
   logArtifactActionBlocked(actionName, detail);
-  vscode.window.showErrorMessage(`Trezor: ${actionName} blocked — ${detail}`);
+  notifyError(`${actionName} blocked — ${detail}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -295,9 +296,7 @@ export async function executeArtifactTask(
     const actionName = kind === "flash" ? "Flash" : "Upload";
     const message = err instanceof Error ? err.message : String(err);
     logWorkflowFailure(actionName, message);
-    vscode.window.showErrorMessage(
-      `Trezor: ${actionName} failed to start — ${message}`
-    );
+    notifyError(`${actionName} failed to start — ${message}`);
   }
 }
 
@@ -321,8 +320,6 @@ export async function openMapFile(mapFilePath: string): Promise<void> {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     logMapFileOpenFailure(message);
-    vscode.window.showErrorMessage(
-      `Trezor: Cannot open map file — ${message}`
-    );
+    notifyError(`Cannot open map file — ${message}`);
   }
 }

@@ -28,6 +28,8 @@ import {
   logOverridesPrunedForPreset,
   logOverridesPrunedForContext,
   logRepositoryConfigurationState,
+  notifyWarning,
+  notifyError,
 } from "./observability/log-channel";
 import {
   disposeDiagnostics,
@@ -225,9 +227,9 @@ function assertNoUnauthorizedContributions(
 
   if (unauthorized.length > 0) {
     const msg =
-      `Trezor Bench scope violation: ` +
+      `Scope violation: ` +
       `unauthorized commands found in package.json: ${unauthorized.join(", ")}`;
-    void vscode.window.showWarningMessage(msg);
+    notifyWarning(msg);
   }
 }
 
@@ -510,9 +512,7 @@ function registerUnsupportedWorkspaceCommands(
         detail: "workspace is not supported",
       });
       revealLogs();
-      void vscode.window.showErrorMessage(
-        "Cannot start debugging: workspace is not supported."
-      );
+      notifyError("Cannot start debugging: workspace is not supported.");
     }),
     registerNoop("tbench.selectModel"),
     registerNoop("tbench.selectTarget"),
@@ -734,9 +734,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       // Show the wrong-provider fix notification once per state entry.
       if (readiness.warningState === "wrong-provider" && readiness.warningState !== _lastShownProviderFixState) {
         _lastShownProviderFixState = "wrong-provider";
-        vscode.window.showWarningMessage(
+        notifyWarning(
           readiness.lastWarningMessage ??
-            "IntelliSense: another C/C++ configuration provider is active. Switch to Trezor Bench?",
+            "Another C/C++ configuration provider is active. Switch to Trezor Bench?",
           "Fix"
         ).then((selection) => {
           if (selection === "Fix") {
@@ -929,7 +929,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           detail: "manifest not loaded or no active configuration",
         });
         revealLogs();
-        void vscode.window.showErrorMessage("Cannot start debugging: manifest not loaded.");
+        notifyError("Cannot start debugging: manifest not loaded.");
         return;
       }
       await executeDebugLaunch(workspaceFolder, loaded, config);
@@ -1167,7 +1167,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       void vscode.commands.executeCommand("setContext", "tbench.workflowBlocked", true);
       if (!repositoryConfigurationWasInvalid) {
         repositoryConfigurationWasInvalid = true;
-        vscode.window.showErrorMessage("Trezor Bench: tbench.toml is invalid. Check the Problems view.");
+        notifyError("tbench.toml is invalid. Check the Problems view.");
       }
       return;
     }

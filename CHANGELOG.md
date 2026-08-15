@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+### Changed
+- All notification popups now start with a unified `Trezor Bench:`
 ### Fixed
 - Build, Flash, and Upload now explain when the active build context is incomplete or no longer matches the manifest, instead of failing silently.
 - Flash and Upload are now blocked when manifest availability-rule validation errors block workflow actions.

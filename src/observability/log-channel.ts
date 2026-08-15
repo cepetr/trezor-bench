@@ -34,11 +34,33 @@ export function log(message: string): void {
 }
 
 /**
+ * Shows a warning notification with the standard extension prefix.
+ * All user-facing notifications go through this or `notifyError` so the
+ * brand string is written in one place only (`CHANNEL_NAME`).
+ */
+export function notifyWarning<T extends string>(
+  message: string,
+  ...items: T[]
+): Thenable<T | undefined> {
+  return vscode.window.showWarningMessage(`${CHANNEL_NAME}: ${message}`, ...items);
+}
+
+/**
+ * Shows an error notification with the standard extension prefix.
+ */
+export function notifyError<T extends string>(
+  message: string,
+  ...items: T[]
+): Thenable<T | undefined> {
+  return vscode.window.showErrorMessage(`${CHANNEL_NAME}: ${message}`, ...items);
+}
+
+/**
  * Appends a log line and also shows a VS Code warning notification.
  */
 export function logWarning(message: string): void {
   log(`[WARN] ${message}`);
-  vscode.window.showWarningMessage(message);
+  notifyWarning(message);
 }
 
 /**
@@ -46,7 +68,7 @@ export function logWarning(message: string): void {
  */
 export function logError(message: string): void {
   log(`[ERROR] ${message}`);
-  vscode.window.showErrorMessage(message);
+  notifyError(message);
 }
 
 /** Logs repository configuration transitions, including persistent invalid-state details. */
@@ -352,7 +374,7 @@ export function logMissingArtifact(expectedPath: string, contextKey: string): vo
  */
 export function logProviderWarning(message: string): void {
   logIntelliSense(`[WARN] ${message}`);
-  vscode.window.showWarningMessage(message);
+  notifyWarning(message);
 }
 
 /**

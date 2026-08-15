@@ -22,7 +22,7 @@ import {
 } from "../commands/debug-launch";
 import { makeContextKey, resolveActiveExecutableArtifact } from "../intellisense/artifact-resolution";
 import { EvalContext } from "../manifest/when-expressions";
-import { logProviderDebugLaunchFailure, revealLogs } from "../observability/log-channel";
+import { logProviderDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
 
 // ---------------------------------------------------------------------------
 // Proxy debug type constant
@@ -227,7 +227,7 @@ export class TbenchDebugConfigurationProvider implements vscode.DebugConfigurati
       const msg = "Cannot start debugging: manifest not loaded or no active configuration.";
       logProviderDebugLaunchFailure("manifest-unavailable", { detail: msg });
       revealLogs();
-      void vscode.window.showErrorMessage(msg);
+      notifyError(msg);
       return undefined;
     }
 
@@ -245,7 +245,7 @@ export class TbenchDebugConfigurationProvider implements vscode.DebugConfigurati
         detail: `expected ${expectedContextKey}, got ${currentContextKey}`,
       });
       revealLogs();
-      void vscode.window.showErrorMessage(msg);
+      notifyError(msg);
       return undefined;
     }
 
@@ -262,7 +262,7 @@ export class TbenchDebugConfigurationProvider implements vscode.DebugConfigurati
         detail: `profileId '${profileId ?? ""}' not found`,
       });
       revealLogs();
-      void vscode.window.showErrorMessage(msg);
+      notifyError(msg);
       return undefined;
     }
 
@@ -284,7 +284,7 @@ export class TbenchDebugConfigurationProvider implements vscode.DebugConfigurati
         detail: result.detail,
       });
       revealLogs();
-      void vscode.window.showErrorMessage(result.message);
+      notifyError(result.message);
       return undefined;
     }
 

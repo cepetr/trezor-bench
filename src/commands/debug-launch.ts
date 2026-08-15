@@ -12,7 +12,7 @@ import * as vscode from "vscode";
 import { ManifestComponentDebugProfile, ManifestStateLoaded } from "../manifest/manifest-types";
 import { EvalContext, evaluateWhenExpression } from "../manifest/when-expressions";
 import { ActiveConfig } from "../configuration/active-config";
-import { logDebugLaunchFailure, revealLogs } from "../observability/log-channel";
+import { logDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
 
 // ---------------------------------------------------------------------------
 // Profile resolution
@@ -611,7 +611,7 @@ function reportDebugLaunchFailure(
     ...(detail === undefined ? {} : { detail }),
   });
   revealLogs();
-  void vscode.window.showErrorMessage(message);
+  notifyError(message);
 }
 
 // ---------------------------------------------------------------------------

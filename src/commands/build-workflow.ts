@@ -7,7 +7,7 @@
 
 import * as vscode from "vscode";
 import { ResolvedOption } from "../configuration/build-options";
-import { logWorkflowFailure } from "../observability/log-channel";
+import { logWorkflowFailure, notifyError } from "../observability/log-channel";
 import { ManifestState } from "../manifest/manifest-types";
 import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 
@@ -223,7 +223,7 @@ export async function executeWorkflowTask(
     await vscode.tasks.executeTask(task);
   } catch (err) {
     const msg = `Failed to start ${kind} task: ${err instanceof Error ? err.message : String(err)}`;
-    vscode.window.showErrorMessage(msg);
+    notifyError(msg);
     logWorkflowFailure(kind, msg);
   }
 }
@@ -237,6 +237,6 @@ export function reportWorkflowBlocked(
   reason: WorkflowBlockReason
 ): void {
   const msg = blockReasonMessage(reason);
-  vscode.window.showErrorMessage(`${kind}: ${msg}`);
+  notifyError(`${kind} blocked — ${msg}`);
   logWorkflowFailure(kind, msg);
 }

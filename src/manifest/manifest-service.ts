@@ -3,6 +3,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { ManifestState, ManifestStatus } from "./manifest-types";
 import { validateManifest } from "./validate-manifest";
+import { notifyWarning, notifyError } from "../observability/log-channel";
 
 const DEBOUNCE_MS = 300;
 
@@ -132,14 +133,14 @@ export class ManifestService implements vscode.Disposable {
     this._lastNotifiedFailureStatus = state.status;
 
     if (state.status === "missing") {
-      vscode.window.showWarningMessage(
-        `Trezor Bench: manifest file not found at "${state.manifestUri.fsPath}". ` +
+      notifyWarning(
+        `manifest file not found at "${state.manifestUri.fsPath}". ` +
           "Check [paths].manifest in tbench.toml."
       );
     } else if (state.status === "invalid") {
       const count = state.validationIssues.length;
-      vscode.window.showErrorMessage(
-        `Trezor Bench: manifest has ${count} validation error(s). ` +
+      notifyError(
+        `manifest has ${count} validation error(s). ` +
           "Check the Problems view for details."
       );
     }
