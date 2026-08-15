@@ -5,9 +5,9 @@ import {
 import { getRepositoryConfiguration } from "./repository-configuration";
 
 /**
- * Returns the manifest path setting for the given workspace folder, resolved
- * to an absolute URI. Falls back to `core/embed/xtask/tf-tools/manifest.yaml`
- * under the workspace root.
+ * Returns the manifest URI for the given workspace folder, resolved from the
+ * `[paths].manifest` entry in the root-level `tbench.toml`. Falls back to
+ * `core/embed/xtask/tf-tools/manifest.yaml` under the workspace root.
  */
 export function resolveManifestUri(
   workspaceFolder: vscode.WorkspaceFolder
@@ -26,9 +26,10 @@ export function isStatusBarEnabled(
 }
 
 /**
- * Returns the cargo workspace directory for the given workspace folder.
- * Uses `tbench.cargoWorkspacePath` when set; falls back to the workspace
- * folder root so the extension works without explicit configuration.
+ * Returns the cargo workspace directory for the given workspace folder,
+ * resolved from the `[paths].cargo-workspace` entry in the root-level
+ * `tbench.toml`. Defaults to `core/embed` under the workspace root; an empty
+ * value resolves to the workspace root itself.
  */
 export function resolveCargoWorkspacePath(
   workspaceFolder: vscode.WorkspaceFolder
@@ -67,9 +68,11 @@ export function readTaskExtraEnv(
 }
 
 /**
- * Returns the resolved absolute artifacts root path for the given workspace folder.
- * Uses `tbench.artifactsPath` when set (resolved relative to the workspace root
- * when it is not an absolute path); returns an empty string when the setting is absent.
+ * Returns the resolved absolute artifacts root path for the given workspace
+ * folder, from the `[paths].build-artifacts` entry in the root-level
+ * `tbench.toml`. Defaults to `core/build-xtask/artifacts` under the workspace
+ * root; an empty value returns an empty string, which disables artifact-based
+ * resolution.
  */
 export function resolveArtifactsPath(
   workspaceFolder: vscode.WorkspaceFolder
@@ -132,9 +135,9 @@ export function readExcludedFilesSettings(
 
 /**
  * Returns the resolved absolute path to the debug templates directory for the
- * given workspace folder. Uses `tbench.debug.templatesPath` when set (resolved
- * relative to the workspace root when it is not an absolute path); falls back to
- * the default `"core/embed/xtask/tf-tools/debug"` joined to the workspace root.
+ * given workspace folder, from the `[paths].debug-templates` entry in the
+ * root-level `tbench.toml`. Defaults to `core/embed/xtask/tf-tools/debug`
+ * under the workspace root.
  */
 export function resolveDebugTemplatesPath(
   workspaceFolder: vscode.WorkspaceFolder
