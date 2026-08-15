@@ -76,7 +76,7 @@ import {
 import { IntelliSenseService } from "./intellisense/intellisense-service";
 import { RefreshTrigger } from "./intellisense/intellisense-types";
 import { applyProviderSettingFix } from "./intellisense/cpptools-backend";
-import { ActiveArtifactFileWatcher } from "./intellisense/artifact-file-watcher";
+import { ArtifactFileWatcher } from "./intellisense/artifact-file-watcher";
 import { ExcludedFilesService } from "./intellisense/excluded-files-service";
 import { ExcludedFilesRefresher } from "./intellisense/excluded-files-refresh";
 import { ExcludedFilesDecorationsProvider } from "./ui/excluded-files-decorations";
@@ -94,12 +94,12 @@ import {
 } from "./commands/artifact-actions";
 import {
   buildResolutionInputs,
-  resolveActiveArtifact,
-  resolveActiveBinaryArtifact,
-  resolveActiveMapArtifact,
-  resolveActiveExecutableArtifact,
-  ActiveBinaryArtifact,
-  ActiveMapArtifact,
+  resolveCompileCommandsArtifact,
+  resolveBinaryArtifact,
+  resolveMapArtifact,
+  resolveExecutableArtifact,
+  BinaryArtifact,
+  MapArtifact,
 } from "./intellisense/artifact-resolution";
 import { executeDebugLaunch } from "./commands/debug-launch";
 import { logDebugLaunchFailure } from "./observability/log-channel";
@@ -142,7 +142,7 @@ let _buildSelection: BuildSelection | undefined;
 let _presetContext: PresetContext | undefined;
 let _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
 let _intelliSenseService: IntelliSenseService | undefined;
-let _artifactFileWatcher: ActiveArtifactFileWatcher | undefined;
+let _artifactFileWatcher: ArtifactFileWatcher | undefined;
 let _excludedFilesService: ExcludedFilesService | undefined;
 let _excludedFilesRefresher: ExcludedFilesRefresher | undefined;
 let _excludedFilesDecorations: ExcludedFilesDecorationsProvider | undefined;
@@ -152,8 +152,8 @@ let _debugConfigProviderRegistration: vscode.Disposable | undefined;
 /** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
 let _lastShownProviderFixState: string = "none";
 /** Binary and Map artifact state for Flash/Upload/openMapFile context keys. */
-let _binaryArtifact: ActiveBinaryArtifact | undefined;
-let _mapArtifact: ActiveMapArtifact | undefined;
+let _binaryArtifact: BinaryArtifact | undefined;
+let _mapArtifact: MapArtifact | undefined;
 
 export interface TaskProcessEndLike {
   readonly exitCode?: number;
@@ -411,8 +411,8 @@ function updateArtifactActionContext(
   let mapExists = false;
 
   if (inputs && showArtifactRows) {
-    const binary = resolveActiveBinaryArtifact(inputs, buildContext);
-    const map = resolveActiveMapArtifact(inputs, buildContext);
+    const binary = resolveBinaryArtifact(inputs, buildContext);
+    const map = resolveMapArtifact(inputs, buildContext);
     _binaryArtifact = binary;
     _mapArtifact = map;
     binaryExists = binary.exists;
@@ -448,7 +448,7 @@ function updateDebugContext(
     return;
   }
 
-  const artifact = resolveActiveExecutableArtifact(manifest, buildContext, artifactsRoot);
+  const artifact = resolveExecutableArtifact(manifest, buildContext, artifactsRoot);
   const enabled = artifact.status === "valid";
   vscode.commands.executeCommand("setContext", "tbench.startDebuggingEnabled", enabled);
   _treeModel?.updateExecutableArtifact(artifact);
@@ -466,7 +466,7 @@ function updateCompileCommandsTreeArtifact(
   }
 
   const inputs = buildResolutionInputs(manifest, buildContext, artifactsRoot);
-  const artifact = inputs ? resolveActiveArtifact(inputs, buildContext) : null;
+  const artifact = inputs ? resolveCompileCommandsArtifact(inputs, buildContext) : null;
   _treeModel?.updateArtifact(artifact);
 }
 
@@ -665,7 +665,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- IntelliSense service ---
   _intelliSenseService = new IntelliSenseService();
-  _artifactFileWatcher = new ActiveArtifactFileWatcher(() => {
+  _artifactFileWatcher = new ArtifactFileWatcher(() => {
     refreshBuildArtifacts("artifact-file-change");
   });
   context.subscriptions.push({

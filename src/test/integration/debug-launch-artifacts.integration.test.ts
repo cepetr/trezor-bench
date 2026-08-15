@@ -5,8 +5,8 @@
  *  - Executable row is rendered for valid, missing, no-match, ambiguous, and manifest-invalid states
  *  - Executable row appears immediately after Compile Commands when no Binary/Map rows are present
  *  - Executable row stays visible (not removed) when executable is missing
- *  - resolveActiveExecutableArtifact reflects correct state when model/target/component changes
- *  - resolveActiveExecutableArtifact reflects correct state when artifactsRoot changes (artifacts-path)
+ *  - resolveExecutableArtifact reflects correct state when model/target/component changes
+ *  - resolveExecutableArtifact reflects correct state when artifactsRoot changes (artifacts-path)
  *  - tbench.startDebugging Command Palette entry uses tbench.startDebuggingEnabled when-clause
  *  - package.json header and overflow menu entries have correct enablement
  *  - package.json Executable row context entry targets artifact-executable contextValue
@@ -18,8 +18,8 @@ import * as fs from "fs";
 import * as os from "os";
 import * as vscode from "vscode";
 import {
-  resolveActiveExecutableArtifact,
-  ActiveExecutableArtifact,
+  resolveExecutableArtifact,
+  ExecutableArtifact,
 } from "../../intellisense/artifact-resolution";
 import {
   ConfigurationTreeModel,
@@ -47,7 +47,7 @@ function makeConfig(modelId: string, targetId = "hw", componentId = "core"): {
   return { modelId, targetId, componentId, persistedAt: "" };
 }
 
-function makeValidArtifact(): import("../../intellisense/intellisense-types").ActiveCompileCommandsArtifact {
+function makeValidArtifact(): import("../../intellisense/intellisense-types").CompileCommandsArtifact {
   return {
     contextKey: "T2T1::hw::core",
     path: "/build/model-t/compile_commands_core.cc.json",
@@ -96,14 +96,14 @@ suite("Debug Launch – Executable row rendering under resolution states", () =>
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  function makeRow(artifact: ActiveExecutableArtifact): ExecutableArtifactItem {
+  function makeRow(artifact: ExecutableArtifact): ExecutableArtifactItem {
     return new ExecutableArtifactItem(artifact);
   }
 
   test("Executable row contextValue is 'artifact-executable'", () => {
     const entry = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
     const manifest = makeExeManifest([entry]);
-    const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const artifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = makeRow(artifact);
     assert.strictEqual(item.contextValue, "artifact-executable");
   });
@@ -115,7 +115,7 @@ suite("Debug Launch – Executable row rendering under resolution states", () =>
       when: { type: "model", id: "T3W1" },
     });
     const manifest = makeExeManifest([entry]);
-    const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const artifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = makeRow(artifact);
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "error");
     assert.strictEqual(item.description, "missing");
@@ -124,14 +124,14 @@ suite("Debug Launch – Executable row rendering under resolution states", () =>
   test("Executable row icon is 'error' when no entry matches (no-match state)", () => {
     const entry = makeComponentDebugProfile({ name: "gdb", template: "a.json", when: { type: "model", id: "T3W1" } });
     const manifest = makeExeManifest([entry]);
-    const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const artifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = makeRow(artifact);
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "error");
   });
 
   test("Executable row icon is 'error' when manifest has debug-blocking issues", () => {
     const manifest = makeDebugLoadedState([], { hasDebugBlockingIssues: true });
-    const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const artifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = makeRow(artifact);
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "error");
   });
@@ -139,7 +139,7 @@ suite("Debug Launch – Executable row rendering under resolution states", () =>
   test("Executable row icon is 'error' when profile matches but executable is missing", () => {
     const entry = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
     const manifest = makeExeManifest([entry]);
-    const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const artifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = makeRow(artifact);
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "error");
   });
@@ -151,7 +151,7 @@ suite("Debug Launch – Executable row rendering under resolution states", () =>
 
     const entry = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
     const manifest = makeExeManifest([entry]);
-    const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const artifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = makeRow(artifact);
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "pass");
   });
@@ -165,12 +165,12 @@ suite("Debug Launch – Executable row rendering under resolution states", () =>
 
     const entry = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
     const manifest = makeExeManifest([entry]);
-    const validArtifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const validArtifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     assert.strictEqual(validArtifact.status, "valid");
 
     // Delete the file → now missing
     fs.unlinkSync(exePath);
-    const missingArtifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const missingArtifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     assert.strictEqual(missingArtifact.status, "missing");
     // Row constructed from missing artifact should still be constructible (always rendered)
     const item = makeRow(missingArtifact);
@@ -194,7 +194,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
     return treeModel.paneRootChildren("build-artifacts");
   }
 
-  function makeExecArtifact(overrides: Partial<ActiveExecutableArtifact> = {}): ActiveExecutableArtifact {
+  function makeExecArtifact(overrides: Partial<ExecutableArtifact> = {}): ExecutableArtifact {
     return {
       contextKey: "T2T1::hw::core",
       profileResolutionState: "selected",
@@ -266,7 +266,7 @@ suite("Debug Launch – Executable availability refresh after context change", (
     const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
-    const before = resolveActiveExecutableArtifact(manifest, config, tmpDir);
+    const before = resolveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(before.status, "missing");
 
     // Simulate artifact creation
@@ -274,7 +274,7 @@ suite("Debug Launch – Executable availability refresh after context change", (
     fs.mkdirSync(exeDir, { recursive: true });
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const after = resolveActiveExecutableArtifact(manifest, config, tmpDir);
+    const after = resolveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(after.status, "valid");
   });
 
@@ -287,10 +287,10 @@ suite("Debug Launch – Executable availability refresh after context change", (
     });
     const manifest = makeExeManifest([entry]);
 
-    const forT2T1 = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const forT2T1 = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     assert.strictEqual(forT2T1.profileResolutionState, "no-match");
 
-    const forT3W1 = resolveActiveExecutableArtifact(manifest, makeConfig("T3W1"), tmpDir);
+    const forT3W1 = resolveExecutableArtifact(manifest, makeConfig("T3W1"), tmpDir);
     // Entry matches but file doesn't exist → selected (missing)
     assert.strictEqual(forT3W1.profileResolutionState, "selected");
   });
@@ -305,11 +305,11 @@ suite("Debug Launch – Executable availability refresh after context change", (
     });
     const manifest = makeExeManifest([entry]); // entry on core component
 
-    const coreResult = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1", "hw", "core"), tmpDir);
+    const coreResult = resolveExecutableArtifact(manifest, makeConfig("T2T1", "hw", "core"), tmpDir);
     assert.strictEqual(coreResult.profileResolutionState, "selected");
 
     // prodtest has no debug entries, so no-match
-    const prodtestResult = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1", "hw", "prodtest"), tmpDir);
+    const prodtestResult = resolveExecutableArtifact(manifest, makeConfig("T2T1", "hw", "prodtest"), tmpDir);
     assert.strictEqual(prodtestResult.profileResolutionState, "no-match");
   });
 
@@ -318,7 +318,7 @@ suite("Debug Launch – Executable availability refresh after context change", (
     const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
-    const emptyRoot = resolveActiveExecutableArtifact(manifest, config, tmpDir);
+    const emptyRoot = resolveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(emptyRoot.status, "missing");
 
     // Create a new artifacts root that contains the executable
@@ -328,7 +328,7 @@ suite("Debug Launch – Executable availability refresh after context change", (
       fs.mkdirSync(exeDir);
       fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-      const withNewRoot = resolveActiveExecutableArtifact(manifest, config, newRoot);
+      const withNewRoot = resolveExecutableArtifact(manifest, config, newRoot);
       assert.strictEqual(withNewRoot.status, "valid");
     } finally {
       fs.rmSync(newRoot, { recursive: true, force: true });

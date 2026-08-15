@@ -2,12 +2,12 @@
  * Integration tests for Debug Launch failure cases.
  *
  * Covers:
- *  - no-match: resolveActiveExecutableArtifact returns no-match state
+ *  - no-match: resolveExecutableArtifact returns no-match state
  *  - missing-executable: executable file absent, executeDebugLaunch returns gracefully
  *  - missing-template: loadDebugTemplate returns "missing" for non-existent template
  *  - malformed-template: loadDebugTemplate returns "invalid" for malformed JSONC
  *  - unresolved-variable: applyTbenchSubstitution reports unknown tbench variables
- *  - ambiguous-profile: resolveActiveExecutableArtifact returns ambiguous state
+ *  - ambiguous-profile: resolveExecutableArtifact returns ambiguous state
  *  - traversal: loadDebugTemplate returns "traversal-blocked" for escaping paths
  *  - unsupported-workspace: tbench.startDebugging completes without throwing
  *  - each blocked executeDebugLaunch call resolves without throwing
@@ -19,7 +19,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as vscode from "vscode";
 import {
-  resolveActiveExecutableArtifact,
+  resolveExecutableArtifact,
 } from "../../intellisense/artifact-resolution";
 import {
   loadDebugTemplate,
@@ -76,7 +76,7 @@ function makeExeManifest(
 // ---------------------------------------------------------------------------
 
 suite("Debug Launch Failures – no-match", () => {
-  test("resolveActiveExecutableArtifact returns no-match when no entry matches the active context", () => {
+  test("resolveExecutableArtifact returns no-match when no entry matches the active context", () => {
     const entry = makeComponentDebugProfile({
       name: "gdb",
       template: "gdb-remote.json",
@@ -85,7 +85,7 @@ suite("Debug Launch Failures – no-match", () => {
     const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1"); // T2T1 does not match
 
-    const result = resolveActiveExecutableArtifact(manifest, config, "/some/root");
+    const result = resolveExecutableArtifact(manifest, config, "/some/root");
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "no-match");
     assert.ok(result.missingReason, "expected a missingReason for no-match");
@@ -120,13 +120,13 @@ suite("Debug Launch Failures – no-match", () => {
 // ---------------------------------------------------------------------------
 
 suite("Debug Launch Failures – first-match-wins", () => {
-  test("resolveActiveExecutableArtifact selects first matching entry in declaration order", () => {
+  test("resolveExecutableArtifact selects first matching entry in declaration order", () => {
     const first = makeComponentDebugProfile({ name: "first", template: "a.json", declarationIndex: 0 });
     const second = makeComponentDebugProfile({ name: "second", template: "b.json", declarationIndex: 1 });
     const manifest = makeExeManifest([first, second]);
     const config = makeConfig("T2T1");
 
-    const result = resolveActiveExecutableArtifact(manifest, config, "/some/root");
+    const result = resolveExecutableArtifact(manifest, config, "/some/root");
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.ok(result.tooltip.length > 0, "expected non-empty tooltip");
@@ -164,12 +164,12 @@ suite("Debug Launch Failures – missing-executable", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  test("resolveActiveExecutableArtifact returns selected+missing when executable is absent", () => {
+  test("resolveExecutableArtifact returns selected+missing when executable is absent", () => {
     const entry = makeComponentDebugProfile({ name: "gdb", template: "gdb-remote.json" });
     const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
-    const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
+    const result = resolveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, false);
@@ -368,9 +368,9 @@ suite("Debug Launch Failures – traversal", () => {
 // ---------------------------------------------------------------------------
 
 suite("Debug Launch Failures – manifest-invalid", () => {
-  test("resolveActiveExecutableArtifact returns manifest-invalid when hasDebugBlockingIssues is true", () => {
+  test("resolveExecutableArtifact returns manifest-invalid when hasDebugBlockingIssues is true", () => {
     const manifest = makeDebugLoadedState([], { hasDebugBlockingIssues: true });
-    const result = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), "/some/root");
+    const result = resolveExecutableArtifact(manifest, makeConfig("T2T1"), "/some/root");
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "manifest-invalid");
   });

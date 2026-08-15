@@ -2,7 +2,7 @@ import * as assert from "assert";
 import * as path from "path";
 import * as vscode from "vscode";
 import {
-  ActiveArtifactFileWatcher,
+  ArtifactFileWatcher,
   FileSystemWatcherLike,
   resolveArtifactWatchScopes,
 } from "../../../intellisense/artifact-file-watcher";
@@ -140,7 +140,7 @@ async function flushMicrotasks(): Promise<void> {
   await Promise.resolve();
 }
 
-suite("ActiveArtifactFileWatcher", () => {
+suite("ArtifactFileWatcher", () => {
   test("resolveArtifactWatchScopes watches the parent of the artifacts root", () => {
     const scopes = resolveArtifactWatchScopes(
       makeManifest(),
@@ -162,7 +162,7 @@ suite("ActiveArtifactFileWatcher", () => {
     const createdWatchers: FakeWatcher[] = [];
     let refreshCount = 0;
 
-    const watcher = new ActiveArtifactFileWatcher(
+    const watcher = new ArtifactFileWatcher(
       () => {
         refreshCount++;
       },
@@ -187,7 +187,7 @@ suite("ActiveArtifactFileWatcher", () => {
     const createdWatchers: FakeWatcher[] = [];
     let refreshCount = 0;
 
-    const watcher = new ActiveArtifactFileWatcher(
+    const watcher = new ArtifactFileWatcher(
       () => {
         refreshCount++;
       },
@@ -211,7 +211,7 @@ suite("ActiveArtifactFileWatcher", () => {
   test("replaces stale watchers when the active config changes", () => {
     const createdWatchers: FakeWatcher[] = [];
 
-    const watcher = new ActiveArtifactFileWatcher(
+    const watcher = new ArtifactFileWatcher(
       () => {
         return;
       },
@@ -239,7 +239,7 @@ suite("ActiveArtifactFileWatcher", () => {
     const createdWatchers: FakeWatcher[] = [];
     let refreshCount = 0;
 
-    const watcher = new ActiveArtifactFileWatcher(
+    const watcher = new ArtifactFileWatcher(
       () => {
         refreshCount++;
       },
@@ -264,7 +264,7 @@ suite("ActiveArtifactFileWatcher", () => {
     const createdWatchers: FakeWatcher[] = [];
     let refreshCount = 0;
 
-    const watcher = new ActiveArtifactFileWatcher(
+    const watcher = new ArtifactFileWatcher(
       () => {
         refreshCount++;
       },

@@ -6,8 +6,8 @@ import * as vscode from "vscode";
 import * as path from "path";
 import { BuildContext, ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
 import { ResolvedOption } from "../build/build-options";
-import { ActiveCompileCommandsArtifact } from "../intellisense/intellisense-types";
-import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../intellisense/artifact-resolution";
+import { CompileCommandsArtifact } from "../intellisense/intellisense-types";
+import { BinaryArtifact, MapArtifact, ExecutableArtifact } from "../intellisense/artifact-resolution";
 import { PresetState } from "../presets/preset-types";
 import { PresetChoice } from "../presets/preset-resolution";
 
@@ -123,7 +123,7 @@ class ArtifactStatusItem extends vscode.TreeItem {
  * Shows `present` or `missing` as description and the expected path as tooltip.
  */
 export class CompileCommandsArtifactItem extends ArtifactStatusItem {
-  constructor(artifact: ActiveCompileCommandsArtifact) {
+  constructor(artifact: CompileCommandsArtifact) {
     super(
       "Compile Commands",
       "compile-commands",
@@ -138,7 +138,7 @@ export class CompileCommandsArtifactItem extends ArtifactStatusItem {
  * contextValue "artifact-binary" enables Flash/Upload row actions via menus.view/item/context.
  */
 export class BinaryArtifactItem extends ArtifactStatusItem {
-  constructor(artifact: ActiveBinaryArtifact) {
+  constructor(artifact: BinaryArtifact) {
     super(
       "Binary",
       "binary",
@@ -153,7 +153,7 @@ export class BinaryArtifactItem extends ArtifactStatusItem {
  * contextValue "artifact-map" enables the openMapFile row action via menus.view/item/context.
  */
 export class MapArtifactItem extends ArtifactStatusItem {
-  constructor(artifact: ActiveMapArtifact) {
+  constructor(artifact: MapArtifact) {
     super(
       "Map File",
       "map",
@@ -171,7 +171,7 @@ export class MapArtifactItem extends ArtifactStatusItem {
  * Start Debugging is invoked only through the inline row action, not by clicking the row.
  */
 export class ExecutableArtifactItem extends ArtifactStatusItem {
-  constructor(artifact: ActiveExecutableArtifact) {
+  constructor(artifact: ExecutableArtifact) {
     super("Executable", "executable", artifact.status, artifact.tooltip);
   }
 }
@@ -383,10 +383,10 @@ export class ConfigurationTreeModel
   private _presetState: PresetState | undefined;
   private _activePresetId: string | undefined;
   private _presetChoices: ReadonlyArray<PresetChoice> = [];
-  private _artifact: ActiveCompileCommandsArtifact | null = null;
-  private _binaryArtifact: ActiveBinaryArtifact | null = null;
-  private _mapArtifact: ActiveMapArtifact | null = null;
-  private _executableArtifact: ActiveExecutableArtifact | null = null;
+  private _artifact: CompileCommandsArtifact | null = null;
+  private _binaryArtifact: BinaryArtifact | null = null;
+  private _mapArtifact: MapArtifact | null = null;
+  private _executableArtifact: ExecutableArtifact | null = null;
 
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<
     vscode.TreeItem | undefined
@@ -452,7 +452,7 @@ export class ConfigurationTreeModel
    * Updates the compile-commands artifact state and refreshes
    * the Build Artifacts section of the tree.
    */
-  updateArtifact(artifact: ActiveCompileCommandsArtifact | null): void {
+  updateArtifact(artifact: CompileCommandsArtifact | null): void {
     this._artifact = artifact;
     this._onDidChangeTreeData.fire(undefined);
     this.firePanes("build-artifacts");
@@ -461,7 +461,7 @@ export class ConfigurationTreeModel
   /**
    * Updates the binary artifact state and refreshes the Build Artifacts section.
    */
-  updateBinaryArtifact(artifact: ActiveBinaryArtifact | null | undefined, _workspaceFolder?: vscode.WorkspaceFolder): void {
+  updateBinaryArtifact(artifact: BinaryArtifact | null | undefined, _workspaceFolder?: vscode.WorkspaceFolder): void {
     this._binaryArtifact = artifact ?? null;
     this._onDidChangeTreeData.fire(undefined);
     this.firePanes("build-artifacts");
@@ -470,7 +470,7 @@ export class ConfigurationTreeModel
   /**
    * Updates the map artifact state and refreshes the Build Artifacts section.
    */
-  updateMapArtifact(artifact: ActiveMapArtifact | null | undefined, _workspaceFolder?: vscode.WorkspaceFolder): void {
+  updateMapArtifact(artifact: MapArtifact | null | undefined, _workspaceFolder?: vscode.WorkspaceFolder): void {
     this._mapArtifact = artifact ?? null;
     this._onDidChangeTreeData.fire(undefined);
     this.firePanes("build-artifacts");
@@ -480,7 +480,7 @@ export class ConfigurationTreeModel
    * Updates the executable artifact state and refreshes the Build Artifacts section.
    * The Executable row is always rendered when this is non-null, regardless of status.
    */
-  updateExecutableArtifact(artifact: ActiveExecutableArtifact | null | undefined): void {
+  updateExecutableArtifact(artifact: ExecutableArtifact | null | undefined): void {
     this._executableArtifact = artifact ?? null;
     this._onDidChangeTreeData.fire(undefined);
     this.firePanes("build-artifacts");

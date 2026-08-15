@@ -2,7 +2,7 @@
  * Status-bar item showing the active build configuration.
  */
 import * as vscode from "vscode";
-import { BuildContext, ManifestState, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
+import { BuildContext, ManifestState, ManifestStateLoaded, findManifestEntries } from "../manifest/manifest-types";
 
 /**
  * Formats the status-bar text for the active build configuration.
@@ -15,7 +15,7 @@ export function formatStatusBarText(
   state: ManifestStateLoaded,
   buildContext: BuildContext
 ): string | undefined {
-  const entries = activeManifestEntries(state, buildContext);
+  const entries = findManifestEntries(state, buildContext);
   if (!entries) {
     return undefined;
   }

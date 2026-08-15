@@ -19,7 +19,7 @@ import {
   formatTaskLabel,
 } from "../commands/build-workflow";
 import { ResolvedOption } from "../build/build-options";
-import { BuildContext, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
+import { BuildContext, ManifestStateLoaded, findManifestEntries } from "../manifest/manifest-types";
 import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 import { createCargoTaskExecution } from "./xtask-execution";
 
@@ -59,7 +59,7 @@ export function resolveWorkflowContext(
   state: ManifestStateLoaded,
   buildContext: BuildContext
 ): WorkflowContext | undefined {
-  const entries = activeManifestEntries(state, buildContext);
+  const entries = findManifestEntries(state, buildContext);
   if (!entries) {
     return undefined;
   }

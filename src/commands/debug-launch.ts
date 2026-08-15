@@ -9,7 +9,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as jsonc from "jsonc-parser";
 import * as vscode from "vscode";
-import { ManifestComponentDebugProfile, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
+import { ManifestComponentDebugProfile, ManifestStateLoaded, findManifestEntries } from "../manifest/manifest-types";
 import { BuildContext } from "../manifest/manifest-types";
 import { evaluateWhenExpression } from "../manifest/when-expressions";
 import { logDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
@@ -484,7 +484,7 @@ export function materializeDebugConfiguration(
   templatesRoot: string,
   profile: ManifestComponentDebugProfile
 ): DebugMaterializationResult {
-  const entries = activeManifestEntries(manifest, buildContext);
+  const entries = findManifestEntries(manifest, buildContext);
   if (!entries) {
     return {
       ok: false,
@@ -672,7 +672,7 @@ export async function executeDebugLaunch(
   }
 
   // 2. Find selected component and target
-  const entries = activeManifestEntries(manifest, buildContext);
+  const entries = findManifestEntries(manifest, buildContext);
   if (!entries) {
     reportDebugLaunchFailure(
       "unknown-build-selection",

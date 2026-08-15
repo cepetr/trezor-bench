@@ -13,7 +13,7 @@
  */
 
 import * as vscode from "vscode";
-import { ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
+import { ManifestStateLoaded, findManifestEntries } from "../manifest/manifest-types";
 import {
   resolveMatchingDebugProfiles,
   materializeDebugConfiguration,
@@ -24,7 +24,7 @@ import {
 } from "../commands/debug-launch";
 
 export { TBENCH_DEBUG_TYPE, labelForDefaultEntry, labelForProfileEntry };
-import { makeContextKey, resolveActiveExecutableArtifact } from "../intellisense/artifact-resolution";
+import { makeContextKey, resolveExecutableArtifact } from "../intellisense/artifact-resolution";
 import { BuildContext } from "../manifest/manifest-types";
 import { logProviderDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
 
@@ -71,7 +71,7 @@ export function generateDebugConfigurations(
     return [];
   }
 
-  const entries = activeManifestEntries(manifest, buildContext);
+  const entries = findManifestEntries(manifest, buildContext);
   if (!entries) {
     return [];
   }
@@ -87,7 +87,7 @@ export function generateDebugConfigurations(
   }
 
   // Check executable artifact existence before generating entries
-  const executableArtifact = resolveActiveExecutableArtifact(manifest, buildContext, artifactsRoot);
+  const executableArtifact = resolveExecutableArtifact(manifest, buildContext, artifactsRoot);
   if (executableArtifact.status !== "valid") {
     return [];
   }

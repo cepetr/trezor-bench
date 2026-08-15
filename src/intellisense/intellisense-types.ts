@@ -34,7 +34,7 @@ export interface ArtifactResolutionInputs {
 export type CompileCommandsStatus = "valid" | "missing";
 
 /** The exact compile database that should back IntelliSense for the active config. */
-export interface ActiveCompileCommandsArtifact {
+export interface CompileCommandsArtifact {
   /** Resolved absolute compile-commands path. */
   readonly path: string;
   /** Whether the file exists on disk. */

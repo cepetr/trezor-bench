@@ -5,7 +5,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { BuildSelection } from "../../build/build-selection";
 import {
-  ActiveArtifactFileWatcher,
+  ArtifactFileWatcher,
   FileSystemWatcherLike,
   resolveArtifactWatchScopes,
 } from "../../intellisense/artifact-file-watcher";
@@ -78,7 +78,7 @@ suite("Artifact file watcher", () => {
 
   test("watches only the expected artifact paths", () => {
     const patterns: vscode.GlobPattern[] = [];
-    const watcher = new ActiveArtifactFileWatcher(
+    const watcher = new ArtifactFileWatcher(
       () => {},
       (pattern) => {
         patterns.push(pattern);
@@ -106,7 +106,7 @@ suite("Artifact file watcher", () => {
     const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-artifacts-"));
     const artifactsRoot = path.join(temporaryRoot, "artifacts");
     let refreshCount = 0;
-    const watcher = new ActiveArtifactFileWatcher(
+    const watcher = new ArtifactFileWatcher(
       () => {
         refreshCount++;
       },

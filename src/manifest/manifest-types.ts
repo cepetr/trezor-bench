@@ -235,7 +235,7 @@ export function loadedManifest(
 }
 
 /** The manifest entries selected by an active build context. */
-export interface ActiveManifestEntries {
+export interface ManifestEntries {
   readonly model: ManifestModel;
   readonly target: ManifestTarget;
   readonly component: ManifestComponent;
@@ -245,10 +245,10 @@ export interface ActiveManifestEntries {
  * Looks up the model, target, and component the active build context selects.
  * Returns `undefined` when any id does not resolve to a manifest entry.
  */
-export function activeManifestEntries(
+export function findManifestEntries(
   manifest: ManifestStateLoaded,
   config: { readonly modelId: string; readonly targetId: string; readonly componentId: string }
-): ActiveManifestEntries | undefined {
+): ManifestEntries | undefined {
   const model = manifest.models.find((m) => m.id === config.modelId);
   const target = manifest.targets.find((t) => t.id === config.targetId);
   const component = manifest.components.find((c) => c.id === config.componentId);

@@ -13,7 +13,7 @@ import {
   deriveArtifactPath,
   deriveBinaryArtifactPath,
   deriveMapArtifactPath,
-  resolveActiveExecutableArtifact,
+  resolveExecutableArtifact,
 } from "./artifact-resolution";
 
 export interface ArtifactWatchScope {
@@ -78,7 +78,7 @@ export function resolveArtifactWatchScopes(
     addWatchPath(scopesByFolder, artifactsRoot, deriveMapArtifactPath(inputs));
   }
 
-  const executableArtifact = resolveActiveExecutableArtifact(
+  const executableArtifact = resolveExecutableArtifact(
     manifest,
     buildContext,
     artifactsRoot
@@ -103,7 +103,7 @@ function buildScopeSignature(scopes: ReadonlyArray<ArtifactWatchScope>): string 
     .join("|");
 }
 
-export class ActiveArtifactFileWatcher implements vscode.Disposable {
+export class ArtifactFileWatcher implements vscode.Disposable {
   private _scopeSignature = "";
   private _watchers: vscode.Disposable[] = [];
   private _watchedFilePaths: string[] = [];

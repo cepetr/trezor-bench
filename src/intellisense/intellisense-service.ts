@@ -5,7 +5,7 @@
  */
 import * as vscode from "vscode";
 import {
-  ActiveCompileCommandsArtifact,
+  CompileCommandsArtifact,
   IntelliSenseProviderReadiness,
   IntelliSenseRuntimeState,
   ProviderPayload,
@@ -13,7 +13,7 @@ import {
 } from "./intellisense-types";
 import {
   buildResolutionInputs,
-  resolveActiveArtifact,
+  resolveCompileCommandsArtifact,
   makeContextKey,
 } from "./artifact-resolution";
 import { checkProviderReadiness, resolveIntelliSenseBackend } from "./intellisense-backend";
@@ -35,7 +35,7 @@ import { errorMessage } from "../util/errors";
 
 /** Called after each completed refresh with the latest artifact and UI state. */
 export type IntelliSenseRefreshCallback = (
-  artifact: ActiveCompileCommandsArtifact | null,
+  artifact: CompileCommandsArtifact | null,
   readiness: IntelliSenseProviderReadiness
 ) => void;
 
@@ -66,7 +66,7 @@ export class IntelliSenseService {
     clearedAt: null,
     providerState: "inactive",
   };
-  private _lastArtifact: ActiveCompileCommandsArtifact | null = null;
+  private _lastArtifact: CompileCommandsArtifact | null = null;
   private _lastReadiness: IntelliSenseProviderReadiness | null = null;
   private _lastPayload: ProviderPayload | null = null;
 
@@ -80,12 +80,12 @@ export class IntelliSenseService {
   private _pendingRefresh: Promise<void> | null = null;
 
   private readonly _onDidRefresh = new vscode.EventEmitter<
-    [ActiveCompileCommandsArtifact | null, IntelliSenseProviderReadiness]
+    [CompileCommandsArtifact | null, IntelliSenseProviderReadiness]
   >();
 
   /** Emitted after each refresh completes with the latest artifact and readiness. */
   readonly onDidRefresh: vscode.Event<
-    [ActiveCompileCommandsArtifact | null, IntelliSenseProviderReadiness]
+    [CompileCommandsArtifact | null, IntelliSenseProviderReadiness]
   > = this._onDidRefresh.event;
 
   private readonly _onDidRefreshPayload = new vscode.EventEmitter<ProviderPayload | null>();
@@ -135,7 +135,7 @@ export class IntelliSenseService {
   // Public state accessors
   // ---------------------------------------------------------------------------
 
-  getLastArtifact(): ActiveCompileCommandsArtifact | null {
+  getLastArtifact(): CompileCommandsArtifact | null {
     return this._lastArtifact;
   }
 
@@ -217,7 +217,7 @@ export class IntelliSenseService {
 
     const inputs = buildResolutionInputs(manifest, buildContext, this._artifactsRoot);
     const artifact = inputs
-      ? resolveActiveArtifact(inputs, buildContext)
+      ? resolveCompileCommandsArtifact(inputs, buildContext)
       : {
           path: "",
           exists: false,

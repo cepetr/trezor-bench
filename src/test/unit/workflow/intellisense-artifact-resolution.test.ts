@@ -4,12 +4,12 @@
  * Covers:
  *  - deriveArtifactPath: constructs correct path from all inputs
  *  - deriveArtifactPath: returns undefined when any required input is missing
- *  - resolveActiveArtifact: returns "missing" status when file does not exist
- *  - resolveActiveArtifact: no-fallback — uses only the exact expected path
+ *  - resolveCompileCommandsArtifact: returns "missing" status when file does not exist
+ *  - resolveCompileCommandsArtifact: no-fallback — uses only the exact expected path
  *  - buildResolutionInputs: correctly extracts artifact fields from manifest
  *  - buildResolutionInputs: returns undefined for unknown model/target/component
- *  - resolveActiveExecutableArtifact: status and profileResolutionState for all blocked cases
- *  - resolveActiveExecutableArtifact: valid status when component entry resolves and file exists
+ *  - resolveExecutableArtifact: status and profileResolutionState for all blocked cases
+ *  - resolveExecutableArtifact: valid status when component entry resolves and file exists
  */
 
 import * as assert from "assert";
@@ -18,10 +18,10 @@ import {
   deriveArtifactPath,
   deriveBinaryArtifactPath,
   deriveMapArtifactPath,
-  resolveActiveArtifact,
-  resolveActiveBinaryArtifact,
-  resolveActiveMapArtifact,
-  resolveActiveExecutableArtifact,
+  resolveCompileCommandsArtifact,
+  resolveBinaryArtifact,
+  resolveMapArtifact,
+  resolveExecutableArtifact,
   buildResolutionInputs,
   makeContextKey,
 } from "../../../intellisense/artifact-resolution";
@@ -128,28 +128,28 @@ suite("deriveArtifactPath", () => {
 });
 
 // ---------------------------------------------------------------------------
-// resolveActiveArtifact — no-fallback (no real files needed for these tests)
+// resolveCompileCommandsArtifact — no-fallback (no real files needed for these tests)
 // ---------------------------------------------------------------------------
 
-suite("resolveActiveArtifact — status and no-fallback", () => {
+suite("resolveCompileCommandsArtifact — status and no-fallback", () => {
   const config = makeBuildSelection();
 
   test("returns missing status when the expected file does not exist", () => {
     const inputs = makeInputs({ artifactsRoot: "/does/not/exist" });
-    const result = resolveActiveArtifact(inputs, config);
+    const result = resolveCompileCommandsArtifact(inputs, config);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.exists, false);
   });
 
   test("includes the expected path in the result even when missing", () => {
     const inputs = makeInputs({ artifactsRoot: "/does/not/exist" });
-    const result = resolveActiveArtifact(inputs, config);
+    const result = resolveCompileCommandsArtifact(inputs, config);
     assert.ok(result.path.endsWith(".cc.json"), `path should end with .cc.json, got: ${result.path}`);
   });
 
   test("reports missing-reason when artifactsRoot is empty (no-fallback: not searching elsewhere)", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveActiveArtifact(inputs, config);
+    const result = resolveCompileCommandsArtifact(inputs, config);
     assert.strictEqual(result.status, "missing");
     assert.ok(
       result.missingReason?.includes("build-artifacts"),
@@ -159,21 +159,21 @@ suite("resolveActiveArtifact — status and no-fallback", () => {
 
   test("reports missing-reason when artifactFolder is missing", () => {
     const inputs = makeInputs({ artifactFolder: undefined });
-    const result = resolveActiveArtifact(inputs, config);
+    const result = resolveCompileCommandsArtifact(inputs, config);
     assert.strictEqual(result.status, "missing");
     assert.ok(result.missingReason?.includes("artifactFolder"), `expected 'artifactFolder' in missingReason, got: ${result.missingReason}`);
   });
 
   test("reports missing-reason when artifactName is missing", () => {
     const inputs = makeInputs({ artifactName: undefined });
-    const result = resolveActiveArtifact(inputs, config);
+    const result = resolveCompileCommandsArtifact(inputs, config);
     assert.strictEqual(result.status, "missing");
     assert.ok(result.missingReason?.includes("artifactName"), `expected 'artifactName' in missingReason, got: ${result.missingReason}`);
   });
 
   test("contextKey includes active model, target, and component", () => {
     const inputs = makeInputs({ artifactsRoot: "/does/not/exist" });
-    const result = resolveActiveArtifact(inputs, config);
+    const result = resolveCompileCommandsArtifact(inputs, config);
     assert.strictEqual(result.contextKey, "T2T1::hw::core");
   });
 });
@@ -266,9 +266,9 @@ suite("artifactsPath change regression", () => {
     assert.strictEqual(inputs?.artifactsRoot, root);
   });
 
-  test("resolveActiveArtifact reflects artifactsRoot in the returned path", () => {
+  test("resolveCompileCommandsArtifact reflects artifactsRoot in the returned path", () => {
     const inputs = makeInputs({ artifactsRoot: "/custom/root" });
-    const result = resolveActiveArtifact(inputs, makeBuildSelection());
+    const result = resolveCompileCommandsArtifact(inputs, makeBuildSelection());
     assert.ok(result.path.startsWith("/custom/root"), `expected path to start with /custom/root, got ${result.path}`);
   });
 });
@@ -393,92 +393,92 @@ suite("deriveMapArtifactPath", () => {
 });
 
 // ---------------------------------------------------------------------------
-// resolveActiveBinaryArtifact
+// resolveBinaryArtifact
 // ---------------------------------------------------------------------------
 
-suite("resolveActiveBinaryArtifact", () => {
+suite("resolveBinaryArtifact", () => {
   test("returns missing status when binary file does not exist on disk", () => {
     const inputs = makeInputs({
       artifactsRoot: "/nonexistent/root",
     });
-    const result = resolveActiveBinaryArtifact(inputs, makeBuildSelection());
+    const result = resolveBinaryArtifact(inputs, makeBuildSelection());
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.exists, false);
   });
 
   test("sets contextKey matching active config", () => {
     const config = makeBuildSelection({ modelId: "T2T1", targetId: "hw", componentId: "core" });
-    const result = resolveActiveBinaryArtifact(makeInputs(), config);
+    const result = resolveBinaryArtifact(makeInputs(), config);
     assert.strictEqual(result.contextKey, "T2T1::hw::core");
   });
 
   test("includes expected path in result", () => {
-    const result = resolveActiveBinaryArtifact(makeInputs(), makeBuildSelection());
+    const result = resolveBinaryArtifact(makeInputs(), makeBuildSelection());
     assert.ok(result.path.endsWith(".bin"), `expected .bin path, got: ${result.path}`);
   });
 
   test("returns missing with missingReason when inputs cannot derive path", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveActiveBinaryArtifact(inputs, makeBuildSelection());
+    const result = resolveBinaryArtifact(inputs, makeBuildSelection());
     assert.strictEqual(result.status, "missing");
     assert.ok(result.missingReason, "expected a missingReason string");
   });
 
   test("path is empty string when inputs cannot derive path", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveActiveBinaryArtifact(inputs, makeBuildSelection());
+    const result = resolveBinaryArtifact(inputs, makeBuildSelection());
     assert.strictEqual(result.path, "");
   });
 });
 
 // ---------------------------------------------------------------------------
-// resolveActiveMapArtifact
+// resolveMapArtifact
 // ---------------------------------------------------------------------------
 
-suite("resolveActiveMapArtifact", () => {
+suite("resolveMapArtifact", () => {
   test("returns missing status when map file does not exist on disk", () => {
     const inputs = makeInputs({
       artifactsRoot: "/nonexistent/root",
     });
-    const result = resolveActiveMapArtifact(inputs, makeBuildSelection());
+    const result = resolveMapArtifact(inputs, makeBuildSelection());
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.exists, false);
   });
 
   test("sets contextKey matching active config", () => {
     const config = makeBuildSelection({ modelId: "T2T1", targetId: "hw", componentId: "core" });
-    const result = resolveActiveMapArtifact(makeInputs(), config);
+    const result = resolveMapArtifact(makeInputs(), config);
     assert.strictEqual(result.contextKey, "T2T1::hw::core");
   });
 
   test("includes expected path in result", () => {
-    const result = resolveActiveMapArtifact(makeInputs(), makeBuildSelection());
+    const result = resolveMapArtifact(makeInputs(), makeBuildSelection());
     assert.ok(result.path.endsWith(".map"), `expected .map path, got: ${result.path}`);
   });
 
   test("returns missing with missingReason when inputs cannot derive path", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveActiveMapArtifact(inputs, makeBuildSelection());
+    const result = resolveMapArtifact(inputs, makeBuildSelection());
     assert.strictEqual(result.status, "missing");
     assert.ok(result.missingReason, "expected a missingReason string");
   });
 
   test("path is empty string when inputs cannot derive path", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveActiveMapArtifact(inputs, makeBuildSelection());
+    const result = resolveMapArtifact(inputs, makeBuildSelection());
     assert.strictEqual(result.path, "");
   });
 });
 
 // ---------------------------------------------------------------------------
-// resolveActiveExecutableArtifact
+// resolveExecutableArtifact
 // ---------------------------------------------------------------------------
 
-suite("resolveActiveExecutableArtifact", () => {
+suite("resolveExecutableArtifact", () => {
   test("returns manifest-invalid state when hasDebugBlockingIssues is true", () => {
     const manifest = makeDebugLoadedState([], { hasDebugBlockingIssues: true });
     const config = makeBuildSelection();
-    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    const result = resolveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "manifest-invalid");
     assert.ok(result.missingReason, "expected a missingReason for manifest-invalid");
@@ -487,7 +487,7 @@ suite("resolveActiveExecutableArtifact", () => {
   test("returns no-match state when component has no debug profiles", () => {
     const manifest = makeDebugLoadedState([]);
     const config = makeBuildSelection();
-    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    const result = resolveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "no-match");
     assert.ok(result.missingReason);
@@ -501,7 +501,7 @@ suite("resolveActiveExecutableArtifact", () => {
     });
     const manifest = makeDebugLoadedState([profile]);
     const config = makeBuildSelection({ modelId: "T2T1" });
-    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    const result = resolveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "no-match");
     assert.ok(result.missingReason);
@@ -517,7 +517,7 @@ suite("resolveActiveExecutableArtifact", () => {
       hasDebugBlockingIssues: false,
     });
     const config = makeBuildSelection();
-    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    const result = resolveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, false);
@@ -541,7 +541,7 @@ suite("resolveActiveExecutableArtifact", () => {
       hasDebugBlockingIssues: false,
     });
     const config = makeBuildSelection();
-    const result = resolveActiveExecutableArtifact(manifest, config, artifactsRoot);
+    const result = resolveExecutableArtifact(manifest, config, artifactsRoot);
     assert.strictEqual(result.status, "valid");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
@@ -559,7 +559,7 @@ suite("resolveActiveExecutableArtifact", () => {
       hasDebugBlockingIssues: false,
     });
     const config = makeBuildSelection();
-    const result = resolveActiveExecutableArtifact(manifest, config, "");
+    const result = resolveExecutableArtifact(manifest, config, "");
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.ok(result.missingReason);
@@ -568,7 +568,7 @@ suite("resolveActiveExecutableArtifact", () => {
   test("contextKey contains modelId, targetId, and componentId", () => {
     const manifest = makeDebugLoadedState([]);
     const config = makeBuildSelection({ modelId: "T2T1", targetId: "hw", componentId: "core" });
-    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    const result = resolveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result.contextKey, "T2T1::hw::core");
   });
 
@@ -578,7 +578,7 @@ suite("resolveActiveExecutableArtifact", () => {
       makeDebugLoadedState([]),
     ];
     for (const manifest of cases) {
-      const result = resolveActiveExecutableArtifact(manifest, makeBuildSelection(), ARTIFACTS_ROOT);
+      const result = resolveExecutableArtifact(manifest, makeBuildSelection(), ARTIFACTS_ROOT);
       assert.ok(result.tooltip.length > 0, `expected non-empty tooltip, got: "${result.tooltip}"`);
     }
   });
@@ -586,7 +586,7 @@ suite("resolveActiveExecutableArtifact", () => {
   test("expectedPath is empty when profile resolution returns no-match", () => {
     const manifest = makeDebugLoadedState([]);
     const config = makeBuildSelection();
-    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    const result = resolveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result.expectedPath, "");
   });
 
@@ -600,7 +600,7 @@ suite("resolveActiveExecutableArtifact", () => {
       hasDebugBlockingIssues: false,
     });
     const config = makeBuildSelection();
-    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    const result = resolveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.ok(result.expectedPath.includes("specific.elf"), `expectedPath should include specific.elf, got: ${result.expectedPath}`);
   });
 });

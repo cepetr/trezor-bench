@@ -17,7 +17,7 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import {
-  resolveActiveExecutableArtifact,
+  resolveExecutableArtifact,
 } from "../../intellisense/artifact-resolution";
 import {
   resolveDebugProfile,
@@ -80,7 +80,7 @@ suite("QS1 – Unique matching profile", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  test("resolveActiveExecutableArtifact returns valid when unique profile matches and executable exists", () => {
+  test("resolveExecutableArtifact returns valid when unique profile matches and executable exists", () => {
     const exeDir = path.join(tmpDir, "model-t");
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
@@ -89,7 +89,7 @@ suite("QS1 – Unique matching profile", () => {
     const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
-    const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
+    const result = resolveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "valid");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
@@ -104,7 +104,7 @@ suite("QS1 – Unique matching profile", () => {
     const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
-    const artifact = resolveActiveExecutableArtifact(manifest, config, tmpDir);
+    const artifact = resolveExecutableArtifact(manifest, config, tmpDir);
     const item = new ExecutableArtifactItem(artifact);
 
     assert.strictEqual(item.description, "present");
@@ -156,13 +156,13 @@ suite("QS2 – First-match-wins selection among multiple matching profiles", () 
     assert.strictEqual(result.selectedProfile?.name, "first");
   });
 
-  test("resolveActiveExecutableArtifact selects first matching profile for executable path", () => {
+  test("resolveExecutableArtifact selects first matching profile for executable path", () => {
     const first = makeComponentDebugProfile({ name: "first", template: "first.json", declarationIndex: 0 });
     const second = makeComponentDebugProfile({ name: "second", template: "second.json", declarationIndex: 1 });
     const manifest = makeExeManifest([first, second]);
     const config = makeConfig("T2T1");
 
-    const result = resolveActiveExecutableArtifact(manifest, config, "/artifacts");
+    const result = resolveExecutableArtifact(manifest, config, "/artifacts");
 
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.ok(
@@ -177,7 +177,7 @@ suite("QS2 – First-match-wins selection among multiple matching profiles", () 
 // ---------------------------------------------------------------------------
 
 suite("QS3 – Unmatched contexts remain discoverable but blocked", () => {
-  test("no-match: resolveActiveExecutableArtifact returns missing with no-match state", () => {
+  test("no-match: resolveExecutableArtifact returns missing with no-match state", () => {
     const entry = makeComponentDebugProfile({
       name: "gdb",
       template: "gdb.json",
@@ -186,7 +186,7 @@ suite("QS3 – Unmatched contexts remain discoverable but blocked", () => {
     const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1"); // T3W1 entry does not match T2T1
 
-    const result = resolveActiveExecutableArtifact(manifest, config, "/artifacts");
+    const result = resolveExecutableArtifact(manifest, config, "/artifacts");
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "no-match");
     assert.ok(result.missingReason, "expected a missingReason for no-match state");
@@ -201,7 +201,7 @@ suite("QS3 – Unmatched contexts remain discoverable but blocked", () => {
     const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
-    const artifact = resolveActiveExecutableArtifact(manifest, config, "/artifacts");
+    const artifact = resolveExecutableArtifact(manifest, config, "/artifacts");
     const item = new ExecutableArtifactItem(artifact);
 
     assert.strictEqual(item.description, "missing");
@@ -251,7 +251,7 @@ suite("QS4 – Executable row explains readiness", () => {
 
     const entry = makeComponentDebugProfile({ name: "gdb", template: "gdb.json" });
     const manifest = makeExeManifest([entry]);
-    const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const artifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = new ExecutableArtifactItem(artifact);
 
     assert.ok(
@@ -263,7 +263,7 @@ suite("QS4 – Executable row explains readiness", () => {
   test("missing state: tooltip includes the missing reason", () => {
     const entry = makeComponentDebugProfile({ name: "gdb", template: "gdb.json" });
     const manifest = makeExeManifest([entry]);
-    const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const artifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = new ExecutableArtifactItem(artifact);
 
     assert.strictEqual(item.description, "missing");
@@ -285,7 +285,7 @@ suite("QS4 – Executable row explains readiness", () => {
       when: { type: "model", id: "T3W1" },
     });
     const manifest = makeExeManifest([entry]);
-    const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const artifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = new ExecutableArtifactItem(artifact);
 
     assert.strictEqual(item.description, "missing");
@@ -311,27 +311,27 @@ suite("QS5 – Template failures at invocation time", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  test("missing template does NOT affect resolveActiveExecutableArtifact — profile remains valid if executable exists", () => {
+  test("missing template does NOT affect resolveExecutableArtifact — profile remains valid if executable exists", () => {
     const exeDir = path.join(tmpDir, "model-t");
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
     const entry = makeComponentDebugProfile({ name: "gdb", template: "missing-template.json" });
     const manifest = makeExeManifest([entry]);
-    const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const artifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
 
     // Template existence does NOT affect enablement
     assert.strictEqual(artifact.status, "valid");
   });
 
-  test("malformed template does NOT affect resolveActiveExecutableArtifact enablement", () => {
+  test("malformed template does NOT affect resolveExecutableArtifact enablement", () => {
     const exeDir = path.join(tmpDir, "model-t");
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
     const entry = makeComponentDebugProfile({ name: "gdb", template: "malformed-template.json" });
     const manifest = makeExeManifest([entry]);
-    const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
+    const artifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
 
     assert.strictEqual(artifact.status, "valid");
   });

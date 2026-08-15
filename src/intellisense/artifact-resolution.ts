@@ -6,9 +6,9 @@ import * as path from "path";
 import * as fs from "fs";
 import {
   ArtifactResolutionInputs,
-  ActiveCompileCommandsArtifact,
+  CompileCommandsArtifact,
 } from "./intellisense-types";
-import { BuildContext, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
+import { BuildContext, ManifestStateLoaded, findManifestEntries } from "../manifest/manifest-types";
 import {
   DebugProfileResolutionState,
   resolveMatchingDebugProfiles,
@@ -44,7 +44,7 @@ export function buildResolutionInputs(
   buildContext: BuildContext,
   artifactsRoot: string
 ): ArtifactResolutionInputs | undefined {
-  const entries = activeManifestEntries(manifest, buildContext);
+  const entries = findManifestEntries(manifest, buildContext);
   if (!entries) {
     return undefined;
   }
@@ -109,7 +109,7 @@ export function deriveMapArtifactPath(inputs: ArtifactResolutionInputs): string 
 export type BinaryArtifactStatus = "valid" | "missing";
 export type MapArtifactStatus = "valid" | "missing";
 
-export interface ActiveBinaryArtifact {
+export interface BinaryArtifact {
   readonly path: string;
   readonly exists: boolean;
   readonly modifiedAt?: Date;
@@ -118,7 +118,7 @@ export interface ActiveBinaryArtifact {
   readonly contextKey: string;
 }
 
-export interface ActiveMapArtifact {
+export interface MapArtifact {
   readonly path: string;
   readonly exists: boolean;
   readonly modifiedAt?: Date;
@@ -197,10 +197,10 @@ function resolveFileArtifact(
  * Resolves the active binary artifact status for the given inputs.
  * Returns `status: "valid"` only when the exact expected `.bin` file exists.
  */
-export function resolveActiveBinaryArtifact(
+export function resolveBinaryArtifact(
   inputs: ArtifactResolutionInputs,
   buildContext: BuildContext
-): ActiveBinaryArtifact {
+): BinaryArtifact {
   return resolveFileArtifact(inputs, buildContext, ".bin", "binary");
 }
 
@@ -208,10 +208,10 @@ export function resolveActiveBinaryArtifact(
  * Resolves the active map artifact status for the given inputs.
  * Returns `status: "valid"` only when the exact expected `.map` file exists.
  */
-export function resolveActiveMapArtifact(
+export function resolveMapArtifact(
   inputs: ArtifactResolutionInputs,
   buildContext: BuildContext
-): ActiveMapArtifact {
+): MapArtifact {
   return resolveFileArtifact(inputs, buildContext, ".map", "map");
 }
 
@@ -227,10 +227,10 @@ export function resolveActiveMapArtifact(
  *   derived (missing fields) or when the file does not exist on disk.
  * - Does not fall back to any other artifact path.
  */
-export function resolveActiveArtifact(
+export function resolveCompileCommandsArtifact(
   inputs: ArtifactResolutionInputs,
   buildContext: BuildContext
-): ActiveCompileCommandsArtifact {
+): CompileCommandsArtifact {
   return resolveFileArtifact(inputs, buildContext, ".cc.json", "compile-commands");
 }
 
@@ -259,7 +259,7 @@ function buildMissingReason(inputs: ArtifactResolutionInputs, label: string): st
 export type ExecutableArtifactStatus = "valid" | "missing";
 
 /** User-visible executable artifact state for the active build context. */
-export interface ActiveExecutableArtifact {
+export interface ExecutableArtifact {
   readonly contextKey: string;
   readonly profileResolutionState: DebugProfileResolutionState | "manifest-invalid";
   readonly expectedPath: string;
@@ -300,11 +300,11 @@ function formatExecutableArtifactTooltip(expectedPath: string, missingReason?: s
  *   debug-blocking validation errors.
  * - Returns `status: "missing"` for all other cases with an explanatory reason.
  */
-export function resolveActiveExecutableArtifact(
+export function resolveExecutableArtifact(
   manifest: ManifestStateLoaded,
   buildContext: BuildContext,
   artifactsRoot: string
-): ActiveExecutableArtifact {
+): ExecutableArtifact {
   const contextKey = makeContextKey(buildContext);
 
   if (manifest.hasDebugBlockingIssues) {

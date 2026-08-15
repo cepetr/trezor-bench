@@ -9,7 +9,7 @@ import * as fs from "fs/promises";
 import * as os from "os";
 import { ManifestService } from "../../manifest/manifest-service";
 import { ManifestState, ManifestStateLoaded } from "../../manifest/manifest-types";
-import { resolveActiveArtifact, buildResolutionInputs, deriveArtifactPath } from "../../intellisense/artifact-resolution";
+import { resolveCompileCommandsArtifact, buildResolutionInputs, deriveArtifactPath } from "../../intellisense/artifact-resolution";
 import { checkProviderReadiness } from "../../intellisense/intellisense-backend";
 import { IntelliSenseService } from "../../intellisense/intellisense-service";
 import { BuildSelection } from "../../build/build-selection";
@@ -170,7 +170,7 @@ function makeBuildSelection(modelId: string, targetId: string, componentId: stri
   return { modelId, targetId, componentId, persistedAt: new Date().toISOString() };
 }
 
-suite("resolveActiveArtifact – filesystem integration", () => {
+suite("resolveCompileCommandsArtifact – filesystem integration", () => {
   let tmpDir: string;
 
   setup(async () => {
@@ -187,7 +187,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs, "expected resolution inputs to resolve");
 
-    const artifact = resolveActiveArtifact(inputs!, config);
+    const artifact = resolveCompileCommandsArtifact(inputs!, config);
     assert.strictEqual(artifact.status, "missing");
     assert.strictEqual(artifact.exists, false);
   });
@@ -204,7 +204,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
     await fs.mkdir(path.dirname(artifactPath), { recursive: true });
     await fs.writeFile(artifactPath, "[]", "utf-8");
 
-    const artifact = resolveActiveArtifact(inputs!, config);
+    const artifact = resolveCompileCommandsArtifact(inputs!, config);
     assert.strictEqual(artifact.status, "valid");
     assert.strictEqual(artifact.exists, true);
     assert.strictEqual(artifact.path, artifactPath);
@@ -217,7 +217,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
     assert.ok(inputs, "expected resolution inputs to resolve");
 
     // First resolve: file absent
-    const before = resolveActiveArtifact(inputs!, config);
+    const before = resolveCompileCommandsArtifact(inputs!, config);
     assert.strictEqual(before.status, "missing");
 
     // Create the file
@@ -227,7 +227,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
     await fs.writeFile(artifactPath, "[]", "utf-8");
 
     // Second resolve: file present
-    const after = resolveActiveArtifact(inputs!, config);
+    const after = resolveCompileCommandsArtifact(inputs!, config);
     assert.strictEqual(after.status, "valid");
   });
 
@@ -267,7 +267,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs);
 
-    const artifact = resolveActiveArtifact(inputs!, config);
+    const artifact = resolveCompileCommandsArtifact(inputs!, config);
     assert.strictEqual(artifact.contextKey, "T2T1::hw::core");
   });
 
@@ -277,7 +277,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs);
 
-    const artifact = resolveActiveArtifact(inputs!, config);
+    const artifact = resolveCompileCommandsArtifact(inputs!, config);
     assert.strictEqual(artifact.status, "missing");
     // missingReason should reference the expected path
     assert.ok(

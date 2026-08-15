@@ -2,8 +2,8 @@
  * Integration tests for Debug Launch.
  *
  * Covers:
- *  - resolveActiveExecutableArtifact returns "valid" when executable exists on disk
- *  - resolveActiveExecutableArtifact returns "selected" profile state for a unique match
+ *  - resolveExecutableArtifact returns "valid" when executable exists on disk
+ *  - resolveExecutableArtifact returns "selected" profile state for a unique match
  *  - loadDebugTemplate loads the valid workspace fixture template successfully
  *  - buildDebugVariableMap + applyTbenchSubstitution produce the expected resolved config
  *  - Non-tbench variables in the template pass through unchanged after substitution
@@ -18,7 +18,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as vscode from "vscode";
 import {
-  resolveActiveExecutableArtifact,
+  resolveExecutableArtifact,
 } from "../../intellisense/artifact-resolution";
 import {
   loadDebugTemplate,
@@ -82,10 +82,10 @@ function makeExeManifest(
 }
 
 // ---------------------------------------------------------------------------
-// Suite: resolveActiveExecutableArtifact filesystem integration
+// Suite: resolveExecutableArtifact filesystem integration
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration", () => {
+suite("Debug Launch – resolveExecutableArtifact filesystem integration", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -105,7 +105,7 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration",
     const manifest = makeExeManifest([entry]);
     const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
 
-    const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
+    const result = resolveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "valid");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
@@ -123,7 +123,7 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration",
     });
     const config = { modelId: "T2T1", targetId: "emu", componentId: "core", persistedAt: "" };
 
-    const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
+    const result = resolveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "valid");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
@@ -135,7 +135,7 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration",
     const manifest = makeExeManifest([entry]);
     const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
 
-    const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
+    const result = resolveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, false);
@@ -150,7 +150,7 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration",
     const manifest = makeExeManifest([entry]);
     const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
 
-    const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
+    const result = resolveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "no-match");
   });
@@ -159,7 +159,7 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration",
     const manifest = makeExeManifest([], { hasDebugBlockingIssues: true });
     const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
 
-    const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
+    const result = resolveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "manifest-invalid");
   });
@@ -170,7 +170,7 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration",
     const manifest = makeExeManifest([first, second]);
     const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
 
-    const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
+    const result = resolveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "missing"); // file doesn't exist yet
     assert.strictEqual(result.profileResolutionState, "selected");
   });
