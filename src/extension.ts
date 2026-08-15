@@ -448,7 +448,7 @@ function updateDebugContext(
   }
 
   const executableArtifact = resolveExecutableArtifact(manifest, buildContext, artifactsRoot);
-  const enabled = executableArtifact.status === "valid";
+  const enabled = executableArtifact.status === "present";
   vscode.commands.executeCommand("setContext", "tbench.startDebuggingEnabled", enabled);
   _treeModel?.updateExecutableArtifact(executableArtifact);
 }

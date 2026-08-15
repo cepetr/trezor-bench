@@ -345,12 +345,12 @@ suite("IntelliSenseService — eager parsing with real compile-commands fixture"
     // In unit-test env cpptools is absent → wrong-provider, payload NOT applied
     // (because readiness.warningState !== "none" → branch takes clearProviderState)
     // The artifact status should be "found" or "missing":
-    // Since the file exists, artifact.status must be "found".
+    // Since the file exists, artifact.status must be "present".
     // NOTE: payload is NOT applied because provider readiness fails in test env.
     assert.strictEqual(
       artifact?.status,
-      "valid",
-      `expected artifact status 'valid', got '${artifact?.status}'`
+      "present",
+      `expected artifact status 'present', got '${artifact?.status}'`
     );
     assert.strictEqual(artifact?.contextKey, "T2T1::hw::core");
     svc.dispose();
@@ -384,7 +384,7 @@ suite("IntelliSenseService — eager parsing with real compile-commands fixture"
     svc.scheduleRefresh("activation");
     await p;
 
-    assert.strictEqual(svc.getLastArtifact()?.status, "valid");
+    assert.strictEqual(svc.getLastArtifact()?.status, "present");
     svc.dispose();
   });
 });
@@ -472,7 +472,7 @@ suite("IntelliSenseService — clangd backend", () => {
     const [artifact, readiness] = await p;
 
     assert.strictEqual(readiness.warningState, "none");
-    assert.strictEqual(artifact?.status, "valid");
+    assert.strictEqual(artifact?.status, "present");
     assert.strictEqual(cpptoolsBackend.payloadsApplied.length, 0);
     assert.strictEqual(clangdBackend.appliedPaths.length, 1);
     assert.strictEqual(clangdBackend.appliedPaths[0], artifact?.path);

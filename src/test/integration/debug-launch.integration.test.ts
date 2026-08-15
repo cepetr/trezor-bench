@@ -2,7 +2,7 @@
  * Integration tests for Debug Launch.
  *
  * Covers:
- *  - resolveExecutableArtifact returns "valid" when executable exists on disk
+ *  - resolveExecutableArtifact returns "present" when executable exists on disk
  *  - resolveExecutableArtifact returns "selected" profile state for a unique match
  *  - loadDebugTemplate loads the valid workspace fixture template successfully
  *  - buildDebugVariableMap + applyTbenchSubstitution produce the expected resolved config
@@ -106,7 +106,7 @@ suite("Debug Launch – resolveExecutableArtifact filesystem integration", () =>
     const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
 
     const result = resolveExecutableArtifact(manifest, config, tmpDir);
-    assert.strictEqual(result.status, "valid");
+    assert.strictEqual(result.status, "present");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
     assert.ok(result.path.endsWith("firmware.elf"));
@@ -124,7 +124,7 @@ suite("Debug Launch – resolveExecutableArtifact filesystem integration", () =>
     const config = { modelId: "T2T1", targetId: "emu", componentId: "core", persistedAt: "" };
 
     const result = resolveExecutableArtifact(manifest, config, tmpDir);
-    assert.strictEqual(result.status, "valid");
+    assert.strictEqual(result.status, "present");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
     assert.ok(result.path.endsWith("firmware_emu.elf"));

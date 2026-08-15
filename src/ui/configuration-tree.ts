@@ -43,7 +43,7 @@ function formatArtifactTooltip(
   status: ArtifactStatus,
   missingReason?: string
 ): string {
-  if (status === "valid") {
+  if (status === "present") {
     return artifactPath;
   }
 
@@ -112,8 +112,8 @@ class ArtifactStatusItem extends vscode.TreeItem {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.id = `artifact:${kind}`;
     this.contextValue = `artifact-${kind}`;
-    this.iconPath = new vscode.ThemeIcon(status === "valid" ? "pass" : "error");
-    this.description = status === "valid" ? "present" : "missing";
+    this.iconPath = new vscode.ThemeIcon(status === "present" ? "pass" : "error");
+    this.description = status;
     this.tooltip = tooltip;
   }
 }

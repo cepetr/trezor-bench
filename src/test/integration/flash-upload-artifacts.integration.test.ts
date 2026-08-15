@@ -20,11 +20,11 @@ import { ResolvedArtifact } from "../../intellisense/intellisense-types";
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeValidBinaryArtifact(): ResolvedArtifact {
+function makePresentBinaryArtifact(): ResolvedArtifact {
   return {
     path: "/build/model-t/firmware_core.bin",
     exists: true,
-    status: "valid",
+    status: "present",
     contextKey: "T2T1::hw::core",
   };
 }
@@ -39,11 +39,11 @@ function makeMissingBinaryArtifact(): ResolvedArtifact {
   };
 }
 
-function makeValidMapArtifact(): ResolvedArtifact {
+function makePresentMapArtifact(): ResolvedArtifact {
   return {
     path: "/build/model-t/firmware_core.map",
     exists: true,
-    status: "valid",
+    status: "present",
     contextKey: "T2T1::hw::core",
   };
 }
@@ -64,7 +64,7 @@ function makeMissingMapArtifact(): ResolvedArtifact {
 
 suite("Flash/Upload artifacts – BinaryArtifactItem", () => {
   test("contextValue is 'artifact-binary' for valid artifact", () => {
-    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    const item = new BinaryArtifactItem(makePresentBinaryArtifact());
     assert.strictEqual(
       item.contextValue,
       "artifact-binary",
@@ -82,12 +82,12 @@ suite("Flash/Upload artifacts – BinaryArtifactItem", () => {
   });
 
   test("id is 'artifact:binary'", () => {
-    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    const item = new BinaryArtifactItem(makePresentBinaryArtifact());
     assert.strictEqual(item.id, "artifact:binary");
   });
 
   test("valid binary shows 'present' description", () => {
-    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    const item = new BinaryArtifactItem(makePresentBinaryArtifact());
     assert.strictEqual(item.description, "present");
   });
 
@@ -111,7 +111,7 @@ suite("Flash/Upload artifacts – BinaryArtifactItem", () => {
 
 suite("Flash/Upload artifacts – MapArtifactItem", () => {
   test("contextValue is 'artifact-map' for valid artifact", () => {
-    const item = new MapArtifactItem(makeValidMapArtifact());
+    const item = new MapArtifactItem(makePresentMapArtifact());
     assert.strictEqual(
       item.contextValue,
       "artifact-map",
@@ -129,12 +129,12 @@ suite("Flash/Upload artifacts – MapArtifactItem", () => {
   });
 
   test("id is 'artifact:map'", () => {
-    const item = new MapArtifactItem(makeValidMapArtifact());
+    const item = new MapArtifactItem(makePresentMapArtifact());
     assert.strictEqual(item.id, "artifact:map");
   });
 
   test("valid map shows 'present' description", () => {
-    const item = new MapArtifactItem(makeValidMapArtifact());
+    const item = new MapArtifactItem(makePresentMapArtifact());
     assert.strictEqual(item.description, "present");
   });
 

@@ -291,11 +291,11 @@ suite("BuildOptionStateItem selectability", () => {
 // CompileCommandsArtifactItem rendering
 // ---------------------------------------------------------------------------
 
-function makeValidCompileCommandsArtifact(overrides: Partial<ResolvedArtifact> = {}): ResolvedArtifact {
+function makePresentCompileCommandsArtifact(overrides: Partial<ResolvedArtifact> = {}): ResolvedArtifact {
   return {
     path: "/build/model-t/compile_commands_core.cc.json",
     exists: true,
-    status: "valid",
+    status: "present",
     contextKey: "T2T1::hw::core",
     ...overrides,
   };
@@ -332,40 +332,40 @@ suite("ArtifactUpdatedItem", () => {
 
 suite("CompileCommandsArtifactItem – label and identity", () => {
   test("label is 'Compile Commands'", () => {
-    const item = new CompileCommandsArtifactItem(makeValidCompileCommandsArtifact());
+    const item = new CompileCommandsArtifactItem(makePresentCompileCommandsArtifact());
     assert.strictEqual(item.label, "Compile Commands");
   });
 
   test("id is 'artifact:compile-commands'", () => {
-    const item = new CompileCommandsArtifactItem(makeValidCompileCommandsArtifact());
+    const item = new CompileCommandsArtifactItem(makePresentCompileCommandsArtifact());
     assert.strictEqual(item.id, "artifact:compile-commands");
   });
 
   test("contextValue is 'artifact-compile-commands'", () => {
-    const item = new CompileCommandsArtifactItem(makeValidCompileCommandsArtifact());
+    const item = new CompileCommandsArtifactItem(makePresentCompileCommandsArtifact());
     assert.strictEqual(item.contextValue, "artifact-compile-commands");
   });
 
   test("collapsibleState is None", () => {
-    const item = new CompileCommandsArtifactItem(makeValidCompileCommandsArtifact());
+    const item = new CompileCommandsArtifactItem(makePresentCompileCommandsArtifact());
     assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.None);
   });
 });
 
 suite("CompileCommandsArtifactItem – valid artifact", () => {
   test("description is 'present'", () => {
-    const item = new CompileCommandsArtifactItem(makeValidCompileCommandsArtifact());
+    const item = new CompileCommandsArtifactItem(makePresentCompileCommandsArtifact());
     assert.strictEqual(item.description, "present");
   });
 
   test("icon is 'pass' theme icon", () => {
-    const item = new CompileCommandsArtifactItem(makeValidCompileCommandsArtifact());
+    const item = new CompileCommandsArtifactItem(makePresentCompileCommandsArtifact());
     assert.ok(item.iconPath instanceof vscode.ThemeIcon);
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "pass");
   });
 
   test("tooltip includes the artifact path", () => {
-    const artifact = makeValidCompileCommandsArtifact({ path: "/build/model-t/compile_commands_core.cc.json" });
+    const artifact = makePresentCompileCommandsArtifact({ path: "/build/model-t/compile_commands_core.cc.json" });
     const item = new CompileCommandsArtifactItem(artifact);
     assert.ok(
       String(item.tooltip).includes("/build/model-t/compile_commands_core.cc.json"),
@@ -414,11 +414,11 @@ suite("CompileCommandsArtifactItem – missing artifact", () => {
 // BinaryArtifactItem rendering
 // ---------------------------------------------------------------------------
 
-function makeValidBinaryArtifact(overrides: Partial<ResolvedArtifact> = {}): ResolvedArtifact {
+function makePresentBinaryArtifact(overrides: Partial<ResolvedArtifact> = {}): ResolvedArtifact {
   return {
     path: "/build/model-t/firmware_core.bin",
     exists: true,
-    status: "valid",
+    status: "present",
     contextKey: "T2T1::hw::core",
     ...overrides,
   };
@@ -437,40 +437,40 @@ function makeMissingBinaryArtifact(overrides: Partial<ResolvedArtifact> = {}): R
 
 suite("BinaryArtifactItem – label and identity", () => {
   test("label is 'Binary'", () => {
-    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    const item = new BinaryArtifactItem(makePresentBinaryArtifact());
     assert.strictEqual(item.label, "Binary");
   });
 
   test("id is 'artifact:binary'", () => {
-    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    const item = new BinaryArtifactItem(makePresentBinaryArtifact());
     assert.strictEqual(item.id, "artifact:binary");
   });
 
   test("contextValue is 'artifact-binary'", () => {
-    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    const item = new BinaryArtifactItem(makePresentBinaryArtifact());
     assert.strictEqual(item.contextValue, "artifact-binary");
   });
 
   test("collapsibleState is None", () => {
-    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    const item = new BinaryArtifactItem(makePresentBinaryArtifact());
     assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.None);
   });
 });
 
 suite("BinaryArtifactItem – valid artifact", () => {
   test("description is 'present'", () => {
-    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    const item = new BinaryArtifactItem(makePresentBinaryArtifact());
     assert.strictEqual(item.description, "present");
   });
 
   test("icon is 'pass' theme icon", () => {
-    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    const item = new BinaryArtifactItem(makePresentBinaryArtifact());
     assert.ok(item.iconPath instanceof vscode.ThemeIcon);
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "pass");
   });
 
   test("tooltip includes the artifact path", () => {
-    const artifact = makeValidBinaryArtifact({ path: "/build/model-t/firmware_core.bin" });
+    const artifact = makePresentBinaryArtifact({ path: "/build/model-t/firmware_core.bin" });
     const item = new BinaryArtifactItem(artifact);
     assert.ok(
       String(item.tooltip).includes("/build/model-t/firmware_core.bin"),
@@ -523,11 +523,11 @@ suite("BinaryArtifactItem – missing artifact", () => {
 // MapArtifactItem rendering
 // ---------------------------------------------------------------------------
 
-function makeValidMapArtifact(overrides: Partial<ResolvedArtifact> = {}): ResolvedArtifact {
+function makePresentMapArtifact(overrides: Partial<ResolvedArtifact> = {}): ResolvedArtifact {
   return {
     path: "/build/model-t/firmware_core.map",
     exists: true,
-    status: "valid",
+    status: "present",
     contextKey: "T2T1::hw::core",
     ...overrides,
   };
@@ -546,40 +546,40 @@ function makeMissingMapArtifact(overrides: Partial<ResolvedArtifact> = {}): Reso
 
 suite("MapArtifactItem – label and identity", () => {
   test("label is 'Map File'", () => {
-    const item = new MapArtifactItem(makeValidMapArtifact());
+    const item = new MapArtifactItem(makePresentMapArtifact());
     assert.strictEqual(item.label, "Map File");
   });
 
   test("id is 'artifact:map'", () => {
-    const item = new MapArtifactItem(makeValidMapArtifact());
+    const item = new MapArtifactItem(makePresentMapArtifact());
     assert.strictEqual(item.id, "artifact:map");
   });
 
   test("contextValue is 'artifact-map'", () => {
-    const item = new MapArtifactItem(makeValidMapArtifact());
+    const item = new MapArtifactItem(makePresentMapArtifact());
     assert.strictEqual(item.contextValue, "artifact-map");
   });
 
   test("collapsibleState is None", () => {
-    const item = new MapArtifactItem(makeValidMapArtifact());
+    const item = new MapArtifactItem(makePresentMapArtifact());
     assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.None);
   });
 });
 
 suite("MapArtifactItem – valid artifact", () => {
   test("description is 'present'", () => {
-    const item = new MapArtifactItem(makeValidMapArtifact());
+    const item = new MapArtifactItem(makePresentMapArtifact());
     assert.strictEqual(item.description, "present");
   });
 
   test("icon is 'pass' theme icon", () => {
-    const item = new MapArtifactItem(makeValidMapArtifact());
+    const item = new MapArtifactItem(makePresentMapArtifact());
     assert.ok(item.iconPath instanceof vscode.ThemeIcon);
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "pass");
   });
 
   test("tooltip includes the artifact path", () => {
-    const artifact = makeValidMapArtifact({ path: "/build/model-t/firmware_core.map" });
+    const artifact = makePresentMapArtifact({ path: "/build/model-t/firmware_core.map" });
     const item = new MapArtifactItem(artifact);
     assert.ok(
       String(item.tooltip).includes("/build/model-t/firmware_core.map"),
@@ -641,38 +641,38 @@ suite("ConfigurationTreeModel – Binary/Map artifact refresh", () => {
 
   test("switching artifact context replaces Binary and Map rows with the new paths", () => {
     treeModel.updateCompileCommandsArtifact(
-      makeValidCompileCommandsArtifact({
+      makePresentCompileCommandsArtifact({
         path: "/build/model-t/compile_commands_core.cc.json",
         contextKey: "T2T1::hw::core",
       })
     );
     treeModel.updateBinaryArtifact(
-      makeValidBinaryArtifact({
+      makePresentBinaryArtifact({
         path: "/build/model-t/firmware_core.bin",
         contextKey: "T2T1::hw::core",
       })
     );
     treeModel.updateMapArtifact(
-      makeValidMapArtifact({
+      makePresentMapArtifact({
         path: "/build/model-t/firmware_core.map",
         contextKey: "T2T1::hw::core",
       })
     );
 
     treeModel.updateCompileCommandsArtifact(
-      makeValidCompileCommandsArtifact({
+      makePresentCompileCommandsArtifact({
         path: "/build/model-t3/compile_commands_boot_emu.cc.json",
         contextKey: "T3W1::emu::bootloader",
       })
     );
     treeModel.updateBinaryArtifact(
-      makeValidBinaryArtifact({
+      makePresentBinaryArtifact({
         path: "/build/model-t3/firmware_boot_emu.bin",
         contextKey: "T3W1::emu::bootloader",
       })
     );
     treeModel.updateMapArtifact(
-      makeValidMapArtifact({
+      makePresentMapArtifact({
         path: "/build/model-t3/firmware_boot_emu.map",
         contextKey: "T3W1::emu::bootloader",
       })
@@ -703,9 +703,9 @@ suite("ConfigurationTreeModel – Binary/Map artifact refresh", () => {
   });
 
   test("clearing Binary and Map artifacts removes stale rows", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
-    treeModel.updateBinaryArtifact(makeValidBinaryArtifact());
-    treeModel.updateMapArtifact(makeValidMapArtifact());
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateBinaryArtifact(makePresentBinaryArtifact());
+    treeModel.updateMapArtifact(makePresentMapArtifact());
 
     treeModel.updateBinaryArtifact(null);
     treeModel.updateMapArtifact(null);
@@ -716,9 +716,9 @@ suite("ConfigurationTreeModel – Binary/Map artifact refresh", () => {
   });
 
   test("prepends the newest artifact modification time as an Updated row", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact({ modifiedAt: new Date("2026-08-12T09:00:00Z") }));
-    treeModel.updateBinaryArtifact(makeValidBinaryArtifact({ modifiedAt: new Date("2026-08-12T11:00:00Z") }));
-    treeModel.updateMapArtifact(makeValidMapArtifact({ modifiedAt: new Date("2026-08-12T10:00:00Z") }));
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact({ modifiedAt: new Date("2026-08-12T09:00:00Z") }));
+    treeModel.updateBinaryArtifact(makePresentBinaryArtifact({ modifiedAt: new Date("2026-08-12T11:00:00Z") }));
+    treeModel.updateMapArtifact(makePresentMapArtifact({ modifiedAt: new Date("2026-08-12T10:00:00Z") }));
 
     const children = getBuildArtifactsChildren();
     const updated = children[0] as ArtifactUpdatedItem;
@@ -741,13 +741,13 @@ suite("ConfigurationTreeModel – Binary/Map artifact refresh", () => {
 // ExecutableArtifactItem rendering
 // ---------------------------------------------------------------------------
 
-function makeValidExecutableArtifact(overrides: Partial<ExecutableArtifact> = {}): ExecutableArtifact {
+function makePresentExecutableArtifact(overrides: Partial<ExecutableArtifact> = {}): ExecutableArtifact {
   return {
     contextKey: "T2T1::hw::core",
     profileResolutionState: "selected",
     path: "/build/model-t/firmware.elf",
     exists: true,
-    status: "valid",
+    status: "present",
     tooltip: "/build/model-t/firmware.elf",
     matchingProfileCount: 1,
     ...overrides,
@@ -770,39 +770,39 @@ function makeMissingExecutableArtifact(overrides: Partial<ExecutableArtifact> = 
 
 suite("ExecutableArtifactItem – label and identity", () => {
   test("label is 'Executable'", () => {
-    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    const item = new ExecutableArtifactItem(makePresentExecutableArtifact());
     assert.strictEqual(item.label, "Executable");
   });
 
   test("id is 'artifact:executable'", () => {
-    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    const item = new ExecutableArtifactItem(makePresentExecutableArtifact());
     assert.strictEqual(item.id, "artifact:executable");
   });
 
   test("contextValue is 'artifact-executable'", () => {
-    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    const item = new ExecutableArtifactItem(makePresentExecutableArtifact());
     assert.strictEqual(item.contextValue, "artifact-executable");
   });
 
   test("collapsibleState is None", () => {
-    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    const item = new ExecutableArtifactItem(makePresentExecutableArtifact());
     assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.None);
   });
 });
 
 suite("ExecutableArtifactItem – valid status rendering", () => {
   test("icon is 'pass' when status is valid", () => {
-    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    const item = new ExecutableArtifactItem(makePresentExecutableArtifact());
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "pass");
   });
 
   test("description is 'present'", () => {
-    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    const item = new ExecutableArtifactItem(makePresentExecutableArtifact());
     assert.strictEqual(item.description, "present");
   });
 
   test("tooltip contains the executable path", () => {
-    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    const item = new ExecutableArtifactItem(makePresentExecutableArtifact());
     assert.ok(
       String(item.tooltip).includes("/build/model-t/firmware.elf"),
       `expected tooltip to include the executable path, got: ${item.tooltip}`
@@ -864,8 +864,8 @@ suite("ConfigurationTreeModel – Executable row", () => {
   }
 
   test("Executable row appears when updateExecutableArtifact is called with valid artifact", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
-    treeModel.updateExecutableArtifact(makeValidExecutableArtifact());
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateExecutableArtifact(makePresentExecutableArtifact());
     const children = getBuildArtifactsChildrenExec();
     assert.ok(
       children.some((c) => c instanceof ExecutableArtifactItem),
@@ -874,7 +874,7 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("Executable row appears even when status is missing", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
     treeModel.updateExecutableArtifact(makeMissingExecutableArtifact());
     const children = getBuildArtifactsChildrenExec();
     assert.ok(
@@ -884,7 +884,7 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("Executable row does not appear when updateExecutableArtifact is not called", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
     const children = getBuildArtifactsChildrenExec();
     assert.ok(
       !children.some((c) => c instanceof ExecutableArtifactItem),
@@ -893,8 +893,8 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("Executable row does not appear after updateExecutableArtifact(null)", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
-    treeModel.updateExecutableArtifact(makeValidExecutableArtifact());
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateExecutableArtifact(makePresentExecutableArtifact());
     treeModel.updateExecutableArtifact(null);
     const children = getBuildArtifactsChildrenExec();
     assert.ok(
@@ -904,10 +904,10 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("Executable row appears after Map File row when Binary and Map are present", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
-    treeModel.updateBinaryArtifact(makeValidBinaryArtifact());
-    treeModel.updateMapArtifact(makeValidMapArtifact());
-    treeModel.updateExecutableArtifact(makeValidExecutableArtifact());
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateBinaryArtifact(makePresentBinaryArtifact());
+    treeModel.updateMapArtifact(makePresentMapArtifact());
+    treeModel.updateExecutableArtifact(makePresentExecutableArtifact());
     const children = getBuildArtifactsChildrenExec();
     const binaryIdx = children.findIndex((c) => c instanceof BinaryArtifactItem);
     const mapIdx = children.findIndex((c) => c instanceof MapArtifactItem);
@@ -918,8 +918,8 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("Executable row appears immediately after Compile Commands when no Binary/Map", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
-    treeModel.updateExecutableArtifact(makeValidExecutableArtifact());
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateExecutableArtifact(makePresentExecutableArtifact());
     const children = getBuildArtifactsChildrenExec();
     const ccIdx = children.findIndex((c) => c instanceof CompileCommandsArtifactItem);
     const execIdx = children.findIndex((c) => c instanceof ExecutableArtifactItem);
@@ -928,8 +928,8 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("clearing Executable artifact removes the row", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
-    treeModel.updateExecutableArtifact(makeValidExecutableArtifact());
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateExecutableArtifact(makePresentExecutableArtifact());
     treeModel.updateExecutableArtifact(null);
     const children = getBuildArtifactsChildrenExec();
     assert.strictEqual(children.length, 1, "only compile-commands row should remain");
@@ -937,8 +937,8 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("Executable row tooltip reflects the tooltip from the artifact", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
-    const artifact = makeValidExecutableArtifact({ tooltip: "/custom/path/to/firmware.elf" });
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    const artifact = makePresentExecutableArtifact({ tooltip: "/custom/path/to/firmware.elf" });
     treeModel.updateExecutableArtifact(artifact);
     const children = getBuildArtifactsChildrenExec();
     const execItem = children.find((c) => c instanceof ExecutableArtifactItem) as ExecutableArtifactItem | undefined;
@@ -1504,8 +1504,8 @@ suite("ConfigurationTreeModel – paneRootChildren('build-artifacts')", () => {
   });
 
   test("evaluated: renders Compile Commands then Binary once both are set", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
-    treeModel.updateBinaryArtifact(makeValidBinaryArtifact());
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateBinaryArtifact(makePresentBinaryArtifact());
     const children = treeModel.paneRootChildren("build-artifacts");
     assert.strictEqual(children.length, 2);
     assert.ok(children[0] instanceof CompileCommandsArtifactItem);
@@ -1549,22 +1549,22 @@ suite("ConfigurationTreeModel – onDidChangePane fan-out", () => {
   });
 
   test("updateCompileCommandsArtifact() signals only build-artifacts", () => {
-    const seen = collectPanes(() => treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact()));
+    const seen = collectPanes(() => treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact()));
     assert.deepStrictEqual(seen, ["build-artifacts"]);
   });
 
   test("updateBinaryArtifact() signals only build-artifacts", () => {
-    const seen = collectPanes(() => treeModel.updateBinaryArtifact(makeValidBinaryArtifact()));
+    const seen = collectPanes(() => treeModel.updateBinaryArtifact(makePresentBinaryArtifact()));
     assert.deepStrictEqual(seen, ["build-artifacts"]);
   });
 
   test("updateMapArtifact() signals only build-artifacts", () => {
-    const seen = collectPanes(() => treeModel.updateMapArtifact(makeValidMapArtifact()));
+    const seen = collectPanes(() => treeModel.updateMapArtifact(makePresentMapArtifact()));
     assert.deepStrictEqual(seen, ["build-artifacts"]);
   });
 
   test("updateExecutableArtifact() signals only build-artifacts", () => {
-    const seen = collectPanes(() => treeModel.updateExecutableArtifact(makeValidExecutableArtifact()));
+    const seen = collectPanes(() => treeModel.updateExecutableArtifact(makePresentExecutableArtifact()));
     assert.deepStrictEqual(seen, ["build-artifacts"]);
   });
 
@@ -1616,7 +1616,7 @@ suite("PaneTreeProvider – root delegation", () => {
   });
 
   test("getChildren(undefined) delegates to the owner's paneRootChildren for build-artifacts", () => {
-    owner.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
+    owner.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
     const facade = new PaneTreeProvider(owner, "build-artifacts");
     assert.deepStrictEqual(facade.getChildren(undefined), owner.paneRootChildren("build-artifacts"));
   });
@@ -1796,7 +1796,7 @@ suite("PaneTreeProvider – change-event relay", () => {
     const sub = facade.onDidChangeTreeData(() => {
       fired++;
     });
-    owner.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
+    owner.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
     sub.dispose();
     assert.strictEqual(fired, 1);
   });
@@ -1895,10 +1895,10 @@ suite("ConfigurationTreeModel – no section rows inside any pane", () => {
     treeModel.update(makeManifestState(), makeBuildSelection(), [resolved(optA), resolved(multi)]);
     treeModel.setExpandedSelector("model");
     treeModel.setExpandedMultistateKey("verbose");
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
-    treeModel.updateBinaryArtifact(makeValidBinaryArtifact());
-    treeModel.updateMapArtifact(makeValidMapArtifact());
-    treeModel.updateExecutableArtifact(makeValidExecutableArtifact());
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateBinaryArtifact(makePresentBinaryArtifact());
+    treeModel.updateMapArtifact(makePresentMapArtifact());
+    treeModel.updateExecutableArtifact(makePresentExecutableArtifact());
 
     for (const paneId of PANE_IDS) {
       for (const row of collectAllRows(treeModel, paneId)) {

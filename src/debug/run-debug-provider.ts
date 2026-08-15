@@ -88,7 +88,7 @@ export function generateDebugConfigurations(
 
   // Check executable artifact existence before generating entries
   const executableArtifact = resolveExecutableArtifact(manifest, buildContext, artifactsRoot);
-  if (executableArtifact.status !== "valid") {
+  if (executableArtifact.status !== "present") {
     return [];
   }
 

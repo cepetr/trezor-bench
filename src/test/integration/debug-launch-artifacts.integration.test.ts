@@ -47,12 +47,12 @@ function makeConfig(modelId: string, targetId = "hw", componentId = "core"): {
   return { modelId, targetId, componentId, persistedAt: "" };
 }
 
-function makeValidCompileCommandsArtifact(): import("../../intellisense/intellisense-types").ResolvedArtifact {
+function makePresentCompileCommandsArtifact(): import("../../intellisense/intellisense-types").ResolvedArtifact {
   return {
     contextKey: "T2T1::hw::core",
     path: "/build/model-t/compile_commands_core.cc.json",
     exists: true,
-    status: "valid",
+    status: "present",
   };
 }
 
@@ -166,7 +166,7 @@ suite("Debug Launch – Executable row rendering under resolution states", () =>
     const entry = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
     const manifest = makeExeManifest([entry]);
     const validArtifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
-    assert.strictEqual(validArtifact.status, "valid");
+    assert.strictEqual(validArtifact.status, "present");
 
     // Delete the file → now missing
     fs.unlinkSync(exePath);
@@ -200,7 +200,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
       profileResolutionState: "selected",
       path: "/build/model-t/firmware.elf",
       exists: true,
-      status: "valid",
+      status: "present",
       tooltip: "/build/model-t/firmware.elf",
       matchingProfileCount: 1,
       ...overrides,
@@ -208,7 +208,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
   }
 
   test("Executable row appears immediately after Compile Commands when no Binary/Map rows", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
     treeModel.updateExecutableArtifact(makeExecArtifact());
 
     const children = getBuildArtifacts();
@@ -219,7 +219,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
   });
 
   test("Executable row is always visible regardless of profile resolution state", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
     treeModel.updateExecutableArtifact(makeExecArtifact({
       status: "missing",
       profileResolutionState: "no-match",
@@ -234,7 +234,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
   });
 
   test("clearing Executable artifact removes the row from the tree", () => {
-    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
+    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
     treeModel.updateExecutableArtifact(makeExecArtifact());
     treeModel.updateExecutableArtifact(null);
 
@@ -275,7 +275,7 @@ suite("Debug Launch – Executable availability refresh after context change", (
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
     const after = resolveExecutableArtifact(manifest, config, tmpDir);
-    assert.strictEqual(after.status, "valid");
+    assert.strictEqual(after.status, "present");
   });
 
   test("status changes when model changes to one matching the entry when-expression", () => {
@@ -329,7 +329,7 @@ suite("Debug Launch – Executable availability refresh after context change", (
       fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
       const withNewRoot = resolveExecutableArtifact(manifest, config, newRoot);
-      assert.strictEqual(withNewRoot.status, "valid");
+      assert.strictEqual(withNewRoot.status, "present");
     } finally {
       fs.rmSync(newRoot, { recursive: true, force: true });
     }

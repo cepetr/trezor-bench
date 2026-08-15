@@ -31,7 +31,7 @@ export interface ArtifactResolutionInputs {
 // Resolved on-disk artifact
 // ---------------------------------------------------------------------------
 
-export type ArtifactStatus = "valid" | "missing";
+export type ArtifactStatus = "present" | "missing";
 
 /**
  * A build artifact resolved for a build context — the shared result shape of

@@ -125,7 +125,7 @@ function readFileModifiedAt(filePath: string): Date | undefined {
 /**
  * Resolves one on-disk artifact's status for the given inputs and extension.
  *
- * - Returns `status: "valid"` only when the exact expected file exists.
+ * - Returns `status: "present"` only when the exact expected file exists.
  * - Returns `status: "missing"` in all other cases: when the path cannot be
  *   derived (missing fields) or when the file does not exist on disk.
  * - Does not fall back to any other artifact path.
@@ -157,7 +157,7 @@ function resolveFileArtifact(
       path: artifactPath,
       exists: true,
       modifiedAt: readFileModifiedAt(artifactPath),
-      status: "valid" as const,
+      status: "present" as const,
       contextKey,
     };
   }
@@ -174,7 +174,7 @@ function resolveFileArtifact(
 
 /**
  * Resolves the active binary artifact status for the given inputs.
- * Returns `status: "valid"` only when the exact expected `.bin` file exists.
+ * Returns `status: "present"` only when the exact expected `.bin` file exists.
  */
 export function resolveBinaryArtifact(
   inputs: ArtifactResolutionInputs,
@@ -185,7 +185,7 @@ export function resolveBinaryArtifact(
 
 /**
  * Resolves the active map artifact status for the given inputs.
- * Returns `status: "valid"` only when the exact expected `.map` file exists.
+ * Returns `status: "present"` only when the exact expected `.map` file exists.
  */
 export function resolveMapArtifact(
   inputs: ArtifactResolutionInputs,
@@ -201,7 +201,7 @@ export function resolveMapArtifact(
 /**
  * Resolves the active compile-commands artifact status for the given inputs.
  *
- * - Returns `status: "valid"` only when the exact expected file exists.
+ * - Returns `status: "present"` only when the exact expected file exists.
  * - Returns `status: "missing"` in all other cases: when the path cannot be
  *   derived (missing fields) or when the file does not exist on disk.
  * - Does not fall back to any other artifact path.
@@ -266,7 +266,7 @@ function formatExecutableArtifactTooltip(expectedPath: string, missingReason?: s
  * Resolves the active executable artifact state for the given manifest, buildContext,
  * and artifacts root.
  *
- * - Returns `status: "valid"` only when the first matching component debug profile
+ * - Returns `status: "present"` only when the first matching component debug profile
  *   is found, its derived executable file exists on disk, and the manifest has no
  *   debug-blocking validation errors.
  * - Returns `status: "missing"` for all other cases with an explanatory reason.
@@ -370,7 +370,7 @@ export function resolveExecutableArtifact(
       path: expectedPath,
       exists: true,
       modifiedAt: readFileModifiedAt(expectedPath),
-      status: "valid",
+      status: "present",
       tooltip: formatExecutableArtifactTooltip(expectedPath),
       matchingProfileCount: matchingSet.profiles.length,
     };

@@ -105,8 +105,8 @@ suite("Map File Action – view/item/context registration", () => {
 // ---------------------------------------------------------------------------
 
 suite("Map File Action – MapArtifactItem row scoping", () => {
-  function makeValidMap(): ResolvedArtifact {
-    return { path: "/build/firmware.map", exists: true, status: "valid", contextKey: "T2T1::hw::core" };
+  function makePresentMap(): ResolvedArtifact {
+    return { path: "/build/firmware.map", exists: true, status: "present", contextKey: "T2T1::hw::core" };
   }
 
   function makeMissingMap(): ResolvedArtifact {
@@ -120,12 +120,12 @@ suite("Map File Action – MapArtifactItem row scoping", () => {
   }
 
   test("MapArtifactItem contextValue is always 'artifact-map'", () => {
-    assert.strictEqual(new MapArtifactItem(makeValidMap()).contextValue, "artifact-map");
+    assert.strictEqual(new MapArtifactItem(makePresentMap()).contextValue, "artifact-map");
     assert.strictEqual(new MapArtifactItem(makeMissingMap()).contextValue, "artifact-map");
   });
 
   test("MapArtifactItem label is 'Map File'", () => {
-    assert.strictEqual(new MapArtifactItem(makeValidMap()).label, "Map File");
+    assert.strictEqual(new MapArtifactItem(makePresentMap()).label, "Map File");
   });
 });
 

@@ -542,7 +542,7 @@ suite("resolveExecutableArtifact", () => {
     });
     const config = makeBuildSelection();
     const result = resolveExecutableArtifact(manifest, config, artifactsRoot);
-    assert.strictEqual(result.status, "valid");
+    assert.strictEqual(result.status, "present");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
     assert.strictEqual(result.path, __filename);

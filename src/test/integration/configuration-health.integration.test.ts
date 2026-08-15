@@ -205,7 +205,7 @@ suite("resolveCompileCommandsArtifact – filesystem integration", () => {
     await fs.writeFile(artifactPath, "[]", "utf-8");
 
     const artifact = resolveCompileCommandsArtifact(inputs!, config);
-    assert.strictEqual(artifact.status, "valid");
+    assert.strictEqual(artifact.status, "present");
     assert.strictEqual(artifact.exists, true);
     assert.strictEqual(artifact.path, artifactPath);
   });
@@ -228,7 +228,7 @@ suite("resolveCompileCommandsArtifact – filesystem integration", () => {
 
     // Second resolve: file present
     const after = resolveCompileCommandsArtifact(inputs!, config);
-    assert.strictEqual(after.status, "valid");
+    assert.strictEqual(after.status, "present");
   });
 
   test("path contains artifactFolder in directory, not model id", async () => {

@@ -90,7 +90,7 @@ suite("QS1 – Unique matching profile", () => {
     const config = makeConfig("T2T1");
 
     const result = resolveExecutableArtifact(manifest, config, tmpDir);
-    assert.strictEqual(result.status, "valid");
+    assert.strictEqual(result.status, "present");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
   });
@@ -321,7 +321,7 @@ suite("QS5 – Template failures at invocation time", () => {
     const artifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
 
     // Template existence does NOT affect enablement
-    assert.strictEqual(artifact.status, "valid");
+    assert.strictEqual(artifact.status, "present");
   });
 
   test("malformed template does NOT affect resolveExecutableArtifact enablement", () => {
@@ -333,7 +333,7 @@ suite("QS5 – Template failures at invocation time", () => {
     const manifest = makeExeManifest([entry]);
     const artifact = resolveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
 
-    assert.strictEqual(artifact.status, "valid");
+    assert.strictEqual(artifact.status, "present");
   });
 
   test("loadDebugTemplate returns missing at invocation time for non-existent template", () => {
