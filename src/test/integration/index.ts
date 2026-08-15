@@ -6,6 +6,11 @@ export function run(): Promise<void> {
   const mocha = new Mocha({
     ui: "tdd",
     timeout: 15000,
+    // Many tests wait on real file-system events and debounce windows;
+    // mocha's default 75ms slow threshold flags them all. Anything under
+    // half this value gets no duration annotation. Suites that legitimately
+    // run for seconds raise their own threshold via this.slow().
+    slow: 500,
     color: true,
   });
 

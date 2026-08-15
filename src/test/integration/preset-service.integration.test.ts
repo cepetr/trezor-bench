@@ -105,7 +105,11 @@ suite("PresetService – load states", () => {
   });
 });
 
-suite("PresetService – watching and reload", () => {
+suite("PresetService – watching and reload", function () {
+  // These tests wait on real watcher events, debounce windows, and poller
+  // ticks; multi-second durations are expected here, not a regression.
+  this.slow(5000);
+
   let tmpDir: string;
 
   setup(async () => {
