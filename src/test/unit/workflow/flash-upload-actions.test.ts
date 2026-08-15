@@ -177,6 +177,7 @@ suite("evaluateArtifactActionPreconditions", () => {
   ): ArtifactActionPreconditionInputs {
     return {
       manifestStatus: "loaded",
+      hasWorkflowBlockingIssues: false,
       workspaceSupported: true,
       activeConfigResolved: true,
       actionApplicable: true,
@@ -208,6 +209,13 @@ suite("evaluateArtifactActionPreconditions", () => {
   test("blocks with manifest-invalid", () => {
     assert.strictEqual(
       evaluateArtifactActionPreconditions(makeInputs({ manifestStatus: "invalid" })),
+      "manifest-invalid"
+    );
+  });
+
+  test("blocks with manifest-invalid for workflow-blocking availability issues", () => {
+    assert.strictEqual(
+      evaluateArtifactActionPreconditions(makeInputs({ hasWorkflowBlockingIssues: true })),
       "manifest-invalid"
     );
   });

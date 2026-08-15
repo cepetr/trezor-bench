@@ -861,6 +861,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const blockReason = evaluateArtifactActionPreconditions({
         workspaceSupported: isWorkflowWorkspaceSupported(),
         manifestStatus: state?.status ?? "missing",
+        hasWorkflowBlockingIssues: loaded?.hasWorkflowBlockingIssues ?? false,
         activeConfigResolved: !!actionCtx,
         actionApplicable: !!(component && evalCtx && isFlashApplicable(component, evalCtx)),
         binaryExists: _binaryArtifact?.exists ?? false,
@@ -896,6 +897,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const blockReason = evaluateArtifactActionPreconditions({
         workspaceSupported: isWorkflowWorkspaceSupported(),
         manifestStatus: state?.status ?? "missing",
+        hasWorkflowBlockingIssues: loaded?.hasWorkflowBlockingIssues ?? false,
         activeConfigResolved: !!actionCtx,
         actionApplicable: !!(component && evalCtx && isUploadApplicable(component, evalCtx)),
         binaryExists: _binaryArtifact?.exists ?? false,

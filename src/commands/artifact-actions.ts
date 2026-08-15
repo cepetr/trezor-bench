@@ -145,6 +145,8 @@ export function formatArtifactTaskLabel(
 /** Inputs to the artifact action precondition check. */
 export interface ArtifactActionPreconditionInputs {
   readonly manifestStatus: ManifestState["status"];
+  /** True when manifest availability-rule validation blocks workflow actions. */
+  readonly hasWorkflowBlockingIssues?: boolean;
   readonly workspaceSupported: boolean;
   /** True when the active configuration resolves to manifest entries. */
   readonly activeConfigResolved?: boolean;
@@ -165,7 +167,7 @@ export function evaluateArtifactActionPreconditions(
   if (inputs.manifestStatus === "missing") {
     return "manifest-missing";
   }
-  if (inputs.manifestStatus === "invalid") {
+  if (inputs.manifestStatus === "invalid" || inputs.hasWorkflowBlockingIssues) {
     return "manifest-invalid";
   }
   if (inputs.activeConfigResolved === false) {
