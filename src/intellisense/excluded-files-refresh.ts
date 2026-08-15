@@ -67,7 +67,7 @@ export async function gatherExcludedFileCandidates(
  * but candidate gathering is async and must not allow an older payload to
  * overwrite a newer snapshot after the await boundary.
  */
-export class ExcludedFilesRefreshCoordinator implements vscode.Disposable {
+export class ExcludedFilesRefresher implements vscode.Disposable {
   private _requestVersion = 0;
   private _lastContextKey = "";
 

@@ -2,7 +2,7 @@ import * as assert from "assert";
 import * as path from "path";
 import * as vscode from "vscode";
 import { ExcludedFilesService, normalizeToForwardSlashes } from "../../../intellisense/excluded-files-service";
-import { ExcludedFilesRefreshCoordinator } from "../../../intellisense/excluded-files-refresh";
+import { ExcludedFilesRefresher } from "../../../intellisense/excluded-files-refresh";
 import { ProviderPayload, ParsedCompileEntry } from "../../../intellisense/intellisense-types";
 import {
   excludedFilesScopeWorkspaceRoot,
@@ -65,7 +65,7 @@ async function flushAsyncWork(): Promise<void> {
   await Promise.resolve();
 }
 
-suite("ExcludedFilesRefreshCoordinator", () => {
+suite("ExcludedFilesRefresher", () => {
   test("drops stale async recompute results when a newer payload arrives", async () => {
     const svc = new ExcludedFilesService();
     const settings = makeExcludedFilesSettings({
@@ -81,7 +81,7 @@ suite("ExcludedFilesRefreshCoordinator", () => {
     const secondCandidates = deferred<ReadonlyArray<vscode.Uri>>();
     let callCount = 0;
 
-    const coordinator = new ExcludedFilesRefreshCoordinator(
+    const refresher = new ExcludedFilesRefresher(
       svc,
       makeWorkspaceFolder(),
       () => settings,
@@ -102,8 +102,8 @@ suite("ExcludedFilesRefreshCoordinator", () => {
       [absPath("core/embed/main.c"), absPath("core/embed/other.c")]
     );
 
-    coordinator.handlePayload(payloadA);
-    coordinator.handlePayload(payloadB);
+    refresher.handlePayload(payloadA);
+    refresher.handlePayload(payloadB);
 
     secondCandidates.resolve(candidateUris);
     await flushAsyncWork();
@@ -119,7 +119,7 @@ suite("ExcludedFilesRefreshCoordinator", () => {
     assert.strictEqual(snapshot.contextKey, "T3W1/hw/core", "older async work must not overwrite the latest context");
     assert.strictEqual(snapshot.excludedFiles.size, 0, "older async work must be dropped instead of restoring stale exclusions");
 
-    coordinator.dispose();
+    refresher.dispose();
     svc.dispose();
   });
 
@@ -135,7 +135,7 @@ suite("ExcludedFilesRefreshCoordinator", () => {
     ];
 
     const pendingCandidates = deferred<ReadonlyArray<vscode.Uri>>();
-    const coordinator = new ExcludedFilesRefreshCoordinator(
+    const refresher = new ExcludedFilesRefresher(
       svc,
       makeWorkspaceFolder(),
       () => settings,
@@ -148,8 +148,8 @@ suite("ExcludedFilesRefreshCoordinator", () => {
       [absPath("core/embed/main.c")]
     );
 
-    coordinator.handlePayload(payload);
-    coordinator.handlePayload(null);
+    refresher.handlePayload(payload);
+    refresher.handlePayload(null);
 
     let snapshot = svc.getSnapshot();
     assert.strictEqual(snapshot.artifactPath, null, "null payload should clear immediately");
@@ -161,7 +161,7 @@ suite("ExcludedFilesRefreshCoordinator", () => {
     assert.strictEqual(snapshot.artifactPath, null, "late async work must not restore a cleared payload");
     assert.strictEqual(snapshot.excludedFiles.size, 0, "late async work must not restore stale exclusions after clear");
 
-    coordinator.dispose();
+    refresher.dispose();
     svc.dispose();
   });
 });

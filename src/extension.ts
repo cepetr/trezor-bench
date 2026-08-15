@@ -78,7 +78,7 @@ import { RefreshTrigger } from "./intellisense/intellisense-types";
 import { applyProviderSettingFix } from "./intellisense/cpptools-backend";
 import { ActiveArtifactFileWatcher } from "./intellisense/artifact-file-watcher";
 import { ExcludedFilesService } from "./intellisense/excluded-files-service";
-import { ExcludedFilesRefreshCoordinator } from "./intellisense/excluded-files-refresh";
+import { ExcludedFilesRefresher } from "./intellisense/excluded-files-refresh";
 import { ExcludedFilesDecorationsProvider } from "./ui/excluded-files-decorations";
 import { ExcludedFilesOverlays } from "./ui/excluded-files-overlays";
 import {
@@ -144,7 +144,7 @@ let _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
 let _intelliSenseService: IntelliSenseService | undefined;
 let _artifactFileWatcher: ActiveArtifactFileWatcher | undefined;
 let _excludedFilesService: ExcludedFilesService | undefined;
-let _excludedFilesRefreshCoordinator: ExcludedFilesRefreshCoordinator | undefined;
+let _excludedFilesRefresher: ExcludedFilesRefresher | undefined;
 let _excludedFilesDecorations: ExcludedFilesDecorationsProvider | undefined;
 let _excludedFilesOverlays: ExcludedFilesOverlays | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
@@ -688,7 +688,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- Excluded-file visibility services: explorer badges and editor overlays. ---
   _excludedFilesService = new ExcludedFilesService();
-  _excludedFilesRefreshCoordinator = new ExcludedFilesRefreshCoordinator(
+  _excludedFilesRefresher = new ExcludedFilesRefresher(
     _excludedFilesService,
     workspaceFolder
   );
@@ -696,7 +696,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   _excludedFilesOverlays = new ExcludedFilesOverlays();
   context.subscriptions.push(
     { dispose: () => { _excludedFilesService?.dispose(); _excludedFilesService = undefined; } },
-    { dispose: () => { _excludedFilesRefreshCoordinator?.dispose(); _excludedFilesRefreshCoordinator = undefined; } },
+    { dispose: () => { _excludedFilesRefresher?.dispose(); _excludedFilesRefresher = undefined; } },
     { dispose: () => { _excludedFilesDecorations?.dispose(); _excludedFilesDecorations = undefined; } },
     { dispose: () => { _excludedFilesOverlays?.dispose(); _excludedFilesOverlays = undefined; } },
     vscode.window.registerFileDecorationProvider(_excludedFilesDecorations)
@@ -720,7 +720,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Connect IntelliSense payload changes → excluded-file recomputation.
   context.subscriptions.push(
     _intelliSenseService.onDidRefreshPayload((payload) => {
-      _excludedFilesRefreshCoordinator?.handlePayload(payload);
+      _excludedFilesRefresher?.handlePayload(payload);
     })
   );
 
@@ -1168,8 +1168,8 @@ export function deactivate(): void {
   _artifactFileWatcher = undefined;
   _excludedFilesService?.dispose();
   _excludedFilesService = undefined;
-  _excludedFilesRefreshCoordinator?.dispose();
-  _excludedFilesRefreshCoordinator = undefined;
+  _excludedFilesRefresher?.dispose();
+  _excludedFilesRefresher = undefined;
   _excludedFilesDecorations?.dispose();
   _excludedFilesDecorations = undefined;
   _excludedFilesOverlays?.dispose();
