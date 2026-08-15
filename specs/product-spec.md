@@ -648,7 +648,7 @@ Among workflow actions, `Build` is treated as the main entry point and the defau
 
 - as the primary action in the Configuration view header
 - in the Configuration view overflow menu
-- in the VS Code Command Palette as `Trezor: Build`
+- in the VS Code Command Palette as `Trezor Bench: Build`
 - through the VS Code task system as a workspace task for the current active build context
 
 When shown through the VS Code task system, the `Build` task uses a context-specific label based on the shared display conventions defined in `Build Context Display Conventions`, with the `Build ` prefix added ahead of the active build-context display.
@@ -706,7 +706,7 @@ Both commands use the same active build context and the same effective build-opt
 They are exposed:
 
 - in the Configuration view overflow menu
-- in the VS Code Command Palette as `Trezor: Run Clippy` and `Trezor: Run Check`
+- in the VS Code Command Palette as `Trezor Bench: Run Clippy` and `Trezor Bench: Run Check`
 - through the VS Code task system as workspace tasks for the current active build context
 
 When shown through the VS Code task system, both tasks use the shared display conventions defined in `Build Context Display Conventions`, with `Clippy ` or `Check ` added ahead of the active build-context display.
@@ -745,7 +745,7 @@ Unlike `Build`, `Clippy`, and `Check`, it is not a context-specific validation o
 `Clean` is exposed in the same secondary workflow surfaces as `Clippy` and `Check`:
 
 - in the Configuration view overflow menu
-- in the VS Code Command Palette as `Trezor: Run Clean`
+- in the VS Code Command Palette as `Trezor Bench: Run Clean`
 - through the VS Code task system as a workspace task
 
 When shown through the VS Code task system, `Clean` is the only workflow task that uses a fixed label rather than a context-specific label. Its task label is simply `Clean`.
@@ -850,7 +850,7 @@ The same extension-managed state also drives tbench-owned entries in VS Code `Ru
 - The `Configuration view` header.
 - The `Configuration view` overflow menu.
 - The `Executable` row in `Build Artifacts` as a row action.
-- The Command Palette as `Trezor: Start Debugging`.
+- The Command Palette as `Trezor Bench: Start Debugging`.
 - VS Code `Run and Debug` as generated tbench-owned debug entries for the active build context.
 
 The Command Palette entry is more restrictive than the visible `Configuration view` actions. It is shown only when debugging is currently startable for the active build context.
@@ -981,7 +981,7 @@ Its purpose is to let the user ask the extension to recompute compile-commands r
 `Refresh IntelliSense` is exposed in secondary command surfaces rather than as a primary workflow action:
 
 - in the Configuration view overflow menu
-- in the VS Code Command Palette as `Trezor: Refresh IntelliSense`
+- in the VS Code Command Palette as `Trezor Bench: Refresh IntelliSense`
 
 It is not exposed as a Configuration view header action, an artifact row action, or a build task.
 
@@ -1029,7 +1029,7 @@ Its purpose is diagnostic rather than workflow-oriented. It gives the user direc
 
 #### Surfaces
 
-`Show Logs` is exposed as the `Trezor: Show Logs` command in the VS Code Command Palette.
+`Show Logs` is exposed as the `Trezor Bench: Show Logs` command in the VS Code Command Palette.
 
 It is not exposed as a Configuration view header action, overflow action, artifact row action, or task.
 
@@ -1278,7 +1278,7 @@ The extension reports problems through several user-facing channels, depending o
 
 Manifest validation errors are surfaced as diagnostics on the manifest file itself and therefore appear in the Problems panel as well as in the manifest editor.
 
-The `Trezor: Show Logs` command described in `Command Surface` opens the log output directly when more detail is needed.
+The `Trezor Bench: Show Logs` command described in `Command Surface` opens the log output directly when more detail is needed.
 
 ## Terminology Reference
 

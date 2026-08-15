@@ -23,18 +23,18 @@ export const TBENCH_DEBUG_TYPE = "tbench";
 
 /**
  * Builds a display label for the default tbench Run and Debug entry.
- * Format: "Trezor"
+ * Format: "Trezor Bench"
  */
 export function labelForDefaultEntry(): string {
-  return "Trezor";
+  return "Trezor Bench";
 }
 
 /**
  * Builds a display label for a profile-specific Run and Debug entry.
- * Format: "Trezor: {profile-name}"
+ * Format: "Trezor Bench: {profile-name}"
  */
 export function labelForProfileEntry(profileName: string): string {
-  return `Trezor: ${profileName}`;
+  return `Trezor Bench: ${profileName}`;
 }
 
 // ---------------------------------------------------------------------------

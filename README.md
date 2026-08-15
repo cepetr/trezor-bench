@@ -91,7 +91,7 @@ Open the `Trezor Bench` activity-bar container and use the `Configuration` view:
 - After a successful build, use `Flash to Device` or `Upload to Device` to send the firmware to hardware when needed.
 - Use `Start Debugging` when the active configuration provides a valid executable and debug support.
 
-The extension can also show the current build context in the status bar and makes key actions available from the Command Palette. It ships no keyboard shortcuts of its own, so you can bind the `Trezor: ...` commands to whatever keys you prefer in `Keyboard Shortcuts`.
+The extension can also show the current build context in the status bar and makes key actions available from the Command Palette. It ships no keyboard shortcuts of its own, so you can bind the `Trezor Bench: ...` commands to whatever keys you prefer in `Keyboard Shortcuts`.
 
 ## Workspace Requirements
 

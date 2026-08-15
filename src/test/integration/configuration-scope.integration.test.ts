@@ -178,7 +178,7 @@ suite("Debug Launch scope boundaries", () => {
     );
   });
 
-  test("tbench.startDebugging has Trezor category and correct title in package.json", () => {
+  test("tbench.startDebugging has Trezor Bench category and correct title in package.json", () => {
     const pkg = getExtPackageJson();
     const commands = (pkg.contributes as { commands?: Array<{ command: string; title: string; category?: string }> } | undefined)
       ?.commands ?? [];
@@ -188,8 +188,8 @@ suite("Debug Launch scope boundaries", () => {
       entry.title.includes("Start Debugging") || entry.title.includes("Debug"),
       `expected debug-related title, got: ${entry.title}`
     );
-    // Verify it appears in the Trezor category
-    assert.strictEqual(entry.category, "Trezor", "startDebugging must use Trezor category");
+    // Verify it appears in the Trezor Bench category
+    assert.strictEqual(entry.category, "Trezor Bench", "startDebugging must use Trezor Bench category");
   });
 
   test("no tbench.debug.* settings are contributed", () => {
@@ -285,7 +285,7 @@ suite("Debug Launch – no launch.json persistence", () => {
     const proxyConfig: vscode.DebugConfiguration = {
       type: TBENCH_DEBUG_TYPE,
       request: "launch",
-      name: "Trezor: test",
+      name: "Trezor Bench: test",
       tbenchMode: "default",
       tbenchProfileId: profile?.id ?? "",
       tbenchContextKey: makeContextKey(config),

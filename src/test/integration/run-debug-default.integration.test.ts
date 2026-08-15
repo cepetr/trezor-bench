@@ -135,7 +135,7 @@ suite("generateDebugConfigurations – default entry", () => {
 
     const expected = labelForDefaultEntry();
     assert.strictEqual(entries[0].name, expected);
-    assert.strictEqual(entries[0].name, "Trezor");
+    assert.strictEqual(entries[0].name, "Trezor Bench");
   });
 
   test("returns empty list when no debug profile matches", () => {
@@ -313,7 +313,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration", () => {
     const proxyConfig: vscode.DebugConfiguration = {
       type: TBENCH_DEBUG_TYPE,
       request: "launch",
-      name: "Trezor: test",
+      name: "Trezor Bench: test",
       tbenchMode: "default",
       tbenchProfileId: profile.id,
       tbenchContextKey: makeContextKey(config),
@@ -351,7 +351,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration", () => {
     const proxyConfig: vscode.DebugConfiguration = {
       type: TBENCH_DEBUG_TYPE,
       request: "launch",
-      name: "Trezor",
+      name: "Trezor Bench",
       tbenchMode: "default",
       tbenchProfileId: profile.id,
       tbenchContextKey: makeContextKey(config),
@@ -386,7 +386,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration", () => {
     const oldProxyConfig: vscode.DebugConfiguration = {
       type: TBENCH_DEBUG_TYPE,
       request: "launch",
-      name: "Trezor: Trezor Model T (v1) | HW | Core",
+      name: "Trezor Bench: Trezor Model T (v1) | HW | Core",
       tbenchMode: "default",
       tbenchProfileId: profile.id,
       tbenchContextKey: makeContextKey(config),
@@ -395,7 +395,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration", () => {
     const resolved = provider.resolveDebugConfiguration(folder, oldProxyConfig, makeCancelToken());
 
     assert.ok(resolved !== undefined, "Resolved config should not be undefined");
-    assert.strictEqual((resolved as vscode.DebugConfiguration).name, "Trezor");
+    assert.strictEqual((resolved as vscode.DebugConfiguration).name, "Trezor Bench");
   });
 
   test("resolving a non-tbench config returns it unchanged", () => {
@@ -440,7 +440,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration", () => {
     const staleProxy: vscode.DebugConfiguration = {
       type: TBENCH_DEBUG_TYPE,
       request: "launch",
-      name: "Trezor: stale",
+      name: "Trezor Bench: stale",
       tbenchMode: "default",
       tbenchProfileId: profile.id,
       tbenchContextKey: "T3W1::hw::core", // stale key

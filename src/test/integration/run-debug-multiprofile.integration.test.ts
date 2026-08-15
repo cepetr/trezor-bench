@@ -306,7 +306,7 @@ suite("TbenchDebugConfigurationProvider – profile-specific resolveDebugConfigu
     const profileProxy: vscode.DebugConfiguration = {
       type: TBENCH_DEBUG_TYPE,
       request: "launch",
-      name: `Trezor: ${secondProfile.name}`,
+      name: `Trezor Bench: ${secondProfile.name}`,
       tbenchMode: "profile",
       tbenchProfileId: secondProfile.id,
       tbenchContextKey: makeContextKey(config),
@@ -369,7 +369,7 @@ suite("TbenchDebugConfigurationProvider – profile-specific resolveDebugConfigu
     const oldProfileProxy: vscode.DebugConfiguration = {
       type: TBENCH_DEBUG_TYPE,
       request: "launch",
-      name: `Trezor: ${secondProfile.name} | T2T1 | HW | Core`,
+      name: `Trezor Bench: ${secondProfile.name} | T2T1 | HW | Core`,
       tbenchMode: "profile",
       tbenchProfileId: secondProfile.id,
       tbenchContextKey: makeContextKey(config),
@@ -398,7 +398,7 @@ suite("TbenchDebugConfigurationProvider – profile-specific resolveDebugConfigu
     const profileProxy: vscode.DebugConfiguration = {
       type: TBENCH_DEBUG_TYPE,
       request: "launch",
-      name: "Trezor: gone",
+      name: "Trezor Bench: gone",
       tbenchMode: "profile",
       tbenchProfileId: "nonexistent:debug[99]",
       tbenchContextKey: makeContextKey(config),
@@ -423,15 +423,15 @@ suite("label helpers – multi-profile labels", () => {
   test("default and profile-specific labels use the tbench prefix", () => {
     const def = labelForDefaultEntry();
     const prof = labelForProfileEntry("MyProfile");
-    assert.strictEqual(def, "Trezor");
-    assert.ok(prof.startsWith("Trezor:"));
+    assert.strictEqual(def, "Trezor Bench");
+    assert.ok(prof.startsWith("Trezor Bench:"));
     assert.ok(prof.includes("MyProfile"));
   });
 
   test("profile label includes only the profile name after the tbench prefix", () => {
     const label = labelForProfileEntry("GDB Remote (T2T1)");
     assert.ok(label.includes("GDB Remote (T2T1)"));
-    assert.strictEqual(label, "Trezor: GDB Remote (T2T1)");
+    assert.strictEqual(label, "Trezor Bench: GDB Remote (T2T1)");
   });
 });
 
@@ -478,7 +478,7 @@ suite("executeDebugLaunch – multi-profile selection", () => {
       assert.strictEqual(pickerShown, false);
       assert.strictEqual(launchCount, 1);
       assert.strictEqual(launchedConfig?.type, TBENCH_DEBUG_TYPE);
-      assert.strictEqual(launchedConfig?.name, "Trezor");
+      assert.strictEqual(launchedConfig?.name, "Trezor Bench");
       assert.strictEqual(launchedConfig?.["tbenchMode"], "default");
     } finally {
       (vscode.window as { showQuickPick: typeof vscode.window.showQuickPick }).showQuickPick = originalShowQuickPick;
@@ -512,7 +512,7 @@ suite("executeDebugLaunch – multi-profile selection", () => {
       assert.strictEqual(pickedLabel, "Profile B");
       assert.ok(launchedConfig, "expected selected profile to be launched");
       assert.strictEqual(launchedConfig?.type, TBENCH_DEBUG_TYPE);
-      assert.strictEqual(launchedConfig?.name, "Trezor: Profile B");
+      assert.strictEqual(launchedConfig?.name, "Trezor Bench: Profile B");
       assert.strictEqual(launchedConfig?.["tbenchMode"], "profile");
     } finally {
       (vscode.window as { showQuickPick: typeof vscode.window.showQuickPick }).showQuickPick = originalShowQuickPick;

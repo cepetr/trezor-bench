@@ -3,6 +3,7 @@
 ## Unreleased
 ### Changed
 - All notification popups now start with a unified `Trezor Bench:`
+- Command-palette entries, Run and Debug entry labels, and setting descriptions now use the `Trezor Bench` prefix instead of `Trezor`.
 ### Fixed
 - Build, Flash, and Upload now explain when the active build context is incomplete or no longer matches the manifest, instead of failing silently.
 - Flash and Upload are now blocked when manifest availability-rule validation errors block workflow actions.

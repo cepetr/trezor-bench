@@ -71,60 +71,60 @@
       {
         "command": "tbench.showLogs",
         "title": "Show Logs",
-        "category": "Trezor"
+        "category": "Trezor Bench"
       },
       {
         "command": "tbench.build",
         "title": "Build",
-        "category": "Trezor",
+        "category": "Trezor Bench",
         "icon": "$(tools)"
       },
       {
         "command": "tbench.clippy",
         "title": "Run Clippy",
-        "category": "Trezor",
+        "category": "Trezor Bench",
         "icon": "$(checklist)"
       },
       {
         "command": "tbench.check",
         "title": "Run Check",
-        "category": "Trezor",
+        "category": "Trezor Bench",
         "icon": "$(check-all)"
       },
       {
         "command": "tbench.clean",
         "title": "Run Clean",
-        "category": "Trezor",
+        "category": "Trezor Bench",
         "icon": "$(trash)"
       },
       {
         "command": "tbench.refreshIntelliSense",
         "title": "Refresh IntelliSense",
-        "category": "Trezor",
+        "category": "Trezor Bench",
         "icon": "$(refresh)"
       },
       {
         "command": "tbench.flash",
         "title": "Flash to Device",
-        "category": "Trezor",
+        "category": "Trezor Bench",
         "icon": "$(zap)"
       },
       {
         "command": "tbench.upload",
         "title": "Upload to Device",
-        "category": "Trezor",
+        "category": "Trezor Bench",
         "icon": "$(arrow-up)"
       },
       {
         "command": "tbench.openMapFile",
         "title": "Open Map File",
-        "category": "Trezor",
+        "category": "Trezor Bench",
         "icon": "$(go-to-file)"
       },
       {
         "command": "tbench.startDebugging",
         "title": "Start Debugging",
-        "category": "Trezor",
+        "category": "Trezor Bench",
         "icon": "$(debug-alt)"
       }
     ],
@@ -244,25 +244,25 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "(Trezor) Extra environment variables merged into the process environment when running tbench tasks (Build, Clippy, Check, Clean, Flash, Upload). Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
+          "description": "(Trezor Bench) Extra environment variables merged into the process environment when running tbench tasks (Build, Clippy, Check, Clean, Flash, Upload). Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
           "scope": "resource"
         },
         "tbench.showConfigurationInStatusBar": {
           "type": "boolean",
           "default": true,
-          "description": "(Trezor) Show the active build configuration in the status bar.",
+          "description": "(Trezor Bench) Show the active build configuration in the status bar.",
           "scope": "resource"
         },
         "tbench.excludedFiles.grayInTree": {
           "type": "boolean",
           "default": true,
-          "description": "(Trezor) Gray excluded files in the Explorer in addition to showing the exclusion badge.",
+          "description": "(Trezor Bench) Gray excluded files in the Explorer in addition to showing the exclusion badge.",
           "scope": "resource"
         },
         "tbench.excludedFiles.showEditorOverlay": {
           "type": "boolean",
           "default": true,
-          "description": "(Trezor) Show a first-line warning overlay in editors for files that are excluded from the active build configuration.",
+          "description": "(Trezor Bench) Show a first-line warning overlay in editors for files that are excluded from the active build configuration.",
           "scope": "resource"
         },
         "tbench.excludedFiles.fileNamePatterns": {
@@ -273,7 +273,7 @@
           "default": [
             "*.c"
           ],
-          "description": "(Trezor) Basename-only glob patterns (name + extension) for files eligible to be marked excluded. Case-sensitive. Subpath globbing is not supported. Excluded-file marking is disabled when this list is empty. Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
+          "description": "(Trezor Bench) Basename-only glob patterns (name + extension) for files eligible to be marked excluded. Case-sensitive. Subpath globbing is not supported. Excluded-file marking is disabled when this list is empty. Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
           "scope": "resource"
         },
         "tbench.excludedFiles.folderGlobs": {
@@ -285,7 +285,7 @@
             "core/embed/**",
             "core/vendor/**"
           ],
-          "description": "(Trezor) Folder glob patterns that scope excluded-file marking. May be absolute paths or paths relative to the workspace root. Use '/' separators. Excluded-file marking is disabled when this list is empty. Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
+          "description": "(Trezor Bench) Folder glob patterns that scope excluded-file marking. May be absolute paths or paths relative to the workspace root. Use '/' separators. Excluded-file marking is disabled when this list is empty. Supports VS Code variable references such as ${workspaceFolder} and ${env:NAME}.",
           "scope": "resource"
         }
       }

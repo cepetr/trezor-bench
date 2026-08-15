@@ -524,14 +524,14 @@ suite("resolveMatchingDebugProfiles", () => {
 // ---------------------------------------------------------------------------
 
 suite("labelForDefaultEntry and labelForProfileEntry", () => {
-  test("labelForDefaultEntry format: Trezor", () => {
+  test("labelForDefaultEntry format: Trezor Bench", () => {
     const label = labelForDefaultEntry();
-    assert.strictEqual(label, "Trezor");
+    assert.strictEqual(label, "Trezor Bench");
   });
 
-  test("labelForProfileEntry format: Trezor: {profile}", () => {
+  test("labelForProfileEntry format: Trezor Bench: {profile}", () => {
     const label = labelForProfileEntry("GDB Remote");
-    assert.strictEqual(label, "Trezor: GDB Remote");
+    assert.strictEqual(label, "Trezor Bench: GDB Remote");
   });
 
   test("different profiles produce distinct labels", () => {
@@ -660,7 +660,7 @@ suite("generateDebugConfigurations – entry set rules", () => {
     );
     assert.ok(profileEntry);
     assert.ok(profileEntry.name.includes("GDB Remote"), `label '${profileEntry.name}' should contain profile name`);
-    assert.ok(profileEntry.name.includes("Trezor:"), `label '${profileEntry.name}' should start with 'Trezor:'`);
+    assert.ok(profileEntry.name.includes("Trezor Bench:"), `label '${profileEntry.name}' should start with 'Trezor Bench:'`);
   });
 
   test("non-matching profiles do not appear as profile-specific entries", () => {
