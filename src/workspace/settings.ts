@@ -1,12 +1,12 @@
 /**
- * Typed accessors for tbench settings and repository-configuration-derived
+ * Typed accessors for tbench settings and repository-config-derived
  * paths (manifest, artifacts, presets, debug templates, excluded files).
  */
 import * as vscode from "vscode";
 import {
   resolveConfigurationVariablesDeep,
 } from "./configuration-variables";
-import { getRepositoryConfiguration } from "./repository-configuration";
+import { getRepositoryConfig } from "./repository-config";
 
 /**
  * Returns the manifest URI for the given workspace folder, resolved from the
@@ -16,7 +16,7 @@ import { getRepositoryConfiguration } from "./repository-configuration";
 export function resolveManifestUri(
   workspaceFolder: vscode.WorkspaceFolder
 ): vscode.Uri {
-  return getRepositoryConfiguration(workspaceFolder).manifestUri;
+  return getRepositoryConfig(workspaceFolder).manifestUri;
 }
 
 /**
@@ -38,7 +38,7 @@ export function isStatusBarEnabled(
 export function resolveCargoWorkspacePath(
   workspaceFolder: vscode.WorkspaceFolder
 ): string {
-  return getRepositoryConfiguration(workspaceFolder).cargoWorkspacePath;
+  return getRepositoryConfig(workspaceFolder).cargoWorkspacePath;
 }
 
 /**
@@ -81,7 +81,7 @@ export function readTaskExtraEnv(
 export function resolveArtifactsPath(
   workspaceFolder: vscode.WorkspaceFolder
 ): string {
-  return getRepositoryConfiguration(workspaceFolder).artifactsPath;
+  return getRepositoryConfig(workspaceFolder).artifactsPath;
 }
 
 // ---------------------------------------------------------------------------
@@ -146,7 +146,7 @@ export function readExcludedFilesSettings(
 export function resolveDebugTemplatesPath(
   workspaceFolder: vscode.WorkspaceFolder
 ): string {
-  return getRepositoryConfiguration(workspaceFolder).debugTemplatesPath;
+  return getRepositoryConfig(workspaceFolder).debugTemplatesPath;
 }
 
 // ---------------------------------------------------------------------------
@@ -164,7 +164,7 @@ export interface PresetUris {
  * by appending `presets.toml` and `user-presets.toml`.
  */
 export function resolvePresetUris(workspaceFolder: vscode.WorkspaceFolder): PresetUris {
-  return getRepositoryConfiguration(workspaceFolder).presetUris;
+  return getRepositoryConfig(workspaceFolder).presetUris;
 }
 
 /**

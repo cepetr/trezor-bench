@@ -7,7 +7,7 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import { resolvePresetUris } from "../../../workspace/settings";
-import { setRepositoryConfiguration } from "../../../workspace/repository-configuration";
+import { setRepositoryConfig } from "../../../workspace/repository-config";
 
 const MOCK_WORKSPACE_FOLDER = {
   uri: vscode.Uri.file("/workspace"),
@@ -17,7 +17,7 @@ const MOCK_WORKSPACE_FOLDER = {
 
 suite("resolvePresetUris", () => {
   teardown(() => {
-    setRepositoryConfiguration(MOCK_WORKSPACE_FOLDER, undefined);
+    setRepositoryConfig(MOCK_WORKSPACE_FOLDER, undefined);
   });
 
   test("resolves both preset URIs from the default repository configuration", () => {
@@ -27,8 +27,8 @@ suite("resolvePresetUris", () => {
   });
 
   test("uses a repository snapshot's direct preset URIs", () => {
-    setRepositoryConfiguration(MOCK_WORKSPACE_FOLDER, {
-      configurationUri: vscode.Uri.file("/workspace/tbench.toml"),
+    setRepositoryConfig(MOCK_WORKSPACE_FOLDER, {
+      configUri: vscode.Uri.file("/workspace/tbench.toml"),
       cargoWorkspacePath: "/workspace/core/embed",
       debugTemplatesPath: "/workspace/core/embed/xtask/tf-tools/debug",
       artifactsPath: "/workspace/core/build-xtask/artifacts",

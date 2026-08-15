@@ -7,10 +7,10 @@ import { ManifestService } from "../../manifest/manifest-service";
 import { PresetService } from "../../presets/preset-service";
 import { createCargoTaskExecution } from "../../tasks/xtask-execution";
 import {
-  loadRepositoryConfiguration,
+  loadRepositoryConfig,
   RepositoryConfigService,
-  setRepositoryConfiguration,
-} from "../../workspace/repository-configuration";
+  setRepositoryConfig,
+} from "../../workspace/repository-config";
 
 const MANIFEST = `
 models:
@@ -56,12 +56,12 @@ suite("Repository configuration integration", () => {
 
   setup(async () => {
     workspacePath = vscode.Uri.file(
-      await fs.mkdtemp(path.join(os.tmpdir(), "tbench-repository-configuration-"))
+      await fs.mkdtemp(path.join(os.tmpdir(), "tbench-repository-config-"))
     ).fsPath;
   });
 
   teardown(async () => {
-    setRepositoryConfiguration(workspaceFolder(workspacePath), undefined);
+    setRepositoryConfig(workspaceFolder(workspacePath), undefined);
     await fs.rm(workspacePath, { recursive: true, force: true });
   });
 
@@ -83,49 +83,49 @@ xtask-presets = "firmware/presets"
     );
 
     const folder = workspaceFolder(workspacePath);
-    const state = await loadRepositoryConfiguration(folder);
+    const state = await loadRepositoryConfig(folder);
     assert.strictEqual(state.status, "loaded");
     if (state.status !== "loaded") {
       return;
     }
-    setRepositoryConfiguration(folder, state.configuration);
+    setRepositoryConfig(folder, state.config);
 
-    const manifestService = new ManifestService(state.configuration.manifestUri);
+    const manifestService = new ManifestService(state.config.manifestUri);
     const manifestState = await manifestService.start();
     manifestService.dispose();
     assert.strictEqual(manifestState.status, "loaded");
 
     const presetService = new PresetService(
-      state.configuration.presetUris.shared,
-      state.configuration.presetUris.user
+      state.config.presetUris.shared,
+      state.config.presetUris.user
     );
     const presetState = await presetService.start();
     presetService.dispose();
     assert.strictEqual(presetState.status, "loaded");
 
-    assert.strictEqual(state.configuration.artifactsPath, path.join(workspacePath, "firmware/artifacts"));
-    assert.strictEqual(state.configuration.debugTemplatesPath, path.join(workspacePath, "firmware/debug/templates"));
+    assert.strictEqual(state.config.artifactsPath, path.join(workspacePath, "firmware/artifacts"));
+    assert.strictEqual(state.config.debugTemplatesPath, path.join(workspacePath, "firmware/debug/templates"));
 
     const execution = createCargoTaskExecution("build", [], folder);
-    assert.strictEqual(execution.options?.cwd, state.configuration.cargoWorkspacePath);
+    assert.strictEqual(execution.options?.cwd, state.config.cargoWorkspacePath);
   });
 
   test("supplies default consumer paths when the configuration file is absent", async () => {
     await fs.mkdir(path.join(workspacePath, "core/embed/xtask"), { recursive: true });
     const folder = workspaceFolder(workspacePath);
-    const state = await loadRepositoryConfiguration(folder);
+    const state = await loadRepositoryConfig(folder);
     assert.strictEqual(state.status, "absent");
     if (state.status !== "absent") {
       return;
     }
 
-    setRepositoryConfiguration(folder, state.configuration);
+    setRepositoryConfig(folder, state.config);
     assert.strictEqual(
-      state.configuration.manifestUri.fsPath,
+      state.config.manifestUri.fsPath,
       path.join(workspacePath, "core/embed/xtask/tf-tools/manifest.yaml")
     );
     assert.strictEqual(
-      state.configuration.presetUris.shared.fsPath,
+      state.config.presetUris.shared.fsPath,
       path.join(workspacePath, "core/embed/xtask/presets.toml")
     );
     assert.strictEqual(
@@ -141,16 +141,16 @@ xtask-presets = "firmware/presets"
       "utf-8"
     );
     const folder = workspaceFolder(workspacePath);
-    const state = await loadRepositoryConfiguration(folder);
+    const state = await loadRepositoryConfig(folder);
     assert.strictEqual(state.status, "loaded");
     if (state.status !== "loaded") {
       return;
     }
 
-    setRepositoryConfiguration(folder, state.configuration);
-    assert.strictEqual(state.configuration.artifactsPath, "");
+    setRepositoryConfig(folder, state.config);
+    assert.strictEqual(state.config.artifactsPath, "");
     assert.strictEqual(
-      state.configuration.debugTemplatesPath,
+      state.config.debugTemplatesPath,
       path.join(workspacePath, "core/embed/xtask/tf-tools/debug")
     );
     assert.strictEqual(createCargoTaskExecution("build", [], folder).options?.cwd, workspacePath);
@@ -162,23 +162,23 @@ xtask-presets = "firmware/presets"
     const initial = await service.start();
     assert.strictEqual(initial.status, "absent");
 
-    const configurationPath = path.join(workspacePath, "tbench.toml");
+    const configPath = path.join(workspacePath, "tbench.toml");
     const created = waitForState(service, "loaded");
-    await fs.writeFile(configurationPath, '[paths]\nmanifest = "firmware/manifest.yaml"', "utf-8");
+    await fs.writeFile(configPath, '[paths]\nmanifest = "firmware/manifest.yaml"', "utf-8");
     await created;
 
     const invalid = waitForState(service, "invalid");
-    await fs.writeFile(configurationPath, "[paths", "utf-8");
+    await fs.writeFile(configPath, "[paths", "utf-8");
     await invalid;
     assert.ok(service.state, "expected the service to retain the latest state");
     assert.strictEqual(service.state?.status, "invalid");
 
     const recovered = waitForState(service, "loaded");
-    await fs.writeFile(configurationPath, '[paths]\ncargo-workspace = "firmware"', "utf-8");
+    await fs.writeFile(configPath, '[paths]\ncargo-workspace = "firmware"', "utf-8");
     await recovered;
 
     const deleted = waitForState(service, "absent");
-    await fs.rm(configurationPath);
+    await fs.rm(configPath);
     await deleted;
     service.dispose();
   });

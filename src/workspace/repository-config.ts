@@ -10,7 +10,7 @@ import { parse as parseToml, TomlError } from "smol-toml";
 import { errorMessage, isFileNotFound } from "../util/errors";
 import { Debouncer } from "../util/debouncer";
 
-export const REPOSITORY_CONFIGURATION_FILE = "tbench.toml";
+export const REPOSITORY_CONFIG_FILE = "tbench.toml";
 
 export const REPOSITORY_PATH_DEFAULTS = {
   cargoWorkspace: "core/embed",
@@ -20,8 +20,8 @@ export const REPOSITORY_PATH_DEFAULTS = {
   presets: "core/embed/xtask",
 } as const;
 
-export interface ResolvedRepositoryConfiguration {
-  readonly configurationUri: vscode.Uri;
+export interface ResolvedRepositoryConfig {
+  readonly configUri: vscode.Uri;
   readonly cargoWorkspacePath: string;
   readonly debugTemplatesPath: string;
   readonly artifactsPath: string;
@@ -32,30 +32,30 @@ export interface ResolvedRepositoryConfiguration {
   };
 }
 
-export interface RepositoryConfigurationIssue {
+export interface RepositoryConfigIssue {
   readonly code: "toml-parse" | "invalid-paths" | "invalid-path" | "read-error";
   readonly message: string;
   readonly range?: vscode.Range;
 }
 
-export type RepositoryConfigurationState =
+export type RepositoryConfigState =
   | {
       readonly status: "absent";
-      readonly configuration: ResolvedRepositoryConfiguration;
+      readonly config: ResolvedRepositoryConfig;
     }
   | {
       readonly status: "loaded";
-      readonly configuration: ResolvedRepositoryConfiguration;
+      readonly config: ResolvedRepositoryConfig;
       readonly loadedAt: Date;
     }
   | {
       readonly status: "invalid";
-      readonly configurationUri: vscode.Uri;
-      readonly validationIssues: ReadonlyArray<RepositoryConfigurationIssue>;
+      readonly configUri: vscode.Uri;
+      readonly validationIssues: ReadonlyArray<RepositoryConfigIssue>;
       readonly loadedAt: Date;
     };
 
-const activeConfigurations = new Map<string, ResolvedRepositoryConfiguration>();
+const activeConfigs = new Map<string, ResolvedRepositoryConfig>();
 
 type RepositoryPathKey = keyof typeof REPOSITORY_PATH_DEFAULTS;
 
@@ -78,10 +78,10 @@ function resolvePath(workspaceFolder: vscode.WorkspaceFolder, value: string): st
   return path.resolve(workspaceFolder.uri.fsPath, value);
 }
 
-function resolveConfiguration(
+function resolveConfig(
   workspaceFolder: vscode.WorkspaceFolder,
   configuredPaths: Readonly<Partial<Record<RepositoryPathKey, string>>>
-): ResolvedRepositoryConfiguration {
+): ResolvedRepositoryConfig {
   const valueFor = (key: RepositoryPathKey): string => {
     const configuredValue = configuredPaths[key];
     if (configuredValue === undefined) {
@@ -100,10 +100,10 @@ function resolveConfiguration(
     return resolvePath(workspaceFolder, value);
   };
 
-  const configurationUri = vscode.Uri.joinPath(workspaceFolder.uri, REPOSITORY_CONFIGURATION_FILE);
+  const configUri = vscode.Uri.joinPath(workspaceFolder.uri, REPOSITORY_CONFIG_FILE);
   const presetsPath = valueFor("presets");
   return {
-    configurationUri,
+    configUri,
     cargoWorkspacePath: valueFor("cargoWorkspace"),
     debugTemplatesPath: valueFor("debugTemplates"),
     artifactsPath: valueFor("buildArtifacts"),
@@ -115,35 +115,35 @@ function resolveConfiguration(
   };
 }
 
-export function setRepositoryConfiguration(
+export function setRepositoryConfig(
   workspaceFolder: vscode.WorkspaceFolder,
-  configuration: ResolvedRepositoryConfiguration | undefined
+  config: ResolvedRepositoryConfig | undefined
 ): void {
-  if (configuration) {
-    activeConfigurations.set(workspaceFolder.uri.fsPath, configuration);
+  if (config) {
+    activeConfigs.set(workspaceFolder.uri.fsPath, config);
   } else {
-    activeConfigurations.delete(workspaceFolder.uri.fsPath);
+    activeConfigs.delete(workspaceFolder.uri.fsPath);
   }
 }
 
-export function getRepositoryConfiguration(
+export function getRepositoryConfig(
   workspaceFolder: vscode.WorkspaceFolder
-): ResolvedRepositoryConfiguration {
-  return activeConfigurations.get(workspaceFolder.uri.fsPath) ??
-    resolveConfiguration(workspaceFolder, {});
+): ResolvedRepositoryConfig {
+  return activeConfigs.get(workspaceFolder.uri.fsPath) ??
+    resolveConfig(workspaceFolder, {});
 }
 
 function issue(
-  code: RepositoryConfigurationIssue["code"],
+  code: RepositoryConfigIssue["code"],
   message: string,
   range?: vscode.Range
-): RepositoryConfigurationIssue {
+): RepositoryConfigIssue {
   return { code, message, range };
 }
 
 function parseConfigurationPaths(source: string):
   | { readonly configuredPaths: Readonly<Partial<Record<RepositoryPathKey, string>>> }
-  | { readonly validationIssues: ReadonlyArray<RepositoryConfigurationIssue> } {
+  | { readonly validationIssues: ReadonlyArray<RepositoryConfigIssue> } {
   let parsed: unknown;
   try {
     parsed = parseToml(source);
@@ -175,8 +175,8 @@ function parseConfigurationPaths(source: string):
   }
 
   const configuredPaths: Partial<Record<RepositoryPathKey, string>> = {};
-  const validationIssues: RepositoryConfigurationIssue[] = [];
-  for (const [tomlKey, configurationKey] of Object.entries(TOML_PATH_KEYS)) {
+  const validationIssues: RepositoryConfigIssue[] = [];
+  for (const [tomlKey, configKey] of Object.entries(TOML_PATH_KEYS)) {
     const value = paths[tomlKey];
     if (value === undefined) {
       continue;
@@ -185,7 +185,7 @@ function parseConfigurationPaths(source: string):
       validationIssues.push(issue("invalid-path", `"paths.${tomlKey}" must be a string.`));
       continue;
     }
-    configuredPaths[configurationKey] = value;
+    configuredPaths[configKey] = value;
   }
 
   return validationIssues.length > 0 ? { validationIssues } : { configuredPaths };
@@ -195,23 +195,23 @@ function parseConfigurationPaths(source: string):
  * Reads the root-level optional `tbench.toml` for one workspace folder.
  * VS Code variables are deliberately not expanded: values are repository data.
  */
-export async function loadRepositoryConfiguration(
+export async function loadRepositoryConfig(
   workspaceFolder: vscode.WorkspaceFolder
-): Promise<RepositoryConfigurationState> {
-  const configurationUri = vscode.Uri.joinPath(workspaceFolder.uri, REPOSITORY_CONFIGURATION_FILE);
+): Promise<RepositoryConfigState> {
+  const configUri = vscode.Uri.joinPath(workspaceFolder.uri, REPOSITORY_CONFIG_FILE);
   let source: string;
   try {
-    source = await fs.readFile(configurationUri.fsPath, "utf-8");
+    source = await fs.readFile(configUri.fsPath, "utf-8");
   } catch (error) {
     if (isFileNotFound(error)) {
       return {
         status: "absent",
-        configuration: resolveConfiguration(workspaceFolder, {}),
+        config: resolveConfig(workspaceFolder, {}),
       };
     }
     return {
       status: "invalid",
-      configurationUri,
+      configUri,
       validationIssues: [
         issue("read-error", `Could not read repository configuration: ${errorMessage(error)}`),
       ],
@@ -223,7 +223,7 @@ export async function loadRepositoryConfiguration(
   if ("validationIssues" in parsed) {
     return {
       status: "invalid",
-      configurationUri,
+      configUri,
       validationIssues: parsed.validationIssues,
       loadedAt: new Date(),
     };
@@ -231,51 +231,51 @@ export async function loadRepositoryConfiguration(
 
   return {
     status: "loaded",
-    configuration: resolveConfiguration(workspaceFolder, parsed.configuredPaths),
+    config: resolveConfig(workspaceFolder, parsed.configuredPaths),
     loadedAt: new Date(),
   };
 }
 
 export class RepositoryConfigService implements vscode.Disposable {
-  private readonly onDidChangeStateEmitter = new vscode.EventEmitter<RepositoryConfigurationState>();
+  private readonly onDidChangeStateEmitter = new vscode.EventEmitter<RepositoryConfigState>();
   private readonly watcher: fsNative.FSWatcher;
-  private readonly configurationPath: string;
+  private readonly configPath: string;
   private readonly debouncer = new Debouncer(100, () => {
     void this.reload();
   });
-  private currentState: RepositoryConfigurationState | undefined;
+  private currentState: RepositoryConfigState | undefined;
 
   readonly onDidChangeState = this.onDidChangeStateEmitter.event;
 
   constructor(private readonly workspaceFolder: vscode.WorkspaceFolder) {
-    this.configurationPath = path.join(workspaceFolder.uri.fsPath, REPOSITORY_CONFIGURATION_FILE);
+    this.configPath = path.join(workspaceFolder.uri.fsPath, REPOSITORY_CONFIG_FILE);
     this.watcher = fsNative.watch(workspaceFolder.uri.fsPath, (_event, fileName) => {
-      if (fileName?.toString() === REPOSITORY_CONFIGURATION_FILE) {
+      if (fileName?.toString() === REPOSITORY_CONFIG_FILE) {
         this.debouncer.schedule();
       }
     });
-    fsNative.watchFile(this.configurationPath, { interval: 100, persistent: false }, () => {
+    fsNative.watchFile(this.configPath, { interval: 100, persistent: false }, () => {
       this.debouncer.schedule();
     });
   }
 
-  get state(): RepositoryConfigurationState | undefined {
+  get state(): RepositoryConfigState | undefined {
     return this.currentState;
   }
 
-  async start(): Promise<RepositoryConfigurationState> {
+  async start(): Promise<RepositoryConfigState> {
     return this.reload();
   }
 
   dispose(): void {
     this.debouncer.dispose();
     this.watcher.close();
-    fsNative.unwatchFile(this.configurationPath);
+    fsNative.unwatchFile(this.configPath);
     this.onDidChangeStateEmitter.dispose();
   }
 
-  private async reload(): Promise<RepositoryConfigurationState> {
-    const state = await loadRepositoryConfiguration(this.workspaceFolder);
+  private async reload(): Promise<RepositoryConfigState> {
+    const state = await loadRepositoryConfig(this.workspaceFolder);
     this.currentState = state;
     this.onDidChangeStateEmitter.fire(state);
     return state;

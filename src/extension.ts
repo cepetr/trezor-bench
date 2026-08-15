@@ -6,7 +6,7 @@
 import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder, isWorkflowWorkspaceSupported } from "./workspace/workspace-guard";
 import { resolveManifestUri, isStatusBarEnabled, resolveArtifactsPath, resolveDebugTemplatesPath, resolvePresetUris } from "./workspace/settings";
-import { RepositoryConfigService, loadRepositoryConfiguration, setRepositoryConfiguration } from "./workspace/repository-configuration";
+import { RepositoryConfigService, loadRepositoryConfig, setRepositoryConfig } from "./workspace/repository-config";
 import { ManifestService } from "./manifest/manifest-service";
 import { PresetService } from "./presets/preset-service";
 import { PresetState } from "./presets/preset-types";
@@ -32,7 +32,7 @@ import {
   logPresetNormalization,
   logOverridesPrunedForPreset,
   logOverridesPrunedForContext,
-  logRepositoryConfigurationState,
+  logRepositoryConfigState,
   notifyWarning,
   notifyError,
 } from "./observability/log-channel";
@@ -40,7 +40,7 @@ import {
   disposeDiagnostics,
   handleManifestStateDiagnostics,
   handlePresetStateDiagnostics,
-  handleRepositoryConfigurationDiagnostics,
+  handleRepositoryConfigDiagnostics,
 } from "./observability/diagnostics";
 import {
   restoreActiveConfig,
@@ -610,9 +610,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   const workspaceFolder = requireWorkspaceFolder();
-  const repositoryConfigurationState = await loadRepositoryConfiguration(workspaceFolder);
-  if (repositoryConfigurationState.status !== "invalid") {
-    setRepositoryConfiguration(workspaceFolder, repositoryConfigurationState.configuration);
+  const repositoryConfigState = await loadRepositoryConfig(workspaceFolder);
+  if (repositoryConfigState.status !== "invalid") {
+    setRepositoryConfig(workspaceFolder, repositoryConfigState.config);
   }
   const manifestUri = resolveManifestUri(workspaceFolder);
   const refreshArtifactFileWatcher = (): void => {
@@ -1082,16 +1082,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const repositoryConfigService = new RepositoryConfigService(workspaceFolder);
   context.subscriptions.push(repositoryConfigService);
-  let repositoryConfigurationWasInvalid = false;
-  const applyRepositoryConfigurationState = async (): Promise<void> => {
+  let repositoryConfigWasInvalid = false;
+  const applyRepositoryConfigState = async (): Promise<void> => {
     const state = repositoryConfigService.state;
     if (!state) {
       return;
     }
-    handleRepositoryConfigurationDiagnostics(state);
-    logRepositoryConfigurationState(state);
+    handleRepositoryConfigDiagnostics(state);
+    logRepositoryConfigState(state);
     if (state.status === "invalid") {
-      setRepositoryConfiguration(workspaceFolder, undefined);
+      setRepositoryConfig(workspaceFolder, undefined);
       _manifestStateSubscription?.dispose();
       _presetStateSubscription?.dispose();
       _manifestService?.dispose();
@@ -1106,22 +1106,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _intelliSenseService?.setActiveConfig(undefined);
       _intelliSenseService?.setArtifactsRoot("");
       void vscode.commands.executeCommand("setContext", "tbench.workflowBlocked", true);
-      if (!repositoryConfigurationWasInvalid) {
-        repositoryConfigurationWasInvalid = true;
+      if (!repositoryConfigWasInvalid) {
+        repositoryConfigWasInvalid = true;
         notifyError("tbench.toml is invalid. Check the Problems view.");
       }
       return;
     }
 
-    repositoryConfigurationWasInvalid = false;
-    setRepositoryConfiguration(workspaceFolder, state.configuration);
-    _intelliSenseService?.setArtifactsRoot(state.configuration.artifactsPath);
+    repositoryConfigWasInvalid = false;
+    setRepositoryConfig(workspaceFolder, state.config);
+    _intelliSenseService?.setArtifactsRoot(state.config.artifactsPath);
     _manifestStateSubscription?.dispose();
     _presetStateSubscription?.dispose();
     _manifestService?.dispose();
     _presetService?.dispose();
-    _manifestService = new ManifestService(state.configuration.manifestUri);
-    _presetService = new PresetService(state.configuration.presetUris.shared, state.configuration.presetUris.user);
+    _manifestService = new ManifestService(state.config.manifestUri);
+    _presetService = new PresetService(state.config.presetUris.shared, state.config.presetUris.user);
     _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
     _presetStateSubscription = _presetService.onDidChangeState(onPresetStateChange);
     await _manifestService.start();
@@ -1129,7 +1129,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   };
   context.subscriptions.push(
     repositoryConfigService.onDidChangeState(() => {
-      void applyRepositoryConfigurationState();
+      void applyRepositoryConfigState();
     })
   );
 

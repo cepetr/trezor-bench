@@ -1,11 +1,11 @@
 /**
- * Publishes manifest, preset, and repository-configuration validation
+ * Publishes manifest, preset, and repository-config validation
  * issues as VS Code diagnostics on their source files.
  */
 import * as vscode from "vscode";
 import { ValidationSeverity, ManifestState } from "../manifest/manifest-types";
 import { PresetState } from "../presets/preset-types";
-import { RepositoryConfigurationState } from "../workspace/repository-configuration";
+import { RepositoryConfigState } from "../workspace/repository-config";
 
 // ---------------------------------------------------------------------------
 // Diagnostic collection
@@ -124,12 +124,12 @@ export function handlePresetStateDiagnostics(state: PresetState): void {
 }
 
 /** Publishes or clears diagnostics for the root repository configuration file. */
-export function handleRepositoryConfigurationDiagnostics(
-  state: RepositoryConfigurationState
+export function handleRepositoryConfigDiagnostics(
+  state: RepositoryConfigState
 ): void {
   if (state.status !== "invalid") {
-    clearDiagnostics(state.configuration.configurationUri);
+    clearDiagnostics(state.config.configUri);
     return;
   }
-  publishDiagnostics(state.configurationUri, state.validationIssues);
+  publishDiagnostics(state.configUri, state.validationIssues);
 }
