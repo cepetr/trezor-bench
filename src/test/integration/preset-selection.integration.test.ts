@@ -26,8 +26,8 @@ import {
   restoreBuildSelection,
   writeBuildSelection,
   readBuildSelection,
-} from "../../configuration/build-selection";
-import { normalizePresetId } from "../../configuration/normalize-selection";
+} from "../../build/build-selection";
+import { normalizePresetId } from "../../build/normalize-selection";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
 import {
   ConfigurationTreeModel,

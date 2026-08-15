@@ -12,7 +12,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import { PresetService } from "../../presets/preset-service";
 import { computePresetEffectiveValues } from "../../presets/preset-resolution";
-import { normalizeBuildOptions } from "../../configuration/build-options";
+import { normalizeBuildOptions } from "../../build/build-options";
 import {
   evaluateWorkflowPreconditions,
   blockReasonMessage,

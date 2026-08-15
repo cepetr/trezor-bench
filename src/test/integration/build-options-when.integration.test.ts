@@ -12,7 +12,7 @@ import {
   normalizeBuildOptions,
   deriveOptionFlags,
   BuildOptionsState,
-} from "../../configuration/build-options";
+} from "../../build/build-options";
 import { BuildContext } from "../../manifest/manifest-types";
 import { evaluateWhenExpression } from "../../manifest/when-expressions";
 

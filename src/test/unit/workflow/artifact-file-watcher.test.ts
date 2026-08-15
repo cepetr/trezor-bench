@@ -6,7 +6,7 @@ import {
   FileSystemWatcherLike,
   resolveArtifactWatchScopes,
 } from "../../../intellisense/artifact-file-watcher";
-import { BuildSelection } from "../../../configuration/build-selection";
+import { BuildSelection } from "../../../build/build-selection";
 import {
   makeDebugLoadedState,
   makeDebugTargetWithExtension,

@@ -1,7 +1,7 @@
 import * as assert from "assert";
 import { formatStatusBarText } from "../../../ui/status-bar";
 import { ManifestStateLoaded } from "../../../manifest/manifest-types";
-import { BuildSelection } from "../../../configuration/build-selection";
+import { BuildSelection } from "../../../build/build-selection";
 import * as vscode from "vscode";
 
 // ---------------------------------------------------------------------------

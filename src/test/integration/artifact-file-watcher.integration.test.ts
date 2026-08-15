@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
-import { BuildSelection } from "../../configuration/build-selection";
+import { BuildSelection } from "../../build/build-selection";
 import {
   ActiveArtifactFileWatcher,
   FileSystemWatcherLike,

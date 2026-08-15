@@ -22,14 +22,14 @@ import {
   writeBuildOption,
   dropBuildOptionOverrides,
   ResolvedOption,
-} from "../../configuration/build-options";
+} from "../../build/build-options";
 import { BuildOption } from "../../manifest/manifest-types";
 import {
   ConfigurationTreeModel,
   BuildOptionCheckboxItem,
   BuildOptionMultistateHeaderItem,
 } from "../../ui/configuration-tree";
-import { BuildSelection } from "../../configuration/build-selection";
+import { BuildSelection } from "../../build/build-selection";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
 
 // ---------------------------------------------------------------------------

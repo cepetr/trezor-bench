@@ -6,7 +6,7 @@
  */
 
 import * as vscode from "vscode";
-import { ResolvedOption } from "../configuration/build-options";
+import { ResolvedOption } from "../build/build-options";
 import { logWorkflowFailure, notifyError } from "../observability/log-channel";
 import { errorMessage } from "../util/errors";
 import { ManifestState } from "../manifest/manifest-types";

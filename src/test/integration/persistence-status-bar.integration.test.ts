@@ -11,8 +11,8 @@ import {
   selectModel,
   selectTarget,
   selectComponent,
-} from "../../configuration/build-selection";
-import { normalizeBuildSelection } from "../../configuration/normalize-selection";
+} from "../../build/build-selection";
+import { normalizeBuildSelection } from "../../build/normalize-selection";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
 
 // ---------------------------------------------------------------------------

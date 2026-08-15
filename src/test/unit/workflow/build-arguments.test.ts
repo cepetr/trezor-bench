@@ -11,7 +11,7 @@ import {
   deriveWorkflowArguments,
   deriveCleanArguments,
 } from "../../../commands/build-workflow";
-import { ResolvedOption } from "../../../configuration/build-options";
+import { ResolvedOption } from "../../../build/build-options";
 import { BuildOption } from "../../../manifest/manifest-types";
 import { DEFAULT_PRESET_ID } from "../../../presets/preset-types";
 

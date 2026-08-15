@@ -25,7 +25,7 @@ import {
 } from "../../../commands/artifact-actions";
 import { ManifestComponent, WhenExpression } from "../../../manifest/manifest-types";
 import { makeLoadedState } from "../workflow-test-helpers";
-import { BuildSelection } from "../../../configuration/build-selection";
+import { BuildSelection } from "../../../build/build-selection";
 
 // ---------------------------------------------------------------------------
 // Helpers

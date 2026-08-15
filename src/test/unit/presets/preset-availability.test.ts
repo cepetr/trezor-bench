@@ -10,7 +10,7 @@ import * as vscode from "vscode";
 import { derivePresetContext, samePresetContext, listPresetChoices } from "../../../presets/preset-resolution";
 import { PresetFile, PresetFragment } from "../../../presets/preset-types";
 import { ManifestStateLoaded } from "../../../manifest/manifest-types";
-import { BuildSelection } from "../../../configuration/build-selection";
+import { BuildSelection } from "../../../build/build-selection";
 
 // ---------------------------------------------------------------------------
 // Helpers

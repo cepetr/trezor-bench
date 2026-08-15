@@ -25,7 +25,7 @@ import {
 import { CpptoolsBackend } from "../../../intellisense/cpptools-backend";
 import { ClangdBackend, CLANGD_EXTENSION_ID } from "../../../intellisense/clangd-backend";
 import { makeIntelliSenseLoadedState, primaryCoreFixturePath } from "../workflow-test-helpers";
-import { BuildSelection } from "../../../configuration/build-selection";
+import { BuildSelection } from "../../../build/build-selection";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const vscodeMock = require("vscode");

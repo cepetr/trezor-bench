@@ -12,7 +12,7 @@ import { ManifestState, ManifestStateLoaded } from "../../manifest/manifest-type
 import { resolveActiveArtifact, buildResolutionInputs, deriveArtifactPath } from "../../intellisense/artifact-resolution";
 import { checkProviderReadiness } from "../../intellisense/intellisense-backend";
 import { IntelliSenseService } from "../../intellisense/intellisense-service";
-import { BuildSelection } from "../../configuration/build-selection";
+import { BuildSelection } from "../../build/build-selection";
 import { ConfigurationTreeModel } from "../../ui/configuration-tree";
 
 const VALID_MANIFEST = `

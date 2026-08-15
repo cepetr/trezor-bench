@@ -9,7 +9,7 @@ import {
   readBuildOptions,
   writeBuildOption,
   dropBuildOptionOverrides,
-} from "../../../configuration/build-options";
+} from "../../../build/build-options";
 import { BuildOption } from "../../../manifest/manifest-types";
 import { PresetEffectiveValue } from "../../../presets/preset-resolution";
 import * as vscode from "vscode";

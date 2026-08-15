@@ -22,10 +22,10 @@ import {
 import { ActiveCompileCommandsArtifact } from "../../../intellisense/intellisense-types";
 import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../../../intellisense/artifact-resolution";
 import { ManifestStateLoaded, BuildOption } from "../../../manifest/manifest-types";
-import { BuildSelection } from "../../../configuration/build-selection";
+import { BuildSelection } from "../../../build/build-selection";
 import { PresetFile, PresetState } from "../../../presets/preset-types";
 import { PresetChoice } from "../../../presets/preset-resolution";
-import { ResolvedOption } from "../../../configuration/build-options";
+import { ResolvedOption } from "../../../build/build-options";
 
 suite("SelectorHeaderItem icons", () => {
   test("uses a distinct icon for model", () => {

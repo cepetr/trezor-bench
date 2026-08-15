@@ -18,7 +18,7 @@ import {
   deriveCleanArguments,
   formatTaskLabel,
 } from "../commands/build-workflow";
-import { ResolvedOption } from "../configuration/build-options";
+import { ResolvedOption } from "../build/build-options";
 import { BuildContext, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
 import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 import { createCargoTaskExecution } from "./xtask-execution";

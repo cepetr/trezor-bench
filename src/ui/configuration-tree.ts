@@ -5,7 +5,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import { BuildContext, ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
-import { ResolvedOption } from "../configuration/build-options";
+import { ResolvedOption } from "../build/build-options";
 import { ActiveCompileCommandsArtifact } from "../intellisense/intellisense-types";
 import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../intellisense/artifact-resolution";
 import { PresetState } from "../presets/preset-types";

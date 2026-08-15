@@ -18,10 +18,10 @@ import {
   normalizeBuildOptions,
   readBuildOptions,
   writeBuildOption,
-} from "../../configuration/build-options";
+} from "../../build/build-options";
 import { deriveWorkflowArguments } from "../../commands/build-workflow";
 import { BuildOption, ManifestStateLoaded } from "../../manifest/manifest-types";
-import { BuildSelection } from "../../configuration/build-selection";
+import { BuildSelection } from "../../build/build-selection";
 import { DEFAULT_PRESET_ID } from "../../presets/preset-types";
 
 // ---------------------------------------------------------------------------

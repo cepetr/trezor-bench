@@ -13,9 +13,9 @@ import {
   SelectorChoiceItem,
   WarningItem,
 } from "../../ui/configuration-tree";
-import { normalizeBuildSelection } from "../../configuration/normalize-selection";
+import { normalizeBuildSelection } from "../../build/normalize-selection";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
-import { BuildSelection } from "../../configuration/build-selection";
+import { BuildSelection } from "../../build/build-selection";
 
 // ---------------------------------------------------------------------------
 // Helpers

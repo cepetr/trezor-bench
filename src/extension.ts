@@ -51,15 +51,15 @@ import {
   selectPreset,
   activePresetId,
   BuildSelection,
-} from "./configuration/build-selection";
-import { normalizeBuildSelection } from "./configuration/normalize-selection";
+} from "./build/build-selection";
+import { normalizeBuildSelection } from "./build/normalize-selection";
 import {
   readBuildOptions,
   writeBuildOption,
   dropBuildOptionOverrides,
   normalizeBuildOptions,
   ResolvedOption,
-} from "./configuration/build-options";
+} from "./build/build-options";
 import { ManifestState, ManifestStateLoaded, loadedManifest } from "./manifest/manifest-types";
 import {
   evaluateWorkflowPreconditions,
