@@ -20,7 +20,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
 | **active build context** | The currently selected combination of model, target, and component that drives visible UI state and runtime behaviors. | Preferred product term when behavior depends on the current selection. Stays separate from the active preset, which never appears in build-context display text. |
-| **active configuration** | The persisted workspace-state record that stores the selected model id, target id, component id, active preset id, and save timestamp. | Use for persistence and normalization behavior; avoid using it as a synonym for any visible UI section. Records persisted before preset support was added have no preset id and are read as the default preset. |
+| **active configuration** | The persisted workspace-state record that stores the selected model id, target id, component id, and active preset id. | Use for persistence and normalization behavior; avoid using it as a synonym for any visible UI section. Records persisted before preset support was added have no preset id and are read as the default preset. |
 | **Configuration view** | The collective term for the three sibling tree-view panes — `Build Selection`, `Build Artifacts`, `Build Options`, in that order — contributed by the extension inside the `Trezor Bench` activity bar container. | Preferred term for the extension's main side-bar surface as a whole; use the individual pane name when a statement applies to only one pane. |
 | **Build Selection** | The Configuration view pane that shows the current model, target, component, and preset selectors. | Use this exact capitalization for the UI surface. |
 | **preset** | A named, ordered collection of build-option value fragments defined in the required shared `presets.toml` file or the optional `user-presets.toml` file. Each fragment is matched against the active model, component, and target-derived emulator state; the preset itself is always offered, whatever the active build context. | Use for the named choices offered under the `Preset` selector, distinct from the always-present default preset. Matching decides which fragments a preset contributes, never whether it is listed: a preset with no matching fragment stays selectable and contributes nothing beyond the preset-file defaults. When `presets.toml` is absent, the repository's `xtask` does not support presets: no choices are offered at all and `Build`, `Clippy`, and `Check` are blocked. |
@@ -29,7 +29,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | **model** | A manifest-defined firmware family or device line available for selection. | User-facing labels come from `model.name`; rules and persistence use `model.id`. |
 | **target** | A manifest-defined build target available for selection, such as a hardware or emulator variant. | User-facing labels prefer `target.shortName` when present, otherwise `target.name`. |
 | **component** | A manifest-defined buildable firmware component available for selection. | User-facing labels come from `component.name`; rules and persistence use `component.id`. |
-| **target display name** | The label shown for the selected target in the UI and task labels. | Defined as `target.shortName` when present, otherwise `target.name`. |
+| **target display name** | The label shown for the selected target in the UI and task labels. | Defined as `target.shortName` when present, otherwise `target.name`. Appears in display-convention examples as the `{target-display}` placeholder. |
 | **selection normalization** | The process of restoring or correcting saved selections so they always resolve to valid manifest entries. | Use when describing startup recovery and manifest-change handling. |
 
 ## Manifest Terms
@@ -37,11 +37,10 @@ This glossary defines the preferred product and documentation terms used by the 
 | Term | Definition | Preferred Usage / Notes |
 | --- | --- | --- |
 | **manifest** | The YAML file that defines available models, targets, components, build options, debug profiles, and related rules. | This is the runtime source of truth for product behavior. |
-| **repository configuration file** | The optional root-level `tbench.toml` file that commits repository-dependent tbench paths. | Its `[paths]` entries are resolved from the workspace root; it is authoritative when present and valid. Unknown `[paths]` keys are ignored. |
+| **repository configuration** | The optional root-level `tbench.toml` file that commits repository-dependent tbench paths. | Its `[paths]` entries are resolved from the workspace root; it is authoritative when present and valid. Unknown `[paths]` keys are ignored. |
 | **repository configuration status** | The current state of the repository configuration file: absent and using defaults, valid and resolved, or invalid and blocking. | A present malformed file or wrong-typed supported path entry is blocking and is never treated as absent. |
 | **manifest path** | The repository-configuration path that points to the manifest file. | Defined by `[paths].manifest` in `tbench.toml`, or its built-in default when absent. |
-| **tbench manifest** | Shorthand for the manifest file used by Trezor Bench. | Acceptable short form when the file itself is the subject. |
-| **manifest status** | The current load state of the manifest: `loaded`, `missing`, or `invalid`. | Use when describing command gating and warning surfaces. |
+| **manifest state** | The current load state of the manifest: `loaded`, `missing`, or `invalid`. | Use when describing command gating and warning surfaces. |
 | **validation issue** | A concrete manifest problem found during parsing or validation. | Use for structured problems that may become diagnostics or logs. |
 | **when expression** | A manifest-defined availability rule composed from `model(...)`, `target(...)`, `component(...)`, `all(...)`, `any(...)`, and `not(...)`. | Use this term consistently for option and debug availability rules. Avoid looser names like "condition string". |
 
@@ -54,7 +53,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | **checkbox option** | A build option that is either enabled or disabled. | Preferred term over "boolean option" in user-facing prose. |
 | **multistate option** | A build option that exposes one selected state from a fixed list. | Preferred term over "enum option" in user-facing prose. |
 | **option state** | One selectable value inside a multistate option. | Use when describing state labels, defaults, and persistence. |
-| **default state** | The multistate option state whose manifest-declared value is `null`, used when no explicit override is stored and no applicable preset fragment sets the option. When no such state exists, the first declared state is used instead. | A multistate option's states no longer require a manifest-authored default for this term to apply. |
+| **default state** | The multistate option state whose manifest-declared value is `null`, used when no explicit override is stored and no applicable preset fragment sets the option. When no such state exists, the first declared state is used instead. | A multistate option's states are not required to declare a manifest-authored default for this term to apply. |
 | **preset-effective value** | The value of a build option after all applicable shared and user default and named-preset fragments have been overlaid, before any explicit build-option override. | Use when describing the value Build Options display and Build/Clippy/Check use when no override is stored. |
 | **build-option override** | A persisted, user-selected option value that differs from the current preset-effective value. | Visually emphasized and emitted explicitly for `Build`, `Clippy`, and `Check`; a stored value equal to the preset-effective value is not an override. Authored against one option's calculated value, so changing the active preset — or changing the model, component, or emulator-ness that preset fragments filter on — discards it only when that option's calculated value differs under the new preset and context, and keeps it when the calculation is unchanged. |
 | **option availability** | Whether a build option is currently visible and effective for the active build context. | Driven by a `when` expression when one is defined. |
@@ -72,11 +71,10 @@ This glossary defines the preferred product and documentation terms used by the 
 | **binary artifact** | The `.bin` file expected for the active build context when flash or upload is applicable. | Use for row state and action enablement. |
 | **map file artifact** | The `.map` file expected for the active build context when binary-related actions are applicable. | Use for row state and the open-map action. |
 | **executable artifact** | The executable file derived for debug launch from artifact name, suffix, and executable extension. | Preferred term when discussing debug readiness. |
-| **artifact status** | The user-facing presence state of an artifact row: `valid` or `missing`. | Use for tree row descriptions, not for low-level file existence checks. |
+| **artifact status** | The user-facing presence state of an artifact row: `present` or `missing`. | Use for tree row descriptions, not for low-level file existence checks. |
 | **xtask** | The workspace's Cargo-based task runner used by the extension to launch build-related firmware workflows. | Use this term when referring to the command backend that receives model, target, component, and build-option arguments. |
 | **workflow task environment** | The process environment used when the extension launches a `cargo xtask` workflow task. | Formed from the VS Code session environment plus entries from `tbench.taskExtraEnv` after configuration variable references are resolved. |
-| **task extra environment** | The workspace setting object that supplies additional environment variables for workflow tasks. | Exposed as `tbench.taskExtraEnv`. |
-| **configuration variable reference** | A `${...}` placeholder in a tbench setting value that the extension resolves when reading that setting. | Covers supported VS Code variable-reference forms such as `${workspaceFolder}` and `${env:NAME}`. Distinct from tbench debug substitution tokens in debug templates. |
+| **configuration variable reference** | A `${...}` placeholder in a tbench setting value that the extension resolves when reading that setting. | Covers supported VS Code variable-reference forms such as `${workspaceFolder}` and `${env:NAME}`. Distinct from tbench debug variables in debug templates. |
 | **Build** | The primary command and task that runs the active firmware build workflow. | Capitalize when referring to the named command. |
 | **Clippy** | The command and task that runs lint-oriented firmware checks for the active build context. | Capitalize as the task/command name. |
 | **Check** | The command and task that runs non-building validation for the active build context. | Capitalize as the task/command name. |
@@ -96,7 +94,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | **provider readiness** | Whether a supported IntelliSense backend is installed and usable for tbench: cpptools configured with `cepetr.tbench` as the provider, or the clangd extension installed. | Use when describing prerequisite warnings. |
 | **excluded file** | A file that falls within excluded-file scope but is not included in the active compile database. | Preferred user-facing term for the feature. |
 | **excluded-file scope** | The combination of configured filename patterns and folder globs that limits where excluded-file marking applies. | Prefer this term over "rules" when describing the overall scope behavior. |
-| **Explorer badge** | The exclusion marker shown in the VS Code Explorer for excluded files. | Use for the explorer surface specifically. |
+| **exclusion badge** | The exclusion marker shown in the VS Code Explorer for excluded files. | Use for the explorer surface specifically. |
 | **editor overlay** | The first-line warning shown inside editors for excluded files when enabled. | Use for the editor surface specifically. |
 
 ## Debug Terms
@@ -110,12 +108,10 @@ This glossary defines the preferred product and documentation terms used by the 
 | **default debug profile** | The first matching debug profile in declaration order for the selected component, used by direct `Start Debugging` actions and by the default Run and Debug entry. | Use when contrasting the default choice from profile-specific Run and Debug entries. |
 | **debug template** | The JSONC file referenced by a debug profile and loaded at launch time. | Preferred term over "launch template" in this product. |
 | **debug templates path** | The repository-configuration path that points to the directory containing debug templates. | Defined by `[paths].debug-templates` in `tbench.toml`, or its built-in default when absent. |
-| **debug variable** | A tbench substitution variable available during template resolution. | Covers built-in variables and profile-defined `tbench.debug.var:<name>` entries. |
+| **debug variable** | A tbench substitution variable available during template resolution. | Covers built-in variables and profile-defined `tbench.debug.var:<name>` entries. Appears in a template as a `${...}` placeholder before substitution runs. |
 | **built-in debug variable** | A substitution variable derived from the active model, target, component, artifact path, executable, or debug profile name. | Use when distinguishing built-ins from profile-defined variables. |
 | **profile-defined debug variable** | A substitution variable declared in a manifest debug profile under `vars`. | Use this term instead of just "custom variable" for precision. |
-| **substitution token** | A `${...}` placeholder found in a debug template before tbench substitution runs. | Use when describing template inputs rather than resolved values. |
 | **declaration order** | The order in which debug profiles appear in the manifest. The first matching profile in declaration order is the default debug profile. No separate priority field or other precedence mechanism overrides this order. | Use when describing default profile selection and why declaration position determines the default choice. |
-| **debug resolution failure** | A launch-blocking failure that occurs while selecting a matching debug profile, loading its template, or resolving tbench debug variables. | Use for failures before VS Code starts the debug session. |
 
 ## Availability Terms
 
@@ -125,7 +121,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | **disabled action** | A command or row action that remains visible to indicate capability, but cannot currently be executed because a prerequisite is missing. | Use for discoverable-but-not-runnable states such as missing artifacts. |
 | **blocked command** | A command whose execution is rejected after invocation because the current workspace or manifest state does not allow it. | Use when the extension reports a failure instead of starting the action. |
 | **hidden action** | A command or row action omitted from a surface because it does not apply to the current build context or surface. | Use when the action should not be presented at all. |
-| **action enablement state** | The combined visible/runnable state of a command or row action on a particular surface. | Useful when specifying hidden versus disabled versus blocked behavior. |
+| **action enablement** | The combined visible/runnable state of a command or row action on a particular surface. | Useful when specifying hidden versus disabled versus blocked behavior. |
 
 ## Settings And Observability Terms
 
@@ -135,7 +131,7 @@ This glossary defines the preferred product and documentation terms used by the 
 | **configuration variable resolution** | The extension behavior that expands supported `${...}` references while reading eligible string-based tbench settings. | VS Code does not perform this automatically for extension settings; tbench resolves supported references in `tbench.taskExtraEnv` and excluded-file glob settings. It never expands values in `tbench.toml`. |
 | **command surface** | A user-facing place where a command is exposed, such as the Command Palette, a view header, an overflow menu, or an inline row action. | Use when describing shared command availability and visibility rules across multiple entry points. |
 | **invalid when expression** | A manifest `when`, `flashWhen`, or `uploadWhen` expression that cannot be parsed, validated, or resolved against known ids. | Use for manifest validation failures rather than runtime false results. |
-| **status bar configuration item** | The status bar entry that shows the active build context and, when selected, opens the `Trezor Bench` container and expands and focuses `Build Selection`. | Preferred product phrase over generic "status bar text". |
+| **status bar item** | The status bar entry that shows the active build context and, when selected, opens the `Trezor Bench` container and expands and focuses `Build Selection`. | Preferred product phrase over generic "status bar text". |
 | **diagnostic** | A persistent file-backed problem shown through the Problems view and relevant editors. | Use for manifest-backed validation issues. |
 | **log output** | The dedicated `Trezor Bench` output channel that records runtime warnings, errors, and detail. | Preferred term over generic "logs" when the VS Code output channel is meant. |
 | **user-visible error** | An error surfaced directly in the UI, typically as a VS Code notification or disabled action state. | Use when distinguishing transient UX feedback from persistent diagnostics or logs. |

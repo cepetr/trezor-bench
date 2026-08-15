@@ -1,12 +1,12 @@
 # Product Specification: Trezor Bench
 
 **Status**: Draft baseline
-**Last Updated**: 2026-06-23
+**Last Updated**: 2026-08-15
 
 ## Purpose
 
 This document is the active product-level specification for Trezor Bench.
-It describes the product as it exists for users and workspace maintainers, without relying on the historical 001-006 delivery slices.
+It describes the product as it exists for users and workspace maintainers.
 
 ## Product Summary
 
@@ -20,7 +20,7 @@ It also reduces or eliminates manual VS Code configuration needed for C/C++ Inte
 
 The extension is intended for work inside a `trezor-firmware` workspace shape and assumes that the workspace contains the files, directories, and generated artifacts needed for firmware-oriented build, IntelliSense, and debug workflows.
 
-The extension expects one open workspace folder. Its workflow features are designed for a single-root workspace and are treated as unsupported when no folder is open or when multiple workspace folders are open.
+The extension expects an open workspace folder. Workspace-specific state — manifest, presets, build artifacts, and IntelliSense — is loaded from the first workspace folder whenever at least one folder is open. Task-launching workflow commands are designed for a single-root workspace: they require exactly one open workspace folder and reject execution when no folder or multiple workspace folders are open.
 
 At a high level, the extension expects these workspace inputs:
 
@@ -40,7 +40,8 @@ Trezor Bench
 ├── Build Selection
 │   ├── Model
 │   ├── Target
-│   └── Component
+│   ├── Component
+│   └── Preset
 ├── Build Artifacts
 │   ├── Updated
 │   ├── Compile Commands
@@ -66,9 +67,9 @@ Each selector is shown as a header row. The row label names the selector and the
 
 Selecting a selector header expands its available choices under that row. Only one selector is expanded at a time, so opening one selector collapses the others.
 
-When a selector is expanded, the available choices are shown in manifest-defined order. The active choice is marked explicitly in the list, and selecting a different choice immediately updates the active build context and refreshes the dependent state described in `Startup And Refresh Behavior`.
+When a selector is expanded, the available choices are shown in manifest-defined order. The active choice is marked explicitly in the list with the `check` icon and an `active` row description, and selecting a different choice immediately updates the active build context and refreshes the dependent state described in `Startup And Refresh Behavior`.
 
-The active build context may also be shown in the VS Code status bar, giving the user a compact summary outside the Configuration view.
+The active build context may also be shown in the VS Code status bar (see `Status Bar`).
 
 The available models, targets, and components are defined in the manifest file for the workspace.
 
@@ -90,7 +91,7 @@ Build Selection
 │   ├── Prodtest
 │   ├── Bootloader
 │   └── ...
-└── Presets
+└── Preset
 	├── Default
 	├── test
 	└── ...
@@ -102,15 +103,23 @@ When the manifest file is missing, the section stays visible and shows a warning
 
 When the manifest file is invalid, the section stays visible and shows a warning summary of the validation error count together with a prompt to check the Problems view for details.
 
-The `Preset` selector follows the same expand, collapse, active-choice, loading, and refresh conventions as the model, target, and component selectors. Its choices always begin with the synthetic `Default` choice, which represents defaults-only behavior rather than a named preset, followed by every named preset declared in either preset input, listed once and independently of the active model, target, and component. Any listed preset can be selected; when none of a preset's fragments apply to the active build context, it contributes no fragment values — the preset-file defaults alone calculate the option values — and it is still sent to the launched command. The active preset id is persisted in the same workspace-scoped active-configuration record as the selected model, target, and component (see `Persistence And Defaults`), but it is never shown in the shared build-context display, status bar, task labels, or command names — it affects only preset-relative build-option values and the arguments described under `Build` and `Clippy And Check`.
+The `Preset` selector follows the same expand, collapse, active-choice, loading, and refresh conventions as the model, target, and component selectors.
 
-When preset data is still loading, the `Preset` selector shows a loading placeholder. When either preset input is invalid, the selector's choices are replaced by a warning row naming the failing file, together with a prompt to check the Problems view for details. When the shared `presets.toml` does not exist at all, the choices are replaced instead by a row reporting that `presets.toml` is unavailable, together with the cause: the open repository's `xtask` does not support build presets. In both cases no preset choice is offered — not even `Default` — and `Build`, `Clippy`, and `Check` are blocked while `Clean` remains available (see `Availability And Blocking Model`).
+Its choices always begin with the synthetic `Default` choice, which represents defaults-only behavior rather than a named preset, followed by every named preset declared in either preset input, listed once and independently of the active model, target, and component.
+
+A preset group literally named `default` is reserved: it is excluded from the choice list and reported with a warning diagnostic.
+
+Any listed preset can be selected; when none of a preset's fragments apply to the active build context, it contributes no fragment values — the preset-file defaults alone calculate the option values — and it is still sent to the launched command.
+
+The active preset id is persisted in the same workspace-scoped active-configuration record as the selected model, target, and component (see `Persistence And Defaults`), but it is never shown in the shared build-context display, status bar, task labels, or command names — it affects only preset-relative build-option values and the arguments described under `Build` and `Clippy And Check`.
+
+When preset data is still loading, the `Preset` selector shows a loading placeholder. When either preset input is invalid, the selector's choices are replaced by a warning row naming the failing file, together with a prompt to check the Problems view for details. When the shared `presets.toml` does not exist at all, the choices are replaced instead by a row reporting that `presets.toml` is unavailable, together with the cause: the open repository's `xtask` does not support build presets. The collapsed `Preset` selector's description then shows `Unavailable` instead of a preset name. In both cases no preset choice is offered — not even `Default` — and the preset-blocking condition described in `Availability And Blocking Model` applies.
 
 ### Build Option Management
 
 The extension provides a dedicated way to review and adjust build options for the active build context through the `Build Options` part of the tree view.
 
-The `Build Options` section remains present in the tree view and is initially collapsed instead of being auto-expanded on activation.
+The `Build Options` section remains present in the tree view and is initially collapsed.
 
 The available build options are defined in the manifest file for the workspace.
 
@@ -121,15 +130,21 @@ The available build options are defined in the manifest file for the workspace.
 
 Checkbox options are adjusted directly on their own row.
 
-Multistate options are shown as header rows whose descriptions show the currently active state. Expanding a multistate option reveals its available states, and selecting a state immediately makes it active for the current build context.
+Multistate options are shown as header rows whose descriptions show the currently active state. Expanding a multistate option reveals its available states, and selecting a state immediately makes it active for the current build context. Only one multistate option is expanded at a time, so expanding one collapses any other expanded multistate option.
 
-Grouped options are shown under group headers, while ungrouped options appear directly in the section. Grouping follows manifest declaration order, so grouped and ungrouped options can be interleaved in one section rather than being reordered into separate blocks.
+Grouped options are shown under group headers, while ungrouped options appear directly in the section. Grouping follows manifest declaration order, so grouped and ungrouped options can be interleaved in one section rather than being reordered into separate blocks. A collapsed group header is visually emphasized while any option inside the group holds an override, so overrides remain discoverable without expanding the group.
 
-Every available build option displays its preset-effective value — the value calculated from the active preset's matching shared and user preset fragments — when no explicit override is stored for that option. Only values that differ from the active preset's calculated effective value are visually emphasized; a stored selection that matches the active preset's effective value is not emphasized and does not produce an explicit build-option argument, even though it remains stored. Switching the active preset recalculates every option's preset-effective value and then discards the stored overrides on options the new preset calculates differently, while keeping those on options it calculates identically: an override is authored against one option's calculated value, so it is retired exactly when that value moves. Changing the active build context is examined the same way whenever it changes which preset fragments apply — that is, when the selected model or component changes, or when the target changes between an emulator target and a hardware one — because preset fragments can be restricted by model, project, and emulator, so the same option can calculate to a different value in a different context. Immediately after such a change, every option whose calculated value moved shows that new value unemphasized, and every override that still stands remains in place and emphasized. Overrides also survive edits to the preset inputs and a target change that keeps the same emulator-ness. Checkbox and multistate-option header tooltips display the bold command-line flag emitted to `xtask`, such as **--bootloader-devel**, and the option description on two lines when a description is defined. A multistate option-state tooltip likewise displays the full bold selected-state flag emitted to `xtask`, such as **--dbg-console=vcp**, and the state description on two lines when a description is defined.
+Every available build option displays its preset-effective value — the value calculated from the active preset's matching shared and user preset fragments — when no explicit override is stored for that option. Only values that differ from the active preset's calculated effective value are visually emphasized; a stored selection that matches the active preset's effective value is not emphasized and does not produce an explicit build-option argument, even though it remains stored.
 
-A build option whose calculated preset-effective value cannot be represented by that option — for example a checkbox given a non-boolean value, or a multistate option given a value that matches none of its declared states — reports the mismatch directly on its row using the `warning` icon and a description naming the unrepresentable value, instead of guessing a value. `Build`, `Clippy`, and `Check` are blocked while any available option reports a mismatch (see `Availability And Blocking Model`).
+Switching the active preset recalculates every option's preset-effective value and then discards the stored overrides on options the new preset calculates differently, while keeping those on options it calculates identically: an override is authored against one option's calculated value, so it is retired exactly when that value moves.
 
-A multistate option whose active preset supplies no value for it uses the state whose manifest-declared value is `null` when one exists; otherwise it uses the first declared state. A multistate option's states no longer need to include a manifest-authored default state for this display and persistence model to work — see `Persistence And Defaults`.
+Changing the active build context is examined the same way whenever it changes which preset fragments apply — that is, when the selected model or component changes, or when the target changes between an emulator target and a hardware one (a target is an emulator target exactly when its manifest `flag` is `--emulator` or `-e`; see `targets`) — because preset fragments can be restricted by model, project, and emulator, so the same option can calculate to a different value in a different context. Immediately after such a change, every option whose calculated value moved shows that new value unemphasized, and every override that still stands remains in place and emphasized. Overrides also survive edits to the preset inputs and a target change that keeps the same emulator-ness.
+
+Checkbox and multistate-option header tooltips display the bold command-line flag emitted to `xtask`, such as **--bootloader-devel**, and the option description on two lines when a description is defined. A multistate option-state tooltip likewise displays the full bold selected-state flag emitted to `xtask`, such as **--dbg-console=vcp**, and the state description on two lines when a description is defined.
+
+A build option whose calculated preset-effective value cannot be represented by that option — for example a checkbox given a non-boolean value, or a multistate option given a value that matches none of its declared states — reports the mismatch directly on its row using the `warning` icon and a description naming the unrepresentable value. A mismatched multistate option shows the mismatch description in place of an active state; a mismatched checkbox option keeps its checkbox control, which is checked only when the raw value is exactly `true`. A mismatched option never emits a build-option argument. `Build`, `Clippy`, and `Check` are blocked while any available option reports a mismatch (see `Availability And Blocking Model`).
+
+A multistate option whose active preset supplies no value for it falls back to the default state described in `Persistence And Defaults`; its states are not required to include a manifest-authored default state.
 
 At a high level, this part of the tree view is organized like this:
 
@@ -144,8 +159,6 @@ Build Options
 │   └── ...
 └── ...
 ```
-
-This capability exists so workspace-defined build choices are easier to understand and update, especially when option availability depends on the current selection.
 
 Only options that are available for the active build context are shown in the visible tree. If a previously saved value belongs to an option that is temporarily unavailable, that value is preserved as described in `Persistence And Defaults`, but the unavailable option is not shown as an active control until it becomes available again.
 
@@ -163,7 +176,7 @@ When build options exist in the manifest but none apply to the current model, ta
 
 The extension provides a single in-editor entry point for common firmware workflows related to the active build context.
 
-Workflow actions are available not only from artifact rows. They are also exposed from the Configuration view overflow menu, and selected high-priority actions are available directly as icons in the Configuration view header. Most workflow actions are also available from the VS Code Command Palette, and build-related actions are available as build tasks.
+Workflow actions are exposed from artifact rows and from the Configuration view overflow menu, and selected high-priority actions are available directly as icons in the Configuration view header. Most workflow actions are also available from the VS Code Command Palette, and build-related actions are available as build tasks.
 
 - **Build**: Produces the main build output for the active build context.
 - **Clippy**: Runs lint-oriented checks for the active build context.
@@ -173,7 +186,7 @@ Workflow actions are available not only from artifact rows. They are also expose
 - **Upload to Device**: Uploads the active binary artifact when that action is applicable.
 - **Start Debugging**: Starts a debug session for the active build context when debugging is available.
 
-Some workflow actions are available only when the manifest file defines them as applicable for the active build context. For example, `Flash to Device` and `Upload to Device` are available only when the selected component's `flashWhen` or `uploadWhen` condition matches the current model, target, and component selection.
+Some workflow actions are available only when the manifest file defines them as applicable for the active build context — see `Flash And Upload` for the `flashWhen` and `uploadWhen` applicability rules.
 
 ### Build Artifacts
 
@@ -195,9 +208,11 @@ Build Artifacts
 - **Map File**: Represents the map file artifact associated with the active build context and exposes a row-level open action when the map file exists.
 - **Executable**: Represents the executable artifact for the active build context and is used by `Start Debugging` when debugging is available.
 
-When at least one artifact exists, an `Updated` row appears before the artifact rows. Its description shows the relative age of the newest artifact modification time across Compile Commands, Binary, Map File, and Executable. The age uses minutes, hours, or days and refreshes once per minute while at least one timestamped artifact is present.
+When at least one artifact exists, an `Updated` row appears before the artifact rows. Its description shows the relative age of the newest artifact modification time across Compile Commands, Binary, Map File, and Executable. The age shows `just now` under one minute and otherwise uses minutes, hours, or days; it refreshes once per minute while at least one timestamped artifact is present. The `Updated` row uses the `clock` icon, and its tooltip shows the newest modification timestamp in UTC.
 
-Each artifact row uses its row description to show the current availability state for the active build context. When the artifact exists, the description shows `present`. When it does not exist, the description shows `missing`.
+Before the first artifact evaluation completes for the active build context, the section shows an `IntelliSense not yet evaluated` placeholder instead of artifact rows.
+
+Each artifact row uses its row description to show the current artifact status for the active build context. When the artifact exists, the description shows `present`. When it does not exist, the description shows `missing`.
 
 Each artifact row also shows a tooltip containing the resolved artifact path for the active build context. When the artifact is missing, the tooltip must make clear that the artifact is missing and still show the resolved path that was checked.
 
@@ -237,6 +252,7 @@ The `Trezor Bench` activity-bar container and all three of its panes (`Build Sel
 - Inactive multistate-state spacer: `images/blank-tree-icon.svg`
 - Warning-row icon: `warning`
 - Placeholder-row icon: `info`
+- `Updated` row icon: `clock`
 - Artifact-row status icons: `pass` when the artifact is available, `error` when the artifact is missing
 - `Build` action icon: `tools`
 - `Clippy` action icon: `checklist`
@@ -274,7 +290,7 @@ This surface exists so the current model, target, and component remain visible e
 
 ### Displayed Information
 
-When visible, the status bar shows the active build context using the shared display conventions defined in `Build Context Display Conventions`.
+When visible, the status bar shows the active build context using the shared display conventions defined in `Build Context Display Conventions`. The status-bar text is prefixed with the `symbol-field` codicon.
 
 ### Visibility Rules
 
@@ -288,7 +304,7 @@ If any of these conditions stops being true, the status bar item is hidden rathe
 
 ### Interaction
 
-The status bar entry is not only informational. Selecting it opens the `Trezor Bench` container, expands `Build Selection` if it is collapsed, and focuses it, so the user can move directly from the compact summary to the full build-selection and build-option surface.
+Selecting the status bar entry opens the `Trezor Bench` container, expands `Build Selection` if it is collapsed, and focuses it, so the user can move directly from the compact summary to the full build-selection and build-option surface.
 
 ### Refresh Behavior
 
@@ -311,21 +327,21 @@ The extension resolves the expected compile-commands artifact for the active bui
 
 The expected compile-commands path is constructed as `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix>.cc.json`, where `artifacts-root` comes from the resolved repository configuration, `artifactFolder` comes from the selected model, `artifactName` comes from the selected component, and `artifactSuffix` comes from the selected target and defaults to an empty string when omitted.
 
-The `Compile Commands` row in `Build Artifacts` shows whether that artifact is currently available for the active build context. When the artifact exists, the row shows `present` and its tooltip shows the resolved artifact path. When it does not exist, the row shows `missing` and its tooltip states that the artifact is missing and shows the resolved artifact path that was checked.
+The `Compile Commands` row in `Build Artifacts` shows whether that artifact is currently available for the active build context, following the row-description and tooltip conventions described in `Build Artifacts`.
 
 When IntelliSense refresh runs and the active compile-commands artifact is available, the extension parses the active compile database and applies the resulting configuration through the active IntelliSense backend so editor assistance follows the currently selected model, target, and component.
 
 The extension supports two IntelliSense backends and selects one automatically:
 
-- **Microsoft C/C++ (`cpptools`)** is preferred. It is used when the installed `ms-vscode.cpptools` extension exposes the supported custom-configuration API and the workspace `C_Cpp.default.configurationProvider` setting points to `cepetr.tbench`. In this mode the parsed compile database is pushed to cpptools through its custom configuration provider.
+- **Microsoft C/C++ (`cpptools`)** is preferred. It is used when the installed `ms-vscode.cpptools` extension exposes the supported custom-configuration API and the effective `C_Cpp.default.configurationProvider` setting — from any settings scope — points to `cepetr.tbench` (compared case-insensitively). In this mode the parsed compile database is pushed to cpptools through its custom configuration provider.
 - **clangd (`llvm-vs-code-extensions.vscode-clangd`)** is used as a fallback when cpptools cannot be used — either because the Microsoft C/C++ extension is not installed (as in editors such as Cursor, which provide C/C++ support through clangd instead) or because an installed Microsoft C/C++ extension does not expose the supported custom-configuration API — and the clangd extension is installed. In this mode the extension points clangd at the active compile database rather than pushing per-file configuration.
 
-When cpptools is installed but a different configuration provider is active, the extension treats this as a misconfiguration to be fixed and does not silently fall back to clangd.
+When cpptools is installed but the configuration-provider setting is unset or names a different provider, the extension treats this as a misconfiguration to be fixed and does not silently fall back to clangd.
 
 When the clangd backend is active, the extension makes the active compile database discoverable to clangd without requiring manual setup:
 
 - it maintains a managed compile database at `.tbench/compile_commands.json` in the workspace root as a link to the active compile-commands artifact, and retargets that link whenever the active build context changes;
-- it ensures the workspace `.clangd` configuration points clangd at the `.tbench` directory. If no `.clangd` file exists, the extension creates one it owns and marks it as managed by Trezor Bench. If a `.clangd` file already exists without the managed marker and without a matching `CompilationDatabase` entry, the extension does not modify it and instead logs a warning that clangd may not discover the managed compile database;
+- it ensures the workspace `.clangd` configuration points clangd at the `.tbench` directory. If no `.clangd` file exists, the extension creates one it owns and marks it as managed by Trezor Bench. A `.clangd` file carrying the managed marker is owned by the extension and is rewritten back to the managed content whenever its content drifts, so manual edits to a managed file are not preserved. If a `.clangd` file already exists without the managed marker and without a matching `CompilationDatabase` entry, the extension does not modify it and instead logs a warning that clangd may not discover the managed compile database;
 - it restarts the clangd language server after applying or clearing the managed compile database so clangd reloads the current configuration.
 
 The managed `.tbench/compile_commands.json` link and the managed `.clangd` file are generated workspace-local artifacts rather than authored configuration, so they are not intended for version control.
@@ -361,13 +377,13 @@ Excluded-file visibility is therefore part of the IntelliSense capability, but i
 
 IntelliSense state refreshes automatically as described in `Startup And Refresh Behavior`, including activation, manifest changes, active build-context changes, relevant artifact-file changes for the active build context, artifact-path changes, workspace changes, and relevant setting changes.
 
-The extension also provides `Refresh IntelliSense` as a manual way to re-run IntelliSense evaluation for the active build context without changing the current selection.
+The extension also provides the manual `Refresh IntelliSense` command described in `Command Surface`.
 
 When IntelliSense prerequisites are not satisfied, the extension reports that state explicitly instead of silently pretending IntelliSense is aligned:
 
 - if the active compile-commands artifact is missing, the extension clears previously applied IntelliSense state and the `Compile Commands` row shows the missing state
 - if no supported IntelliSense backend is available — neither the Microsoft C/C++ extension exposing the supported custom-configuration API nor the clangd extension — the extension reports that IntelliSense integration is unavailable
-- if the Microsoft C/C++ extension is installed but a different configuration provider is active, the extension reports the misconfiguration and can offer a workspace-setting fix, and does not fall back to clangd while that misconfiguration stands
+- if the Microsoft C/C++ extension is installed but the configuration-provider setting is unset or names a different provider, the extension reports the misconfiguration and can offer a workspace-setting fix instead of falling back to clangd (see `Compile Commands And Provider Integration`)
 
 When excluded-file input data becomes unavailable, excluded-file badges and overlays are also cleared so stale excluded-file state does not remain visible after the active context changes.
 
@@ -392,7 +408,7 @@ Supported references include:
 - `${workspaceFolderBasename}`
 - `${env:NAME}`
 - `${config:section.key}`
-- `${userHome}` and `${cwd}`
+- `${userHome}` and `${cwd}`; `${cwd}` resolves to the workspace folder path rather than VS Code's task-runner working directory
 
 Other VS Code variable forms are left unchanged, including editor, selection, command, input, executable-path, and path-separator references.
 
@@ -437,16 +453,16 @@ The extension keeps the tree view, status bar, IntelliSense integration, artifac
 
 When the extension activates, it always registers the configuration tree view and initializes the dedicated log output so the side-bar surface and persistent failure trail are available immediately.
 
-If the workspace is unsupported or no workspace folder is open, the extension shows a warning, keeps workflow actions blocked, and does not attempt to load workspace-specific manifest, artifact, or IntelliSense state.
+If no workspace folder is open, the extension shows a warning, keeps workflow actions blocked, and does not attempt to load workspace-specific manifest, artifact, or IntelliSense state.
 
-If the workspace is supported, the extension:
+If at least one workspace folder is open, the extension loads workspace state from the first workspace folder. In a multi-root window, task-launching workflow commands remain blocked as described in `Workspace Assumptions And Scope`, while the rest of the extension state follows the first folder. The extension then:
 
 - Resolves repository paths from root-level `tbench.toml` or the built-in defaults, and begins watching `tbench.toml`.
 - Starts the manifest service and begins watching the resolved manifest file.
 - Starts the preset service and begins watching both preset inputs at `<presets path>/presets.toml` and `<presets path>/user-presets.toml`.
 - Initializes the status-bar presenter, IntelliSense service, and excluded-file visibility services.
 - Restores the persisted active build context when possible and normalizes it against the loaded manifest if previously saved values are no longer valid.
-- Recomputes the declared preset list, restores the persisted active preset id when the preset inputs still declare it, and normalizes it to the synthetic `Default` choice otherwise.
+- Recomputes the declared preset list and restores or normalizes the persisted active preset id as described in `Active Build Context Persistence`.
 - Restores persisted build-option selections and resolves them against the active build context and the active preset's calculated effective values.
 - Updates the tree view, status bar, diagnostics, log output, workflow blocking state, preset blocking state, artifact rows, and action enablement from the loaded state.
 - Schedules an initial IntelliSense refresh.
@@ -475,11 +491,11 @@ When either preset input changes:
 
 - Both preset inputs are re-read and re-validated.
 - Diagnostics and log output are refreshed to reflect the new preset state, attributed to whichever file produced an issue.
-- The declared preset list is recomputed, and the active preset id is restored if the inputs still declare it or normalized to the synthetic `Default` choice otherwise.
+- The declared preset list is recomputed, and the active preset id is restored or normalized as described in `Active Build Context Persistence`.
 - Preset-effective build-option values are recalculated, and Build Options are refreshed to show the new values, emphasis, and mismatch states.
 - The `Preset` selector, its choices, and workflow blocking state are refreshed.
 
-The shared `presets.toml` is required. It ships with the `xtask` that accepts preset arguments, so its absence means the open repository predates preset support rather than that no presets are defined: the extension reports the shared input as unavailable, offers no preset choices, writes the cause to log output, and blocks `Build`, `Clippy`, and `Check` while leaving `Clean` available. No diagnostic is produced for the absence, since there is no file content to attribute one to. An absent `user-presets.toml` is the genuinely optional case and is never reported. If either present file is unreadable, malformed, or contains validation errors, the extension keeps the UI available but replaces the `Preset` choices with a warning row, shows the failure through diagnostics and log output, and blocks `Build`, `Clippy`, and `Check` while leaving `Clean` available, without using stale or guessed preset data.
+The shared `presets.toml` is required. It ships with the `xtask` that accepts preset arguments, so its absence means the open repository predates preset support rather than that no presets are defined: the extension writes the cause to log output and applies the selector and blocking behavior described in `Build Context Management`. No diagnostic is produced for the absence, since there is no file content to attribute one to. An absent `user-presets.toml` is the genuinely optional case and is never reported. If either present file is unreadable, malformed, or contains validation errors, the extension keeps the UI available, shows the failure through diagnostics and log output, and applies the same selector and blocking behavior described in `Build Context Management`, without using stale or guessed preset data.
 
 ### Repository Configuration Change
 
@@ -558,9 +574,7 @@ If the manifest changes and previously saved state no longer matches the current
 
 - Saved model, target, and component ids are replaced with valid current entries, as described above.
 - Saved multistate selections that no longer match any current state are discarded, and the option's value falls back to its preset-effective value as described above.
-- Saved values for options that are merely unavailable in the current context are preserved and may become active again if the context changes back, except where a change of the active preset or of the applicable preset fragments changed that option's calculated value — a saved value authored against a calculation that no longer holds is discarded, and one whose calculation is unchanged is kept.
-
-This behavior ensures that the extension restores as much prior workspace state as possible while keeping the active UI and emitted build arguments consistent with the current manifest.
+- Saved values for options that are merely unavailable in the current context are preserved and may become active again if the context changes back, subject to the override-retirement rule described in `Build Option Management`.
 
 ## Availability And Blocking Model
 
@@ -574,7 +588,7 @@ A command or action is considered available when the current workspace, manifest
 
 A command or action is considered unavailable when the current context does not support that behavior at all. In that case, the command may be hidden from context-specific surfaces rather than shown in a disabled state.
 
-A command or action is considered blocked when it belongs to the current command surface but execution is prevented by a known blocking condition such as unsupported workspace state, missing manifest, invalid manifest, missing required artifact, or failed applicability checks.
+A command or action is considered blocked when it belongs to the current command surface but execution is prevented by one of the blocking conditions defined below.
 
 ### Shared Blocking Conditions
 
@@ -593,6 +607,14 @@ Commands may be blocked when:
 
 Some commands also have command-specific blocking conditions. These are documented in the relevant command sections below.
 
+### Shared Blocked Behavior
+
+Workflow commands share the same blocked behavior:
+
+- When workflow execution is blocked, the command's Configuration view header and overflow entries — on whichever of those surfaces the command is exposed — remain visible but disabled instead of appearing as runnable actions.
+- If invocation is attempted from a surface that still allows execution while workflow execution is blocked, the extension rejects execution, shows an error message that explains the blocking reason, and writes the failure to the dedicated log output.
+- If task launch itself fails after preconditions are satisfied, the extension reports that startup failure through an error message and the log output.
+
 ### Hidden Versus Disabled Versus Blocked
 
 The extension distinguishes between hidden actions, disabled actions, and blocked commands.
@@ -602,12 +624,6 @@ A command or action is hidden when it does not apply to the current surface or c
 A command or action is disabled when it is still meaningful to show the user, but execution is not currently possible. This is used when the user benefits from seeing that the action exists but cannot run yet because a prerequisite is missing.
 
 A command is blocked when the user invokes it from a surface where it is exposed, but the extension rejects execution because the current workspace or manifest state does not allow the operation. In blocked cases, the extension reports the reason through the appropriate user-facing feedback channel.
-
-In general:
-
-- hidden means the action is not presented for the current context
-- disabled means the action is presented but cannot currently be executed
-- blocked means execution was attempted but the extension refused it because a precondition was not met
 
 ## Command Surface
 
@@ -634,29 +650,19 @@ Among workflow actions, `Build` is treated as the main entry point and the defau
 - in the VS Code Command Palette as `Trezor: Build`
 - through the VS Code task system as a workspace task for the current active build context
 
-When shown through the VS Code task system, the `Build` task uses a context-specific label based on the shared display conventions defined in `Build Context Display Conventions`, with the `Build ` prefix added ahead of the active build-context display. `Clean` is the only workflow task that uses a fixed label without context-specific suffixes.
+When shown through the VS Code task system, the `Build` task uses a context-specific label based on the shared display conventions defined in `Build Context Display Conventions`, with the `Build ` prefix added ahead of the active build-context display.
 
 Within the VS Code task system, `Build` is also the only workflow task contributed as the primary build task.
 
 #### Preconditions
 
-`Build` follows the shared workflow blocking rules defined in `Availability And Blocking Model`.
-
-In practice, `Build` requires:
-
-- one supported workspace folder
-- a manifest that is present and valid
-- an active build context that resolves to current manifest entries
-- no workflow-blocking manifest issues
-- a present shared `presets.toml`, both preset inputs valid, and no available build option reporting a preset-effective value mismatch
+`Build` follows the shared blocking conditions defined in `Availability And Blocking Model`, including the preset-blocking condition.
 
 `Build` does not require pre-existing output artifacts, because producing build output is the purpose of the command.
 
 The command always uses the currently active model, target, component, and preset selection together with the currently effective build-option overrides.
 
 Before deriving arguments, `Build` reloads both preset inputs from disk and recalculates the declared preset list and the preset-effective build-option values from that fresh state, so the launched command always reflects the current preset files rather than a possibly stale cached state.
-
-When launched, `Build` runs from the cargo workspace path resolved from repository configuration and uses the workflow task environment described above.
 
 The task invokes `cargo xtask build` for the active build context.
 
@@ -674,21 +680,13 @@ cargo xtask build <component-id> -m <model-id> [target flag] [-p <preset-id>] [o
 
 #### Blocked Behavior
 
-When the shared workflow state is blocked, the Configuration view header entry and overflow entry remain visible but disabled instead of appearing as runnable actions.
-
-If the user invokes `Build` from a surface that still allows invocation while workflow execution is blocked, the extension rejects execution, shows an error message that explains the blocking reason, and writes the failure to the dedicated log output.
-
-If task launch itself fails after preconditions are satisfied, the extension reports that startup failure through an error message and the log output.
+`Build` follows the shared blocked behavior defined in `Availability And Blocking Model`.
 
 #### Successful Result
 
 When `Build` starts successfully, the extension launches the corresponding build task for the active build context.
 
-Starting the command alone does not refresh artifact or IntelliSense state.
-
-When the expected artifact files for the active build context are then created, updated, or deleted on disk, the extension refreshes build-artifact state and IntelliSense-related state so the `Build Artifacts` section, artifact-dependent actions, compile-commands resolution, and excluded-file evaluation reflect the resulting outputs.
-
-This means artifact-producing tools can make artifact rows become available or change status without requiring the user to reload the window or manually refresh the extension state, even when those tools are run outside extension-managed tasks.
+Starting the command alone does not refresh artifact or IntelliSense state. Successful completion of a tbench `Build` task additionally triggers the same artifact and IntelliSense refresh described for `Clean`. Independently of task completion, build outputs created, updated, or deleted on disk are picked up through the artifact-file refresh behavior described in `Build Artifacts` and `Startup And Refresh Behavior`, so the `Build Artifacts` section, artifact-dependent actions, compile-commands resolution, and excluded-file evaluation reflect the resulting outputs without a window reload or manual refresh, even when those outputs are produced outside extension-managed tasks.
 
 ### Clippy And Check
 
@@ -714,11 +712,7 @@ When shown through the VS Code task system, both tasks use the shared display co
 
 #### Preconditions
 
-`Clippy` and `Check` follow the same workflow preconditions and shared blocking rules as `Build`.
-
-Like `Build`, they require a supported workspace, a present and valid manifest, a resolved active build context, no workflow-blocking manifest issues, and a present shared `presets.toml` with both preset inputs valid and no available build option reporting a preset-effective value mismatch. Like `Build`, they reload both preset inputs and recalculate available presets and preset-effective build-option values before deriving arguments.
-
-They also use the cargo workspace path resolved from repository configuration and the workflow task environment described above.
+`Clippy` and `Check` follow the same preconditions and shared blocking conditions as `Build`. Like `Build`, they reload both preset inputs and recalculate available presets and preset-effective build-option values before deriving arguments.
 
 Their command-line shape follows the same argument mapping as `Build`, but with a different xtask subcommand:
 
@@ -727,15 +721,9 @@ cargo xtask clippy <component-id> -m <model-id> [target flag] [-p <preset-id>] [
 cargo xtask check <component-id> -m <model-id> [target flag] [-p <preset-id>] [override flags]
 ```
 
-That means both commands use the active component selection, active model selection, optional target flag, optional preset argument, and override-only build-option flags in the same way as `Build`.
-
 #### Blocked Behavior
 
-`Clippy` and `Check` use the same blocked-behavior model as `Build`.
-
-When workflow execution is blocked, their Configuration view overflow entries remain visible but disabled. If invocation is attempted from a surface that still allows execution, the extension rejects the action, shows a user-visible error, and writes the failure to log output.
-
-If task launch fails after preconditions are satisfied, the extension reports that startup failure through an error message and the log output.
+`Clippy` and `Check` follow the shared blocked behavior defined in `Availability And Blocking Model`.
 
 #### Successful Result
 
@@ -763,9 +751,7 @@ When shown through the VS Code task system, `Clean` is the only workflow task th
 
 #### Preconditions
 
-`Clean` follows the same shared workflow blocking rules as `Build`, `Clippy`, and `Check`, with one exception: `Clean` is never blocked by an unavailable `presets.toml`, preset invalidity, or a preset-effective value mismatch. It requires a supported workspace, a present and valid manifest, a resolved workflow state, and no workflow-blocking manifest issues. It also runs from the cargo workspace path resolved from repository configuration and uses the workflow task environment described above.
-
-`Clean` stays available and continues to launch with the same fixed arguments even when `presets.toml` is absent, a preset file is invalid, or an option reports a preset-effective value mismatch, since it never uses preset or build-option data.
+`Clean` follows the shared blocking conditions defined in `Availability And Blocking Model`, except that the preset-blocking condition never applies to it: `Clean` stays available and continues to launch with the same fixed arguments even when `presets.toml` is absent, a preset file is invalid, or an option reports a preset-effective value mismatch, since it never uses preset or build-option data.
 
 Its invocation differs from the other workflow tasks because it does not use active-build-context-derived arguments:
 
@@ -777,11 +763,7 @@ That means `Clean` does not append model, target, component, or build-option arg
 
 #### Blocked Behavior
 
-`Clean` uses the same blocked-behavior model as the other workflow commands.
-
-When workflow execution is blocked, its Configuration view overflow entry remains visible but disabled. If invocation is attempted from a surface that still allows execution, the extension rejects the action, shows a user-visible error, and writes the failure to log output.
-
-If task launch fails after preconditions are satisfied, the extension reports that startup failure through an error message and the log output.
+`Clean` follows the shared blocked behavior defined in `Availability And Blocking Model`.
 
 #### Successful Result
 
@@ -807,15 +789,7 @@ Unlike `Build`, `Clippy`, `Check`, and `Clean`, these actions are launched as on
 
 #### Applicability And Preconditions
 
-These commands follow the shared availability model, but they add action-specific applicability and artifact requirements.
-
-For either action to be executable, all of the following must be true:
-
-- the workspace is supported
-- the manifest is present and valid
-- the active build context is resolved
-- the corresponding action is applicable for the active build context
-- the active binary artifact exists
+These commands follow the shared blocking conditions defined in `Availability And Blocking Model` and add two action-specific requirements: the corresponding action must be applicable for the active build context, and the active binary artifact must exist.
 
 Applicability is controlled separately for the two actions:
 
@@ -823,8 +797,6 @@ Applicability is controlled separately for the two actions:
 - `Upload to Device` is applicable only when the selected component defines `uploadWhen` and that rule matches the active build context
 
 If the selected component does not define the corresponding rule, that action is unavailable for that context.
-
-When launched, both actions run from the cargo workspace path resolved from repository configuration and use the workflow task environment described above.
 
 Their command-line shapes are:
 
@@ -846,17 +818,13 @@ Flash to Device {model-name} | {target-display} | {component-name}
 Upload to Device {model-name} | {target-display} | {component-name}
 ```
 
-These tasks are on-demand workflow launches and are not contributed as standard build-task picker entries.
-
 #### Blocked Behavior
 
-These actions follow the same general blocked-behavior model as other commands, but they can also be blocked by action-specific conditions.
+These actions follow the shared blocked behavior defined in `Availability And Blocking Model`, but they can also be blocked by action-specific conditions.
 
 If an action is not applicable for the current build context, it is not offered on context-sensitive surfaces. If it is applicable but the binary artifact is missing, the action remains visible where appropriate but is disabled.
 
 If invocation is attempted while the action is blocked, the extension shows a user-visible error explaining whether the failure is due to unsupported workspace state, missing or invalid manifest, inapplicable action, or missing binary artifact, and records the blocked attempt in log output.
-
-If task launch fails after preconditions are satisfied, the extension reports that startup failure through an error message and the log output.
 
 #### Successful Result
 
@@ -886,14 +854,12 @@ The same extension-managed state also drives tbench-owned entries in VS Code `Ru
 
 The Command Palette entry is more restrictive than the visible `Configuration view` actions. It is shown only when debugging is currently startable for the active build context.
 
-The `Configuration view` header, overflow menu, `Executable` row action, and Command Palette continue to launch the default matching debug profile immediately. When more than one profile matches, `Run and Debug` additionally exposes profile-specific entries for profile selection.
+When exactly one profile matches, the `Configuration view` header, overflow menu, `Executable` row action, and Command Palette launch that profile immediately. When more than one profile matches, those surfaces first prompt for the profile with a `Select Debug Profile` quick pick — dismissing the pick launches nothing — and `Run and Debug` additionally exposes profile-specific entries for profile selection.
 
 #### Preconditions
 
-At a high level, debugging is considered available only when all of the following are true:
+At a high level, debugging is considered available only when the shared workspace, manifest, and active-build-context conditions defined in `Availability And Blocking Model` are satisfied, the manifest is loaded without debug-blocking issues, and additionally:
 
-- The workspace is in a supported state and the manifest is loaded without debug-blocking issues.
-- The active model, target, and component resolve to real manifest entries.
 - The selected component provides at least one debug profile that matches the active build context.
 - The expected executable artifact for the active build context exists.
 
@@ -909,9 +875,9 @@ The `Executable` row reflects the same readiness state through its `present` or 
 
 Debugging is resolved only from the selected component's manifest-defined debug profiles.
 
-The extension evaluates those profiles against the active build context and selects the first matching profile in declaration order. A profile without a `when` condition acts as a match-all entry for that component.
+The extension evaluates those profiles against the active build context and treats the first matching profile in declaration order as the default profile. A profile without a `when` condition acts as a match-all entry for that component.
 
-The manifest debug model does not support separate profile-priority fields or any other custom precedence layer. When multiple profiles match, declaration order alone decides which profile is selected.
+The manifest debug model does not support separate profile-priority fields or any other custom precedence layer. When multiple profiles match, declaration order alone decides which profile is the default; the choice among the matching profiles is then made by the user as described in `Surfaces`.
 
 Unsupported legacy debug schema forms, such as top-level debug entries, profile-level executable overrides, priority fields, or obsolete tbench variable aliases, MUST be treated as invalid manifest content rather than silently remapped.
 
@@ -1048,7 +1014,7 @@ At a high level, the refresh:
 - updates the `Compile Commands` artifact row in `Build Artifacts`
 - updates excluded-file evaluation that depends on the active compile database
 
-If the refresh detects a provider-configuration problem, the extension reports that state through its normal warning and log channels and may offer a fix action when the wrong configuration provider is active.
+If the refresh detects a provider-configuration problem, the extension reports it as described in `Refresh And Warning Behavior`.
 
 Unlike build-workflow commands, `Refresh IntelliSense` does not change the active build context or produce new artifacts. Its result is an updated IntelliSense integration state for whatever the current workspace and artifact conditions allow.
 
@@ -1090,6 +1056,8 @@ Collection requirements:
 - `targets` is required and must contain at least one entry.
 - `components` is required and must contain at least one entry.
 - `options` is optional.
+- Entry ids must be unique within each collection; a duplicate id is a validation error.
+- Effective option flags must be unique across all options, and state ids must be unique within a multistate option; duplicates are validation errors.
 
 At a high level, the manifest structure looks like this:
 
@@ -1123,7 +1091,7 @@ Authored fields:
 
 - `id`: string, required. Stable lowercase model identifier, such as `t3w1` or `t3t1`, used by the extension when tracking the active build context and passed to `xtask` as the model argument.
 - `name`: string, required. User-facing model label shown in the UI.
-- `artifactFolder`: string, optional. Relative artifact-folder path used when resolving build artifacts for the selected model.
+- `artifactFolder`: string, optional. Relative artifact-folder path used when resolving build artifacts for the selected model. The kebab-case spelling `artifact-folder` is accepted as an alias.
 
 ### targets
 
@@ -1145,9 +1113,9 @@ Authored fields:
 - `id`: string, required. Stable target identifier used by the extension when tracking the active build context.
 - `name`: string, required. User-facing target label shown in the UI.
 - `shortName`: string, optional. Compact target label used where a shorter display form is needed.
-- `flag`: string or null, optional. Target-specific build flag passed to `xtask` when the selected target requires one. The emulator target currently uses `-emu`, while hardware targets use `null`.
-- `artifactSuffix`: string, optional. Suffix appended to the component artifact name when deriving artifact file names.
-- `executableExtension`: string, optional. Executable filename extension used for the derived executable artifact.
+- `flag`: string or null, optional. Target-specific build flag passed to `xtask` when the selected target requires one. The emulator target currently uses `--emulator` (short form `-e`), while hardware targets use `null`. The extension derives a target's emulator-ness for preset-fragment matching from this field: a target is treated as an emulator target exactly when its `flag` is `--emulator` or `-e`.
+- `artifactSuffix`: string, optional. Suffix appended to the component artifact name when deriving artifact file names. The kebab-case spelling `artifact-suffix` is accepted as an alias.
+- `executableExtension`: string, optional. Executable filename extension used for the derived executable artifact. The kebab-case spelling `executable-extension` is accepted as an alias.
 
 ### components
 
@@ -1174,7 +1142,7 @@ Authored fields:
 
 - `id`: string, required. Stable component identifier used by the extension and build workflow and passed to `xtask` as the component argument.
 - `name`: string, required. User-facing component label shown in the UI.
-- `artifactName`: string, optional. Artifact basename stem used when deriving compile-commands, binary, map-file, and executable paths.
+- `artifactName`: string, optional. Artifact basename stem used when deriving compile-commands, binary, map-file, and executable paths. The kebab-case spelling `artifact-name` is accepted as an alias.
 - `flashWhen`: when expression, optional. Availability expression that controls whether `Flash to Device` is applicable for the current build context. If omitted, `Flash to Device` is unavailable for that component.
 - `uploadWhen`: when expression, optional. Availability expression that controls whether `Upload to Device` is applicable for the current build context. If omitted, `Upload to Device` is unavailable for that component.
 - `debug`: array of debug-profile mappings, optional. Ordered list of debug-profile definitions scoped to the component.
@@ -1226,9 +1194,9 @@ When an option uses `type: multistate`, each state may define these authored fie
 - `value`: string or null, optional. Value paired with the option's `flag` when the state is selected. If omitted or set to `null`, the state suppresses the CLI value for that option.
 - `name`: string, required. User-facing state label shown in the UI.
 - `description`: string, optional. Explanatory text shown for the state.
-- `default`: boolean, optional. Marks the state as the default selection.
+- `default`: boolean, optional. Accepted for backward compatibility and ignored; it has no effect on the effective value.
 
-For multistate options, the effective default selection is derived from the `states` list. If one state is marked with `default: true`, that state is the default. Otherwise, the first state in the list is the default.
+For multistate options, the effective value when no override is stored follows the preset-effective rules described in `Persistence And Defaults`; a state's `default` marking has no effect.
 
 Examples:
 
@@ -1256,7 +1224,6 @@ Multistate option:
     - value: null
       name: Default
       description: Use the component default.
-      default: true
     - value: vcp
       name: VCP
       description: Route the debug console over virtual COM port.
@@ -1289,6 +1256,7 @@ Expression rules:
 - Whitespace between tokens may be ignored.
 - `all(...)` and `any(...)` require at least one argument.
 - `not(...)` requires exactly one argument.
+- A predicate that references a model, target, or component id not defined in the manifest is a validation error.
 - If a `when`-type field is omitted, the field follows its default behavior.
 
 Examples:
@@ -1309,21 +1277,7 @@ The extension reports problems through several user-facing channels, depending o
 
 Manifest validation errors are surfaced as diagnostics on the manifest file itself and therefore appear in the Problems panel as well as in the manifest editor.
 
-At a high level, the reporting model is:
-
-```text
-Problem occurs
-├── Blocking or degrading runtime issue
-│   └── bottom-right VS Code popup
-├── File-backed validation issue
-│   └── Diagnostics / Problems view / editor
-├── Missing build artifact
-│   └── Build Artifacts row status and disabled actions
-└── Persistent runtime detail
-	└── Trezor Bench log output
-```
-
-The extension also provides a `Trezor: Show Logs` command so the user can open the log output directly when more detail is needed.
+The `Trezor: Show Logs` command described in `Command Surface` opens the log output directly when more detail is needed.
 
 ## Terminology Reference
 
