@@ -21,6 +21,20 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "taskDefinitions": [
+      {
+        "type": "tbench",
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "The Trezor Bench workflow to run."
+          }
+        }
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {

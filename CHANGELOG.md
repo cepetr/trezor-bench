@@ -3,6 +3,7 @@
 ## Unreleased
 ### Fixed
 - Blocked build messages now identify the correct manifest and preset locations to check.
+- Build, Clippy, Check, and Clean tasks can now be referenced from `.vscode/tasks.json`.
 
 ## 0.4.2 - 2026-08-13
 ### Changed
