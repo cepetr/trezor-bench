@@ -95,19 +95,38 @@ export class ArtifactUpdatedItem extends vscode.TreeItem {
 // ---------------------------------------------------------------------------
 
 /**
+ * Shared shape of a Build Artifacts row: `artifact:<kind>` id,
+ * `artifact-<kind>` contextValue, pass/error icon, and a
+ * `present`/`missing` description derived from the artifact status.
+ */
+class ArtifactStatusItem extends vscode.TreeItem {
+  constructor(
+    label: string,
+    kind: string,
+    status: "valid" | "missing",
+    tooltip: string
+  ) {
+    super(label, vscode.TreeItemCollapsibleState.None);
+    this.id = `artifact:${kind}`;
+    this.contextValue = `artifact-${kind}`;
+    this.iconPath = new vscode.ThemeIcon(status === "valid" ? "pass" : "error");
+    this.description = status === "valid" ? "present" : "missing";
+    this.tooltip = tooltip;
+  }
+}
+
+/**
  * The Compile Commands row in the Build Artifacts section.
  * Shows `present` or `missing` as description and the expected path as tooltip.
  */
-export class CompileCommandsArtifactItem extends vscode.TreeItem {
+export class CompileCommandsArtifactItem extends ArtifactStatusItem {
   constructor(artifact: ActiveCompileCommandsArtifact) {
-    super("Compile Commands", vscode.TreeItemCollapsibleState.None);
-    this.id = "artifact:compile-commands";
-    this.contextValue = "artifact-compile-commands";
-    this.iconPath = new vscode.ThemeIcon(
-      artifact.status === "valid" ? "pass" : "error"
+    super(
+      "Compile Commands",
+      "compile-commands",
+      artifact.status,
+      formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason)
     );
-    this.description = artifact.status === "valid" ? "present" : "missing";
-    this.tooltip = formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason);
   }
 }
 
@@ -115,16 +134,14 @@ export class CompileCommandsArtifactItem extends vscode.TreeItem {
  * The Binary row in the Build Artifacts section.
  * contextValue "artifact-binary" enables Flash/Upload row actions via menus.view/item/context.
  */
-export class BinaryArtifactItem extends vscode.TreeItem {
+export class BinaryArtifactItem extends ArtifactStatusItem {
   constructor(artifact: ActiveBinaryArtifact) {
-    super("Binary", vscode.TreeItemCollapsibleState.None);
-    this.id = "artifact:binary";
-    this.contextValue = "artifact-binary";
-    this.iconPath = new vscode.ThemeIcon(
-      artifact.status === "valid" ? "pass" : "error"
+    super(
+      "Binary",
+      "binary",
+      artifact.status,
+      formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason)
     );
-    this.description = artifact.status === "valid" ? "present" : "missing";
-    this.tooltip = formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason);
   }
 }
 
@@ -132,16 +149,14 @@ export class BinaryArtifactItem extends vscode.TreeItem {
  * The Map File row in the Build Artifacts section.
  * contextValue "artifact-map" enables the openMapFile row action via menus.view/item/context.
  */
-export class MapArtifactItem extends vscode.TreeItem {
+export class MapArtifactItem extends ArtifactStatusItem {
   constructor(artifact: ActiveMapArtifact) {
-    super("Map File", vscode.TreeItemCollapsibleState.None);
-    this.id = "artifact:map";
-    this.contextValue = "artifact-map";
-    this.iconPath = new vscode.ThemeIcon(
-      artifact.status === "valid" ? "pass" : "error"
+    super(
+      "Map File",
+      "map",
+      artifact.status,
+      formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason)
     );
-    this.description = artifact.status === "valid" ? "present" : "missing";
-    this.tooltip = formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason);
   }
 }
 
@@ -152,16 +167,9 @@ export class MapArtifactItem extends vscode.TreeItem {
  * visible but disabled when the executable is missing or the profile cannot be resolved.
  * Start Debugging is invoked only through the inline row action, not by clicking the row.
  */
-export class ExecutableArtifactItem extends vscode.TreeItem {
+export class ExecutableArtifactItem extends ArtifactStatusItem {
   constructor(artifact: ActiveExecutableArtifact) {
-    super("Executable", vscode.TreeItemCollapsibleState.None);
-    this.id = "artifact:executable";
-    this.contextValue = "artifact-executable";
-    this.iconPath = new vscode.ThemeIcon(
-      artifact.status === "valid" ? "pass" : "error"
-    );
-    this.description = artifact.status === "valid" ? "present" : "missing";
-    this.tooltip = artifact.tooltip;
+    super("Executable", "executable", artifact.status, artifact.tooltip);
   }
 }
 
