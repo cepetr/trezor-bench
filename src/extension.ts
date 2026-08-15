@@ -20,7 +20,7 @@ import {
   PresetContext,
   PresetEffectiveValue,
 } from "./presets/preset-resolution";
-import { ConfigurationTreeModel, PaneTreeProvider } from "./ui/configuration-tree";
+import { PaneTreeModel, PaneTreeProvider } from "./ui/pane-tree";
 import { SelectorHeaderItem } from "./ui/build-selection-pane";
 import { BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/build-options-pane";
 import { StatusBarPresenter } from "./ui/status-bar";
@@ -125,7 +125,7 @@ let _presetBlocked = false;
  */
 let _presetsUnavailable = false;
 let _presetStateSubscription: vscode.Disposable | undefined;
-let _treeModel: ConfigurationTreeModel | undefined;
+let _treeModel: PaneTreeModel | undefined;
 let _configurationTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _buildArtifactsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _buildOptionsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
@@ -516,7 +516,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // Always register the tree provider so VS Code never shows
   // "no data provider registered" when the activity bar is clicked.
-  _treeModel = new ConfigurationTreeModel();
+  _treeModel = new PaneTreeModel();
   _configurationTreeView = vscode.window.createTreeView("tbench.configuration", {
     treeDataProvider: new PaneTreeProvider(_treeModel, "build-selection"),
     showCollapseAll: false,

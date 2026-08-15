@@ -21,7 +21,7 @@ import {
   resolveExecutableArtifact,
   ExecutableArtifact,
 } from "../../build/artifact-resolution";
-import { ConfigurationTreeModel } from "../../ui/configuration-tree";
+import { PaneTreeModel } from "../../ui/pane-tree";
 import {
   CompileCommandsArtifactItem,
   ExecutableArtifactItem,
@@ -184,10 +184,10 @@ suite("Debug Launch – Executable row rendering under resolution states", () =>
 // ---------------------------------------------------------------------------
 
 suite("Debug Launch – Executable row position in Build Artifacts tree", () => {
-  let treeModel: ConfigurationTreeModel;
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   function getBuildArtifacts(): vscode.TreeItem[] {

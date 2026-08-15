@@ -1,10 +1,10 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import {
-  ConfigurationTreeModel,
+  PaneTreeModel,
   PaneTreeProvider,
   PaneId,
-} from "../../../ui/configuration-tree";
+} from "../../../ui/pane-tree";
 import { PlaceholderItem, WarningItem } from "../../../ui/pane-items";
 import {
   SelectorChoiceItem,
@@ -629,11 +629,11 @@ suite("MapArtifactItem – missing artifact", () => {
   });
 });
 
-suite("ConfigurationTreeModel – Binary/Map artifact refresh", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – Binary/Map artifact refresh", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -853,11 +853,11 @@ suite("ExecutableArtifactItem – missing status rendering", () => {
   });
 });
 
-suite("ConfigurationTreeModel – Executable row", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – Executable row", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -956,7 +956,7 @@ suite("ConfigurationTreeModel – Executable row", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ConfigurationTreeModel – Preset selector
+// PaneTreeModel – Preset selector
 // ---------------------------------------------------------------------------
 
 function makeManifestState(): ManifestStateLoaded {
@@ -1009,11 +1009,11 @@ function makeLoadedPresetState(available: PresetChoice[]): { state: PresetState;
 
 const DEFAULT_ONLY: PresetChoice[] = [{ id: "default", label: "Default", isDefault: true }];
 
-suite("ConfigurationTreeModel – Preset selector", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – Preset selector", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -1204,7 +1204,7 @@ suite("ConfigurationTreeModel – Preset selector", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ConfigurationTreeModel – Build Options preset-relative emphasis
+// PaneTreeModel – Build Options preset-relative emphasis
 // ---------------------------------------------------------------------------
 
 function checkboxOption(key: string, flag: string, group?: string): BuildOption {
@@ -1233,15 +1233,15 @@ function resolved(
   };
 }
 
-function getBuildOptionsChildren(treeModel: ConfigurationTreeModel): vscode.TreeItem[] {
+function getBuildOptionsChildren(treeModel: PaneTreeModel): vscode.TreeItem[] {
   return treeModel.paneRootChildren("build-options");
 }
 
-suite("ConfigurationTreeModel – Build Options preset-relative emphasis", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – Build Options preset-relative emphasis", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -1359,17 +1359,17 @@ suite("ConfigurationTreeModel – Build Options preset-relative emphasis", () =>
 });
 
 // ---------------------------------------------------------------------------
-// ConfigurationTreeModel – per-pane root children (paneRootChildren)
+// PaneTreeModel – per-pane root children (paneRootChildren)
 // Each PaneId's root rows must match today's section content exactly, in
 // every recorded state. This is the reference the pane split is checked
 // against.
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeModel – paneRootChildren('build-selection')", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – paneRootChildren('build-selection')", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -1417,11 +1417,11 @@ suite("ConfigurationTreeModel – paneRootChildren('build-selection')", () => {
   });
 });
 
-suite("ConfigurationTreeModel – paneRootChildren('build-options')", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – paneRootChildren('build-options')", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -1490,11 +1490,11 @@ suite("ConfigurationTreeModel – paneRootChildren('build-options')", () => {
   });
 });
 
-suite("ConfigurationTreeModel – paneRootChildren('build-artifacts')", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – paneRootChildren('build-artifacts')", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -1519,16 +1519,16 @@ suite("ConfigurationTreeModel – paneRootChildren('build-artifacts')", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ConfigurationTreeModel – per-pane refresh signal (onDidChangePane)
+// PaneTreeModel – per-pane refresh signal (onDidChangePane)
 // Each update*() entry point must signal exactly the panes whose rows it
 // affects (research.md R4), so a facade relays only what concerns its pane.
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeModel – onDidChangePane fan-out", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – onDidChangePane fan-out", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -1597,10 +1597,10 @@ suite("ConfigurationTreeModel – onDidChangePane fan-out", () => {
 // ---------------------------------------------------------------------------
 
 suite("PaneTreeProvider – root delegation", () => {
-  let owner: ConfigurationTreeModel;
+  let owner: PaneTreeModel;
 
   setup(() => {
-    owner = new ConfigurationTreeModel();
+    owner = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -1635,10 +1635,10 @@ suite("PaneTreeProvider – root delegation", () => {
 });
 
 suite("PaneTreeProvider – non-root delegation to the owner's element dispatch", () => {
-  let owner: ConfigurationTreeModel;
+  let owner: PaneTreeModel;
 
   setup(() => {
-    owner = new ConfigurationTreeModel();
+    owner = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -1680,11 +1680,11 @@ suite("PaneTreeProvider – non-root delegation to the owner's element dispatch"
 // ---------------------------------------------------------------------------
 
 suite("PaneTreeProvider – selector accordion behavior", () => {
-  let owner: ConfigurationTreeModel;
+  let owner: PaneTreeModel;
   let buildSelection: PaneTreeProvider;
 
   setup(() => {
-    owner = new ConfigurationTreeModel();
+    owner = new PaneTreeModel();
     buildSelection = new PaneTreeProvider(owner, "build-selection");
     owner.update(makeManifestState(), makeBuildSelection(), []);
   });
@@ -1710,11 +1710,11 @@ suite("PaneTreeProvider – selector accordion behavior", () => {
 });
 
 suite("PaneTreeProvider – multistate expansion, group collapse, and checkbox state", () => {
-  let owner: ConfigurationTreeModel;
+  let owner: PaneTreeModel;
   let buildOptions: PaneTreeProvider;
 
   setup(() => {
-    owner = new ConfigurationTreeModel();
+    owner = new PaneTreeModel();
     buildOptions = new PaneTreeProvider(owner, "build-options");
   });
 
@@ -1776,7 +1776,7 @@ suite("PaneTreeProvider – multistate expansion, group collapse, and checkbox s
 
 suite("PaneTreeProvider – getTreeItem identity", () => {
   test("returns the same element it was given, like the owner", () => {
-    const owner = new ConfigurationTreeModel();
+    const owner = new PaneTreeModel();
     const facade = new PaneTreeProvider(owner, "build-artifacts");
     const item = new PlaceholderItem("anything");
     assert.strictEqual(facade.getTreeItem(item), item);
@@ -1785,10 +1785,10 @@ suite("PaneTreeProvider – getTreeItem identity", () => {
 });
 
 suite("PaneTreeProvider – change-event relay", () => {
-  let owner: ConfigurationTreeModel;
+  let owner: PaneTreeModel;
 
   setup(() => {
-    owner = new ConfigurationTreeModel();
+    owner = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -1835,7 +1835,7 @@ function labelText(item: vscode.TreeItem): string {
 }
 
 function collectAllRows(
-  treeModel: ConfigurationTreeModel,
+  treeModel: PaneTreeModel,
   paneId: PaneId
 ): vscode.TreeItem[] {
   const all: vscode.TreeItem[] = [];
@@ -1849,11 +1849,11 @@ function collectAllRows(
   return all;
 }
 
-suite("ConfigurationTreeModel – no section rows inside any pane", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – no section rows inside any pane", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {

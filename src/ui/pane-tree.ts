@@ -38,7 +38,7 @@ export type PaneId = "build-selection" | "build-options" | "build-artifacts";
 // Configuration tree model
 // ---------------------------------------------------------------------------
 
-export class ConfigurationTreeModel
+export class PaneTreeModel
   implements vscode.TreeDataProvider<vscode.TreeItem>
 {
   private _state: ManifestState | undefined;
@@ -245,13 +245,13 @@ export class ConfigurationTreeModel
 // ---------------------------------------------------------------------------
 
 /**
- * Thin, stateless `TreeDataProvider` for one pane. `ConfigurationTreeModel`
+ * Thin, stateless `TreeDataProvider` for one pane. `PaneTreeModel`
  * stays the sole owner of manifest, build-selection, preset, resolved-option,
  * and artifact state; this facade only routes to it.
  */
 export class PaneTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
   constructor(
-    private readonly owner: ConfigurationTreeModel,
+    private readonly owner: PaneTreeModel,
     private readonly paneId: PaneId
   ) {}
 

@@ -13,7 +13,7 @@ import { resolveArtifact, buildResolutionInputs, deriveArtifactPath } from "../.
 import { checkProviderReadiness } from "../../intellisense/intellisense-backend";
 import { IntelliSenseService } from "../../intellisense/intellisense-service";
 import { BuildSelection } from "../../build/build-selection";
-import { ConfigurationTreeModel } from "../../ui/configuration-tree";
+import { PaneTreeModel } from "../../ui/pane-tree";
 
 const VALID_MANIFEST = `
 models:
@@ -355,28 +355,28 @@ suite("checkProviderReadiness – integration", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ConfigurationTreeModel pane root content (UI-02)
+// PaneTreeModel pane root content (UI-02)
 // Integration tests asserting each pane's root rows remain reachable
 // immediately on startup. Initial collapse state is now declared in
 // package.json's `visibility` field and is covered by the initial-collapse-
 // state suite in configuration-panes.integration.test.ts, not here.
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeModel – pane root content (UI-02)", () => {
+suite("PaneTreeModel – pane root content (UI-02)", () => {
   test("Build Selection children are reachable immediately (loading placeholder visible)", () => {
-    const treeModel = new ConfigurationTreeModel();
+    const treeModel = new PaneTreeModel();
     const children = treeModel.paneRootChildren("build-selection");
     assert.ok(children.length > 0, "Expected Build Selection to have visible child content");
   });
 
   test("Build Options children are reachable immediately (placeholder visible)", () => {
-    const treeModel = new ConfigurationTreeModel();
+    const treeModel = new PaneTreeModel();
     const children = treeModel.paneRootChildren("build-options");
     assert.ok(children.length > 0, "Expected Build Options to have visible placeholder content");
   });
 
   test("Build Artifacts children are reachable immediately (placeholder visible)", () => {
-    const treeModel = new ConfigurationTreeModel();
+    const treeModel = new PaneTreeModel();
     const children = treeModel.paneRootChildren("build-artifacts");
     assert.ok(children.length > 0, "Expected Build Artifacts to have visible placeholder content");
   });

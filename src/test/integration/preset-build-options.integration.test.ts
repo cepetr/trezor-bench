@@ -24,7 +24,7 @@ import {
   ResolvedOption,
 } from "../../build/build-options";
 import { BuildOption } from "../../manifest/manifest-types";
-import { ConfigurationTreeModel } from "../../ui/configuration-tree";
+import { PaneTreeModel } from "../../ui/pane-tree";
 import {
   BuildOptionCheckboxItem,
   BuildOptionMultistateHeaderItem,
@@ -308,7 +308,7 @@ suite("Preset-relative Build Options – override emphasis round-trip", () => {
     await writeBuildOption(context, "frozen", false);
     const resolved = await resolveFor("preset-valid", "default", context);
 
-    const treeModel = new ConfigurationTreeModel();
+    const treeModel = new PaneTreeModel();
     treeModel.update(manifest(), buildSelection(), resolved);
     const children = treeModel.paneRootChildren("build-options") as vscode.TreeItem[];
     treeModel.dispose();
@@ -460,7 +460,7 @@ suite("Preset-relative Build Options – option-level mismatch", () => {
     assert.strictEqual(dbgConsole.presetState, "mismatch");
     assert.strictEqual(dbgConsole.isOverride, false);
 
-    const treeModel = new ConfigurationTreeModel();
+    const treeModel = new PaneTreeModel();
     treeModel.update(manifest(), buildSelection(), resolved);
     const children = treeModel.paneRootChildren("build-options") as vscode.TreeItem[];
     treeModel.dispose();

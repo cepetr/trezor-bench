@@ -29,7 +29,7 @@ import {
 } from "../../build/build-selection";
 import { normalizePresetId } from "../../build/normalize-selection";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
-import { ConfigurationTreeModel } from "../../ui/configuration-tree";
+import { PaneTreeModel } from "../../ui/pane-tree";
 import { SelectorHeaderItem } from "../../ui/build-selection-pane";
 import { formatStatusBarText } from "../../ui/status-bar";
 import { deriveWorkflowArguments, formatTaskLabel } from "../../commands/build-workflow";
@@ -91,7 +91,7 @@ function buildSelection(overrides: Partial<BuildSelection> = {}): BuildSelection
   };
 }
 
-function buildContextChildren(treeModel: ConfigurationTreeModel): SelectorHeaderItem[] {
+function buildContextChildren(treeModel: PaneTreeModel): SelectorHeaderItem[] {
   return treeModel.paneRootChildren("build-selection") as SelectorHeaderItem[];
 }
 
@@ -119,7 +119,7 @@ suite("Preset selection – preset-valid fixture", () => {
       ["default", "test", "dev", "local"]
     );
 
-    const treeModel = new ConfigurationTreeModel();
+    const treeModel = new PaneTreeModel();
     treeModel.update(manifest, config, []);
     treeModel.updatePresets(state, activePresetId(config), available);
     const children = buildContextChildren(treeModel);
@@ -194,7 +194,7 @@ suite("Preset selection – select and persist", () => {
       validationIssues: [],
     };
 
-    const treeModel = new ConfigurationTreeModel();
+    const treeModel = new PaneTreeModel();
     treeModel.update(manifest, updated, []);
     treeModel.updatePresets(loadedState, "test", available);
     const children = buildContextChildren(treeModel);

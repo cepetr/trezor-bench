@@ -2,12 +2,12 @@
  * Integration tests for build-context selector behavior.
  * Runs inside the VS Code extension host via @vscode/test-electron.
  *
- * These tests exercise ConfigurationTreeModel and normalizeBuildSelection
+ * These tests exercise PaneTreeModel and normalizeBuildSelection
  * together to validate selector rendering and normalization behavior.
  */
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { ConfigurationTreeModel } from "../../ui/configuration-tree";
+import { PaneTreeModel } from "../../ui/pane-tree";
 import { WarningItem } from "../../ui/pane-items";
 import {
   SelectorHeaderItem,
@@ -58,7 +58,7 @@ function buildSelection(
 }
 
 function getBuildContextChildren(
-  treeModel: ConfigurationTreeModel
+  treeModel: PaneTreeModel
 ): vscode.TreeItem[] {
   return treeModel.paneRootChildren("build-selection");
 }
@@ -67,11 +67,11 @@ function getBuildContextChildren(
 // Suite: Selector rendering for loaded manifest
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeModel – selector rendering", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – selector rendering", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -132,11 +132,11 @@ suite("ConfigurationTreeModel – selector rendering", () => {
 // Suite: SelectorChoiceItem rendering
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeModel – choice item rendering", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – choice item rendering", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -213,11 +213,11 @@ suite("ConfigurationTreeModel – choice item rendering", () => {
 // Suite: Normalization integration with tree update
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeModel – normalization integration", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – normalization integration", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -266,7 +266,7 @@ import { CompileCommandsArtifactItem } from "../../ui/build-artifacts-pane";
 import { ResolvedArtifact } from "../../build/artifact-resolution";
 
 function getBuildArtifactsChildren(
-  treeModel: ConfigurationTreeModel
+  treeModel: PaneTreeModel
 ): vscode.TreeItem[] {
   return treeModel.paneRootChildren("build-artifacts");
 }
@@ -296,11 +296,11 @@ function makePresentCompileCommandsArtifact(
   };
 }
 
-suite("ConfigurationTreeModel – Build Artifacts section (IntelliSense)", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – Build Artifacts section (IntelliSense)", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {
@@ -405,11 +405,11 @@ suite("ConfigurationTreeModel – Build Artifacts section (IntelliSense)", () =>
 // Suite: active-context refresh and stale-state clearing
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeModel – active-context refresh and stale-state clearing", () => {
-  let treeModel: ConfigurationTreeModel;
+suite("PaneTreeModel – active-context refresh and stale-state clearing", () => {
+  let treeModel: PaneTreeModel;
 
   setup(() => {
-    treeModel = new ConfigurationTreeModel();
+    treeModel = new PaneTreeModel();
   });
 
   teardown(() => {
