@@ -6,6 +6,7 @@
 import * as vscode from "vscode";
 import { WorkflowKind, reportWorkflowBlocked } from "./build-workflow";
 import { reportArtifactActionBlocked } from "./artifact-actions";
+import { INTERNAL_COMMAND_IDS } from "./command-ids";
 import { logDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
 
 export function registerUnsupportedWorkspaceCommands(
@@ -50,11 +51,7 @@ export function registerUnsupportedWorkspaceCommands(
       revealLogs();
       notifyError("Cannot start debugging: workspace is not supported.");
     }),
-    registerNoop("tbench.selectModel"),
-    registerNoop("tbench.selectTarget"),
-    registerNoop("tbench.selectComponent"),
-    registerNoop("tbench.selectPreset"),
-    registerNoop("tbench.toggleBuildOption"),
-    registerNoop("tbench.selectBuildOptionState")
+    // Every internal (non-contributed) command resolves as a no-op.
+    ...INTERNAL_COMMAND_IDS.map(registerNoop)
   );
 }

@@ -74,6 +74,7 @@ import { registerDebugLaunchCommand } from "./commands/debug-launch";
 import { registerSelectionCommands } from "./commands/selection-commands";
 import { registerWorkflowCommands } from "./commands/workflow-commands";
 import { CommandDeps } from "./commands/command-deps";
+import { CONTRIBUTED_COMMAND_IDS } from "./commands/command-ids";
 import {
   updateWorkflowBlockedContext,
   updateArtifactActionContext,
@@ -102,38 +103,12 @@ let _debugConfigProviderRegistration: vscode.Disposable | undefined;
 let _lastShownProviderFixState: string = "none";
 
 // ---------------------------------------------------------------------------
-// Scope guard for the supported command surface, now expanded for
-// Build Workflow, IntelliSense, Flash/Upload, and Debug Launch.
-//
-// This extension contributes ONLY the commands listed below in these feature
-// slices. Debug and all other cross-slice commands are intentionally absent.
-// Any attempt to register them here is a scope violation.
-//
-// Allowed commands:
-//   tbench.showLogs              — reveal the output channel
-//   tbench.build                 — launch Build task
-//   tbench.clippy                — launch Clippy task
-//   tbench.check                 — launch Check task
-//   tbench.clean                 — launch Clean task
-//   tbench.refreshIntelliSense   — manual IntelliSense refresh
-//   tbench.flash                 — launch Flash task (Flash/Upload slice)
-//   tbench.upload                — launch Upload task (Flash/Upload slice)
-//   tbench.openMapFile           — open resolved map file (Flash/Upload slice)
-//   tbench.startDebugging        — launch debug session (Debug Launch slice)
+// Scope guard for the supported command surface: this extension contributes
+// ONLY the commands declared in commands/command-ids.ts. Any attempt to
+// contribute others is a scope violation.
 // ---------------------------------------------------------------------------
 
-const ALLOWED_CONTRIBUTION_COMMANDS = new Set([
-  "tbench.showLogs",
-  "tbench.build",
-  "tbench.clippy",
-  "tbench.check",
-  "tbench.clean",
-  "tbench.refreshIntelliSense",
-  "tbench.flash",
-  "tbench.upload",
-  "tbench.openMapFile",
-  "tbench.startDebugging",
-]);
+const ALLOWED_CONTRIBUTION_COMMANDS = new Set<string>(CONTRIBUTED_COMMAND_IDS);
 
 /**
  * Development-time guard: verifies that no unauthorized tbench commands are
