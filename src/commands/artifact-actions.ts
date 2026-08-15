@@ -19,6 +19,7 @@ import {
 import { ActiveConfig } from "../configuration/active-config";
 import { evaluateWhenExpression, EvalContext } from "../manifest/when-expressions";
 import { createCargoTaskExecution } from "../tasks/xtask-execution";
+import { TASK_TYPE, TASK_SOURCE } from "../tasks/build-task-provider";
 import {
   logArtifactActionBlocked,
   logMapFileOpenFailure,
@@ -222,8 +223,6 @@ export function reportArtifactActionBlocked(
 // Task construction
 // ---------------------------------------------------------------------------
 
-const TASK_TYPE = "tbench";
-const TASK_SOURCE = "Trezor Bench";
 
 /**
  * Creates an on-demand VS Code Task for the Flash action.
