@@ -26,7 +26,7 @@ import {
 
 export { TBENCH_DEBUG_TYPE, labelForDefaultEntry, labelForProfileEntry };
 import { makeContextKey, resolveActiveExecutableArtifact } from "../intellisense/artifact-resolution";
-import { EvalContext } from "../manifest/when-expressions";
+import { BuildContext } from "../manifest/manifest-types";
 import { logProviderDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
 
 function dedupeDebugConfigurations(
@@ -77,7 +77,7 @@ export function generateDebugConfigurations(
     return [];
   }
 
-  const evalCtx: EvalContext = {
+  const buildContext: BuildContext = {
     modelId: config.modelId,
     targetId: config.targetId,
     componentId: config.componentId,
@@ -85,7 +85,7 @@ export function generateDebugConfigurations(
 
   const matchingSet: MatchingDebugProfileSet = resolveMatchingDebugProfiles(
     entries.component.debug ?? [],
-    evalCtx
+    buildContext
   );
 
   if (!matchingSet.defaultProfile) {

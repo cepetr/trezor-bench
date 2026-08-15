@@ -8,6 +8,21 @@ import * as vscode from "vscode";
 
 export type ManifestEntryKind = "model" | "target" | "component";
 
+// --- Build context ---
+
+/**
+ * The active model/target/component triple — the identity every
+ * context-dependent computation keys on (`when` evaluation, artifact
+ * resolution, context keys). `ActiveBuildContext` extends it with the
+ * persisted preset selection, which is deliberately NOT part of this
+ * identity.
+ */
+export interface BuildContext {
+  readonly modelId: string;
+  readonly targetId: string;
+  readonly componentId: string;
+}
+
 // --- Manifest entries ---
 
 export interface ManifestModel {

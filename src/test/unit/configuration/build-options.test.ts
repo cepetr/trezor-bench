@@ -1,8 +1,8 @@
 import * as assert from "assert";
+import { BuildContext } from "../../../manifest/manifest-types";
 import {
   normalizeBuildOptions,
   deriveOptionFlags,
-  BuildContext,
   ResolvedOption,
   BUILD_OPTIONS_KEY,
   BuildOptionsState,

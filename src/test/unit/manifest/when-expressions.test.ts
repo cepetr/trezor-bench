@@ -4,9 +4,8 @@ import {
   evaluateWhenExpression,
   findUnknownIds,
   WhenContext,
-  EvalContext,
 } from "../../../manifest/when-expressions";
-import { WhenExpression } from "../../../manifest/manifest-types";
+import { WhenExpression, BuildContext } from "../../../manifest/manifest-types";
 
 suite("parseWhenExpression", () => {
   // ---------------------------------------------------------------------------
@@ -129,7 +128,7 @@ suite("parseWhenExpression", () => {
 });
 
 suite("evaluateWhenExpression", () => {
-  const ctx: EvalContext = {
+  const ctx: BuildContext = {
     modelId: "T2T1",
     targetId: "hw",
     componentId: "core",

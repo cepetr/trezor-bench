@@ -1,10 +1,10 @@
 /**
- * Active build configuration: the persisted model/target/component/preset
+ * Active build context: the persisted model/target/component/preset
  * selection. Reads, writes, and restores it from workspace state and applies
  * the selector commands' changes.
  */
 import * as vscode from "vscode";
-import { ManifestStateLoaded } from "../manifest/manifest-types";
+import { BuildContext, ManifestStateLoaded } from "../manifest/manifest-types";
 import { normalizeActiveBuildContext, normalizePresetId } from "./normalize-config";
 import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 
@@ -13,10 +13,7 @@ export const ACTIVE_CONFIG_KEY = "tbench.activeConfig";
 
 export { DEFAULT_PRESET_ID };
 
-export interface ActiveBuildContext {
-  readonly modelId: string;
-  readonly targetId: string;
-  readonly componentId: string;
+export interface ActiveBuildContext extends BuildContext {
   /**
    * Active preset id, `"default"` for the synthetic choice. Optional so
    * records persisted before this feature deserialize without loss; absent

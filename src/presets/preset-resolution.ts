@@ -3,16 +3,9 @@
  * preset-effective build-option values.
  */
 import * as vscode from "vscode";
-import { BuildOption } from "../manifest/manifest-types";
+import { BuildOption, BuildContext } from "../manifest/manifest-types";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
 import { PresetFile, PresetFilter, PresetRawValue, DEFAULT_PRESET_ID } from "./preset-types";
-
-/** The subset of the active build context PresetContext derivation needs. */
-export interface ActiveBuildContext {
-  readonly modelId: string;
-  readonly targetId: string;
-  readonly componentId: string;
-}
 
 /** The active build context expressed in upstream filter terms. */
 export interface PresetContext {
@@ -36,13 +29,13 @@ export interface PresetChoice {
  */
 export function derivePresetContext(
   manifest: ManifestStateLoaded,
-  activeBuildContext: ActiveBuildContext
+  buildContext: BuildContext
 ): PresetContext {
-  const target = manifest.targets.find((t) => t.id === activeBuildContext.targetId);
+  const target = manifest.targets.find((t) => t.id === buildContext.targetId);
   const emulator = target?.flag === "--emulator" || target?.flag === "-e";
   return {
-    modelId: activeBuildContext.modelId,
-    projectId: activeBuildContext.componentId,
+    modelId: buildContext.modelId,
+    projectId: buildContext.componentId,
     emulator,
   };
 }

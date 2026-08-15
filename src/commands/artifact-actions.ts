@@ -17,7 +17,8 @@ import {
   ManifestStateLoaded,
 } from "../manifest/manifest-types";
 import { ActiveBuildContext } from "../configuration/active-build-context";
-import { evaluateWhenExpression, EvalContext } from "../manifest/when-expressions";
+import { BuildContext } from "../manifest/manifest-types";
+import { evaluateWhenExpression } from "../manifest/when-expressions";
 import { createCargoTaskExecution } from "../tasks/xtask-execution";
 import { TASK_TYPE, TASK_SOURCE } from "../tasks/build-task-provider";
 import { errorMessage } from "../util/errors";
@@ -66,13 +67,13 @@ export interface ArtifactActionContext {
 export function isArtifactActionApplicable(
   kind: ArtifactActionKind,
   component: ManifestComponent,
-  evalCtx: EvalContext
+  buildContext: BuildContext
 ): boolean {
   const when = kind === "flash" ? component.flashWhen : component.uploadWhen;
   if (!when) {
     return false;
   }
-  return evaluateWhenExpression(when, evalCtx);
+  return evaluateWhenExpression(when, buildContext);
 }
 
 /**

@@ -13,7 +13,7 @@
  */
 
 import * as vscode from "vscode";
-import { BuildOption } from "../manifest/manifest-types";
+import { BuildOption, BuildContext } from "../manifest/manifest-types";
 import { evaluateWhenExpression } from "../manifest/when-expressions";
 import { PresetEffectiveValue } from "../presets/preset-resolution";
 
@@ -107,12 +107,6 @@ export async function dropBuildOptionOverrides(
 // ---------------------------------------------------------------------------
 // Context evaluation
 // ---------------------------------------------------------------------------
-
-export interface BuildContext {
-  readonly modelId: string;
-  readonly targetId: string;
-  readonly componentId: string;
-}
 
 // ---------------------------------------------------------------------------
 // Resolved option (option + its current effective value)

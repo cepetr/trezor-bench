@@ -103,7 +103,7 @@ import {
 } from "./intellisense/artifact-resolution";
 import { executeDebugLaunch } from "./commands/debug-launch";
 import { logDebugLaunchFailure } from "./observability/log-channel";
-import { EvalContext } from "./manifest/when-expressions";
+import { BuildContext } from "./manifest/manifest-types";
 import {
   RunDebugConfigProvider,
   TBENCH_DEBUG_TYPE,
@@ -401,14 +401,14 @@ function updateArtifactActionContext(
   }
 
   const component = manifest.components.find((c) => c.id === config.componentId);
-  const evalCtx: EvalContext = {
+  const buildContext: BuildContext = {
     modelId: config.modelId,
     targetId: config.targetId,
     componentId: config.componentId,
   };
 
-  const flashApplicable = component ? isArtifactActionApplicable("flash", component, evalCtx) : false;
-  const uploadApplicable = component ? isArtifactActionApplicable("upload", component, evalCtx) : false;
+  const flashApplicable = component ? isArtifactActionApplicable("flash", component, buildContext) : false;
+  const uploadApplicable = component ? isArtifactActionApplicable("upload", component, buildContext) : false;
   const showArtifactRows = shouldShowArtifactRows(flashApplicable, uploadApplicable);
 
   const inputs = buildResolutionInputs(manifest, config, artifactsRoot);
@@ -853,7 +853,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const manifest = loadedManifest(state);
     const actionCtx = manifest && config ? resolveArtifactActionContext(manifest, config) : undefined;
     const component = manifest?.components.find((c) => c.id === config?.componentId);
-    const evalCtx: EvalContext | undefined = config
+    const buildContext: BuildContext | undefined = config
       ? { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId }
       : undefined;
 
@@ -862,7 +862,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       manifestStatus: state?.status ?? "missing",
       hasWorkflowBlockingIssues: manifest?.hasWorkflowBlockingIssues ?? false,
       activeBuildContextResolved: !!actionCtx,
-      actionApplicable: !!(component && evalCtx && isArtifactActionApplicable(kind, component, evalCtx)),
+      actionApplicable: !!(component && buildContext && isArtifactActionApplicable(kind, component, buildContext)),
       binaryExists: _binaryArtifact?.exists ?? false,
     });
 

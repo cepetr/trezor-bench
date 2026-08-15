@@ -10,7 +10,8 @@ import * as path from "path";
 import * as jsonc from "jsonc-parser";
 import * as vscode from "vscode";
 import { ManifestComponentDebugProfile, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
-import { EvalContext, evaluateWhenExpression } from "../manifest/when-expressions";
+import { BuildContext } from "../manifest/manifest-types";
+import { evaluateWhenExpression } from "../manifest/when-expressions";
 import { ActiveBuildContext } from "../configuration/active-build-context";
 import { logDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
 import { makeContextKey } from "../intellisense/artifact-resolution";
@@ -60,10 +61,10 @@ export interface DebugProfileResolution {
  */
 export function resolveDebugProfile(
   profiles: ReadonlyArray<ManifestComponentDebugProfile>,
-  evalCtx: EvalContext
+  buildContext: BuildContext
 ): DebugProfileResolution {
   const selectedProfile = profiles.find((profile) =>
-    profile.when === undefined ? true : evaluateWhenExpression(profile.when, evalCtx)
+    profile.when === undefined ? true : evaluateWhenExpression(profile.when, buildContext)
   );
 
   if (selectedProfile === undefined) {
@@ -105,10 +106,10 @@ interface TbenchProxyDebugConfiguration extends vscode.DebugConfiguration {
  */
 export function resolveMatchingDebugProfiles(
   profiles: ReadonlyArray<ManifestComponentDebugProfile>,
-  evalCtx: EvalContext
+  buildContext: BuildContext
 ): MatchingDebugProfileSet {
   const matching = profiles.filter((profile) =>
-    profile.when === undefined ? true : evaluateWhenExpression(profile.when, evalCtx)
+    profile.when === undefined ? true : evaluateWhenExpression(profile.when, buildContext)
   );
   return {
     profiles: matching,
@@ -685,13 +686,13 @@ export async function executeDebugLaunch(
   const { component } = entries;
 
   // 3. Resolve component debug profile (first-match declaration order = default profile)
-  const evalCtx: EvalContext = {
+  const buildContext: BuildContext = {
     modelId: config.modelId,
     targetId: config.targetId,
     componentId: config.componentId,
   };
   const profiles = component.debug ?? [];
-  const matchingSet = resolveMatchingDebugProfiles(profiles, evalCtx);
+  const matchingSet = resolveMatchingDebugProfiles(profiles, buildContext);
 
   if (!matchingSet.defaultProfile) {
     reportDebugLaunchFailure(

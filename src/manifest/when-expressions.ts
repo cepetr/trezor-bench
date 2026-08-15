@@ -19,6 +19,7 @@ import type {
   WhenAll,
   WhenAny,
   WhenNot,
+  BuildContext,
 } from "./manifest-types";
 
 // ---------------------------------------------------------------------------
@@ -231,12 +232,6 @@ function collectUnknownIds(
 // Evaluator
 // ---------------------------------------------------------------------------
 
-export interface EvalContext {
-  readonly modelId: string;
-  readonly targetId: string;
-  readonly componentId: string;
-}
-
 /**
  * Evaluates a parsed `when` expression against the active build context.
  * Returns `true` when the option should be visible and contribute to
@@ -244,7 +239,7 @@ export interface EvalContext {
  */
 export function evaluateWhenExpression(
   expr: WhenExpression,
-  ctx: EvalContext
+  ctx: BuildContext
 ): boolean {
   switch (expr.type) {
     case "model":

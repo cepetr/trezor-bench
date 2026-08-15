@@ -148,9 +148,9 @@ suite("QS2 – First-match-wins selection among multiple matching profiles", () 
   test("resolveDebugProfile selects first profile in declaration order when all match", () => {
     const first = makeComponentDebugProfile({ name: "first", template: "first.json", declarationIndex: 0 });
     const second = makeComponentDebugProfile({ name: "second", template: "second.json", declarationIndex: 1 });
-    const evalCtx = { modelId: "T2T1", targetId: "hw", componentId: "core" };
+    const buildContext = { modelId: "T2T1", targetId: "hw", componentId: "core" };
 
-    const result = resolveDebugProfile([first, second], evalCtx);
+    const result = resolveDebugProfile([first, second], buildContext);
 
     assert.strictEqual(result.resolutionState, "selected");
     assert.strictEqual(result.selectedProfile?.name, "first");

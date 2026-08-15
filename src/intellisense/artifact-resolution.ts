@@ -342,9 +342,9 @@ export function resolveActiveExecutableArtifact(
     };
   }
 
-  const evalCtx = { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId };
+  const buildContext = { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId };
   const profiles = component.debug ?? [];
-  const matchingSet = resolveMatchingDebugProfiles(profiles, evalCtx);
+  const matchingSet = resolveMatchingDebugProfiles(profiles, buildContext);
 
   if (!matchingSet.defaultProfile) {
     return {

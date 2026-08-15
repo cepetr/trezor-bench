@@ -11,9 +11,9 @@ import { parseManifest } from "../../manifest/validate-manifest";
 import {
   normalizeBuildOptions,
   deriveOptionFlags,
-  BuildContext,
   BuildOptionsState,
 } from "../../configuration/build-options";
+import { BuildContext } from "../../manifest/manifest-types";
 import { evaluateWhenExpression } from "../../manifest/when-expressions";
 
 // ---------------------------------------------------------------------------
