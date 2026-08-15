@@ -207,3 +207,10 @@ export type ManifestState =
   | ManifestStateLoaded
   | ManifestStateMissing
   | ManifestStateInvalid;
+
+/** Returns the loaded manifest, or `undefined` when it is missing, invalid, or not yet loaded. */
+export function loadedManifest(
+  state: ManifestState | undefined
+): ManifestStateLoaded | undefined {
+  return state?.status === "loaded" ? state : undefined;
+}

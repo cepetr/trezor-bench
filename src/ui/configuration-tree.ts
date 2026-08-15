@@ -597,26 +597,24 @@ export class ConfigurationTreeProvider
       return items;
     }
 
-    const loaded = state as ManifestStateLoaded;
-
     // Loaded state: show model, target, component, and preset selector headers
     return [
       new SelectorHeaderItem(
         "model",
         "Model",
-        this._selectedDisplayValue(loaded, "model"),
+        this._selectedDisplayValue(state, "model"),
         this._expandedSelector === "model"
       ),
       new SelectorHeaderItem(
         "target",
         "Target",
-        this._selectedDisplayValue(loaded, "target"),
+        this._selectedDisplayValue(state, "target"),
         this._expandedSelector === "target"
       ),
       new SelectorHeaderItem(
         "component",
         "Component",
-        this._selectedDisplayValue(loaded, "component"),
+        this._selectedDisplayValue(state, "component"),
         this._expandedSelector === "component"
       ),
       new SelectorHeaderItem(
@@ -656,7 +654,7 @@ export class ConfigurationTreeProvider
     if (!this._state || this._state.status !== "loaded") {
       return [];
     }
-    const loaded = this._state as ManifestStateLoaded;
+    const manifest = this._state;
     const activeId = this._activeConfig
       ? kind === "model"
         ? this._activeConfig.modelId
@@ -667,10 +665,10 @@ export class ConfigurationTreeProvider
 
     const entries =
       kind === "model"
-        ? loaded.models
+        ? manifest.models
         : kind === "target"
-        ? loaded.targets
-        : loaded.components;
+        ? manifest.targets
+        : manifest.components;
 
     return entries.map(
       (e) => new SelectorChoiceItem(kind, e.id, e.name, e.id === activeId)
@@ -754,9 +752,7 @@ export class ConfigurationTreeProvider
       return [new PlaceholderItem("Manifest is invalid — Build Options unavailable")];
     }
 
-    const loaded = state as ManifestStateLoaded;
-
-    if (loaded.hasWorkflowBlockingIssues) {
+    if (state.hasWorkflowBlockingIssues) {
       return [
         new WarningItem("Build workflow blocked: invalid availability rules"),
         new PlaceholderItem("Check the Problems view for details"),
