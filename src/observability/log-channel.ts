@@ -18,8 +18,8 @@ export function getLogChannel(): vscode.OutputChannel {
 }
 
 /**
- * Creates the output channel and writes an activation marker.
- * Call once at the start of extension activation.
+ * Writes an activation marker to the output channel (creating it lazily
+ * via `getLogChannel`). Call once at the start of extension activation.
  */
 export function initLogChannel(): void {
   log("Trezor Bench extension activated.");
