@@ -20,9 +20,8 @@ import {
   PresetContext,
   PresetEffectiveValue,
 } from "./presets/preset-resolution";
-import { PaneTreeModel, PaneTreeProvider } from "./ui/pane-tree";
-import { SelectorHeaderItem } from "./ui/build-selection-pane";
-import { BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/build-options-pane";
+import { PaneTreeModel } from "./ui/pane-tree";
+import { registerPaneTreeViews } from "./ui/pane-tree-wiring";
 import { StatusBarPresenter } from "./ui/status-bar";
 import {
   disposeLogChannel,
@@ -110,9 +109,6 @@ let _presetService: PresetService | undefined;
 let _presetState: PresetState | undefined;
 let _presetStateSubscription: vscode.Disposable | undefined;
 let _treeModel: PaneTreeModel | undefined;
-let _configurationTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
-let _buildArtifactsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
-let _buildOptionsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _statusBar: StatusBarPresenter | undefined;
 let _manifestState: ManifestState | undefined;
 let _buildSelection: BuildSelection | undefined;
@@ -416,64 +412,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _treeModel = undefined;
     },
   });
-  _configurationTreeView = vscode.window.createTreeView("tbench.configuration", {
-    treeDataProvider: new PaneTreeProvider(_treeModel, "build-selection"),
-    showCollapseAll: false,
+  registerPaneTreeViews(context, _treeModel, {
+    writeBuildOption: async (key, value) => {
+      await writeBuildOption(context, key, value);
+    },
+    refreshResolvedOptionsView,
   });
-  _buildArtifactsTreeView = vscode.window.createTreeView("tbench.buildArtifacts", {
-    treeDataProvider: new PaneTreeProvider(_treeModel, "build-artifacts"),
-    showCollapseAll: false,
-  });
-  _buildOptionsTreeView = vscode.window.createTreeView("tbench.buildOptions", {
-    treeDataProvider: new PaneTreeProvider(_treeModel, "build-options"),
-    showCollapseAll: false,
-  });
-  context.subscriptions.push(
-    _configurationTreeView,
-    _buildArtifactsTreeView,
-    _buildOptionsTreeView,
-    // Selector expand/collapse: rows only ever render in Build Selection.
-    _configurationTreeView.onDidExpandElement(({ element }) => {
-      if (element instanceof SelectorHeaderItem) {
-        _treeModel?.setExpandedSelector(element.selectorKind);
-      }
-    }),
-    _configurationTreeView.onDidCollapseElement(({ element }) => {
-      if (element instanceof SelectorHeaderItem) {
-        if (_treeModel?.getExpandedSelector() === element.selectorKind) {
-          _treeModel.setExpandedSelector(undefined);
-        }
-      }
-    }),
-    // Multistate expand/collapse, option-group collapse, and checkbox toggling:
-    // rows only ever render in Build Options.
-    _buildOptionsTreeView.onDidExpandElement(({ element }) => {
-      if (element instanceof BuildOptionMultistateHeaderItem) {
-        _treeModel?.setExpandedMultistateKey(element.optionKey);
-      } else if (element instanceof BuildOptionGroupItem) {
-        _treeModel?.setGroupCollapsed(element.groupLabel, false);
-      }
-    }),
-    _buildOptionsTreeView.onDidCollapseElement(({ element }) => {
-      if (element instanceof BuildOptionMultistateHeaderItem) {
-        if (_treeModel?.getExpandedMultistateKey() === element.optionKey) {
-          _treeModel.setExpandedMultistateKey(undefined);
-        }
-      } else if (element instanceof BuildOptionGroupItem) {
-        _treeModel?.setGroupCollapsed(element.groupLabel, true);
-      }
-    }),
-    _buildOptionsTreeView.onDidChangeCheckboxState(async ({ items }) => {
-      for (const [element, state] of items) {
-        if (!(element instanceof BuildOptionCheckboxItem)) {
-          continue;
-        }
-        const newValue = state === vscode.TreeItemCheckboxState.Checked;
-        await writeBuildOption(context, element.optionKey, newValue);
-      }
-      refreshResolvedOptionsView();
-    })
-  );
 
   if (!hasSupportedWorkspace()) {
     registerUnsupportedWorkspaceCommands(context);
