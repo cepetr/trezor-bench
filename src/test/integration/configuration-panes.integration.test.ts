@@ -2,11 +2,9 @@
  * Integration tests for the Split Configuration Panes contribution surface.
  * Runs inside the VS Code extension host via @vscode/test-electron.
  *
- * Checked against specs/010-split-configuration-panes/contracts/view-contributions.md.
- *
- * Test ownership: this file's US1 suite ("view contributions") deliberately
- * does not assert `visibility` — that belongs to the US2 suite below, added
- * by T012, so the US1 suite stays green whether or not US2 has landed yet.
+ * Test ownership: this file's "view contributions" suite deliberately does
+ * not assert `visibility` — that belongs to the initial-collapse-state suite
+ * below, so each suite stays green on its own.
  */
 import * as assert from "assert";
 import * as fs from "fs";
@@ -72,7 +70,7 @@ function getMenuEntries(menuId: string): MenuEntry[] {
 }
 
 // ---------------------------------------------------------------------------
-// US1 — three views contributed, in order, with contract titles/type/icon
+// three views contributed, in order, with contract titles/type/icon
 // ---------------------------------------------------------------------------
 
 suite("Configuration panes – view container", () => {
@@ -93,7 +91,7 @@ suite("Configuration panes – view container", () => {
   });
 });
 
-suite("Configuration panes – view contributions (US1)", () => {
+suite("Configuration panes – view contributions", () => {
   test("contributes exactly three views for the tbench container", () => {
     const views = getTbenchViews();
     assert.strictEqual(views.length, 3, `expected exactly 3 views, got ${views.length}`);
@@ -107,7 +105,7 @@ suite("Configuration panes – view contributions (US1)", () => {
     );
   });
 
-  test("entry 1 reuses the inherited view id (FR-017)", () => {
+  test("entry 1 reuses the inherited view id", () => {
     const [first] = getTbenchViews();
     assert.strictEqual(first.id, INHERITED_VIEW_ID);
   });
@@ -148,7 +146,7 @@ suite("Configuration panes – view contributions (US1)", () => {
     }
   });
 
-  test("no view declares a 'when' clause — all three panes are always contributed (FR-012)", () => {
+  test("no view declares a 'when' clause — all three panes are always contributed", () => {
     for (const view of getTbenchViews()) {
       assert.strictEqual(view.when, undefined, `expected '${view.id}' to omit 'when'`);
     }
@@ -156,11 +154,11 @@ suite("Configuration panes – view contributions (US1)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T006a — host-constraint guardrails (FR-009c): the whole container-toolbar
+// Host-constraint guardrails: the whole container-toolbar
 // decision depends on none of these ever being (re)introduced.
 // ---------------------------------------------------------------------------
 
-suite("Configuration panes – host-constraint guardrails (FR-009c)", () => {
+suite("Configuration panes – host-constraint guardrails", () => {
   test("package.json declares no enabledApiProposals", () => {
     const pkg = getExtPackageJson();
     assert.strictEqual(pkg.enabledApiProposals, undefined);
@@ -178,12 +176,11 @@ suite("Configuration panes – host-constraint guardrails (FR-009c)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// US2 — initial collapse state. This suite owns every `visibility` assertion
-// (contracts/view-contributions.md §2); the US1 suite above deliberately
-// leaves it alone so it stays green whether or not US2 has landed yet.
+// Initial collapse state. This suite owns every `visibility` assertion;
+// the view-contributions suite above deliberately leaves it alone.
 // ---------------------------------------------------------------------------
 
-suite("Configuration panes – initial collapse state (US2)", () => {
+suite("Configuration panes – initial collapse state", () => {
   test("Build Options declares visibility: collapsed", () => {
     const views = getTbenchViews();
     const buildOptions = views.find((v) => v.name === "Build Options");
@@ -207,7 +204,7 @@ suite("Configuration panes – initial collapse state (US2)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// No pane offers Collapse All (FR-009d) — the extension stays the sole owner
+// No pane offers Collapse All — the extension stays the sole owner
 // of option-group and multistate expansion state.
 // ---------------------------------------------------------------------------
 
@@ -231,12 +228,12 @@ suite("Configuration panes – no Collapse All on any view", () => {
 });
 
 // ---------------------------------------------------------------------------
-// US3 — the workflow toolbar stays whole on Build Selection (FR-009, FR-009a,
-// FR-009b). Every existing view/title entry keeps its command, group, and
+// The workflow toolbar stays whole on Build Selection.
+// Every existing view/title entry keeps its command, group, and
 // enablement, and stays bound to the inherited view id.
 // ---------------------------------------------------------------------------
 
-suite("Configuration panes – view/title toolbar targets only Build Selection (US3)", () => {
+suite("Configuration panes – view/title toolbar targets only Build Selection", () => {
   test("declares exactly ten view/title entries", () => {
     assert.strictEqual(getMenuEntries("view/title").length, 10);
   });
@@ -297,10 +294,10 @@ suite("Configuration panes – view/title toolbar targets only Build Selection (
 });
 
 // ---------------------------------------------------------------------------
-// US3 — artifact row actions move to Build Artifacts (FR-008).
+// Artifact row actions move to Build Artifacts.
 // ---------------------------------------------------------------------------
 
-suite("Configuration panes – view/item/context targets only Build Artifacts (US3)", () => {
+suite("Configuration panes – view/item/context targets only Build Artifacts", () => {
   test("declares exactly four view/item/context entries", () => {
     assert.strictEqual(getMenuEntries("view/item/context").length, 4);
   });

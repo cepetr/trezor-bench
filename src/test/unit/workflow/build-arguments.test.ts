@@ -5,8 +5,6 @@
  * the active preset, and currently applicable build-option overrides.
  * Build/Clippy/Check share the same effective configuration.
  * Clean runs without build-option arguments and without a preset argument.
- *
- * specs/009-build-preset-support/contracts/preset-command-arguments.md
  */
 import * as assert from "assert";
 import {
@@ -112,13 +110,13 @@ suite("deriveWorkflowArguments – pre-feature prefix stays byte-identical", () 
 });
 
 // ---------------------------------------------------------------------------
-// Suite: -p argument (FR-021, Scenario 3.6, research Decision 12)
+// Suite: -p argument
 // ---------------------------------------------------------------------------
 
 suite("deriveWorkflowArguments – preset argument", () => {
   const baseContext = { modelId: "T2T1", targetId: "hw", componentId: "core", targetFlag: "--hw" };
 
-  test("-p default is never emitted (FR-021, Scenario 3.6)", () => {
+  test("-p default is never emitted", () => {
     const args = deriveWorkflowArguments("Build", baseContext, [], DEFAULT_PRESET_ID);
     assert.ok(!args.includes("-p"));
   });
@@ -130,7 +128,7 @@ suite("deriveWorkflowArguments – preset argument", () => {
     assert.strictEqual(args[pIndex + 1], "test");
   });
 
-  test("-p is positioned after the target flag and before override flags (research Decision 12)", () => {
+  test("-p is positioned after the target flag and before override flags", () => {
     const resolved = [checkboxOpt("frozen", "--frozen", true, false, true, true)];
     const args = deriveWorkflowArguments("Build", baseContext, resolved, "test");
     assert.deepStrictEqual(args, ["core", "-m", "T2T1", "--hw", "-p", "test", "--frozen=false"]);
@@ -143,20 +141,20 @@ suite("deriveWorkflowArguments – preset argument", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: override-only argument emission (FR-022, FR-023, research Decision 9)
+// Suite: override-only argument emission
 // ---------------------------------------------------------------------------
 
 suite("deriveWorkflowArguments – override-only emission", () => {
   const baseContext = { modelId: "T2T1", targetId: "hw", componentId: "core" };
 
-  test("checkbox on-override emits the bare flag (unchanged form, FR-023)", () => {
+  test("checkbox on-override emits the bare flag (unchanged form)", () => {
     const resolved = [checkboxOpt("frozen", "--frozen", true, true, true, false)];
     const args = deriveWorkflowArguments("Build", baseContext, resolved, DEFAULT_PRESET_ID);
     assert.ok(args.includes("--frozen"));
     assert.ok(!args.includes("--frozen=false"));
   });
 
-  test("checkbox off-override emits <flag>=false (research Decision 9)", () => {
+  test("checkbox off-override emits <flag>=false", () => {
     const resolved = [checkboxOpt("frozen", "--frozen", true, false, true, true)];
     const args = deriveWorkflowArguments("Build", baseContext, resolved, DEFAULT_PRESET_ID);
     assert.ok(args.includes("--frozen=false"));
@@ -168,7 +166,7 @@ suite("deriveWorkflowArguments – override-only emission", () => {
     assert.ok(!args.some((a) => a.startsWith("--frozen")));
   });
 
-  test("multistate override emits the unchanged <flag>=<value> form (FR-023)", () => {
+  test("multistate override emits the unchanged <flag>=<value> form", () => {
     const states = [
       { id: "null", label: "Default", flag: "" },
       { id: "swo", label: "SWO", flag: "--dbg-console=swo" },
@@ -224,7 +222,7 @@ suite("deriveWorkflowArguments – override-only emission", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: deriveCleanArguments — unaffected by presets (FR-025)
+// Suite: deriveCleanArguments — unaffected by presets
 // ---------------------------------------------------------------------------
 
 suite("deriveCleanArguments – Clean has no arguments, ever", () => {

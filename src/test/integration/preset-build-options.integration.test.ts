@@ -132,7 +132,7 @@ async function loadPresets(fixtureName: string): Promise<PresetStateLoaded> {
 
 /**
  * The option keys whose calculated value moves between two `(preset, context)`
- * pairs — what the refresh seam feeds to `dropBuildOptionOverrides` (FR-017).
+ * pairs — what the refresh seam feeds to `dropBuildOptionOverrides`.
  */
 async function shiftedFor(
   fixtureName: string,
@@ -202,7 +202,7 @@ suite("Preset-relative Build Options – Default (preset-valid fixture)", () => 
 // Switching presets changes displayed values without writing a selection
 // ---------------------------------------------------------------------------
 
-suite("Preset-relative Build Options – switching presets (Scenario 2.2)", () => {
+suite("Preset-relative Build Options – switching presets", () => {
   test("switching to dev changes dbg-console and pyopt with no stored selection written", async () => {
     const context = createFakeContext();
     const beforeSwitch = readBuildOptions(context);
@@ -218,7 +218,7 @@ suite("Preset-relative Build Options – switching presets (Scenario 2.2)", () =
 });
 
 // ---------------------------------------------------------------------------
-// Overriding emphasizes the row; matching the preset again clears it (Scenario 2.4, 2.6)
+// Overriding emphasizes the row; matching the preset again clears it
 // ---------------------------------------------------------------------------
 
 suite("Preset-relative Build Options – override emphasis round-trip", () => {
@@ -240,7 +240,7 @@ suite("Preset-relative Build Options – override emphasis round-trip", () => {
     assert.strictEqual(readBuildOptions(context)?.values.frozen, false, "resolution does not rewrite the map");
   });
 
-  test("changing the active preset drops only the overrides whose calculated value moved (FR-017)", async () => {
+  test("changing the active preset drops only the overrides whose calculated value moved", async () => {
     const context = createFakeContext();
 
     // Under Default: frozen calculates true and pyopt calculates "true".
@@ -265,7 +265,7 @@ suite("Preset-relative Build Options – override emphasis round-trip", () => {
     assert.strictEqual(findResolved(afterSwitch, "frozen").isOverride, true, "and is still emphasized");
   });
 
-  test("a preset change that moves nothing preserves every override (FR-017)", async () => {
+  test("a preset change that moves nothing preserves every override", async () => {
     // [[local]] only sets btc-only = false, which is already the calculated
     // value, so no option's baseline moves and nothing is pruned.
     const context = createFakeContext();
@@ -320,7 +320,7 @@ suite("Preset-relative Build Options – override emphasis round-trip", () => {
 });
 
 // ---------------------------------------------------------------------------
-// A preset-context change prunes overrides per option too (FR-017)
+// A preset-context change prunes overrides per option too
 //
 // preset-valid/presets.toml conditions its [[defaults]] fragments on
 // `emulator`, so the same option calculates differently across contexts even
@@ -428,7 +428,7 @@ suite("Preset-relative Build Options – preset-context change prunes overrides"
 });
 
 // ---------------------------------------------------------------------------
-// Multistate inference with no manifest-authored default (Scenario 2.5)
+// Multistate inference with no manifest-authored default
 // ---------------------------------------------------------------------------
 
 suite("Preset-relative Build Options – multistate inference without a manifest default", () => {

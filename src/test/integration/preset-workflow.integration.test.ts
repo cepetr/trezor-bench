@@ -127,10 +127,10 @@ async function launchArgsFor(
 }
 
 // ---------------------------------------------------------------------------
-// Scenario 3.1 — Default, no overrides
+// Default, no overrides
 // ---------------------------------------------------------------------------
 
-suite("Preset-aware workflow – Default, no differing overrides (Scenario 3.1)", () => {
+suite("Preset-aware workflow – Default, no differing overrides", () => {
   test("neither -p nor any option flag is present", async () => {
     const { shared, user } = fixtureUris("preset-valid");
     const args = await launchArgsFor(shared, user, DEFAULT_PRESET_ID, createFakeContext());
@@ -139,10 +139,10 @@ suite("Preset-aware workflow – Default, no differing overrides (Scenario 3.1)"
 });
 
 // ---------------------------------------------------------------------------
-// Scenario 3.2 — named preset, exactly one -p pair
+// named preset, exactly one -p pair
 // ---------------------------------------------------------------------------
 
-suite("Preset-aware workflow – named preset (Scenario 3.2)", () => {
+suite("Preset-aware workflow – named preset", () => {
   test("args include exactly one -p <name> pair", async () => {
     const { shared, user } = fixtureUris("preset-valid");
     const args = await launchArgsFor(shared, user, "test", createFakeContext());
@@ -153,10 +153,10 @@ suite("Preset-aware workflow – named preset (Scenario 3.2)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Scenario 3.3 — mixed selections
+// mixed selections
 // ---------------------------------------------------------------------------
 
-suite("Preset-aware workflow – mixed selections (Scenario 3.3)", () => {
+suite("Preset-aware workflow – mixed selections", () => {
   test("only the differing value produces a flag", async () => {
     const context = createFakeContext();
     // Under "test": frozen effective = false (user overrides shared), btc-only effective = true.
@@ -187,10 +187,10 @@ suite("Preset-aware workflow – checkbox off-override", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Scenario 3.4 — user fragments override shared for the comparison
+// user fragments override shared for the comparison
 // ---------------------------------------------------------------------------
 
-suite("Preset-aware workflow – user fragments override shared (Scenario 3.4)", () => {
+suite("Preset-aware workflow – user fragments override shared", () => {
   test("comparison uses the user-adjusted effective value, not the shared-only value", async () => {
     const context = createFakeContext();
     // Shared "test" never sets frozen; shared defaults set frozen=true; user "test" sets frozen=false.
@@ -204,7 +204,7 @@ suite("Preset-aware workflow – user fragments override shared (Scenario 3.4)",
 });
 
 // ---------------------------------------------------------------------------
-// Editing presets.toml with the view open, then invoking Build (FR-020, Decision 13)
+// Editing presets.toml with the view open, then invoking Build
 // ---------------------------------------------------------------------------
 
 suite("Preset-aware workflow – recalculation before launch", () => {

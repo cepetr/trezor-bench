@@ -137,7 +137,7 @@ suite("Preset selection – preset-valid fixture", () => {
 });
 
 // ---------------------------------------------------------------------------
-// preset-no-defaults — Default still offered (Scenario 1.2)
+// preset-no-defaults — Default still offered
 // ---------------------------------------------------------------------------
 
 suite("Preset selection – preset-no-defaults fixture", () => {
@@ -207,7 +207,7 @@ suite("Preset selection – select and persist", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Legacy record migration (data-model §3, §7)
+// Legacy record migration
 // ---------------------------------------------------------------------------
 
 suite("Preset selection – legacy record migration", () => {
@@ -232,7 +232,7 @@ suite("Preset selection – legacy record migration", () => {
 
 // ---------------------------------------------------------------------------
 // The listed presets and the active preset survive a build-context change
-// (FR-006, FR-008, FR-009, Scenario 1.4)
+//
 // ---------------------------------------------------------------------------
 
 /**
@@ -318,7 +318,7 @@ suite("Preset selection – build-context change keeps every preset", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Invalidity preserves the saved id unresolved; recovery restores or normalizes (FR-031, Scenario 1.6)
+// Invalidity preserves the saved id unresolved; recovery restores or normalizes
 // ---------------------------------------------------------------------------
 
 suite("Preset selection – invalidity preserves and later resolves the saved id", () => {
@@ -342,7 +342,7 @@ suite("Preset selection – invalidity preserves and later resolves the saved id
 });
 
 // ---------------------------------------------------------------------------
-// The active preset never appears in build-context display surfaces (FR-024, Scenario 1.5)
+// The active preset never appears in build-context display surfaces
 // ---------------------------------------------------------------------------
 
 suite("Preset selection – excluded from display surfaces", () => {

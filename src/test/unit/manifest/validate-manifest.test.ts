@@ -734,7 +734,7 @@ options:
 });
 
 // ---------------------------------------------------------------------------
-// options[].id carried through to BuildOption.id (research Decision 4)
+// options[].id carried through to BuildOption.id
 // ---------------------------------------------------------------------------
 
 suite("parseManifest – options[].id", () => {

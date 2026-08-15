@@ -133,7 +133,7 @@ export async function selectPreset(
  * writes back if anything was stale, and returns the resulting valid config.
  *
  * `knownPresetIds` is `undefined` while preset state is invalid; in that
- * case the saved preset id is preserved unresolved (FR-031) and never
+ * case the saved preset id is preserved unresolved and never
  * triggers a write on its own.
  *
  * Use this at activation time and on every manifest or preset state change

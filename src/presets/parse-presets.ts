@@ -1,8 +1,6 @@
 /**
  * Pure preset TOML parser/validator: turns raw TOML text into fragments plus
  * validation issues. Never touches the filesystem — `PresetService` owns I/O.
- *
- * Contract: specs/009-build-preset-support/contracts/preset-files.md
  */
 import * as vscode from "vscode";
 import { parse as parseToml, TomlError } from "smol-toml";
@@ -34,7 +32,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 /**
  * Locates the 0-based line of each `[[groupName]]` header in file order, by
- * a single regex scan over the raw text (research Decision 15).
+ * a single regex scan over the raw text.
  */
 function findHeaderLines(source: string, groupName: string): number[] {
   const escaped = groupName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

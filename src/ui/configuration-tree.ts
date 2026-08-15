@@ -256,7 +256,7 @@ function formatBuildOptionTooltip(option: string, description?: string): vscode.
   return new vscode.MarkdownString(`**${option}**${tooltipDescription ? `  \n${tooltipDescription}` : ""}`);
 }
 
-/** A single checkbox-style build option row. Emphasis is driven by `isOverride`, not by `checked` (FR-015). */
+/** A single checkbox-style build option row. Emphasis is driven by `isOverride`, not by `checked`. */
 export class BuildOptionCheckboxItem extends vscode.TreeItem {
   constructor(
     public readonly optionKey: string,
@@ -284,7 +284,7 @@ export class BuildOptionCheckboxItem extends vscode.TreeItem {
   }
 }
 
-/** Expandable header for a multistate build option; shows active state inline. Emphasis is driven by `isOverride` (FR-015). */
+/** Expandable header for a multistate build option; shows active state inline. Emphasis is driven by `isOverride`. */
 export class BuildOptionMultistateHeaderItem extends vscode.TreeItem {
   constructor(
     public readonly optionKey: string,
@@ -527,7 +527,7 @@ export class ConfigurationTreeProvider
 
   /**
    * The root rows for one pane, exactly matching today's section content
-   * (FR-002). Backs each `PaneTreeProvider`'s `getChildren(undefined)`.
+   *. Backs each `PaneTreeProvider`'s `getChildren(undefined)`.
    */
   paneRootChildren(paneId: PaneId): vscode.TreeItem[] {
     switch (paneId) {
@@ -632,7 +632,7 @@ export class ConfigurationTreeProvider
    * The active preset's label for the `Preset` selector description.
    * `undefined` renders as `—` (nothing has resolved yet). An absent
    * `presets.toml` reads `Unavailable`, since there is no preset to name and
-   * the collapsed row is where that is first visible (FR-027).
+   * the collapsed row is where that is first visible.
    */
   private _presetDisplayValue(): string | undefined {
     if (this._presetState?.status === "unavailable") {
@@ -680,10 +680,10 @@ export class ConfigurationTreeProvider
   /**
    * Expanded content for the `Preset` selector: a loading placeholder
    * before the first load, a row reporting the absent shared file when preset
-   * state is unavailable (FR-027), an error row replacing all choices when
-   * preset state is invalid (FR-028, FR-030), or one selectable choice per
+   * state is unavailable, an error row replacing all choices when
+   * preset state is invalid, or one selectable choice per
    * declared preset — the list never depends on the active build context
-   * (FR-006).
+   *.
    */
   private _presetSelectorChoices(): vscode.TreeItem[] {
     const state = this._presetState;

@@ -81,7 +81,7 @@ export function resolveArtifactsPath(
 }
 
 // ---------------------------------------------------------------------------
-// Excluded-file visibility settings (feature 004)
+// Excluded-file visibility settings
 // ---------------------------------------------------------------------------
 
 /**
@@ -130,7 +130,7 @@ export function readExcludedFilesSettings(
 }
 
 // ---------------------------------------------------------------------------
-// Debug launch settings (feature 006)
+// Debug launch settings
 // ---------------------------------------------------------------------------
 
 /**
@@ -146,7 +146,7 @@ export function resolveDebugTemplatesPath(
 }
 
 // ---------------------------------------------------------------------------
-// Preset input path resolution (feature 009)
+// Preset input path resolution
 // ---------------------------------------------------------------------------
 
 /** Resolved locations of the two preset TOML inputs for a workspace folder. */

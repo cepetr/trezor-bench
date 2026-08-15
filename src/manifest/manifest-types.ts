@@ -147,7 +147,7 @@ export interface BuildOption {
   readonly key: string;
   /**
    * Manifest `options[].id`, when declared. Used to match preset fragment
-   * keys against this option (research Decision 4). When absent, the
+   * keys against this option. When absent, the
    * fallback match key is `flag` with leading dashes stripped.
    */
   readonly id?: string;

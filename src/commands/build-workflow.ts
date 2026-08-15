@@ -49,15 +49,15 @@ export interface PreconditionInputs {
   readonly activeConfigResolved?: boolean;
   /**
    * True when the shared `presets.toml` does not exist, so the workspace's
-   * `xtask` does not support presets (FR-027). Reported ahead of
+   * `xtask` does not support presets. Reported ahead of
    * `presetsInvalid`, which it also implies. Callers pass `false` (or omit)
-   * for `Clean`, which is exempt (research Decision 11).
+   * for `Clean`, which is exempt.
    */
   readonly presetsUnavailable?: boolean;
   /**
    * True when preset data is file-level invalid or an available option
    * mismatches. Callers pass `false` (or omit) for `Clean`, which is exempt
-   * (research Decision 11).
+   *.
    */
   readonly presetsInvalid?: boolean;
 }
@@ -94,8 +94,8 @@ export function formatTaskLabel(kind: WorkflowKind, ctx: WorkflowContext): strin
  * Derives the override-only command-line flags for Build, Clippy, or Check:
  * one entry per `available && isOverride` option, in manifest declaration
  * order. Checkbox on -> bare `<flag>`; checkbox off -> `<flag>=false`
- * (research Decision 9); multistate -> the selected state's existing
- * `<flag>=<value>` form, unchanged (FR-023). Nothing is emitted for
+ *; multistate -> the selected state's existing
+ * `<flag>=<value>` form, unchanged. Nothing is emitted for
  * `unresolved` or `mismatch` options, since `isOverride` is forced `false`
  * for both.
  */
@@ -124,7 +124,7 @@ function deriveOverrideFlags(resolved: ReadonlyArray<ResolvedOption>): string[] 
  * The target flag comes from the manifest target `flag` field and is
  * omitted when absent or null. `-p <preset-id>` is emitted exactly once and
  * only for a non-`default` active preset — `-p default` is never emitted
- * (FR-021). Option flags are emitted only for differing overrides (FR-022).
+ *. Option flags are emitted only for differing overrides.
  */
 export function deriveWorkflowArguments(
   kind: Exclude<WorkflowKind, "Clean">,

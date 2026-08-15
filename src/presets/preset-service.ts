@@ -27,7 +27,7 @@ async function loadPresetFile(uri: vscode.Uri, source: PresetSource): Promise<Pr
     if (isFileNotFound(err)) {
       // Absence carries no issue of its own: for `user-presets.toml` it is
       // equivalent to an empty file, and for the shared file `_load` turns it
-      // into the `unavailable` state instead (FR-027).
+      // into the `unavailable` state instead.
       return { source, uri, present: false, names: [], fragments: [], issues: [] };
     }
     const message = err instanceof Error ? err.message : "Could not read preset file";
@@ -121,7 +121,7 @@ export class PresetService implements vscode.Disposable {
     // with the `xtask` that understands `-p`, so its absence says the whole
     // repository has no preset support — the more fundamental condition to
     // report, and the one that explains a broken `user-presets.toml` too
-    // (FR-027).
+    //.
     const newState: PresetState = !shared.present
       ? { status: "unavailable", shared, user, loadedAt, validationIssues }
       : hasError

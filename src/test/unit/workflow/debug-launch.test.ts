@@ -434,7 +434,7 @@ suite("applyTbenchSubstitution", () => {
   });
 });
 // ---------------------------------------------------------------------------
-// resolveMatchingDebugProfiles (US1 / US2)
+// resolveMatchingDebugProfiles
 // ---------------------------------------------------------------------------
 
 suite("resolveMatchingDebugProfiles", () => {
@@ -520,7 +520,7 @@ suite("resolveMatchingDebugProfiles", () => {
 });
 
 // ---------------------------------------------------------------------------
-// generateDebugConfigurations and label helpers (feature 007)
+// generateDebugConfigurations and label helpers
 // ---------------------------------------------------------------------------
 
 suite("labelForDefaultEntry and labelForProfileEntry", () => {
@@ -688,7 +688,7 @@ suite("generateDebugConfigurations – entry set rules", () => {
 });
 
 // ---------------------------------------------------------------------------
-// materializeDebugConfiguration failure paths (feature 007)
+// materializeDebugConfiguration failure paths
 // ---------------------------------------------------------------------------
 
 suite("materializeDebugConfiguration – failure paths", () => {

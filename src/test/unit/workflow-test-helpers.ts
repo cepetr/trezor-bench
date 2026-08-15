@@ -323,7 +323,7 @@ export function makeExcludedFilesSnapshot(
 }
 
 // ---------------------------------------------------------------------------
-// Debug launch profile factories (feature 006)
+// Debug launch profile factories
 // ---------------------------------------------------------------------------
 
 /**
@@ -406,7 +406,7 @@ export function debugLaunchValidTemplatesRoot(): string {
 }
 
 // ---------------------------------------------------------------------------
-// Run and Debug matching-set fixture helpers (feature 007)
+// Run and Debug matching-set fixture helpers
 // ---------------------------------------------------------------------------
 
 /**
@@ -478,7 +478,6 @@ export function makeRunDebugMultiProfileState(
 
 /**
  * Proxy config shape produced by TbenchDebugConfigurationProvider.
- * Mirrors the contract defined in contracts/run-debug-configurations.md.
  */
 export interface TbenchProxyConfig {
   type: "tbench";

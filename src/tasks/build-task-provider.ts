@@ -98,7 +98,7 @@ function cleanShellArgs(ctx: WorkflowContext): string[] {
 
 /**
  * Creates a VS Code `Task` for the given workflow kind. `presetId` is
- * ignored for `Clean`, which never receives a preset argument (FR-025).
+ * ignored for `Clean`, which never receives a preset argument.
  */
 export function createWorkflowTask(
   kind: WorkflowKind,

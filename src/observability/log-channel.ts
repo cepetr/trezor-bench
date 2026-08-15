@@ -138,7 +138,7 @@ export function logManifestState(state: ManifestState): void {
 }
 
 // ---------------------------------------------------------------------------
-// Preset state logging (feature 009)
+// Preset state logging
 // ---------------------------------------------------------------------------
 
 /**
@@ -182,7 +182,7 @@ export function logPresetState(state: PresetState): void {
 /**
  * Logs an active-preset normalization: the saved preset id changed because
  * it became unavailable for the active build context or preset data
- * changed (spec `Failure Modes & Diagnostics`).
+ * changed.
  */
 export function logPresetNormalization(previousPresetId: string, normalizedPresetId: string): void {
   log(
@@ -214,7 +214,7 @@ function formatPrune(
 
 /**
  * Logs the per-option override prune that follows an active-preset change
- * (FR-017). Always paired with a visible Build Options refresh, so the log is
+ *. Always paired with a visible Build Options refresh, so the log is
  * the persistent record of a visible action, and it names both halves of the
  * decision so a surviving emphasis is explainable.
  */
@@ -239,7 +239,7 @@ function formatPresetContext(context: PresetContext): string {
 /**
  * Logs the per-option override prune that follows a preset-context change — a
  * new model, component, or emulator-ness, any of which can select different
- * preset fragments and so calculate different values (FR-017). The sibling of
+ * preset fragments and so calculate different values. The sibling of
  * `logOverridesPrunedForPreset` for the other half of the pair an override is
  * authored against.
  */
@@ -264,7 +264,7 @@ const _loggedUnknownPresetKeys = new Set<string>();
 
 /**
  * Logs, once per key, an informational entry for a preset option key that no
- * manifest build option claims (research Decision 5). Never blocks and never
+ * manifest build option claims. Never blocks and never
  * produces a diagnostic — this is observability only.
  */
 export function logUnknownPresetKeys(keys: ReadonlyArray<string>): void {

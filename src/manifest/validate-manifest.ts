@@ -609,8 +609,8 @@ function validateBuildOptions(
       continue;
     }
 
-    // Optional: id — carried through to BuildOption.id for preset-fragment matching
-    // (research Decision 4). Also used to derive "flag" as --{id} when "flag" is absent.
+    // Optional: id — carried through to BuildOption.id for preset-fragment matching.
+    // Also used to derive "flag" as --{id} when "flag" is absent.
     const idNode = item.get("id", true);
     const id =
       idNode instanceof Scalar && typeof idNode.value === "string" && idNode.value.trim()

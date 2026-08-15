@@ -59,7 +59,7 @@ suite("PresetService – load states", () => {
     }
   });
 
-  test("preset-missing-shared publishes 'unavailable' (FR-027)", async () => {
+  test("preset-missing-shared publishes 'unavailable'", async () => {
     const { shared, user } = fixtureUris("preset-missing-shared");
     const service = new PresetService(shared, user);
     const state = await service.start();
@@ -166,7 +166,7 @@ suite("PresetService – watching and reload", () => {
     service.dispose();
   });
 
-  test("deleting and recreating presets.toml moves the state loaded → unavailable → loaded, no window reload (FR-027, FR-026)", async () => {
+  test("deleting and recreating presets.toml moves the state loaded → unavailable → loaded, no window reload", async () => {
     const sharedPath = path.join(tmpDir, "presets.toml");
     const userPath = path.join(tmpDir, "user-presets.toml");
     await fs.writeFile(sharedPath, "[[test]]\nfrozen = true\n", "utf-8");
@@ -196,7 +196,7 @@ suite("PresetService – watching and reload", () => {
     service.dispose();
   });
 
-  test("an absent shared file outranks an invalid user file (FR-027)", async () => {
+  test("an absent shared file outranks an invalid user file", async () => {
     const sharedPath = path.join(tmpDir, "presets.toml");
     const userPath = path.join(tmpDir, "user-presets.toml");
     // No presets.toml at all, and a user file that would otherwise be a

@@ -103,7 +103,7 @@ suite("evaluateWorkflowPreconditions – blocking logic", () => {
   });
 
   // -------------------------------------------------------------------------
-  // presets-invalid (feature 009, evaluated after manifest-invalid)
+  // presets-invalid
   // -------------------------------------------------------------------------
 
   test("presets-invalid blocks when preset data is invalid or an option mismatches", () => {
@@ -142,7 +142,7 @@ suite("evaluateWorkflowPreconditions – blocking logic", () => {
   });
 
   // -------------------------------------------------------------------------
-  // presets-unavailable (FR-027, evaluated after manifest-invalid and before
+  // presets-unavailable (evaluated after manifest-invalid and before
   // presets-invalid)
   // -------------------------------------------------------------------------
 
@@ -256,7 +256,7 @@ suite("blockReasonMessage – user-facing failure text", () => {
     assert.notStrictEqual(msg, blockReasonMessage("manifest-invalid"));
   });
 
-  test("presets-unavailable message names presets.toml and is distinct from presets-invalid's (FR-027)", () => {
+  test("presets-unavailable message names presets.toml and is distinct from presets-invalid's", () => {
     const msg = blockReasonMessage("presets-unavailable");
     assert.ok(msg.includes("presets.toml"), "message should name the missing file");
     assert.ok(

@@ -121,10 +121,10 @@ suite("readBuildOptions / writeBuildOption", () => {
 });
 
 // ---------------------------------------------------------------------------
-// dropBuildOptionOverrides — the FR-017 per-option prune
+// dropBuildOptionOverrides — the per-option prune
 // ---------------------------------------------------------------------------
 
-suite("dropBuildOptionOverrides (FR-017)", () => {
+suite("dropBuildOptionOverrides", () => {
   test("drops only the named keys, so an override whose baseline held survives", async () => {
     const extCtx = makeExtContext();
     await writeBuildOption(extCtx, "frozen", false);
@@ -342,11 +342,11 @@ suite("normalizeBuildOptions", () => {
 });
 
 // ---------------------------------------------------------------------------
-// normalizeBuildOptions – preset-relative resolution (data-model.md §4)
+// normalizeBuildOptions – preset-relative resolution
 // ---------------------------------------------------------------------------
 
 suite("normalizeBuildOptions – presetValue, presetState, isOverride", () => {
-  test("no stored selection: value follows the resolved preset-effective value, isOverride false (FR-013, FR-016)", () => {
+  test("no stored selection: value follows the resolved preset-effective value, isOverride false", () => {
     const opts = [checkbox("frozen", "--frozen")];
     const presets = new Map([["frozen", resolvedPreset("frozen", true)]]);
     const resolved = normalizeBuildOptions(opts, undefined, ctx, presets);
@@ -356,7 +356,7 @@ suite("normalizeBuildOptions – presetValue, presetState, isOverride", () => {
     assert.strictEqual(resolved[0].isOverride, false);
   });
 
-  test("a stored selection equal to the preset-effective value is not an override (FR-016)", () => {
+  test("a stored selection equal to the preset-effective value is not an override", () => {
     const saved: BuildOptionsState = { values: { frozen: true }, persistedAt: "t" };
     const opts = [checkbox("frozen", "--frozen")];
     const presets = new Map([["frozen", resolvedPreset("frozen", true)]]);
@@ -374,7 +374,7 @@ suite("normalizeBuildOptions – presetValue, presetState, isOverride", () => {
     assert.strictEqual(resolved[0].isOverride, true);
   });
 
-  test("resolution is a pure re-comparison: the same stored map against a new presetValue, never rewritten (FR-016)", () => {
+  test("resolution is a pure re-comparison: the same stored map against a new presetValue, never rewritten", () => {
     const saved: BuildOptionsState = { values: { pyopt: "false" }, persistedAt: "t" };
     const states = [
       { id: "null", label: "Default", flag: "" },
@@ -389,7 +389,7 @@ suite("normalizeBuildOptions – presetValue, presetState, isOverride", () => {
     assert.strictEqual(firstResolved[0].isOverride, true);
 
     // A different presetValue re-runs the comparison. Pruning the overrides
-    // whose baseline moved is the refresh seam's job (FR-017, see the
+    // whose baseline moved is the refresh seam's job (see the
     // dropBuildOptionOverrides suite above); normalizeBuildOptions never writes.
     const secondPreset = new Map([["pyopt", resolvedPreset("pyopt", "false")]]);
     const secondResolved = normalizeBuildOptions(opts, saved, ctx, secondPreset);
@@ -398,7 +398,7 @@ suite("normalizeBuildOptions – presetValue, presetState, isOverride", () => {
     assert.deepStrictEqual(saved.values, { pyopt: "false" }, "the stored map is not mutated by resolution");
   });
 
-  test("a stored value equal to the null-valued state id is treated as no explicit selection (research Decision 8 rule 3)", () => {
+  test("a stored value equal to the null-valued state id is treated as no explicit selection", () => {
     const saved: BuildOptionsState = { values: { "dbg-console": "null" }, persistedAt: "t" };
     const states = [
       { id: "null", label: "Default", flag: "" },

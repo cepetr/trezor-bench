@@ -487,7 +487,7 @@ suite("Debug Launch – scope boundaries", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: Run and Debug provider – package.json contribution regressions (T025)
+// Suite: Run and Debug provider – package.json contribution regressions
 // ---------------------------------------------------------------------------
 
 suite("Run and Debug provider – package contribution regressions", () => {

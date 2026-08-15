@@ -103,11 +103,11 @@ export function handleManifestStateDiagnostics(state: ManifestState): void {
  * of the file that produced each issue (shared vs. user). Ranges use the
  * `headerLine`-anchored range attached at parse time when present, and
  * `publishDiagnostics` already falls back to `Range(0,0,0,0)` otherwise
- * (research Decision 15).
+ *.
  *
  * `unavailable` clears both instead: the shared file does not exist, so there
  * is no content to anchor a diagnostic to. That state is communicated through
- * the `Preset` selector and log output, mirroring `manifest-missing` (FR-027).
+ * the `Preset` selector and log output, mirroring `manifest-missing`.
  */
 export function handlePresetStateDiagnostics(state: PresetState): void {
   if (state.status === "unavailable") {

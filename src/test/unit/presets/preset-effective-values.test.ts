@@ -1,8 +1,6 @@
 /**
  * Unit tests for preset-effective-value computation: the four-layer ordered
  * overlay and the raw-value -> option-value mapping table.
- *
- * specs/009-build-preset-support/data-model.md §2, §5 (research Decision 4, 8)
  */
 import * as assert from "assert";
 import * as vscode from "vscode";
@@ -72,7 +70,7 @@ const PYOPT_STATES_NO_NULL = [
 ];
 
 // ---------------------------------------------------------------------------
-// presetMatchKey (research Decision 4)
+// presetMatchKey
 // ---------------------------------------------------------------------------
 
 suite("presetMatchKey", () => {
@@ -86,7 +84,7 @@ suite("presetMatchKey", () => {
 });
 
 // ---------------------------------------------------------------------------
-// buildPresetOverlay – four-layer precedence (FR-010, FR-011)
+// buildPresetOverlay – four-layer precedence
 // ---------------------------------------------------------------------------
 
 suite("buildPresetOverlay – layer precedence", () => {
@@ -165,7 +163,7 @@ suite("buildPresetOverlay – layer precedence", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Raw-value -> option-value mapping (data-model.md §2)
+// Raw-value -> option-value mapping
 // ---------------------------------------------------------------------------
 
 suite("computePresetEffectiveValue – checkbox", () => {
@@ -251,13 +249,13 @@ suite("computePresetEffectiveValues – unknown keys contribute nothing", () => 
 });
 
 // ---------------------------------------------------------------------------
-// samePresetEffectiveValue / shiftedPresetOptionKeys (FR-017)
+// samePresetEffectiveValue / shiftedPresetOptionKeys
 //
 // The per-option override prune: an override survives a (preset, context)
 // change exactly when its calculated baseline did not move.
 // ---------------------------------------------------------------------------
 
-suite("samePresetEffectiveValue (FR-017)", () => {
+suite("samePresetEffectiveValue", () => {
   const resolved = (value: boolean | string): PresetEffectiveValue => ({
     optionKey: "frozen",
     state: "resolved",
@@ -307,7 +305,7 @@ suite("samePresetEffectiveValue (FR-017)", () => {
   });
 });
 
-suite("shiftedPresetOptionKeys (FR-017)", () => {
+suite("shiftedPresetOptionKeys", () => {
   // Mirrors test-fixtures/workspaces/preset-valid/: the [[defaults]] fragments
   // are conditioned on `emulator`, `[[dev]]` moves dbg-console and pyopt, and
   // `[[local]]` touches only btc-only — so the same options move or hold

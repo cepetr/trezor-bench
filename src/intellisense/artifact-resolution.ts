@@ -348,7 +348,7 @@ function buildMapMissingReason(inputs: ArtifactResolutionInputs): string {
 }
 
 // ---------------------------------------------------------------------------
-// Executable artifact state resolution (feature 006)
+// Executable artifact state resolution
 // ---------------------------------------------------------------------------
 
 export type ExecutableArtifactStatus = "valid" | "missing";

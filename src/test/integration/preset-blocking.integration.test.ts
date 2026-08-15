@@ -108,7 +108,7 @@ function evaluateFor(kind: WorkflowKind, presetsInvalid: boolean, presetsUnavail
     manifestStatus: "loaded",
     hasWorkflowBlockingIssues: false,
     workspaceSupported: true,
-    // Clean is exempt from preset blocking (research Decision 11).
+    // Clean is exempt from preset blocking.
     presetsUnavailable: kind !== "Clean" && presetsUnavailable,
     presetsInvalid: kind !== "Clean" && presetsInvalid,
   });
@@ -143,7 +143,7 @@ for (const fixtureName of BROKEN_FIXTURES) {
       assert.notStrictEqual(reason, "no-block");
     });
 
-    test("Clean stays enabled and still launches with no arguments (FR-025, research Decision 11)", async () => {
+    test("Clean stays enabled and still launches with no arguments", async () => {
       const presetsInvalid = await computePresetsInvalid(fixtureName);
       const reason = evaluateFor("Clean", presetsInvalid);
       assert.strictEqual(reason, "no-block", "Clean must not be blocked by preset invalidity");
@@ -153,7 +153,7 @@ for (const fixtureName of BROKEN_FIXTURES) {
 }
 
 // ---------------------------------------------------------------------------
-// An absent shared presets.toml: blocked with its own reason (FR-027)
+// An absent shared presets.toml: blocked with its own reason
 // ---------------------------------------------------------------------------
 
 suite("Preset blocking – preset-missing-shared", () => {
@@ -170,7 +170,7 @@ suite("Preset blocking – preset-missing-shared", () => {
     }
   });
 
-  test("Clean stays enabled and still launches with no arguments (FR-025)", async () => {
+  test("Clean stays enabled and still launches with no arguments", async () => {
     const { presetsInvalid, presetsUnavailable } = await computePresetBlocking("preset-missing-shared");
     const reason = evaluateFor("Clean", presetsInvalid, presetsUnavailable);
     assert.strictEqual(reason, "no-block", "Clean must not be blocked by an absent presets.toml");

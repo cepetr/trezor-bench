@@ -2,8 +2,7 @@
  * Unit tests for the pure preset TOML parser/validator.
  *
  * parsePresetFile() never touches the filesystem. It turns raw TOML text
- * into fragments plus validation issues, matching the shape contract in
- * specs/009-build-preset-support/contracts/preset-files.md.
+ * into fragments plus validation issues.
  */
 import * as assert from "assert";
 import { parsePresetFile } from "../../../presets/parse-presets";
@@ -25,7 +24,7 @@ suite("parsePresetFile – TOML syntax errors", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Shape validation (research Decision 6)
+// Shape validation
 // ---------------------------------------------------------------------------
 
 suite("parsePresetFile – shape validation", () => {
@@ -80,7 +79,7 @@ suite("parsePresetFile – shape validation", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Reserved name handling (research Decision 7)
+// Reserved name handling
 // ---------------------------------------------------------------------------
 
 suite("parsePresetFile – reserved preset name", () => {
@@ -109,7 +108,7 @@ suite("parsePresetFile – reserved preset name", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Unknown option keys (research Decision 5)
+// Unknown option keys
 // ---------------------------------------------------------------------------
 
 suite("parsePresetFile – unknown option keys", () => {
@@ -121,7 +120,7 @@ suite("parsePresetFile – unknown option keys", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Declaration order (FR-003, FR-011)
+// Declaration order
 // ---------------------------------------------------------------------------
 
 suite("parsePresetFile – declaration order", () => {
@@ -153,7 +152,7 @@ suite("parsePresetFile – declaration order", () => {
 });
 
 // ---------------------------------------------------------------------------
-// headerLine anchoring (research Decision 15)
+// headerLine anchoring
 // ---------------------------------------------------------------------------
 
 suite("parsePresetFile – headerLine anchoring", () => {
@@ -176,7 +175,7 @@ suite("parsePresetFile – headerLine anchoring", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Real upstream shape (research Decision 5, Decision 6)
+// Real upstream shape
 // ---------------------------------------------------------------------------
 
 suite("parsePresetFile – upstream presets.toml shape", () => {

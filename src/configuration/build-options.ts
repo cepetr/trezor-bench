@@ -69,7 +69,7 @@ export async function writeBuildOption(
  * Returns the keys it actually removed, for the log record; keys with nothing
  * stored are ignored, and when none of them was stored no write happens.
  *
- * Called when the active preset or the preset context changes (FR-017), with
+ * Called when the active preset or the preset context changes, with
  * the keys whose calculated value moved across the two `(preset, context)`
  * pairs. An override is authored against one calculated value, so it stands
  * only while that value does: where it moved, carrying the override across
@@ -140,7 +140,7 @@ export interface ResolvedOption {
   readonly presetState: "resolved" | "unresolved" | "mismatch";
   /**
    * `true` only when an explicit stored selection differs from `presetValue`.
-   * Drives visual emphasis (FR-015) and argument emission (FR-022). Forced
+   * Drives visual emphasis and argument emission. Forced
    * `false` when `presetState` is `"unresolved"` or `"mismatch"`.
    */
   readonly isOverride: boolean;
@@ -163,10 +163,10 @@ export interface ResolvedOption {
  * flagged with `available: false`) so that callers can preserve hidden
  * values while hiding them from the UI.
  *
- * Value resolution order (specs/009-build-preset-support/data-model.md §4):
+ * Value resolution order:
  * 1. Read the stored selection.
  * 2. Discard it when null, matching no current state id, or equal to the
- *    null-valued state's id (research Decision 8, rule 3).
+ *    null-valued state's id.
  * 3. A surviving selection becomes `value`; `isOverride = value !== presetValue`.
  * 4. Otherwise `value = presetValue`, `isOverride = false`.
  * 5. When `presetState === "unresolved"`, `value` is the null-valued state id

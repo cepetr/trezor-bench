@@ -114,7 +114,7 @@ let _presetEffectiveValues: ReadonlyMap<string, PresetEffectiveValue> = new Map(
  */
 let _presetBlocked = false;
 /**
- * True only for the absent shared `presets.toml` (FR-027). Tracked separately
+ * True only for the absent shared `presets.toml`. Tracked separately
  * from `_presetBlocked` so the launch path can report the more specific
  * `presets-unavailable` reason; it always implies `_presetBlocked`.
  */
@@ -131,7 +131,7 @@ let _activeConfig: ActiveConfig | undefined;
  * The preset context the last refresh resolved against. Held beside
  * `_activeConfig` — the two are always written together — so a refresh can tell
  * whether the calculated values every stored override was authored against
- * still hold (FR-017). `undefined` until the first refresh with a loaded
+ * still hold. `undefined` until the first refresh with a loaded
  * manifest, which is what keeps activation from wiping a restored session.
  */
 let _presetContext: PresetContext | undefined;
@@ -257,9 +257,9 @@ function computeResolvedOptions(
  * against the current manifest, active build context, and preset state;
  * normalizes and persists the active preset id when it changed; drops, when
  * the active preset or the preset context changed, exactly those explicit
- * build-option overrides whose calculated value moved with it (FR-017);
- * and refreshes the `Preset` selector and Build Options (FR-009, FR-013,
- * FR-017, SC-004). The single entry point for every preset-relevant
+ * build-option overrides whose calculated value moved with it;
+ * and refreshes the `Preset` selector and Build Options.
+ * The single entry point for every preset-relevant
  * trigger: activation, preset-state change, manifest-state change, and
  * active model/target/component change.
  */
@@ -284,7 +284,7 @@ async function refreshPresetsAndActiveConfig(
   const presets = currentPresetState?.status === "loaded" ? currentPresetState : undefined;
 
   // The choice list depends on the two preset files alone: every declared
-  // preset is offered whatever the build context (FR-006), so `knownIds` only
+  // preset is offered whatever the build context, so `knownIds` only
   // ever retires an id the files no longer declare.
   let choices: PresetChoice[] = [];
   let knownIds: Set<string> | undefined;
@@ -320,7 +320,7 @@ async function refreshPresetsAndActiveConfig(
     // recalculate what the previous pair produced, and drop exactly the
     // overrides whose value moved. Those would otherwise silently shadow the
     // new calculation, with no way to clear it for a checkbox; the rest still
-    // say what the user asked for and are kept (FR-017). Both change guards
+    // say what the user asked for and are kept. Both change guards
     // require a known previous half, which is what keeps activation from
     // pruning the selections it just restored, and an unloaded preset state
     // never prunes because it can calculate neither side.
@@ -783,7 +783,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // Connect manifest state changes to the tree provider, diagnostics, and logs.
   // On each state change, restore and normalize the active config and the
-  // active preset together (FR-009).
+  // active preset together.
   const onManifestStateChange = async (state: ManifestState): Promise<void> => {
     _manifestState = state;
     if (state.status === "loaded") {
@@ -810,7 +810,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
 
-  // --- Preset service (feature 009) ---
+  // --- Preset service ---
   const presetUris = resolvePresetUris(workspaceFolder);
   _presetService = new PresetService(presetUris.shared, presetUris.user);
   context.subscriptions.push({
@@ -821,7 +821,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
 
   // Connect preset state changes to diagnostics, logs, and preset-list
-  // recomputation/normalization (FR-009).
+  // recomputation/normalization.
   const onPresetStateChange = async (state: PresetState): Promise<void> => {
     _presetState = state;
     handlePresetStateDiagnostics(state);
@@ -943,7 +943,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- Build-context selector commands. ---
   // Each selection also re-normalizes the active preset against the new
-  // build context (FR-009), via refreshPresetsAndActiveConfig. All selectors
+  // build context, via refreshPresetsAndActiveConfig. All selectors
   // share the same guard and post-selection refresh chain.
   const registerSelector = (
     command: string,
@@ -966,14 +966,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   registerSelector("tbench.selectModel", (id, state) => selectModel(context, id, state));
   registerSelector("tbench.selectTarget", (id, state) => selectTarget(context, id, state));
   registerSelector("tbench.selectComponent", (id, state) => selectComponent(context, id, state));
-  // Preset selector (feature 009): not a contributed command — invoked only
+  // Preset selector: not a contributed command — invoked only
   // through the Preset selector's tree-item command binding.
   registerSelector("tbench.selectPreset", (id, state) => selectPreset(context, id, state));
 
   // --- Workflow commands: Build / Clippy / Check / Clean. ---
   // Build/Clippy/Check reload preset inputs and recompute before deriving
-  // arguments (FR-020, research Decision 13); Clean is exempt from preset
-  // blocking entirely (FR-025, research Decision 11).
+  // arguments; Clean is exempt from preset
+  // blocking entirely.
   const registerWorkflowCommand = (kind: WorkflowKind): vscode.Disposable =>
     vscode.commands.registerCommand(`tbench.${kind.toLowerCase()}`, async () => {
       if (kind !== "Clean") {

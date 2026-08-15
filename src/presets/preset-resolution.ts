@@ -1,8 +1,6 @@
 /**
  * Pure preset resolution: PresetContext derivation, preset availability, and
  * preset-effective build-option values.
- *
- * specs/009-build-preset-support/data-model.md §2
  */
 import * as vscode from "vscode";
 import { BuildOption } from "../manifest/manifest-types";
@@ -55,14 +53,14 @@ export function derivePresetContext(
  * between two hardware targets — which changes `targetId` but not `emulator` —
  * is correctly not a preset-context change. Used by the refresh seam to decide
  * whether the calculated values overrides were authored against need
- * re-checking at all (FR-017).
+ * re-checking at all.
  */
 export function samePresetContext(a: PresetContext, b: PresetContext): boolean {
   return a.modelId === b.modelId && a.projectId === b.projectId && a.emulator === b.emulator;
 }
 
 /**
- * Matching rule (FR-012): fields present are combined with AND, values
+ * Matching rule: fields present are combined with AND, values
  * inside one field are combined with OR, an absent field matches all.
  */
 export function matchesPresetFilter(filter: PresetFilter, context: PresetContext): boolean {
@@ -82,11 +80,11 @@ export function matchesPresetFilter(filter: PresetFilter, context: PresetContext
  * Lists preset choices for the `Preset` selector: the synthetic `Default`
  * choice always first, then each named preset exactly once, at the position
  * of its first declaration scanning `shared.names` then `user.names`
- * (FR-003, FR-004, FR-005).
+ *.
  *
  * Every declared preset is listed and can be selected, whatever the active
  * build context — the list is a function of the two files alone, which is why
- * no `PresetContext` is taken (FR-006). Fragment filters still decide what a
+ * no `PresetContext` is taken. Fragment filters still decide what a
  * preset *calculates*: one with no matching fragment contributes nothing to
  * the overlay, so its baseline is the `[[defaults]]` layer alone, and it is
  * still emitted as `-p <name>`.
@@ -107,7 +105,7 @@ export function listPresetChoices(shared: PresetFile, user: PresetFile): PresetC
 }
 
 // ---------------------------------------------------------------------------
-// Preset-effective values (data-model.md §2 "PresetEffectiveValue")
+// Preset-effective values
 // ---------------------------------------------------------------------------
 
 /** The preset-effective value for one manifest build option, before explicit overrides. */
@@ -127,7 +125,7 @@ export interface PresetEffectiveValue {
  * `resolved` compares the value, `mismatch` compares the unrepresentable raw
  * value, and two `unresolved` calculations are equal; a present/absent pair
  * never is. Used to decide whether a stored override still stands against the
- * value it was authored over (FR-017).
+ * value it was authored over.
  */
 export function samePresetEffectiveValue(
   a: PresetEffectiveValue | undefined,
@@ -151,7 +149,7 @@ export function samePresetEffectiveValue(
 /**
  * The option keys whose preset-effective value moved between two
  * calculations — the overrides that no longer stand and must be dropped
- * (FR-017). Keys are returned in `before` order followed by keys only `after`
+ *. Keys are returned in `before` order followed by keys only `after`
  * has, so the log record is deterministic.
  */
 export function shiftedPresetOptionKeys(
@@ -175,7 +173,7 @@ interface OverlayEntry {
 /**
  * Matches a preset fragment key to a manifest build option: the key equals
  * `option.id` when declared, otherwise `option.flag` with leading dashes
- * stripped (research Decision 4).
+ * stripped.
  */
 export function presetMatchKey(option: BuildOption): string {
   return option.id ?? option.flag.replace(/^-+/, "");
@@ -186,8 +184,7 @@ export function presetMatchKey(option: BuildOption): string {
  * matching shared `defaults` fragments, matching user `defaults` fragments,
  * matching shared `<activePresetId>` fragments, then matching user
  * `<activePresetId>` fragments — each in file order, layers 3-4 skipped for
- * the synthetic `Default` choice (FR-010, FR-011; contracts/preset-files.md
- * "Precedence").
+ * the synthetic `Default` choice.
  */
 export function buildPresetOverlay(
   shared: PresetFile,
@@ -220,7 +217,7 @@ export function buildPresetOverlay(
 
 /**
  * Maps one build option's overlay entry to its `PresetEffectiveValue`, per
- * the raw-value -> option-value table in data-model.md §2.
+ * the raw-value -> option-value mapping.
  */
 export function computePresetEffectiveValue(
   option: BuildOption,
@@ -263,7 +260,7 @@ export function computePresetEffectiveValue(
  * Computes the preset-effective value for every option, keyed by
  * `BuildOption.key`. Options whose preset fragment key matches no manifest
  * option simply never appear in the overlay and contribute nothing
- * (research Decision 5).
+ *.
  */
 export function computePresetEffectiveValues(
   options: ReadonlyArray<BuildOption>,

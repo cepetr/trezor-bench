@@ -3,7 +3,7 @@ import { ValidationIssue } from "../manifest/manifest-types";
 
 /**
  * Which of the two preset inputs a value came from. Shared is always
- * layered before user (specs/009-build-preset-support/data-model.md §1).
+ * layered before user.
  */
 export type PresetSource = "shared" | "user";
 
@@ -12,7 +12,7 @@ export type PresetRawValue = boolean | string | number;
 
 /**
  * Parsed `when` table of one fragment. Every field is optional; an omitted
- * field matches every active build context (FR-012).
+ * field matches every active build context.
  */
 export interface PresetFilter {
   readonly models?: ReadonlyArray<string>;
@@ -41,7 +41,7 @@ export interface PresetFile {
    * False when the file does not exist. For `user-presets.toml` that is
    * equivalent to an empty file and never an error; for the shared
    * `presets.toml` it is terminal — the whole state becomes `unavailable`,
-   * because the file ships with the `xtask` that supports presets (FR-027).
+   * because the file ships with the `xtask` that supports presets.
    */
   readonly present: boolean;
   /** Group names in first-declaration order, excluding `defaults` and `default`. */
@@ -65,7 +65,7 @@ export interface PresetStateLoaded {
  * predates preset support and no preset-aware argument it would receive is
  * supported. Takes precedence over `invalid`. No preset choice is offered at
  * all — not even `Default` — Build/Clippy/Check are blocked, and the saved
- * preset id is preserved unresolved (FR-027, FR-031).
+ * preset id is preserved unresolved.
  */
 export interface PresetStateUnavailable {
   readonly status: "unavailable";
@@ -78,7 +78,7 @@ export interface PresetStateUnavailable {
 /**
  * Both files exist, but at least one is unreadable or has an error-severity
  * issue. Preset choices are replaced by an error row; Build/Clippy/Check are
- * blocked; the saved preset id is preserved unresolved (FR-031).
+ * blocked; the saved preset id is preserved unresolved.
  */
 export interface PresetStateInvalid {
   readonly status: "invalid";
@@ -93,6 +93,6 @@ export type PresetState = PresetStateLoaded | PresetStateUnavailable | PresetSta
 
 /**
  * Reserved id for the synthetic `Default` choice. The only preset id that
- * suppresses `-p` (FR-004, FR-021). Re-exported from `configuration/active-config.ts`.
+ * suppresses `-p`. Re-exported from `configuration/active-config.ts`.
  */
 export const DEFAULT_PRESET_ID = "default";

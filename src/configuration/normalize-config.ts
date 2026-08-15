@@ -39,14 +39,14 @@ export function normalizeActiveConfig(
  * Normalizes a saved preset id against the ids the preset files declare.
  *
  * The declared set does not depend on the active build context — every
- * declared preset is offered everywhere (FR-006) — so this only ever retires
+ * declared preset is offered everywhere — so this only ever retires
  * an id the files no longer contain, never one whose fragments simply do not
  * apply here.
  *
  * - `knownPresetIds === undefined` (preset state invalid) → the saved id is
- *   returned unchanged; FR-031 forbids resolving it while data is invalid.
- * - a saved id the files declare → kept (FR-008, Scenarios 1.4 and 1.6).
- * - any other saved id → normalized to `DEFAULT_PRESET_ID` (FR-008, Scenario 1.7).
+ *   returned unchanged; it is never resolved while data is invalid.
+ * - a saved id the files declare → kept.
+ * - any other saved id → normalized to `DEFAULT_PRESET_ID`.
  */
 export function normalizePresetId(
   savedId: string,

@@ -3,7 +3,7 @@
  *
  * Pure functions over PresetState (shared/user PresetFile) plus, for the
  * context derivation, the active build context. The choice list itself is a
- * function of the two files alone. specs/009-build-preset-support/data-model.md §2.
+ * function of the two files alone.
  */
 import * as assert from "assert";
 import * as vscode from "vscode";
@@ -62,7 +62,7 @@ function presetFile(overrides: Partial<PresetFile> & Pick<PresetFile, "source">)
 }
 
 // ---------------------------------------------------------------------------
-// PresetContext derivation (research Decision 3)
+// PresetContext derivation
 // ---------------------------------------------------------------------------
 
 suite("derivePresetContext", () => {
@@ -105,7 +105,7 @@ suite("derivePresetContext", () => {
 });
 
 // ---------------------------------------------------------------------------
-// PresetContext comparison — the override-discard predicate (FR-017)
+// PresetContext comparison — the override-discard predicate
 // ---------------------------------------------------------------------------
 
 suite("samePresetContext", () => {
@@ -185,7 +185,7 @@ suite("listPresetChoices", () => {
     );
   });
 
-  test("a named preset whose only fragment filters to another context is still listed (FR-006)", () => {
+  test("a named preset whose only fragment filters to another context is still listed", () => {
     const shared = presetFile({
       source: "shared",
       names: ["dev"],
@@ -234,7 +234,7 @@ suite("listPresetChoices", () => {
     assert.ok(!result.some((p) => p.id === "defaults"));
   });
 
-  test("a literal [[default]] group is never listed (research Decision 7)", () => {
+  test("a literal [[default]] group is never listed", () => {
     const shared = presetFile({
       source: "shared",
       names: [], // parsePresetFile already excludes "default" from names

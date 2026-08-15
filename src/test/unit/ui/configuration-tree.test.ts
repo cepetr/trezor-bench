@@ -43,7 +43,7 @@ suite("SelectorHeaderItem icons", () => {
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "extensions");
   });
 
-  test("uses the layers icon for preset (research Decision 16)", () => {
+  test("uses the layers icon for preset", () => {
     const item = new SelectorHeaderItem("preset", "Preset", "Default", false);
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "layers");
   });
@@ -117,7 +117,7 @@ suite("BuildOptionMultistateHeaderItem accordion", () => {
 });
 
 suite("BuildOptionCheckboxItem bold label", () => {
-  test("label has highlights when isOverride = true, regardless of checked state (FR-015, replacing _isNonDefault)", () => {
+  test("label has highlights when isOverride = true, regardless of checked state", () => {
     const item = new BuildOptionCheckboxItem("verbose", "Verbose", true, true);
     assert.deepStrictEqual(item.label, { label: "Verbose", highlights: [[0, 7]] });
   });
@@ -235,7 +235,7 @@ suite("BuildOptionStateItem tooltip", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Preset-relative mismatch/unresolved rendering (feature 009, US2)
+// Preset-relative mismatch/unresolved rendering
 // ---------------------------------------------------------------------------
 
 suite("BuildOptionCheckboxItem mismatch rendering", () => {
@@ -951,7 +951,7 @@ suite("ConfigurationTreeProvider – Executable row", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ConfigurationTreeProvider – Preset selector (feature 009, US1)
+// ConfigurationTreeProvider – Preset selector
 // ---------------------------------------------------------------------------
 
 function makeManifestState(): ManifestStateLoaded {
@@ -1019,7 +1019,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
     return provider.paneRootChildren("build-selection");
   }
 
-  test("Preset is the fourth Build Selection child, directly below Component (FR-001)", () => {
+  test("Preset is the fourth Build Selection child, directly below Component", () => {
     provider.update(makeManifestState(), makeActiveConfig(), []);
     const children = buildContextChildren() as SelectorHeaderItem[];
     assert.strictEqual(children.length, 4);
@@ -1094,7 +1094,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
     assert.ok(children[1] instanceof PlaceholderItem);
   });
 
-  test("preset state unavailable replaces all choices with a presets.toml-is-unavailable row (FR-027)", () => {
+  test("preset state unavailable replaces all choices with a presets.toml-is-unavailable row", () => {
     provider.update(makeManifestState(), makeActiveConfig(), []);
     const unavailableState: PresetState = {
       status: "unavailable",
@@ -1123,7 +1123,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
     );
   });
 
-  test("description reads 'Unavailable' while presets.toml is absent (FR-027)", () => {
+  test("description reads 'Unavailable' while presets.toml is absent", () => {
     provider.update(makeManifestState(), makeActiveConfig(), []);
     const unavailableState: PresetState = {
       status: "unavailable",
@@ -1132,7 +1132,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
       loadedAt: new Date(),
       validationIssues: [],
     };
-    // The saved id is preserved unresolved (FR-031), so it must not be shown
+    // The saved id is preserved unresolved, so it must not be shown
     // as though that preset were in effect.
     provider.updatePresets(unavailableState, "test", []);
     const children = buildContextChildren() as SelectorHeaderItem[];
@@ -1158,7 +1158,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
     assert.strictEqual(children[0].description, undefined);
   });
 
-  test("every listed preset renders as a plain selectable row, whatever the build context (FR-006)", () => {
+  test("every listed preset renders as a plain selectable row, whatever the build context", () => {
     provider.update(makeManifestState(), makeActiveConfig(), []);
     // The provider is handed the full declared list, including presets no
     // fragment of which applies here; none of them is marked or disabled.
@@ -1184,7 +1184,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
     }
   });
 
-  test("only one selector expands at a time; expanding preset collapses model (FR-002)", () => {
+  test("only one selector expands at a time; expanding preset collapses model", () => {
     provider.update(makeManifestState(), makeActiveConfig(), []);
     provider.setExpandedSelector("model");
     assert.strictEqual(provider.getExpandedSelector(), "model");
@@ -1199,7 +1199,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ConfigurationTreeProvider – Build Options preset-relative emphasis (US2)
+// ConfigurationTreeProvider – Build Options preset-relative emphasis
 // ---------------------------------------------------------------------------
 
 function checkboxOption(key: string, flag: string, group?: string): BuildOption {
@@ -1355,9 +1355,9 @@ suite("ConfigurationTreeProvider – Build Options preset-relative emphasis", ()
 
 // ---------------------------------------------------------------------------
 // ConfigurationTreeProvider – per-pane root children (paneRootChildren)
-// Each PaneId's root rows must match today's section content exactly, for
-// every state the row-inventory (specs/010-split-configuration-panes/checklists/row-inventory.md)
-// records. This is the reference the pane split is checked against (FR-002).
+// Each PaneId's root rows must match today's section content exactly, in
+// every recorded state. This is the reference the pane split is checked
+// against.
 // ---------------------------------------------------------------------------
 
 suite("ConfigurationTreeProvider – paneRootChildren('build-selection')", () => {
@@ -1669,12 +1669,12 @@ suite("PaneTreeProvider – non-root delegation to the owner's element dispatch"
 });
 
 // ---------------------------------------------------------------------------
-// US3 (T017): every interaction still behaves as it does today when driven
+// Every interaction still behaves as it does today when driven
 // through the pane providers, not the owner directly — selector accordion
 // behavior, multistate expansion, option-group collapse, and checkbox state.
 // ---------------------------------------------------------------------------
 
-suite("PaneTreeProvider – selector accordion behavior (US3)", () => {
+suite("PaneTreeProvider – selector accordion behavior", () => {
   let owner: ConfigurationTreeProvider;
   let buildSelection: PaneTreeProvider;
 
@@ -1704,7 +1704,7 @@ suite("PaneTreeProvider – selector accordion behavior (US3)", () => {
   });
 });
 
-suite("PaneTreeProvider – multistate expansion, group collapse, and checkbox state (US3)", () => {
+suite("PaneTreeProvider – multistate expansion, group collapse, and checkbox state", () => {
   let owner: ConfigurationTreeProvider;
   let buildOptions: PaneTreeProvider;
 
@@ -1816,7 +1816,7 @@ suite("PaneTreeProvider – change-event relay", () => {
 // ---------------------------------------------------------------------------
 // No pane's rows contain a Build Selection / Build Options / Build Artifacts
 // row — that is the removed SectionItem wrapper, not a row any pane renders
-// (FR-003). Walks every reachable row per pane and per state.
+//. Walks every reachable row per pane and per state.
 // ---------------------------------------------------------------------------
 
 const FORBIDDEN_LABELS = new Set(["Build Selection", "Build Options", "Build Artifacts"]);
@@ -1844,7 +1844,7 @@ function collectAllRows(
   return all;
 }
 
-suite("ConfigurationTreeProvider – no section rows inside any pane (FR-003)", () => {
+suite("ConfigurationTreeProvider – no section rows inside any pane", () => {
   let provider: ConfigurationTreeProvider;
 
   setup(() => {

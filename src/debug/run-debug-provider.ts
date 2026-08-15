@@ -4,7 +4,7 @@
  * Generates dynamic tbench-owned proxy debug configurations for the active
  * build context and resolves them into real debug configurations at launch time.
  *
- * Proxy configuration shape (see contracts/run-debug-configurations.md):
+ * Proxy configuration shape:
  *   { type: "tbench", request: "launch", name: string,
  *     tbenchMode: "default" | "profile",
  *     tbenchProfileId: string, tbenchContextKey: string }

@@ -358,8 +358,8 @@ suite("checkProviderReadiness – integration", () => {
 // ConfigurationTreeProvider pane root content (UI-02)
 // Integration tests asserting each pane's root rows remain reachable
 // immediately on startup. Initial collapse state is now declared in
-// package.json's `visibility` field and is covered by the US2 suite in
-// configuration-panes.integration.test.ts, not here.
+// package.json's `visibility` field and is covered by the initial-collapse-
+// state suite in configuration-panes.integration.test.ts, not here.
 // ---------------------------------------------------------------------------
 
 suite("ConfigurationTreeProvider – pane root content (UI-02)", () => {
