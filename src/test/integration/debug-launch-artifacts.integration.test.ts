@@ -22,7 +22,7 @@ import {
   ActiveExecutableArtifact,
 } from "../../intellisense/artifact-resolution";
 import {
-  ConfigurationTreeProvider,
+  ConfigurationTreeModel,
   CompileCommandsArtifactItem,
   ExecutableArtifactItem,
 } from "../../ui/configuration-tree";
@@ -184,14 +184,14 @@ suite("Debug Launch – Executable row rendering under resolution states", () =>
 // ---------------------------------------------------------------------------
 
 suite("Debug Launch – Executable row position in Build Artifacts tree", () => {
-  let provider: ConfigurationTreeProvider;
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   function getBuildArtifacts(): vscode.TreeItem[] {
-    return provider.paneRootChildren("build-artifacts");
+    return treeModel.paneRootChildren("build-artifacts");
   }
 
   function makeExecArtifact(overrides: Partial<ActiveExecutableArtifact> = {}): ActiveExecutableArtifact {
@@ -208,8 +208,8 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
   }
 
   test("Executable row appears immediately after Compile Commands when no Binary/Map rows", () => {
-    provider.updateArtifact(makeValidArtifact());
-    provider.updateExecutableArtifact(makeExecArtifact());
+    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateExecutableArtifact(makeExecArtifact());
 
     const children = getBuildArtifacts();
     const ccIdx = children.findIndex((c) => c instanceof CompileCommandsArtifactItem);
@@ -219,8 +219,8 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
   });
 
   test("Executable row is always visible regardless of profile resolution state", () => {
-    provider.updateArtifact(makeValidArtifact());
-    provider.updateExecutableArtifact(makeExecArtifact({
+    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateExecutableArtifact(makeExecArtifact({
       status: "missing",
       profileResolutionState: "no-match",
       tooltip: "No debug profile matches.",
@@ -234,9 +234,9 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
   });
 
   test("clearing Executable artifact removes the row from the tree", () => {
-    provider.updateArtifact(makeValidArtifact());
-    provider.updateExecutableArtifact(makeExecArtifact());
-    provider.updateExecutableArtifact(null);
+    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateExecutableArtifact(makeExecArtifact());
+    treeModel.updateExecutableArtifact(null);
 
     const children = getBuildArtifacts();
     assert.ok(

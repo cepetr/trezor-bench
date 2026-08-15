@@ -1,7 +1,7 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import {
-  ConfigurationTreeProvider,
+  ConfigurationTreeModel,
   PaneTreeProvider,
   PaneId,
   SelectorChoiceItem,
@@ -624,54 +624,54 @@ suite("MapArtifactItem – missing artifact", () => {
   });
 });
 
-suite("ConfigurationTreeProvider – Binary/Map artifact refresh", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – Binary/Map artifact refresh", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   function getBuildArtifactsChildren(): vscode.TreeItem[] {
-    return provider.paneRootChildren("build-artifacts");
+    return treeModel.paneRootChildren("build-artifacts");
   }
 
   test("switching artifact context replaces Binary and Map rows with the new paths", () => {
-    provider.updateArtifact(
+    treeModel.updateArtifact(
       makeValidArtifact({
         path: "/build/model-t/compile_commands_core.cc.json",
         contextKey: "T2T1::hw::core",
       })
     );
-    provider.updateBinaryArtifact(
+    treeModel.updateBinaryArtifact(
       makeValidBinaryArtifact({
         path: "/build/model-t/firmware_core.bin",
         contextKey: "T2T1::hw::core",
       })
     );
-    provider.updateMapArtifact(
+    treeModel.updateMapArtifact(
       makeValidMapArtifact({
         path: "/build/model-t/firmware_core.map",
         contextKey: "T2T1::hw::core",
       })
     );
 
-    provider.updateArtifact(
+    treeModel.updateArtifact(
       makeValidArtifact({
         path: "/build/model-t3/compile_commands_boot_emu.cc.json",
         contextKey: "T3W1::emu::bootloader",
       })
     );
-    provider.updateBinaryArtifact(
+    treeModel.updateBinaryArtifact(
       makeValidBinaryArtifact({
         path: "/build/model-t3/firmware_boot_emu.bin",
         contextKey: "T3W1::emu::bootloader",
       })
     );
-    provider.updateMapArtifact(
+    treeModel.updateMapArtifact(
       makeValidMapArtifact({
         path: "/build/model-t3/firmware_boot_emu.map",
         contextKey: "T3W1::emu::bootloader",
@@ -703,12 +703,12 @@ suite("ConfigurationTreeProvider – Binary/Map artifact refresh", () => {
   });
 
   test("clearing Binary and Map artifacts removes stale rows", () => {
-    provider.updateArtifact(makeValidArtifact());
-    provider.updateBinaryArtifact(makeValidBinaryArtifact());
-    provider.updateMapArtifact(makeValidMapArtifact());
+    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateBinaryArtifact(makeValidBinaryArtifact());
+    treeModel.updateMapArtifact(makeValidMapArtifact());
 
-    provider.updateBinaryArtifact(null);
-    provider.updateMapArtifact(null);
+    treeModel.updateBinaryArtifact(null);
+    treeModel.updateMapArtifact(null);
 
     const children = getBuildArtifactsChildren();
     assert.strictEqual(children.length, 1, "only compile-commands row should remain");
@@ -716,9 +716,9 @@ suite("ConfigurationTreeProvider – Binary/Map artifact refresh", () => {
   });
 
   test("prepends the newest artifact modification time as an Updated row", () => {
-    provider.updateArtifact(makeValidArtifact({ modifiedAt: new Date("2026-08-12T09:00:00Z") }));
-    provider.updateBinaryArtifact(makeValidBinaryArtifact({ modifiedAt: new Date("2026-08-12T11:00:00Z") }));
-    provider.updateMapArtifact(makeValidMapArtifact({ modifiedAt: new Date("2026-08-12T10:00:00Z") }));
+    treeModel.updateArtifact(makeValidArtifact({ modifiedAt: new Date("2026-08-12T09:00:00Z") }));
+    treeModel.updateBinaryArtifact(makeValidBinaryArtifact({ modifiedAt: new Date("2026-08-12T11:00:00Z") }));
+    treeModel.updateMapArtifact(makeValidMapArtifact({ modifiedAt: new Date("2026-08-12T10:00:00Z") }));
 
     const children = getBuildArtifactsChildren();
     const updated = children[0] as ArtifactUpdatedItem;
@@ -728,9 +728,9 @@ suite("ConfigurationTreeProvider – Binary/Map artifact refresh", () => {
   });
 
   test("omits the Updated row when no artifact is present", () => {
-    provider.updateArtifact(makeMissingArtifact());
-    provider.updateBinaryArtifact(makeMissingBinaryArtifact());
-    provider.updateMapArtifact(makeMissingMapArtifact());
+    treeModel.updateArtifact(makeMissingArtifact());
+    treeModel.updateBinaryArtifact(makeMissingBinaryArtifact());
+    treeModel.updateMapArtifact(makeMissingMapArtifact());
 
     const children = getBuildArtifactsChildren();
     assert.ok(!children.some((child) => child instanceof ArtifactUpdatedItem));
@@ -848,24 +848,24 @@ suite("ExecutableArtifactItem – missing status rendering", () => {
   });
 });
 
-suite("ConfigurationTreeProvider – Executable row", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – Executable row", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   function getBuildArtifactsChildrenExec(): vscode.TreeItem[] {
-    return provider.paneRootChildren("build-artifacts");
+    return treeModel.paneRootChildren("build-artifacts");
   }
 
   test("Executable row appears when updateExecutableArtifact is called with valid artifact", () => {
-    provider.updateArtifact(makeValidArtifact());
-    provider.updateExecutableArtifact(makeValidExecutableArtifact());
+    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateExecutableArtifact(makeValidExecutableArtifact());
     const children = getBuildArtifactsChildrenExec();
     assert.ok(
       children.some((c) => c instanceof ExecutableArtifactItem),
@@ -874,8 +874,8 @@ suite("ConfigurationTreeProvider – Executable row", () => {
   });
 
   test("Executable row appears even when status is missing", () => {
-    provider.updateArtifact(makeValidArtifact());
-    provider.updateExecutableArtifact(makeMissingExecutableArtifact());
+    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateExecutableArtifact(makeMissingExecutableArtifact());
     const children = getBuildArtifactsChildrenExec();
     assert.ok(
       children.some((c) => c instanceof ExecutableArtifactItem),
@@ -884,7 +884,7 @@ suite("ConfigurationTreeProvider – Executable row", () => {
   });
 
   test("Executable row does not appear when updateExecutableArtifact is not called", () => {
-    provider.updateArtifact(makeValidArtifact());
+    treeModel.updateArtifact(makeValidArtifact());
     const children = getBuildArtifactsChildrenExec();
     assert.ok(
       !children.some((c) => c instanceof ExecutableArtifactItem),
@@ -893,9 +893,9 @@ suite("ConfigurationTreeProvider – Executable row", () => {
   });
 
   test("Executable row does not appear after updateExecutableArtifact(null)", () => {
-    provider.updateArtifact(makeValidArtifact());
-    provider.updateExecutableArtifact(makeValidExecutableArtifact());
-    provider.updateExecutableArtifact(null);
+    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateExecutableArtifact(makeValidExecutableArtifact());
+    treeModel.updateExecutableArtifact(null);
     const children = getBuildArtifactsChildrenExec();
     assert.ok(
       !children.some((c) => c instanceof ExecutableArtifactItem),
@@ -904,10 +904,10 @@ suite("ConfigurationTreeProvider – Executable row", () => {
   });
 
   test("Executable row appears after Map File row when Binary and Map are present", () => {
-    provider.updateArtifact(makeValidArtifact());
-    provider.updateBinaryArtifact(makeValidBinaryArtifact());
-    provider.updateMapArtifact(makeValidMapArtifact());
-    provider.updateExecutableArtifact(makeValidExecutableArtifact());
+    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateBinaryArtifact(makeValidBinaryArtifact());
+    treeModel.updateMapArtifact(makeValidMapArtifact());
+    treeModel.updateExecutableArtifact(makeValidExecutableArtifact());
     const children = getBuildArtifactsChildrenExec();
     const binaryIdx = children.findIndex((c) => c instanceof BinaryArtifactItem);
     const mapIdx = children.findIndex((c) => c instanceof MapArtifactItem);
@@ -918,8 +918,8 @@ suite("ConfigurationTreeProvider – Executable row", () => {
   });
 
   test("Executable row appears immediately after Compile Commands when no Binary/Map", () => {
-    provider.updateArtifact(makeValidArtifact());
-    provider.updateExecutableArtifact(makeValidExecutableArtifact());
+    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateExecutableArtifact(makeValidExecutableArtifact());
     const children = getBuildArtifactsChildrenExec();
     const ccIdx = children.findIndex((c) => c instanceof CompileCommandsArtifactItem);
     const execIdx = children.findIndex((c) => c instanceof ExecutableArtifactItem);
@@ -928,18 +928,18 @@ suite("ConfigurationTreeProvider – Executable row", () => {
   });
 
   test("clearing Executable artifact removes the row", () => {
-    provider.updateArtifact(makeValidArtifact());
-    provider.updateExecutableArtifact(makeValidExecutableArtifact());
-    provider.updateExecutableArtifact(null);
+    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateExecutableArtifact(makeValidExecutableArtifact());
+    treeModel.updateExecutableArtifact(null);
     const children = getBuildArtifactsChildrenExec();
     assert.strictEqual(children.length, 1, "only compile-commands row should remain");
     assert.ok(children[0] instanceof CompileCommandsArtifactItem);
   });
 
   test("Executable row tooltip reflects the tooltip from the artifact", () => {
-    provider.updateArtifact(makeValidArtifact());
+    treeModel.updateArtifact(makeValidArtifact());
     const artifact = makeValidExecutableArtifact({ tooltip: "/custom/path/to/firmware.elf" });
-    provider.updateExecutableArtifact(artifact);
+    treeModel.updateExecutableArtifact(artifact);
     const children = getBuildArtifactsChildrenExec();
     const execItem = children.find((c) => c instanceof ExecutableArtifactItem) as ExecutableArtifactItem | undefined;
     assert.ok(execItem, "expected ExecutableArtifactItem");
@@ -951,7 +951,7 @@ suite("ConfigurationTreeProvider – Executable row", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ConfigurationTreeProvider – Preset selector
+// ConfigurationTreeModel – Preset selector
 // ---------------------------------------------------------------------------
 
 function makeManifestState(): ManifestStateLoaded {
@@ -1004,23 +1004,23 @@ function makeLoadedPresetState(available: PresetChoice[]): { state: PresetState;
 
 const DEFAULT_ONLY: PresetChoice[] = [{ id: "default", label: "Default", isDefault: true }];
 
-suite("ConfigurationTreeProvider – Preset selector", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – Preset selector", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   function buildContextChildren(): vscode.TreeItem[] {
-    return provider.paneRootChildren("build-selection");
+    return treeModel.paneRootChildren("build-selection");
   }
 
   test("Preset is the fourth Build Selection child, directly below Component", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
     const children = buildContextChildren() as SelectorHeaderItem[];
     assert.strictEqual(children.length, 4);
     assert.deepStrictEqual(
@@ -1034,35 +1034,35 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
   });
 
   test("description shows '—' before preset state has resolved", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
     const children = buildContextChildren() as SelectorHeaderItem[];
     assert.strictEqual(children[3].description, "—");
   });
 
   test("description shows 'Default' for the synthetic choice", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
     const { state } = makeLoadedPresetState(DEFAULT_ONLY);
-    provider.updatePresets(state, "default", DEFAULT_ONLY);
+    treeModel.updatePresets(state, "default", DEFAULT_ONLY);
     const children = buildContextChildren() as SelectorHeaderItem[];
     assert.strictEqual(children[3].description, "Default");
   });
 
   test("description shows the active named preset's label", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
     const available: PresetChoice[] = [
       { id: "default", label: "Default", isDefault: true },
       { id: "test", label: "test", isDefault: false },
     ];
     const { state } = makeLoadedPresetState(available);
-    provider.updatePresets(state, "test", available);
+    treeModel.updatePresets(state, "test", available);
     const children = buildContextChildren() as SelectorHeaderItem[];
     assert.strictEqual(children[3].description, "test");
   });
 
   test("preset state undefined renders the loading placeholder when expanded", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
-    provider.setExpandedSelector("preset");
-    const children = provider.getChildren(
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
+    treeModel.setExpandedSelector("preset");
+    const children = treeModel.getChildren(
       new SelectorHeaderItem("preset", "Preset", undefined, true)
     );
     assert.strictEqual(children.length, 1);
@@ -1070,7 +1070,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
   });
 
   test("preset state invalid replaces all choices with a warning row naming the failing file", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
     const invalidState: PresetState = {
       status: "invalid",
       shared: makePresetFile({
@@ -1081,9 +1081,9 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
       loadedAt: new Date(),
       validationIssues: [{ severity: "error", code: "toml-parse", message: "bad syntax" }],
     };
-    provider.updatePresets(invalidState, "default", []);
-    provider.setExpandedSelector("preset");
-    const children = provider.getChildren(
+    treeModel.updatePresets(invalidState, "default", []);
+    treeModel.setExpandedSelector("preset");
+    const children = treeModel.getChildren(
       new SelectorHeaderItem("preset", "Preset", undefined, true)
     );
     assert.ok(children[0] instanceof WarningItem);
@@ -1095,7 +1095,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
   });
 
   test("preset state unavailable replaces all choices with a presets.toml-is-unavailable row", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
     const unavailableState: PresetState = {
       status: "unavailable",
       // The shared file does not exist; the user file may or may not.
@@ -1104,9 +1104,9 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
       loadedAt: new Date(),
       validationIssues: [],
     };
-    provider.updatePresets(unavailableState, "default", []);
-    provider.setExpandedSelector("preset");
-    const children = provider.getChildren(
+    treeModel.updatePresets(unavailableState, "default", []);
+    treeModel.setExpandedSelector("preset");
+    const children = treeModel.getChildren(
       new SelectorHeaderItem("preset", "Preset", undefined, true)
     );
     assert.strictEqual(children.length, 2, "no preset choice is offered, not even Default");
@@ -1124,7 +1124,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
   });
 
   test("description reads 'Unavailable' while presets.toml is absent", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
     const unavailableState: PresetState = {
       status: "unavailable",
       shared: makePresetFile({ source: "shared", present: false }),
@@ -1134,21 +1134,21 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
     };
     // The saved id is preserved unresolved, so it must not be shown
     // as though that preset were in effect.
-    provider.updatePresets(unavailableState, "test", []);
+    treeModel.updatePresets(unavailableState, "test", []);
     const children = buildContextChildren() as SelectorHeaderItem[];
     assert.strictEqual(children[3].description, "Unavailable");
   });
 
   test("preset state loaded lists Default first, then named presets, with the active one marked", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
     const available: PresetChoice[] = [
       { id: "default", label: "Default", isDefault: true },
       { id: "test", label: "test", isDefault: false },
     ];
     const { state } = makeLoadedPresetState(available);
-    provider.updatePresets(state, "test", available);
-    provider.setExpandedSelector("preset");
-    const children = provider.getChildren(
+    treeModel.updatePresets(state, "test", available);
+    treeModel.setExpandedSelector("preset");
+    const children = treeModel.getChildren(
       new SelectorHeaderItem("preset", "Preset", undefined, true)
     ) as SelectorChoiceItem[];
     assert.strictEqual(children.length, 2);
@@ -1159,8 +1159,8 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
   });
 
   test("every listed preset renders as a plain selectable row, whatever the build context", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
-    // The provider is handed the full declared list, including presets no
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
+    // The tree model is handed the full declared list, including presets no
     // fragment of which applies here; none of them is marked or disabled.
     const available: PresetChoice[] = [
       { id: "default", label: "Default", isDefault: true },
@@ -1168,9 +1168,9 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
       { id: "prodtest", label: "prodtest", isDefault: false },
     ];
     const { state } = makeLoadedPresetState(available);
-    provider.updatePresets(state, "default", available);
-    provider.setExpandedSelector("preset");
-    const children = provider.getChildren(
+    treeModel.updatePresets(state, "default", available);
+    treeModel.setExpandedSelector("preset");
+    const children = treeModel.getChildren(
       new SelectorHeaderItem("preset", "Preset", undefined, true)
     ) as SelectorChoiceItem[];
     assert.deepStrictEqual(
@@ -1185,13 +1185,13 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
   });
 
   test("only one selector expands at a time; expanding preset collapses model", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
-    provider.setExpandedSelector("model");
-    assert.strictEqual(provider.getExpandedSelector(), "model");
-    provider.setExpandedSelector("preset");
-    assert.strictEqual(provider.getExpandedSelector(), "preset");
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
+    treeModel.setExpandedSelector("model");
+    assert.strictEqual(treeModel.getExpandedSelector(), "model");
+    treeModel.setExpandedSelector("preset");
+    assert.strictEqual(treeModel.getExpandedSelector(), "preset");
 
-    const modelChildren = provider.getChildren(
+    const modelChildren = treeModel.getChildren(
       new SelectorHeaderItem("model", "Model", undefined, false)
     );
     assert.strictEqual(modelChildren.length, 0, "model choices should not render while collapsed");
@@ -1199,7 +1199,7 @@ suite("ConfigurationTreeProvider – Preset selector", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ConfigurationTreeProvider – Build Options preset-relative emphasis
+// ConfigurationTreeModel – Build Options preset-relative emphasis
 // ---------------------------------------------------------------------------
 
 function checkboxOption(key: string, flag: string, group?: string): BuildOption {
@@ -1228,51 +1228,51 @@ function resolved(
   };
 }
 
-function getBuildOptionsChildren(provider: ConfigurationTreeProvider): vscode.TreeItem[] {
-  return provider.paneRootChildren("build-options");
+function getBuildOptionsChildren(treeModel: ConfigurationTreeModel): vscode.TreeItem[] {
+  return treeModel.paneRootChildren("build-options");
 }
 
-suite("ConfigurationTreeProvider – Build Options preset-relative emphasis", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – Build Options preset-relative emphasis", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   test("checkbox row is emphasized only when isOverride is true", () => {
     const opt = checkboxOption("frozen", "--frozen");
-    provider.update(
+    treeModel.update(
       makeManifestState(),
       makeActiveConfig(),
       [resolved(opt, { value: false, presetState: "resolved", isOverride: true })]
     );
-    const [item] = getBuildOptionsChildren(provider) as BuildOptionCheckboxItem[];
+    const [item] = getBuildOptionsChildren(treeModel) as BuildOptionCheckboxItem[];
     assert.deepStrictEqual(item.label, { label: "frozen", highlights: [[0, 6]] });
   });
 
   test("checkbox row is not emphasized when isOverride is false, even if value is true", () => {
     const opt = checkboxOption("frozen", "--frozen");
-    provider.update(
+    treeModel.update(
       makeManifestState(),
       makeActiveConfig(),
       [resolved(opt, { value: true, presetState: "resolved", isOverride: false })]
     );
-    const [item] = getBuildOptionsChildren(provider) as BuildOptionCheckboxItem[];
+    const [item] = getBuildOptionsChildren(treeModel) as BuildOptionCheckboxItem[];
     assert.strictEqual(item.label, "frozen");
   });
 
   test("checkbox tooltip uses the manifest flag instead of its internal key", () => {
     const opt = checkboxOption("bootloader_devel", "--bootloader-devel");
-    provider.update(
+    treeModel.update(
       makeManifestState(),
       makeActiveConfig(),
       [resolved(opt, { presetState: "resolved" })]
     );
-    const [item] = getBuildOptionsChildren(provider) as BuildOptionCheckboxItem[];
+    const [item] = getBuildOptionsChildren(treeModel) as BuildOptionCheckboxItem[];
     assert.strictEqual(markdownTooltipValue(item), "**--bootloader-devel**");
   });
 
@@ -1282,12 +1282,12 @@ suite("ConfigurationTreeProvider – Build Options preset-relative emphasis", ()
       { id: "swo", label: "SWO", flag: "--dbg-console=swo" },
     ];
     const opt = multistateOption("dbg-console", "--dbg-console", states);
-    provider.update(
+    treeModel.update(
       makeManifestState(),
       makeActiveConfig(),
       [resolved(opt, { value: "swo", presetState: "resolved", presetValue: "null", isOverride: true })]
     );
-    const [item] = getBuildOptionsChildren(provider) as BuildOptionMultistateHeaderItem[];
+    const [item] = getBuildOptionsChildren(treeModel) as BuildOptionMultistateHeaderItem[];
     assert.deepStrictEqual(item.label, { label: "dbg-console", highlights: [[0, 11]] });
   });
 
@@ -1297,19 +1297,19 @@ suite("ConfigurationTreeProvider – Build Options preset-relative emphasis", ()
       { id: "swo", label: "SWO", flag: "--dbg-console=swo" },
     ];
     const opt = multistateOption("dbg-console", "--dbg-console", states);
-    provider.update(
+    treeModel.update(
       makeManifestState(),
       makeActiveConfig(),
       [resolved(opt, { value: "swo", presetState: "resolved", presetValue: "swo", isOverride: false })]
     );
-    const [item] = getBuildOptionsChildren(provider) as BuildOptionMultistateHeaderItem[];
+    const [item] = getBuildOptionsChildren(treeModel) as BuildOptionMultistateHeaderItem[];
     assert.strictEqual(item.label, "dbg-console");
   });
 
   test("collapsed group header is emphasized when any member has isOverride true", () => {
     const optA = checkboxOption("alpha", "--alpha", "Group");
     const optB = checkboxOption("beta", "--beta", "Group");
-    provider.update(
+    treeModel.update(
       makeManifestState(),
       makeActiveConfig(),
       [
@@ -1317,19 +1317,19 @@ suite("ConfigurationTreeProvider – Build Options preset-relative emphasis", ()
         resolved(optB, { value: true, presetState: "resolved", isOverride: true }),
       ]
     );
-    provider.setGroupCollapsed("Group", true);
-    const [group] = getBuildOptionsChildren(provider) as BuildOptionGroupItem[];
+    treeModel.setGroupCollapsed("Group", true);
+    const [group] = getBuildOptionsChildren(treeModel) as BuildOptionGroupItem[];
     assert.deepStrictEqual(group.label, { label: "Group", highlights: [[0, 5]] });
   });
 
   test("mismatch checkbox row shows the warning icon and names the unrepresentable value", () => {
     const opt = checkboxOption("frozen", "--frozen");
-    provider.update(
+    treeModel.update(
       makeManifestState(),
       makeActiveConfig(),
       [resolved(opt, { presetState: "mismatch", isOverride: false })]
     );
-    const [item] = getBuildOptionsChildren(provider) as BuildOptionCheckboxItem[];
+    const [item] = getBuildOptionsChildren(treeModel) as BuildOptionCheckboxItem[];
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "warning");
   });
 
@@ -1339,13 +1339,13 @@ suite("ConfigurationTreeProvider – Build Options preset-relative emphasis", ()
       { id: "false", label: "Disabled", flag: "--pyopt=false" },
     ];
     const opt = multistateOption("pyopt", "--pyopt", states);
-    provider.update(
+    treeModel.update(
       makeManifestState(),
       makeActiveConfig(),
       [resolved(opt, { value: "true", presetState: "unresolved", isOverride: false })]
     );
-    provider.setExpandedMultistateKey("pyopt");
-    const [item] = getBuildOptionsChildren(provider) as BuildOptionMultistateHeaderItem[];
+    treeModel.setExpandedMultistateKey("pyopt");
+    const [item] = getBuildOptionsChildren(treeModel) as BuildOptionMultistateHeaderItem[];
     assert.ok(item.stateChildren.length > 0);
     for (const stateChild of item.stateChildren) {
       assert.strictEqual(stateChild.command, undefined, "unresolved state children must not be selectable");
@@ -1354,56 +1354,56 @@ suite("ConfigurationTreeProvider – Build Options preset-relative emphasis", ()
 });
 
 // ---------------------------------------------------------------------------
-// ConfigurationTreeProvider – per-pane root children (paneRootChildren)
+// ConfigurationTreeModel – per-pane root children (paneRootChildren)
 // Each PaneId's root rows must match today's section content exactly, in
 // every recorded state. This is the reference the pane split is checked
 // against.
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeProvider – paneRootChildren('build-selection')", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – paneRootChildren('build-selection')", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   test("loading: renders the loading placeholder before any manifest state is set", () => {
-    const children = provider.paneRootChildren("build-selection");
+    const children = treeModel.paneRootChildren("build-selection");
     assert.strictEqual(children.length, 1);
     assert.ok(children[0] instanceof PlaceholderItem);
     assert.strictEqual(children[0].label, "Loading…");
   });
 
   test("missing: renders the missing-manifest warning and placeholder", () => {
-    provider.update({
+    treeModel.update({
       status: "missing",
       manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
     });
-    const children = provider.paneRootChildren("build-selection");
+    const children = treeModel.paneRootChildren("build-selection");
     assert.ok(children[0] instanceof WarningItem);
     assert.ok(children[1] instanceof PlaceholderItem);
   });
 
   test("invalid: renders the validation-error warning and placeholder", () => {
-    provider.update({
+    treeModel.update({
       status: "invalid",
       manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
       validationIssues: [{ severity: "error", code: "invalid-type", message: "bad" }],
       loadedAt: new Date(),
     });
-    const children = provider.paneRootChildren("build-selection");
+    const children = treeModel.paneRootChildren("build-selection");
     assert.ok(children[0] instanceof WarningItem);
     assert.ok(String(children[0].label).includes("1 validation error"));
     assert.ok(children[1] instanceof PlaceholderItem);
   });
 
   test("loaded: renders the four selector headers in order", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
-    const paneChildren = provider.paneRootChildren("build-selection") as SelectorHeaderItem[];
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
+    const paneChildren = treeModel.paneRootChildren("build-selection") as SelectorHeaderItem[];
     assert.strictEqual(paneChildren.length, 4);
     assert.deepStrictEqual(
       paneChildren.map((c) => c.selectorKind),
@@ -1412,101 +1412,101 @@ suite("ConfigurationTreeProvider – paneRootChildren('build-selection')", () =>
   });
 });
 
-suite("ConfigurationTreeProvider – paneRootChildren('build-options')", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – paneRootChildren('build-options')", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   test("loading: renders the loading placeholder before any manifest state is set", () => {
-    const children = provider.paneRootChildren("build-options");
+    const children = treeModel.paneRootChildren("build-options");
     assert.strictEqual(children.length, 1);
     assert.ok(children[0] instanceof PlaceholderItem);
     assert.strictEqual(children[0].label, "Loading…");
   });
 
   test("missing: renders the unavailable-manifest placeholder", () => {
-    provider.update({
+    treeModel.update({
       status: "missing",
       manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
     });
-    const children = provider.paneRootChildren("build-options");
+    const children = treeModel.paneRootChildren("build-options");
     assert.strictEqual(children.length, 1);
     assert.ok(children[0] instanceof PlaceholderItem);
     assert.strictEqual(children[0].label, "No manifest — Build Options unavailable");
   });
 
   test("invalid: renders the invalid-manifest placeholder", () => {
-    provider.update({
+    treeModel.update({
       status: "invalid",
       manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
       validationIssues: [{ severity: "error", code: "invalid-type", message: "bad" }],
       loadedAt: new Date(),
     });
-    const children = provider.paneRootChildren("build-options");
+    const children = treeModel.paneRootChildren("build-options");
     assert.strictEqual(children.length, 1);
     assert.strictEqual(children[0].label, "Manifest is invalid — Build Options unavailable");
   });
 
   test("workflow-blocked: renders the blocked-workflow warning and placeholder", () => {
-    provider.update({ ...makeManifestState(), hasWorkflowBlockingIssues: true }, makeActiveConfig(), []);
-    const children = provider.paneRootChildren("build-options");
+    treeModel.update({ ...makeManifestState(), hasWorkflowBlockingIssues: true }, makeActiveConfig(), []);
+    const children = treeModel.paneRootChildren("build-options");
     assert.ok(children[0] instanceof WarningItem);
     assert.ok(String(children[0].label).includes("Build workflow blocked"));
     assert.ok(children[1] instanceof PlaceholderItem);
   });
 
   test("no-options-defined: renders the no-build-options placeholder when nothing was resolved", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
-    const children = provider.paneRootChildren("build-options");
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
+    const children = treeModel.paneRootChildren("build-options");
     assert.strictEqual(children.length, 1);
     assert.strictEqual(children[0].label, "No build options defined");
   });
 
   test("no-options-available: renders the not-available placeholder when every option is unavailable", () => {
     const opt = checkboxOption("frozen", "--frozen");
-    provider.update(makeManifestState(), makeActiveConfig(), [resolved(opt, { available: false })]);
-    const children = provider.paneRootChildren("build-options");
+    treeModel.update(makeManifestState(), makeActiveConfig(), [resolved(opt, { available: false })]);
+    const children = treeModel.paneRootChildren("build-options");
     assert.strictEqual(children.length, 1);
     assert.strictEqual(children[0].label, "No options available for the active build context");
   });
 
   test("loaded: renders an emphasized checkbox row for an overridden option", () => {
     const opt = checkboxOption("frozen", "--frozen");
-    provider.update(makeManifestState(), makeActiveConfig(), [resolved(opt, { value: true, isOverride: true })]);
-    const [item] = provider.paneRootChildren("build-options") as BuildOptionCheckboxItem[];
+    treeModel.update(makeManifestState(), makeActiveConfig(), [resolved(opt, { value: true, isOverride: true })]);
+    const [item] = treeModel.paneRootChildren("build-options") as BuildOptionCheckboxItem[];
     assert.strictEqual(item.checkboxState, vscode.TreeItemCheckboxState.Checked);
     assert.deepStrictEqual(item.label, { label: "frozen", highlights: [[0, 6]] });
   });
 });
 
-suite("ConfigurationTreeProvider – paneRootChildren('build-artifacts')", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – paneRootChildren('build-artifacts')", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   test("not-yet-evaluated: renders the not-yet-evaluated placeholder before any artifact update", () => {
-    const children = provider.paneRootChildren("build-artifacts");
+    const children = treeModel.paneRootChildren("build-artifacts");
     assert.strictEqual(children.length, 1);
     assert.ok(children[0] instanceof PlaceholderItem);
     assert.strictEqual(children[0].label, "IntelliSense not yet evaluated");
   });
 
   test("evaluated: renders Compile Commands then Binary once both are set", () => {
-    provider.updateArtifact(makeValidArtifact());
-    provider.updateBinaryArtifact(makeValidBinaryArtifact());
-    const children = provider.paneRootChildren("build-artifacts");
+    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateBinaryArtifact(makeValidBinaryArtifact());
+    const children = treeModel.paneRootChildren("build-artifacts");
     assert.strictEqual(children.length, 2);
     assert.ok(children[0] instanceof CompileCommandsArtifactItem);
     assert.ok(children[1] instanceof BinaryArtifactItem);
@@ -1514,73 +1514,73 @@ suite("ConfigurationTreeProvider – paneRootChildren('build-artifacts')", () =>
 });
 
 // ---------------------------------------------------------------------------
-// ConfigurationTreeProvider – per-pane refresh signal (onDidChangePane)
+// ConfigurationTreeModel – per-pane refresh signal (onDidChangePane)
 // Each update*() entry point must signal exactly the panes whose rows it
 // affects (research.md R4), so a facade relays only what concerns its pane.
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeProvider – onDidChangePane fan-out", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – onDidChangePane fan-out", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   function collectPanes(action: () => void): PaneId[] {
     const seen: PaneId[] = [];
-    const sub = provider.onDidChangePane((paneId) => seen.push(paneId));
+    const sub = treeModel.onDidChangePane((paneId) => seen.push(paneId));
     action();
     sub.dispose();
     return seen;
   }
 
   test("update() signals build-selection and build-options", () => {
-    const seen = collectPanes(() => provider.update(makeManifestState(), makeActiveConfig(), []));
+    const seen = collectPanes(() => treeModel.update(makeManifestState(), makeActiveConfig(), []));
     assert.deepStrictEqual(new Set(seen), new Set(["build-selection", "build-options"]));
   });
 
   test("updatePresets() signals build-selection and build-options", () => {
-    const seen = collectPanes(() => provider.updatePresets(undefined, undefined, []));
+    const seen = collectPanes(() => treeModel.updatePresets(undefined, undefined, []));
     assert.deepStrictEqual(new Set(seen), new Set(["build-selection", "build-options"]));
   });
 
   test("updateArtifact() signals only build-artifacts", () => {
-    const seen = collectPanes(() => provider.updateArtifact(makeValidArtifact()));
+    const seen = collectPanes(() => treeModel.updateArtifact(makeValidArtifact()));
     assert.deepStrictEqual(seen, ["build-artifacts"]);
   });
 
   test("updateBinaryArtifact() signals only build-artifacts", () => {
-    const seen = collectPanes(() => provider.updateBinaryArtifact(makeValidBinaryArtifact()));
+    const seen = collectPanes(() => treeModel.updateBinaryArtifact(makeValidBinaryArtifact()));
     assert.deepStrictEqual(seen, ["build-artifacts"]);
   });
 
   test("updateMapArtifact() signals only build-artifacts", () => {
-    const seen = collectPanes(() => provider.updateMapArtifact(makeValidMapArtifact()));
+    const seen = collectPanes(() => treeModel.updateMapArtifact(makeValidMapArtifact()));
     assert.deepStrictEqual(seen, ["build-artifacts"]);
   });
 
   test("updateExecutableArtifact() signals only build-artifacts", () => {
-    const seen = collectPanes(() => provider.updateExecutableArtifact(makeValidExecutableArtifact()));
+    const seen = collectPanes(() => treeModel.updateExecutableArtifact(makeValidExecutableArtifact()));
     assert.deepStrictEqual(seen, ["build-artifacts"]);
   });
 
   test("setExpandedSelector() signals only build-selection", () => {
-    provider.update(makeManifestState(), makeActiveConfig(), []);
-    const seen = collectPanes(() => provider.setExpandedSelector("model"));
+    treeModel.update(makeManifestState(), makeActiveConfig(), []);
+    const seen = collectPanes(() => treeModel.setExpandedSelector("model"));
     assert.deepStrictEqual(seen, ["build-selection"]);
   });
 
   test("setExpandedMultistateKey() signals only build-options", () => {
-    const seen = collectPanes(() => provider.setExpandedMultistateKey("verbose"));
+    const seen = collectPanes(() => treeModel.setExpandedMultistateKey("verbose"));
     assert.deepStrictEqual(seen, ["build-options"]);
   });
 
   test("setGroupCollapsed() signals only build-options", () => {
-    const seen = collectPanes(() => provider.setGroupCollapsed("Advanced", true));
+    const seen = collectPanes(() => treeModel.setGroupCollapsed("Advanced", true));
     assert.deepStrictEqual(seen, ["build-options"]);
   });
 });
@@ -1592,10 +1592,10 @@ suite("ConfigurationTreeProvider – onDidChangePane fan-out", () => {
 // ---------------------------------------------------------------------------
 
 suite("PaneTreeProvider – root delegation", () => {
-  let owner: ConfigurationTreeProvider;
+  let owner: ConfigurationTreeModel;
 
   setup(() => {
-    owner = new ConfigurationTreeProvider();
+    owner = new ConfigurationTreeModel();
   });
 
   teardown(() => {
@@ -1630,10 +1630,10 @@ suite("PaneTreeProvider – root delegation", () => {
 });
 
 suite("PaneTreeProvider – non-root delegation to the owner's element dispatch", () => {
-  let owner: ConfigurationTreeProvider;
+  let owner: ConfigurationTreeModel;
 
   setup(() => {
-    owner = new ConfigurationTreeProvider();
+    owner = new ConfigurationTreeModel();
   });
 
   teardown(() => {
@@ -1675,11 +1675,11 @@ suite("PaneTreeProvider – non-root delegation to the owner's element dispatch"
 // ---------------------------------------------------------------------------
 
 suite("PaneTreeProvider – selector accordion behavior", () => {
-  let owner: ConfigurationTreeProvider;
+  let owner: ConfigurationTreeModel;
   let buildSelection: PaneTreeProvider;
 
   setup(() => {
-    owner = new ConfigurationTreeProvider();
+    owner = new ConfigurationTreeModel();
     buildSelection = new PaneTreeProvider(owner, "build-selection");
     owner.update(makeManifestState(), makeActiveConfig(), []);
   });
@@ -1705,11 +1705,11 @@ suite("PaneTreeProvider – selector accordion behavior", () => {
 });
 
 suite("PaneTreeProvider – multistate expansion, group collapse, and checkbox state", () => {
-  let owner: ConfigurationTreeProvider;
+  let owner: ConfigurationTreeModel;
   let buildOptions: PaneTreeProvider;
 
   setup(() => {
-    owner = new ConfigurationTreeProvider();
+    owner = new ConfigurationTreeModel();
     buildOptions = new PaneTreeProvider(owner, "build-options");
   });
 
@@ -1771,7 +1771,7 @@ suite("PaneTreeProvider – multistate expansion, group collapse, and checkbox s
 
 suite("PaneTreeProvider – getTreeItem identity", () => {
   test("returns the same element it was given, like the owner", () => {
-    const owner = new ConfigurationTreeProvider();
+    const owner = new ConfigurationTreeModel();
     const facade = new PaneTreeProvider(owner, "build-artifacts");
     const item = new PlaceholderItem("anything");
     assert.strictEqual(facade.getTreeItem(item), item);
@@ -1780,10 +1780,10 @@ suite("PaneTreeProvider – getTreeItem identity", () => {
 });
 
 suite("PaneTreeProvider – change-event relay", () => {
-  let owner: ConfigurationTreeProvider;
+  let owner: ConfigurationTreeModel;
 
   setup(() => {
-    owner = new ConfigurationTreeProvider();
+    owner = new ConfigurationTreeModel();
   });
 
   teardown(() => {
@@ -1830,59 +1830,59 @@ function labelText(item: vscode.TreeItem): string {
 }
 
 function collectAllRows(
-  provider: ConfigurationTreeProvider,
+  treeModel: ConfigurationTreeModel,
   paneId: PaneId
 ): vscode.TreeItem[] {
   const all: vscode.TreeItem[] = [];
   const visit = (children: vscode.TreeItem[]): void => {
     for (const child of children) {
       all.push(child);
-      visit(provider.getChildren(child));
+      visit(treeModel.getChildren(child));
     }
   };
-  visit(provider.paneRootChildren(paneId));
+  visit(treeModel.paneRootChildren(paneId));
   return all;
 }
 
-suite("ConfigurationTreeProvider – no section rows inside any pane", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – no section rows inside any pane", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   const PANE_IDS: PaneId[] = ["build-selection", "build-options", "build-artifacts"];
 
   test("loading state: no pane renders a forbidden section-name row", () => {
     for (const paneId of PANE_IDS) {
-      for (const row of collectAllRows(provider, paneId)) {
+      for (const row of collectAllRows(treeModel, paneId)) {
         assert.ok(!FORBIDDEN_LABELS.has(labelText(row)), `pane '${paneId}' rendered forbidden row '${labelText(row)}'`);
       }
     }
   });
 
   test("missing manifest: no pane renders a forbidden section-name row", () => {
-    provider.update({ status: "missing", manifestUri: vscode.Uri.file("/workspace/tbench.yaml") });
+    treeModel.update({ status: "missing", manifestUri: vscode.Uri.file("/workspace/tbench.yaml") });
     for (const paneId of PANE_IDS) {
-      for (const row of collectAllRows(provider, paneId)) {
+      for (const row of collectAllRows(treeModel, paneId)) {
         assert.ok(!FORBIDDEN_LABELS.has(labelText(row)), `pane '${paneId}' rendered forbidden row '${labelText(row)}'`);
       }
     }
   });
 
   test("invalid manifest: no pane renders a forbidden section-name row", () => {
-    provider.update({
+    treeModel.update({
       status: "invalid",
       manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
       validationIssues: [{ severity: "error", code: "invalid-type", message: "bad" }],
       loadedAt: new Date(),
     });
     for (const paneId of PANE_IDS) {
-      for (const row of collectAllRows(provider, paneId)) {
+      for (const row of collectAllRows(treeModel, paneId)) {
         assert.ok(!FORBIDDEN_LABELS.has(labelText(row)), `pane '${paneId}' rendered forbidden row '${labelText(row)}'`);
       }
     }
@@ -1892,16 +1892,16 @@ suite("ConfigurationTreeProvider – no section rows inside any pane", () => {
     const optA = checkboxOption("alpha", "--alpha", "Group");
     const states = [{ id: "off", label: "Off", flag: "" }];
     const multi = multistateOption("verbose", "--verbose", states);
-    provider.update(makeManifestState(), makeActiveConfig(), [resolved(optA), resolved(multi)]);
-    provider.setExpandedSelector("model");
-    provider.setExpandedMultistateKey("verbose");
-    provider.updateArtifact(makeValidArtifact());
-    provider.updateBinaryArtifact(makeValidBinaryArtifact());
-    provider.updateMapArtifact(makeValidMapArtifact());
-    provider.updateExecutableArtifact(makeValidExecutableArtifact());
+    treeModel.update(makeManifestState(), makeActiveConfig(), [resolved(optA), resolved(multi)]);
+    treeModel.setExpandedSelector("model");
+    treeModel.setExpandedMultistateKey("verbose");
+    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateBinaryArtifact(makeValidBinaryArtifact());
+    treeModel.updateMapArtifact(makeValidMapArtifact());
+    treeModel.updateExecutableArtifact(makeValidExecutableArtifact());
 
     for (const paneId of PANE_IDS) {
-      for (const row of collectAllRows(provider, paneId)) {
+      for (const row of collectAllRows(treeModel, paneId)) {
         assert.ok(!FORBIDDEN_LABELS.has(labelText(row)), `pane '${paneId}' rendered forbidden row '${labelText(row)}'`);
       }
     }

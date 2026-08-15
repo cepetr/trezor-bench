@@ -30,7 +30,7 @@ import {
 import { normalizePresetId } from "../../configuration/normalize-config";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
 import {
-  ConfigurationTreeProvider,
+  ConfigurationTreeModel,
   SelectorHeaderItem,
 } from "../../ui/configuration-tree";
 import { formatStatusBarText } from "../../ui/status-bar";
@@ -93,8 +93,8 @@ function activeConfig(overrides: Partial<ActiveConfig> = {}): ActiveConfig {
   };
 }
 
-function buildContextChildren(provider: ConfigurationTreeProvider): SelectorHeaderItem[] {
-  return provider.paneRootChildren("build-selection") as SelectorHeaderItem[];
+function buildContextChildren(treeModel: ConfigurationTreeModel): SelectorHeaderItem[] {
+  return treeModel.paneRootChildren("build-selection") as SelectorHeaderItem[];
 }
 
 // ---------------------------------------------------------------------------
@@ -121,11 +121,11 @@ suite("Preset selection – preset-valid fixture", () => {
       ["default", "test", "dev", "local"]
     );
 
-    const provider = new ConfigurationTreeProvider();
-    provider.update(manifest, config, []);
-    provider.updatePresets(state, activePresetId(config), available);
-    const children = buildContextChildren(provider);
-    provider.dispose();
+    const treeModel = new ConfigurationTreeModel();
+    treeModel.update(manifest, config, []);
+    treeModel.updatePresets(state, activePresetId(config), available);
+    const children = buildContextChildren(treeModel);
+    treeModel.dispose();
 
     assert.strictEqual(children.length, 4);
     assert.deepStrictEqual(
@@ -196,11 +196,11 @@ suite("Preset selection – select and persist", () => {
       validationIssues: [],
     };
 
-    const provider = new ConfigurationTreeProvider();
-    provider.update(manifest, updated, []);
-    provider.updatePresets(loadedState, "test", available);
-    const children = buildContextChildren(provider);
-    provider.dispose();
+    const treeModel = new ConfigurationTreeModel();
+    treeModel.update(manifest, updated, []);
+    treeModel.updatePresets(loadedState, "test", available);
+    const children = buildContextChildren(treeModel);
+    treeModel.dispose();
 
     assert.strictEqual(children[3].description, "test");
   });

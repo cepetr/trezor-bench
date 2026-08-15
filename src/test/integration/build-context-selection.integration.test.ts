@@ -2,13 +2,13 @@
  * Integration tests for build-context selector behavior.
  * Runs inside the VS Code extension host via @vscode/test-electron.
  *
- * These tests exercise ConfigurationTreeProvider and normalizeActiveConfig
+ * These tests exercise ConfigurationTreeModel and normalizeActiveConfig
  * together to validate selector rendering and normalization behavior.
  */
 import * as assert from "assert";
 import * as vscode from "vscode";
 import {
-  ConfigurationTreeProvider,
+  ConfigurationTreeModel,
   SelectorHeaderItem,
   SelectorChoiceItem,
   WarningItem,
@@ -58,31 +58,31 @@ function activeConfig(
 }
 
 function getBuildContextChildren(
-  provider: ConfigurationTreeProvider
+  treeModel: ConfigurationTreeModel
 ): vscode.TreeItem[] {
-  return provider.paneRootChildren("build-selection");
+  return treeModel.paneRootChildren("build-selection");
 }
 
 // ---------------------------------------------------------------------------
 // Suite: Selector rendering for loaded manifest
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeProvider – selector rendering", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – selector rendering", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   test("build-context shows four SelectorHeaderItems when manifest is loaded", () => {
     const config = activeConfig("T2T1", "hw", "core");
-    provider.update(makeLoadedState(), config);
+    treeModel.update(makeLoadedState(), config);
 
-    const children = getBuildContextChildren(provider);
+    const children = getBuildContextChildren(treeModel);
     assert.strictEqual(children.length, 4, "expected model, target, component, and preset headers");
     assert.ok(children[0] instanceof SelectorHeaderItem);
     assert.ok(children[1] instanceof SelectorHeaderItem);
@@ -91,39 +91,39 @@ suite("ConfigurationTreeProvider – selector rendering", () => {
   });
 
   test("SelectorHeaderItems have correct selectorKind values", () => {
-    provider.update(makeLoadedState(), activeConfig("T2T1", "hw", "core"));
-    const [model, target, component] = getBuildContextChildren(provider) as SelectorHeaderItem[];
+    treeModel.update(makeLoadedState(), activeConfig("T2T1", "hw", "core"));
+    const [model, target, component] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
     assert.strictEqual(model.selectorKind, "model");
     assert.strictEqual(target.selectorKind, "target");
     assert.strictEqual(component.selectorKind, "component");
   });
 
   test("SelectorHeaderItems reflect user-facing selected values as description", () => {
-    provider.update(makeLoadedState(), activeConfig("T3W1", "emu", "prodtest"));
-    const [model, target, component] = getBuildContextChildren(provider) as SelectorHeaderItem[];
+    treeModel.update(makeLoadedState(), activeConfig("T3W1", "emu", "prodtest"));
+    const [model, target, component] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
     assert.strictEqual(model.description, "Trezor Model T3");
     assert.strictEqual(target.description, "Emulator");
     assert.strictEqual(component.description, "Prodtest");
   });
 
   test("SelectorHeaderItems use target shortName when available", () => {
-    provider.update(makeLoadedState(), activeConfig("T2T1", "hw", "core"));
-    const [, target] = getBuildContextChildren(provider) as SelectorHeaderItem[];
+    treeModel.update(makeLoadedState(), activeConfig("T2T1", "hw", "core"));
+    const [, target] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
     assert.strictEqual(target.description, "HW");
   });
 
   test("SelectorHeaderItem description falls back to em dash when no active config is set", () => {
-    provider.update(makeLoadedState()); // no activeConfig
-    const [model] = getBuildContextChildren(provider) as SelectorHeaderItem[];
+    treeModel.update(makeLoadedState()); // no activeConfig
+    const [model] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
     assert.strictEqual(model.description, "—");
   });
 
   test("build-context shows WarningItem when manifest is missing", () => {
-    provider.update({
+    treeModel.update({
       status: "missing",
       manifestUri: vscode.Uri.file("/workspace/tbench.yaml"),
     });
-    const children = getBuildContextChildren(provider);
+    const children = getBuildContextChildren(treeModel);
     assert.ok(children.some((c) => c instanceof WarningItem), "expected WarningItem");
   });
 });
@@ -132,32 +132,32 @@ suite("ConfigurationTreeProvider – selector rendering", () => {
 // Suite: SelectorChoiceItem rendering
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeProvider – choice item rendering", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – choice item rendering", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   test("model SelectorHeader expands to show all model choice items", () => {
-    provider.update(makeLoadedState(), activeConfig("T2T1", "hw", "core"));
-    provider.setExpandedSelector("model");
-    const [modelHeader] = getBuildContextChildren(provider) as SelectorHeaderItem[];
-    const choices = provider.getChildren(modelHeader) as SelectorChoiceItem[];
+    treeModel.update(makeLoadedState(), activeConfig("T2T1", "hw", "core"));
+    treeModel.setExpandedSelector("model");
+    const [modelHeader] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
+    const choices = treeModel.getChildren(modelHeader) as SelectorChoiceItem[];
     assert.strictEqual(choices.length, 2);
     assert.strictEqual(choices[0].entryId, "T2T1");
     assert.strictEqual(choices[1].entryId, "T3W1");
   });
 
   test("active model choice item is marked active, others are inactive", () => {
-    provider.update(makeLoadedState(), activeConfig("T3W1", "hw", "core"));
-    provider.setExpandedSelector("model");
-    const [modelHeader] = getBuildContextChildren(provider) as SelectorHeaderItem[];
-    const choices = provider.getChildren(modelHeader) as SelectorChoiceItem[];
+    treeModel.update(makeLoadedState(), activeConfig("T3W1", "hw", "core"));
+    treeModel.setExpandedSelector("model");
+    const [modelHeader] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
+    const choices = treeModel.getChildren(modelHeader) as SelectorChoiceItem[];
     const t2t1 = choices.find((c) => c.entryId === "T2T1")!;
     const t3w1 = choices.find((c) => c.entryId === "T3W1")!;
     assert.strictEqual(t3w1.description, "active");
@@ -165,10 +165,10 @@ suite("ConfigurationTreeProvider – choice item rendering", () => {
   });
 
   test("target SelectorHeader expands to show all target choice items", () => {
-    provider.update(makeLoadedState(), activeConfig("T2T1", "emu", "core"));
-    provider.setExpandedSelector("target");
-    const [, targetHeader] = getBuildContextChildren(provider) as SelectorHeaderItem[];
-    const choices = provider.getChildren(targetHeader) as SelectorChoiceItem[];
+    treeModel.update(makeLoadedState(), activeConfig("T2T1", "emu", "core"));
+    treeModel.setExpandedSelector("target");
+    const [, targetHeader] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
+    const choices = treeModel.getChildren(targetHeader) as SelectorChoiceItem[];
     assert.strictEqual(choices.length, 2);
     assert.strictEqual(choices[0].entryId, "hw");
     assert.strictEqual(choices[1].entryId, "emu");
@@ -177,31 +177,31 @@ suite("ConfigurationTreeProvider – choice item rendering", () => {
   });
 
   test("component SelectorHeader expands to show all component choice items", () => {
-    provider.update(makeLoadedState(), activeConfig("T2T1", "hw", "prodtest"));
-    provider.setExpandedSelector("component");
-    const [, , componentHeader] = getBuildContextChildren(provider) as SelectorHeaderItem[];
-    const choices = provider.getChildren(componentHeader) as SelectorChoiceItem[];
+    treeModel.update(makeLoadedState(), activeConfig("T2T1", "hw", "prodtest"));
+    treeModel.setExpandedSelector("component");
+    const [, , componentHeader] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
+    const choices = treeModel.getChildren(componentHeader) as SelectorChoiceItem[];
     assert.strictEqual(choices.length, 2);
       test("only one selector header is expanded at a time", () => {
-        provider.update(makeLoadedState(), activeConfig("T2T1", "hw", "core"));
+        treeModel.update(makeLoadedState(), activeConfig("T2T1", "hw", "core"));
 
-        provider.setExpandedSelector("model");
+        treeModel.setExpandedSelector("model");
         let [modelHeader, targetHeader, componentHeader] = getBuildContextChildren(
-          provider
+          treeModel
         ) as SelectorHeaderItem[];
         assert.strictEqual(modelHeader.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
         assert.strictEqual(targetHeader.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
         assert.strictEqual(componentHeader.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
 
-        provider.setExpandedSelector("target");
+        treeModel.setExpandedSelector("target");
         [modelHeader, targetHeader, componentHeader] = getBuildContextChildren(
-          provider
+          treeModel
         ) as SelectorHeaderItem[];
         assert.strictEqual(modelHeader.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
         assert.strictEqual(targetHeader.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
         assert.strictEqual(componentHeader.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
-        assert.strictEqual(provider.getChildren(modelHeader).length, 0);
-        assert.strictEqual(provider.getChildren(targetHeader).length, 2);
+        assert.strictEqual(treeModel.getChildren(modelHeader).length, 0);
+        assert.strictEqual(treeModel.getChildren(targetHeader).length, 2);
       });
 
     const prodtest = choices.find((c) => c.entryId === "prodtest")!;
@@ -213,15 +213,15 @@ suite("ConfigurationTreeProvider – choice item rendering", () => {
 // Suite: Normalization integration with tree update
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeProvider – normalization integration", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – normalization integration", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   test("normalizing a stale config and updating the tree renders the corrected selection", () => {
@@ -230,13 +230,13 @@ suite("ConfigurationTreeProvider – normalization integration", () => {
     const stale = activeConfig("OLD_MODEL", "hw", "core");
     const normalized = normalizeActiveConfig(manifest, stale);
     const normConfig = activeConfig(normalized.modelId, normalized.targetId, normalized.componentId);
-    provider.update(manifest, normConfig);
+    treeModel.update(manifest, normConfig);
 
-    const [modelHeader] = getBuildContextChildren(provider) as SelectorHeaderItem[];
+    const [modelHeader] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
     // Normalized to first model
     assert.strictEqual(modelHeader.description, "Trezor Model T");
-    provider.setExpandedSelector("model");
-    const choices = provider.getChildren(modelHeader) as SelectorChoiceItem[];
+    treeModel.setExpandedSelector("model");
+    const choices = treeModel.getChildren(modelHeader) as SelectorChoiceItem[];
     const active = choices.find((c) => c.description === "active");
     assert.ok(active, "expected one choice to be active after normalization");
     assert.strictEqual(active!.entryId, "T2T1");
@@ -246,10 +246,10 @@ suite("ConfigurationTreeProvider – normalization integration", () => {
     const manifest = makeLoadedState();
     const normalized = normalizeActiveConfig(manifest);
     const normConfig = activeConfig(normalized.modelId, normalized.targetId, normalized.componentId);
-    provider.update(manifest, normConfig);
+    treeModel.update(manifest, normConfig);
 
     const [modelHeader, targetHeader, componentHeader] = getBuildContextChildren(
-      provider
+      treeModel
     ) as SelectorHeaderItem[];
     assert.strictEqual(modelHeader.description, "Trezor Model T");
     assert.strictEqual(targetHeader.description, "HW");
@@ -268,9 +268,9 @@ import {
 import { ActiveCompileCommandsArtifact } from "../../intellisense/intellisense-types";
 
 function getBuildArtifactsChildren(
-  provider: ConfigurationTreeProvider
+  treeModel: ConfigurationTreeModel
 ): vscode.TreeItem[] {
-  return provider.paneRootChildren("build-artifacts");
+  return treeModel.paneRootChildren("build-artifacts");
 }
 
 function makeMissingArtifact(
@@ -298,25 +298,25 @@ function makeValidArtifact(
   };
 }
 
-suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – Build Artifacts section (IntelliSense)", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   test("shows placeholder when no artifact has been resolved yet", () => {
-    const children = getBuildArtifactsChildren(provider);
+    const children = getBuildArtifactsChildren(treeModel);
     assert.ok(children[0] instanceof PlaceholderItem, "expected PlaceholderItem before any artifact update");
   });
 
   test("shows CompileCommandsArtifactItem after updateArtifact with valid artifact", () => {
-    provider.updateArtifact(makeValidArtifact());
-    const children = getBuildArtifactsChildren(provider);
+    treeModel.updateArtifact(makeValidArtifact());
+    const children = getBuildArtifactsChildren(treeModel);
     assert.strictEqual(children.length, 1);
     assert.ok(children[0] instanceof CompileCommandsArtifactItem, "expected CompileCommandsArtifactItem");
     const item = children[0] as CompileCommandsArtifactItem;
@@ -324,8 +324,8 @@ suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", ()
   });
 
   test("shows CompileCommandsArtifactItem with missing status after updateArtifact", () => {
-    provider.updateArtifact(makeMissingArtifact());
-    const children = getBuildArtifactsChildren(provider);
+    treeModel.updateArtifact(makeMissingArtifact());
+    const children = getBuildArtifactsChildren(treeModel);
     assert.strictEqual(children.length, 1);
     assert.ok(children[0] instanceof CompileCommandsArtifactItem);
     const item = children[0] as CompileCommandsArtifactItem;
@@ -334,8 +334,8 @@ suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", ()
 
   test("tooltip for valid artifact includes the expected path", () => {
     const artifact = makeValidArtifact({ path: "/build/model-t/compile_commands_core.cc.json" });
-    provider.updateArtifact(artifact);
-    const children = getBuildArtifactsChildren(provider);
+    treeModel.updateArtifact(artifact);
+    const children = getBuildArtifactsChildren(treeModel);
     const item = children[0] as CompileCommandsArtifactItem;
     assert.ok(
       String(item.tooltip).includes("/build/model-t/compile_commands_core.cc.json"),
@@ -345,8 +345,8 @@ suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", ()
 
   test("tooltip for missing artifact includes the missing reason", () => {
     const artifact = makeMissingArtifact({ missingReason: "Artifact not found at expected path." });
-    provider.updateArtifact(artifact);
-    const children = getBuildArtifactsChildren(provider);
+    treeModel.updateArtifact(artifact);
+    const children = getBuildArtifactsChildren(treeModel);
     const item = children[0] as CompileCommandsArtifactItem;
     assert.ok(
       String(item.tooltip).includes("Artifact not found"),
@@ -355,17 +355,17 @@ suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", ()
   });
 
   test("updateArtifact fires tree data change event", (done) => {
-    const sub = provider.onDidChangeTreeData(() => {
+    const sub = treeModel.onDidChangeTreeData(() => {
       sub.dispose();
       done();
     });
-    provider.updateArtifact(makeValidArtifact());
+    treeModel.updateArtifact(makeValidArtifact());
   });
 
   test("switching from valid to null artifact reverts to placeholder", () => {
-    provider.updateArtifact(makeValidArtifact());
-    provider.updateArtifact(null);
-    const children = getBuildArtifactsChildren(provider);
+    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateArtifact(null);
+    const children = getBuildArtifactsChildren(treeModel);
     assert.ok(children[0] instanceof PlaceholderItem, "expected placeholder after null artifact update");
   });
 
@@ -375,8 +375,8 @@ suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", ()
       path: "/artifacts/model-t/compile_commands_core.cc.json",
       contextKey: "T2T1::hw::core",
     });
-    provider.updateArtifact(artifact);
-    const children = getBuildArtifactsChildren(provider);
+    treeModel.updateArtifact(artifact);
+    const children = getBuildArtifactsChildren(treeModel);
     const item = children[0] as CompileCommandsArtifactItem;
     assert.ok(
       String(item.tooltip).includes("model-t"),
@@ -393,8 +393,8 @@ suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", ()
       path: "/artifacts/model-t/compile_commands_core_emu.cc.json",
       contextKey: "T2T1::emu::core",
     });
-    provider.updateArtifact(artifact);
-    const children = getBuildArtifactsChildren(provider);
+    treeModel.updateArtifact(artifact);
+    const children = getBuildArtifactsChildren(treeModel);
     const item = children[0] as CompileCommandsArtifactItem;
     assert.ok(
       String(item.tooltip).includes("compile_commands_core_emu"),
@@ -407,21 +407,21 @@ suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", ()
 // Suite: active-context refresh and stale-state clearing
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeProvider – active-context refresh and stale-state clearing", () => {
-  let provider: ConfigurationTreeProvider;
+suite("ConfigurationTreeModel – active-context refresh and stale-state clearing", () => {
+  let treeModel: ConfigurationTreeModel;
 
   setup(() => {
-    provider = new ConfigurationTreeProvider();
+    treeModel = new ConfigurationTreeModel();
   });
 
   teardown(() => {
-    provider.dispose();
+    treeModel.dispose();
   });
 
   test("switching from valid artifact to null reverts to placeholder (stale-state clearing)", () => {
-    provider.updateArtifact(makeValidArtifact({ contextKey: "T2T1::hw::core" }));
-    provider.updateArtifact(null);
-    const children = getBuildArtifactsChildren(provider);
+    treeModel.updateArtifact(makeValidArtifact({ contextKey: "T2T1::hw::core" }));
+    treeModel.updateArtifact(null);
+    const children = getBuildArtifactsChildren(treeModel);
     assert.ok(
       children[0] instanceof PlaceholderItem,
       "expected PlaceholderItem after null artifact update"
@@ -430,7 +430,7 @@ suite("ConfigurationTreeProvider – active-context refresh and stale-state clea
 
   test("switching context shows new artifact status without reusing old path", () => {
     // Apply valid artifact for first context
-    provider.updateArtifact(
+    treeModel.updateArtifact(
       makeValidArtifact({
         path: "/artifacts/model-t/compile_commands_core.cc.json",
         contextKey: "T2T1::hw::core",
@@ -438,14 +438,14 @@ suite("ConfigurationTreeProvider – active-context refresh and stale-state clea
     );
 
     // Context changes to T3W1::hw::core (model switch)
-    provider.updateArtifact(
+    treeModel.updateArtifact(
       makeValidArtifact({
         path: "/artifacts/model-t3/compile_commands_core.cc.json",
         contextKey: "T3W1::hw::core",
       })
     );
 
-    const children = getBuildArtifactsChildren(provider);
+    const children = getBuildArtifactsChildren(treeModel);
     const item = children[0] as CompileCommandsArtifactItem;
     // The tree must show the new context's path, not the old model-t path
     assert.ok(
@@ -459,13 +459,13 @@ suite("ConfigurationTreeProvider – active-context refresh and stale-state clea
   });
 
   test("switching from valid artifact to missing does not retain old valid tooltip", () => {
-    provider.updateArtifact(
+    treeModel.updateArtifact(
       makeValidArtifact({ path: "/artifacts/model-t/compile_commands_core.cc.json" })
     );
-    provider.updateArtifact(
+    treeModel.updateArtifact(
       makeMissingArtifact({ path: "/artifacts/nonexistent/compile_commands_core.cc.json" })
     );
-    const children = getBuildArtifactsChildren(provider);
+    const children = getBuildArtifactsChildren(treeModel);
     const item = children[0] as CompileCommandsArtifactItem;
     assert.strictEqual(item.description, "missing");
     assert.ok(
@@ -476,7 +476,7 @@ suite("ConfigurationTreeProvider – active-context refresh and stale-state clea
 
   test("target suffix change: _emu suffix shown in tree after context switch to emu target", () => {
     // Start with hw artifact (no suffix)
-    provider.updateArtifact(
+    treeModel.updateArtifact(
       makeValidArtifact({
         path: "/artifacts/model-t/compile_commands_core.cc.json",
         contextKey: "T2T1::hw::core",
@@ -484,14 +484,14 @@ suite("ConfigurationTreeProvider – active-context refresh and stale-state clea
     );
 
     // Switch to emu target (with _emu suffix)
-    provider.updateArtifact(
+    treeModel.updateArtifact(
       makeValidArtifact({
         path: "/artifacts/model-t/compile_commands_core_emu.cc.json",
         contextKey: "T2T1::emu::core",
       })
     );
 
-    const children = getBuildArtifactsChildren(provider);
+    const children = getBuildArtifactsChildren(treeModel);
     const item = children[0] as CompileCommandsArtifactItem;
     assert.ok(
       String(item.tooltip).includes("_emu"),
@@ -505,14 +505,14 @@ suite("ConfigurationTreeProvider – active-context refresh and stale-state clea
 
   test("updateArtifact fires onDidChangeTreeData on context switch", (done) => {
     // Initial state
-    provider.updateArtifact(makeValidArtifact({ contextKey: "T2T1::hw::core" }));
+    treeModel.updateArtifact(makeValidArtifact({ contextKey: "T2T1::hw::core" }));
 
-    const sub = provider.onDidChangeTreeData(() => {
+    const sub = treeModel.onDidChangeTreeData(() => {
       sub.dispose();
       done();
     });
 
     // Context switch triggers a new updateArtifact
-    provider.updateArtifact(makeValidArtifact({ contextKey: "T3W1::hw::core" }));
+    treeModel.updateArtifact(makeValidArtifact({ contextKey: "T3W1::hw::core" }));
   });
 });

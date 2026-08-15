@@ -20,7 +20,7 @@ import {
   PresetContext,
   PresetEffectiveValue,
 } from "./presets/preset-resolution";
-import { ConfigurationTreeProvider, PaneTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/configuration-tree";
+import { ConfigurationTreeModel, PaneTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/configuration-tree";
 import { StatusBarPresenter } from "./ui/status-bar";
 import {
   disposeLogChannel,
@@ -125,7 +125,7 @@ let _presetBlocked = false;
  */
 let _presetsUnavailable = false;
 let _presetStateSubscription: vscode.Disposable | undefined;
-let _treeProvider: ConfigurationTreeProvider | undefined;
+let _treeModel: ConfigurationTreeModel | undefined;
 let _configurationTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _buildArtifactsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _buildOptionsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
@@ -277,7 +277,7 @@ async function refreshPresetsAndActiveConfig(
     _presetBlocked = false;
     _presetsUnavailable = false;
     vscode.commands.executeCommand("setContext", "tbench.presetBlocked", false);
-    _treeProvider?.updatePresets(_presetState, undefined, []);
+    _treeModel?.updatePresets(_presetState, undefined, []);
     return;
   }
 
@@ -356,8 +356,8 @@ async function refreshPresetsAndActiveConfig(
     _resolvedOptions.some((r) => r.available && r.presetState === "mismatch");
   vscode.commands.executeCommand("setContext", "tbench.presetBlocked", _presetBlocked);
 
-  _treeProvider?.update(manifest, normalizedConfig, _resolvedOptions);
-  _treeProvider?.updatePresets(currentPresetState, newPresetId, choices);
+  _treeModel?.update(manifest, normalizedConfig, _resolvedOptions);
+  _treeModel?.updatePresets(currentPresetState, newPresetId, choices);
 }
 
 /**
@@ -422,13 +422,13 @@ function updateArtifactActionContext(
     _mapArtifact = map;
     binaryExists = binary.exists;
     mapExists = map.exists;
-    _treeProvider?.updateBinaryArtifact(binary, workspaceFolder);
-    _treeProvider?.updateMapArtifact(map, workspaceFolder);
+    _treeModel?.updateBinaryArtifact(binary, workspaceFolder);
+    _treeModel?.updateMapArtifact(map, workspaceFolder);
   } else {
     _binaryArtifact = undefined;
     _mapArtifact = undefined;
-    _treeProvider?.updateBinaryArtifact(null, workspaceFolder);
-    _treeProvider?.updateMapArtifact(null, workspaceFolder);
+    _treeModel?.updateBinaryArtifact(null, workspaceFolder);
+    _treeModel?.updateMapArtifact(null, workspaceFolder);
   }
 
   vscode.commands.executeCommand("setContext", "tbench.flashApplicable", flashApplicable);
@@ -449,14 +449,14 @@ function updateDebugContext(
   const manifest = loadedManifest(state);
   if (!manifest || !config) {
     vscode.commands.executeCommand("setContext", "tbench.startDebuggingEnabled", false);
-    _treeProvider?.updateExecutableArtifact(null);
+    _treeModel?.updateExecutableArtifact(null);
     return;
   }
 
   const artifact = resolveActiveExecutableArtifact(manifest, config, artifactsRoot);
   const enabled = artifact.status === "valid";
   vscode.commands.executeCommand("setContext", "tbench.startDebuggingEnabled", enabled);
-  _treeProvider?.updateExecutableArtifact(artifact);
+  _treeModel?.updateExecutableArtifact(artifact);
 }
 
 function updateCompileCommandsTreeArtifact(
@@ -466,13 +466,13 @@ function updateCompileCommandsTreeArtifact(
 ): void {
   const manifest = loadedManifest(state);
   if (!manifest || !config) {
-    _treeProvider?.updateArtifact(null);
+    _treeModel?.updateArtifact(null);
     return;
   }
 
   const inputs = buildResolutionInputs(manifest, config, artifactsRoot);
   const artifact = inputs ? resolveActiveArtifact(inputs, config) : null;
-  _treeProvider?.updateArtifact(artifact);
+  _treeModel?.updateArtifact(artifact);
 }
 
 function registerUnsupportedWorkspaceCommands(
@@ -534,17 +534,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // Always register the tree provider so VS Code never shows
   // "no data provider registered" when the activity bar is clicked.
-  _treeProvider = new ConfigurationTreeProvider();
+  _treeModel = new ConfigurationTreeModel();
   _configurationTreeView = vscode.window.createTreeView("tbench.configuration", {
-    treeDataProvider: new PaneTreeProvider(_treeProvider, "build-selection"),
+    treeDataProvider: new PaneTreeProvider(_treeModel, "build-selection"),
     showCollapseAll: false,
   });
   _buildArtifactsTreeView = vscode.window.createTreeView("tbench.buildArtifacts", {
-    treeDataProvider: new PaneTreeProvider(_treeProvider, "build-artifacts"),
+    treeDataProvider: new PaneTreeProvider(_treeModel, "build-artifacts"),
     showCollapseAll: false,
   });
   _buildOptionsTreeView = vscode.window.createTreeView("tbench.buildOptions", {
-    treeDataProvider: new PaneTreeProvider(_treeProvider, "build-options"),
+    treeDataProvider: new PaneTreeProvider(_treeModel, "build-options"),
     showCollapseAll: false,
   });
   context.subscriptions.push(
@@ -554,13 +554,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Selector expand/collapse: rows only ever render in Build Selection.
     _configurationTreeView.onDidExpandElement(({ element }) => {
       if (element instanceof SelectorHeaderItem) {
-        _treeProvider?.setExpandedSelector(element.selectorKind);
+        _treeModel?.setExpandedSelector(element.selectorKind);
       }
     }),
     _configurationTreeView.onDidCollapseElement(({ element }) => {
       if (element instanceof SelectorHeaderItem) {
-        if (_treeProvider?.getExpandedSelector() === element.selectorKind) {
-          _treeProvider.setExpandedSelector(undefined);
+        if (_treeModel?.getExpandedSelector() === element.selectorKind) {
+          _treeModel.setExpandedSelector(undefined);
         }
       }
     }),
@@ -568,18 +568,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // rows only ever render in Build Options.
     _buildOptionsTreeView.onDidExpandElement(({ element }) => {
       if (element instanceof BuildOptionMultistateHeaderItem) {
-        _treeProvider?.setExpandedMultistateKey(element.optionKey);
+        _treeModel?.setExpandedMultistateKey(element.optionKey);
       } else if (element instanceof BuildOptionGroupItem) {
-        _treeProvider?.setGroupCollapsed(element.groupLabel, false);
+        _treeModel?.setGroupCollapsed(element.groupLabel, false);
       }
     }),
     _buildOptionsTreeView.onDidCollapseElement(({ element }) => {
       if (element instanceof BuildOptionMultistateHeaderItem) {
-        if (_treeProvider?.getExpandedMultistateKey() === element.optionKey) {
-          _treeProvider.setExpandedMultistateKey(undefined);
+        if (_treeModel?.getExpandedMultistateKey() === element.optionKey) {
+          _treeModel.setExpandedMultistateKey(undefined);
         }
       } else if (element instanceof BuildOptionGroupItem) {
-        _treeProvider?.setGroupCollapsed(element.groupLabel, true);
+        _treeModel?.setGroupCollapsed(element.groupLabel, true);
       }
     }),
     _buildOptionsTreeView.onDidChangeCheckboxState(async ({ items }) => {
@@ -593,7 +593,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const manifestState = _manifestState;
       if (manifestState) {
         _resolvedOptions = computeResolvedOptions(manifestState, _activeConfig, context, _presetEffectiveValues);
-        _treeProvider?.update(manifestState, _activeConfig, _resolvedOptions);
+        _treeModel?.update(manifestState, _activeConfig, _resolvedOptions);
       }
     })
   );
@@ -729,7 +729,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     _intelliSenseService.onDidRefresh(([artifact, readiness]) => {
       const state = _manifestState;
       if (state) {
-        _treeProvider?.updateArtifact(artifact);
+        _treeModel?.updateArtifact(artifact);
       }
       // Show the wrong-provider fix notification once per state entry.
       if (readiness.warningState === "wrong-provider" && readiness.warningState !== _lastShownProviderFixState) {
@@ -782,7 +782,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   });
 
-  // Connect manifest state changes to the tree provider, diagnostics, and logs.
+  // Connect manifest state changes to the tree model, diagnostics, and logs.
   // On each state change, restore and normalize the active config and the
   // active preset together.
   const onManifestStateChange = async (state: ManifestState): Promise<void> => {
@@ -793,8 +793,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _activeConfig = undefined;
       _presetContext = undefined;
       _resolvedOptions = [];
-      _treeProvider?.update(state, undefined, []);
-      _treeProvider?.updatePresets(_presetState, undefined, []);
+      _treeModel?.update(state, undefined, []);
+      _treeModel?.updatePresets(_presetState, undefined, []);
     }
     refreshStatusBar();
     handleManifestStateDiagnostics(state);
@@ -1028,7 +1028,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const state = _manifestState;
       if (state) {
         _resolvedOptions = computeResolvedOptions(state, _activeConfig, context, _presetEffectiveValues);
-        _treeProvider?.update(state, _activeConfig, _resolvedOptions);
+        _treeModel?.update(state, _activeConfig, _resolvedOptions);
       }
     })
   );
@@ -1048,7 +1048,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const state = _manifestState;
         if (state) {
           _resolvedOptions = computeResolvedOptions(state, _activeConfig, context, _presetEffectiveValues);
-          _treeProvider?.update(state, _activeConfig, _resolvedOptions);
+          _treeModel?.update(state, _activeConfig, _resolvedOptions);
         }
       }
     )
@@ -1152,8 +1152,8 @@ export function deactivate(): void {
   _manifestService = undefined;
   _presetService?.dispose();
   _presetService = undefined;
-  _treeProvider?.dispose();
-  _treeProvider = undefined;
+  _treeModel?.dispose();
+  _treeModel = undefined;
   _configurationTreeView?.dispose();
   _configurationTreeView = undefined;
   _buildArtifactsTreeView?.dispose();

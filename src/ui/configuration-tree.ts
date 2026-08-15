@@ -369,10 +369,10 @@ export class SelectorChoiceItem extends vscode.TreeItem {
 }
 
 // ---------------------------------------------------------------------------
-// Tree data provider
+// Configuration tree model
 // ---------------------------------------------------------------------------
 
-export class ConfigurationTreeProvider
+export class ConfigurationTreeModel
   implements vscode.TreeDataProvider<vscode.TreeItem>
 {
   private _state: ManifestState | undefined;
@@ -895,13 +895,13 @@ export class ConfigurationTreeProvider
 // ---------------------------------------------------------------------------
 
 /**
- * Thin, stateless `TreeDataProvider` for one pane. `ConfigurationTreeProvider`
+ * Thin, stateless `TreeDataProvider` for one pane. `ConfigurationTreeModel`
  * stays the sole owner of manifest, active-configuration, preset, resolved-option,
- * and artifact state (research.md R3); this facade only routes to it.
+ * and artifact state; this facade only routes to it.
  */
 export class PaneTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
   constructor(
-    private readonly owner: ConfigurationTreeProvider,
+    private readonly owner: ConfigurationTreeModel,
     private readonly paneId: PaneId
   ) {}
 

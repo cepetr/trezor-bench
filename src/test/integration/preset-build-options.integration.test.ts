@@ -25,7 +25,7 @@ import {
 } from "../../configuration/build-options";
 import { BuildOption } from "../../manifest/manifest-types";
 import {
-  ConfigurationTreeProvider,
+  ConfigurationTreeModel,
   BuildOptionCheckboxItem,
   BuildOptionMultistateHeaderItem,
 } from "../../ui/configuration-tree";
@@ -308,10 +308,10 @@ suite("Preset-relative Build Options – override emphasis round-trip", () => {
     await writeBuildOption(context, "frozen", false);
     const resolved = await resolveFor("preset-valid", "default", context);
 
-    const provider = new ConfigurationTreeProvider();
-    provider.update(manifest(), activeConfig(), resolved);
-    const children = provider.paneRootChildren("build-options") as vscode.TreeItem[];
-    provider.dispose();
+    const treeModel = new ConfigurationTreeModel();
+    treeModel.update(manifest(), activeConfig(), resolved);
+    const children = treeModel.paneRootChildren("build-options") as vscode.TreeItem[];
+    treeModel.dispose();
 
     const frozenItem = children.find((c) => c instanceof BuildOptionCheckboxItem) as BuildOptionCheckboxItem;
     assert.ok(frozenItem, "expected a checkbox row for frozen");
@@ -460,10 +460,10 @@ suite("Preset-relative Build Options – option-level mismatch", () => {
     assert.strictEqual(dbgConsole.presetState, "mismatch");
     assert.strictEqual(dbgConsole.isOverride, false);
 
-    const provider = new ConfigurationTreeProvider();
-    provider.update(manifest(), activeConfig(), resolved);
-    const children = provider.paneRootChildren("build-options") as vscode.TreeItem[];
-    provider.dispose();
+    const treeModel = new ConfigurationTreeModel();
+    treeModel.update(manifest(), activeConfig(), resolved);
+    const children = treeModel.paneRootChildren("build-options") as vscode.TreeItem[];
+    treeModel.dispose();
 
     const dbgConsoleItem = children.find(
       (c) => c instanceof BuildOptionMultistateHeaderItem && c.optionKey === "dbg_console"
