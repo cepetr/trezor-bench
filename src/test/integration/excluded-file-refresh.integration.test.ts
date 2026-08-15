@@ -7,7 +7,7 @@
  * `vscode.EventEmitter`, `vscode.Uri`, `vscode.FileDecoration`,
  * `vscode.ThemeColor`, and `vscode.window.createTextEditorDecorationType` APIs.
  * They wire `ExcludedFilesService.onDidUpdateSnapshot` directly to
- * `ExcludedFileDecorationsProvider` and `ExcludedFileOverlaysManager` so that
+ * `ExcludedFilesDecorationsProvider` and `ExcludedFilesOverlays` so that
  * end-to-end refresh cycles can be verified without the extension activation
  * layer.
  *
@@ -22,7 +22,7 @@
  *  - Workspace-change refresh: recompute() with a wider or narrower
  *    candidateUris set reflects the change in the resulting snapshot
  *  - Stale-state clearing: clear() empties the excluded-file snapshot and both
- *    ExcludedFileDecorationsProvider and ExcludedFileOverlaysManager respond by
+ *    ExcludedFilesDecorationsProvider and ExcludedFilesOverlays respond by
  *    removing their markers
  */
 
@@ -35,10 +35,10 @@ import {
   normalizeToForwardSlashes,
 } from "../../intellisense/excluded-files-service";
 import {
-  ExcludedFileDecorationsProvider,
+  ExcludedFilesDecorationsProvider,
   EXCLUDED_BADGE,
-} from "../../ui/excluded-file-decorations";
-import { ExcludedFileOverlaysManager } from "../../ui/excluded-file-overlays";
+} from "../../ui/excluded-files-decorations";
+import { ExcludedFilesOverlays } from "../../ui/excluded-files-overlays";
 import {
   excludedFilesScopeWorkspaceRoot,
   excludedFilesScopeArtifactPath,
@@ -90,14 +90,14 @@ const BASE_SETTINGS = makeExcludedFilesSettings({
 
 function wireProviderToService(
   service: ExcludedFilesService,
-  provider: ExcludedFileDecorationsProvider
+  provider: ExcludedFilesDecorationsProvider
 ): vscode.Disposable {
   return service.onDidUpdateSnapshot((snap) => provider.handleSnapshot(snap));
 }
 
 function wireOverlayToService(
   service: ExcludedFilesService,
-  manager: ExcludedFileOverlaysManager
+  manager: ExcludedFilesOverlays
 ): vscode.Disposable {
   return service.onDidUpdateSnapshot((snap) => manager.handleSnapshot(snap));
 }
@@ -145,9 +145,9 @@ suite("Excluded-file refresh — active-config refresh", () => {
     svc.dispose();
   });
 
-  test("ExcludedFileDecorationsProvider updates after active-config recompute", () => {
+  test("ExcludedFilesDecorationsProvider updates after active-config recompute", () => {
     const svc = new ExcludedFilesService();
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const sub = wireProviderToService(svc, provider);
     const cancelToken = new vscode.CancellationTokenSource().token;
 
@@ -232,9 +232,9 @@ suite("Excluded-file refresh — settings-driven refresh", () => {
     svc.dispose();
   });
 
-  test("ExcludedFileDecorationsProvider produces no decoration after settings clears fileNamePatterns", () => {
+  test("ExcludedFilesDecorationsProvider produces no decoration after settings clears fileNamePatterns", () => {
     const svc = new ExcludedFilesService();
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const sub = wireProviderToService(svc, provider);
     const cancelToken = new vscode.CancellationTokenSource().token;
 
@@ -289,7 +289,7 @@ suite("Excluded-file refresh — manual refresh reuse", () => {
 
   test("providers receive the correct latest snapshot after back-to-back recomputes", () => {
     const svc = new ExcludedFilesService();
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const sub = wireProviderToService(svc, provider);
     const cancelToken = new vscode.CancellationTokenSource().token;
 
@@ -353,9 +353,9 @@ suite("Excluded-file refresh — workspace-change refresh", () => {
     svc.dispose();
   });
 
-  test("ExcludedFileDecorationsProvider reflects workspace-change after provider subscription", () => {
+  test("ExcludedFilesDecorationsProvider reflects workspace-change after provider subscription", () => {
     const svc = new ExcludedFilesService();
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const sub = wireProviderToService(svc, provider);
     const cancelToken = new vscode.CancellationTokenSource().token;
 
@@ -401,9 +401,9 @@ suite("Excluded-file refresh — stale-state clearing", () => {
     svc.dispose();
   });
 
-  test("ExcludedFileDecorationsProvider removes decoration after clear()", () => {
+  test("ExcludedFilesDecorationsProvider removes decoration after clear()", () => {
     const svc = new ExcludedFilesService();
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const sub = wireProviderToService(svc, provider);
     const cancelToken = new vscode.CancellationTokenSource().token;
 
@@ -422,9 +422,9 @@ suite("Excluded-file refresh — stale-state clearing", () => {
     svc.dispose();
   });
 
-  test("ExcludedFileDecorationsProvider removes decoration for all previously excluded files after clear()", () => {
+  test("ExcludedFilesDecorationsProvider removes decoration for all previously excluded files after clear()", () => {
     const svc = new ExcludedFilesService();
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const sub = wireProviderToService(svc, provider);
     const cancelToken = new vscode.CancellationTokenSource().token;
 
@@ -446,9 +446,9 @@ suite("Excluded-file refresh — stale-state clearing", () => {
     svc.dispose();
   });
 
-  test("ExcludedFileOverlaysManager updates after clear() without throwing", () => {
+  test("ExcludedFilesOverlays updates after clear() without throwing", () => {
     const svc = new ExcludedFilesService();
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     const sub = wireOverlayToService(svc, manager);
 
     svc.recompute("T2T1/hw/core", ARTIFACT_PATH, INCLUDED_FILES, BASE_SETTINGS, WORKSPACE_ROOT, ALL_CANDIDATES);
@@ -464,8 +464,8 @@ suite("Excluded-file refresh — stale-state clearing", () => {
 
   test("both decoration provider and overlay manager receive the clear() snapshot", () => {
     const svc = new ExcludedFilesService();
-    const provider = new ExcludedFileDecorationsProvider();
-    const manager = new ExcludedFileOverlaysManager();
+    const provider = new ExcludedFilesDecorationsProvider();
+    const manager = new ExcludedFilesOverlays();
     const sub1 = wireProviderToService(svc, provider);
     const sub2 = wireOverlayToService(svc, manager);
     const cancelToken = new vscode.CancellationTokenSource().token;
@@ -497,7 +497,7 @@ suite("Excluded-file refresh — stale-state clearing", () => {
 
   test("switching from a valid artifact to no artifact requests a full Explorer refresh and removes badges", () => {
     const svc = new ExcludedFilesService();
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const sub = wireProviderToService(svc, provider);
     const cancelToken = new vscode.CancellationTokenSource().token;
     const fired: Array<vscode.Uri | vscode.Uri[] | undefined> = [];
@@ -529,9 +529,9 @@ suite("Excluded-file refresh — stale-state clearing", () => {
 // ---------------------------------------------------------------------------
 
 suite("Excluded-file refresh — scope restoration regression", () => {
-  test("ExcludedFileDecorationsProvider shows decoration again after fileNamePatterns is repopulated", () => {
+  test("ExcludedFilesDecorationsProvider shows decoration again after fileNamePatterns is repopulated", () => {
     const svc = new ExcludedFilesService();
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const sub = wireProviderToService(svc, provider);
     const cancelToken = new vscode.CancellationTokenSource().token;
 
@@ -560,9 +560,9 @@ suite("Excluded-file refresh — scope restoration regression", () => {
     svc.dispose();
   });
 
-  test("ExcludedFileDecorationsProvider shows decoration again after folderGlobs is repopulated", () => {
+  test("ExcludedFilesDecorationsProvider shows decoration again after folderGlobs is repopulated", () => {
     const svc = new ExcludedFilesService();
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const sub = wireProviderToService(svc, provider);
     const cancelToken = new vscode.CancellationTokenSource().token;
 
@@ -593,7 +593,7 @@ suite("Excluded-file refresh — scope restoration regression", () => {
 
   test("out-of-scope file (docs/readme.c) never receives decoration regardless of scope changes", () => {
     const svc = new ExcludedFilesService();
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const sub = wireProviderToService(svc, provider);
     const cancelToken = new vscode.CancellationTokenSource().token;
 

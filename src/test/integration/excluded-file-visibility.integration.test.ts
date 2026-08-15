@@ -19,7 +19,7 @@
  *  - handleSnapshot() fires undefined (full refresh) when only grayInTree changes
  *
  * Covers:
- *  - ExcludedFileOverlaysManager constructs without error (createTextEditorDecorationType)
+ *  - ExcludedFilesOverlays constructs without error (createTextEditorDecorationType)
  *  - handleSnapshot() applies decoration when showEditorOverlay is enabled and file is excluded
  *  - handleSnapshot() clears decoration when showEditorOverlay is disabled
  *  - handleSnapshot() clears decoration when file is NOT excluded
@@ -31,11 +31,11 @@ import * as assert from "assert";
 import * as path from "path";
 import * as vscode from "vscode";
 import {
-  ExcludedFileDecorationsProvider,
+  ExcludedFilesDecorationsProvider,
   EXCLUDED_BADGE,
   EXCLUDED_TOOLTIP,
-} from "../../ui/excluded-file-decorations";
-import { ExcludedFileOverlaysManager } from "../../ui/excluded-file-overlays";
+} from "../../ui/excluded-files-decorations";
+import { ExcludedFilesOverlays } from "../../ui/excluded-files-overlays";
 import { normalizeToForwardSlashes } from "../../intellisense/excluded-files-service";
 import { ExcludedFilesSnapshot } from "../../intellisense/excluded-files-service";
 
@@ -80,9 +80,9 @@ function makeSnapshot(
 // Suite: provideFileDecoration — badge and tooltip
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileDecorationsProvider — badge and tooltip", () => {
+suite("ExcludedFilesDecorationsProvider — badge and tooltip", () => {
   test("excluded file receives the ✗ badge", () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const excludedPath = fixturePath("core/embed/other.c");
     provider.handleSnapshot(makeSnapshot([excludedPath]));
 
@@ -95,7 +95,7 @@ suite("ExcludedFileDecorationsProvider — badge and tooltip", () => {
   });
 
   test("excluded file receives the correct tooltip", () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const excludedPath = fixturePath("core/embed/other.c");
     provider.handleSnapshot(makeSnapshot([excludedPath]));
 
@@ -120,9 +120,9 @@ suite("ExcludedFileDecorationsProvider — badge and tooltip", () => {
 // Suite: provideFileDecoration — gray coloring
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileDecorationsProvider — optional gray color", () => {
+suite("ExcludedFilesDecorationsProvider — optional gray color", () => {
   test("color is set when grayInTree is true", () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const excludedPath = fixturePath("core/embed/other.c");
     provider.handleSnapshot(makeSnapshot([excludedPath], [], /* grayInTree */ true));
 
@@ -135,7 +135,7 @@ suite("ExcludedFileDecorationsProvider — optional gray color", () => {
   });
 
   test("color is undefined when grayInTree is false", () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const excludedPath = fixturePath("core/embed/other.c");
     provider.handleSnapshot(makeSnapshot([excludedPath], [], /* grayInTree */ false));
 
@@ -148,7 +148,7 @@ suite("ExcludedFileDecorationsProvider — optional gray color", () => {
   });
 
   test("badge is still shown when grayInTree is false", () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const excludedPath = fixturePath("core/embed/other.c");
     provider.handleSnapshot(makeSnapshot([excludedPath], [], /* grayInTree */ false));
 
@@ -165,9 +165,9 @@ suite("ExcludedFileDecorationsProvider — optional gray color", () => {
 // Suite: provideFileDecoration — no decoration for non-excluded files
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileDecorationsProvider — no decoration for non-excluded files", () => {
+suite("ExcludedFilesDecorationsProvider — no decoration for non-excluded files", () => {
   test("included file returns undefined (no decoration)", () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const excludedPath = fixturePath("core/embed/other.c");
     const includedPath = fixturePath("core/embed/main.c");
     provider.handleSnapshot(makeSnapshot([excludedPath], [includedPath]));
@@ -180,7 +180,7 @@ suite("ExcludedFileDecorationsProvider — no decoration for non-excluded files"
   });
 
   test("out-of-scope file returns undefined (no decoration)", () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     // docs/readme.c is not in the excludedFiles set
     const excludedPath = fixturePath("core/embed/other.c");
     provider.handleSnapshot(makeSnapshot([excludedPath]));
@@ -193,7 +193,7 @@ suite("ExcludedFileDecorationsProvider — no decoration for non-excluded files"
   });
 
   test("returns undefined before any snapshot is applied", () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
 
     const token = new vscode.CancellationTokenSource().token;
     const dec = provider.provideFileDecoration(fixtureUri("core/embed/other.c"), token);
@@ -203,7 +203,7 @@ suite("ExcludedFileDecorationsProvider — no decoration for non-excluded files"
   });
 
   test(".h file that is not in the excluded set returns undefined", () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const excludedPath = fixturePath("core/embed/other.c");
     provider.handleSnapshot(makeSnapshot([excludedPath]));
 
@@ -219,9 +219,9 @@ suite("ExcludedFileDecorationsProvider — no decoration for non-excluded files"
 // Suite: handleSnapshot() — onDidChangeFileDecorations firing
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileDecorationsProvider — handleSnapshot() decoration change events", () => {
+suite("ExcludedFilesDecorationsProvider — handleSnapshot() decoration change events", () => {
   test("fires onDidChangeFileDecorations when a new file is excluded", async () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     let firedWith: vscode.Uri | vscode.Uri[] | undefined = null as unknown as vscode.Uri;
     provider.onDidChangeFileDecorations((e) => { firedWith = e; });
 
@@ -243,7 +243,7 @@ suite("ExcludedFileDecorationsProvider — handleSnapshot() decoration change ev
   });
 
   test("fires onDidChangeFileDecorations when a file is no longer excluded", async () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const excludedPath = fixturePath("core/embed/other.c");
 
     // First apply: other.c is excluded
@@ -269,7 +269,7 @@ suite("ExcludedFileDecorationsProvider — handleSnapshot() decoration change ev
   });
 
   test("fires undefined when only grayInTree changes (full re-query)", async () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const excludedPath = fixturePath("core/embed/other.c");
 
     // First apply: grayInTree = true, same excluded set
@@ -292,7 +292,7 @@ suite("ExcludedFileDecorationsProvider — handleSnapshot() decoration change ev
   });
 
   test("fires undefined when the active context changes", async () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const excludedPath = fixturePath("core/embed/other.c");
 
     provider.handleSnapshot(makeSnapshot([excludedPath], [], true));
@@ -310,7 +310,7 @@ suite("ExcludedFileDecorationsProvider — handleSnapshot() decoration change ev
   });
 
   test("fires undefined when the artifact path becomes unavailable", async () => {
-    const provider = new ExcludedFileDecorationsProvider();
+    const provider = new ExcludedFilesDecorationsProvider();
     const excludedPath = fixturePath("core/embed/other.c");
 
     provider.handleSnapshot(makeSnapshot([excludedPath], [], true));
@@ -329,7 +329,7 @@ suite("ExcludedFileDecorationsProvider — handleSnapshot() decoration change ev
 });
 
 // ===========================================================================
-// Integration tests for ExcludedFileOverlaysManager
+// Integration tests for ExcludedFilesOverlays
 // ===========================================================================
 
 function makeOverlaySnapshot(
@@ -351,38 +351,38 @@ function makeOverlaySnapshot(
 }
 
 // ---------------------------------------------------------------------------
-// Suite: ExcludedFileOverlaysManager — construction and lifecycle
+// Suite: ExcludedFilesOverlays — construction and lifecycle
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileOverlaysManager — construction and lifecycle", () => {
+suite("ExcludedFilesOverlays — construction and lifecycle", () => {
   test("constructs without error using real VS Code createTextEditorDecorationType", () => {
-    let manager: ExcludedFileOverlaysManager | undefined;
+    let manager: ExcludedFilesOverlays | undefined;
     assert.doesNotThrow(() => {
-      manager = new ExcludedFileOverlaysManager();
+      manager = new ExcludedFilesOverlays();
     });
     manager?.dispose();
   });
 
   test("dispose() does not throw", () => {
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     assert.doesNotThrow(() => manager.dispose());
   });
 
   test("applyToVisibleEditors() with no snapshot does not throw", () => {
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     assert.doesNotThrow(() => manager.applyToVisibleEditors());
     manager.dispose();
   });
 });
 
 // ---------------------------------------------------------------------------
-// Suite: ExcludedFileOverlaysManager — overlay applied to excluded editors
+// Suite: ExcludedFilesOverlays — overlay applied to excluded editors
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileOverlaysManager — overlay applied to excluded editors", () => {
+suite("ExcludedFilesOverlays — overlay applied to excluded editors", () => {
   test("handleSnapshot() calls setDecorations with non-empty ranges for excluded file", () => {
     const excludedPath = fixturePath("core/embed/other.c");
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     // Apply snapshot with one excluded file — verify no throw with real APIs.
     manager.handleSnapshot(makeOverlaySnapshot([excludedPath]));
     assert.doesNotThrow(() => manager.applyToVisibleEditors());
@@ -391,7 +391,7 @@ suite("ExcludedFileOverlaysManager — overlay applied to excluded editors", () 
 
   test("handleSnapshot() with showEditorOverlay=false does not throw", () => {
     const excludedPath = fixturePath("core/embed/other.c");
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     assert.doesNotThrow(() => {
       manager.handleSnapshot(makeOverlaySnapshot([excludedPath], /* showEditorOverlay */ false));
     });
@@ -399,7 +399,7 @@ suite("ExcludedFileOverlaysManager — overlay applied to excluded editors", () 
   });
 
   test("handleSnapshot() with empty excludedFiles does not throw", () => {
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     assert.doesNotThrow(() => {
       manager.handleSnapshot(makeOverlaySnapshot([]));
     });
@@ -408,10 +408,10 @@ suite("ExcludedFileOverlaysManager — overlay applied to excluded editors", () 
 });
 
 // ---------------------------------------------------------------------------
-// Suite: ExcludedFileOverlaysManager — overlay decoration options
+// Suite: ExcludedFilesOverlays — overlay decoration options
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileOverlaysManager — EXCLUDED_TOOLTIP", () => {
+suite("ExcludedFilesOverlays — EXCLUDED_TOOLTIP", () => {
   test("EXCLUDED_TOOLTIP includes the canonical phrase used in hoverMessage", () => {
     assert.ok(
       EXCLUDED_TOOLTIP.toLowerCase().includes("active build configuration"),

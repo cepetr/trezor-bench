@@ -20,10 +20,10 @@
 import * as vscode from "vscode";
 import { ExcludedFilesSnapshot } from "../intellisense/excluded-files-service";
 import { normalizeToForwardSlashes } from "../intellisense/excluded-files-service";
-import { EXCLUDED_TOOLTIP } from "./excluded-file-decorations";
+import { EXCLUDED_TOOLTIP } from "./excluded-files-decorations";
 
 // ---------------------------------------------------------------------------
-// ExcludedFileOverlaysManager
+// ExcludedFilesOverlays
 // ---------------------------------------------------------------------------
 
 /**
@@ -34,7 +34,7 @@ import { EXCLUDED_TOOLTIP } from "./excluded-file-decorations";
  * and call `applyToVisibleEditors()` from the `onDidChangeVisibleTextEditors`
  * event to pick up newly opened editors.
  */
-export class ExcludedFileOverlaysManager {
+export class ExcludedFilesOverlays {
   private _snapshot: ExcludedFilesSnapshot | undefined;
 
   /**

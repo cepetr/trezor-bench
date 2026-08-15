@@ -1,5 +1,5 @@
 /**
- * Unit tests for ExcludedFileOverlaysManager state selection and clearing behavior.
+ * Unit tests for ExcludedFilesOverlays state selection and clearing behavior.
  *
  * Covers:
  *  - `handleSnapshot()` clears all overlays when `showEditorOverlay` is false
@@ -14,7 +14,7 @@
 import * as assert from "assert";
 import * as path from "path";
 import * as vscode from "vscode";
-import { ExcludedFileOverlaysManager } from "../../../ui/excluded-file-overlays";
+import { ExcludedFilesOverlays } from "../../../ui/excluded-files-overlays";
 import { normalizeToForwardSlashes } from "../../../intellisense/excluded-files-service";
 import { ExcludedFilesSnapshot } from "../../../intellisense/excluded-files-service";
 import { excludedFilesScopeWorkspaceRoot, makeExcludedFilesSettings } from "../workflow-test-helpers";
@@ -79,7 +79,7 @@ const windowMock: { visibleTextEditors: unknown[] } = (vscode as unknown as { wi
 // Suite: handleSnapshot() — showEditorOverlay disabled
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileOverlaysManager — showEditorOverlay disabled", () => {
+suite("ExcludedFilesOverlays — showEditorOverlay disabled", () => {
   let originalEditors: unknown[];
 
   setup(() => {
@@ -95,7 +95,7 @@ suite("ExcludedFileOverlaysManager — showEditorOverlay disabled", () => {
     const editor = makeStubEditor(excludedPath);
     windowMock.visibleTextEditors = [editor];
 
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     manager.handleSnapshot(makeSnapshot([excludedPath], { showEditorOverlay: false }));
 
     assert.ok(editor.decorationCalls.length > 0, "setDecorations must be called when overlay is disabled");
@@ -111,7 +111,7 @@ suite("ExcludedFileOverlaysManager — showEditorOverlay disabled", () => {
     const includedEditor = makeStubEditor(includedPath);
     windowMock.visibleTextEditors = [excludedEditor, includedEditor];
 
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     manager.handleSnapshot(makeSnapshot([excludedPath], { showEditorOverlay: false }));
 
     const lastExcluded = excludedEditor.decorationCalls[excludedEditor.decorationCalls.length - 1];
@@ -126,7 +126,7 @@ suite("ExcludedFileOverlaysManager — showEditorOverlay disabled", () => {
 // Suite: handleSnapshot() — excluded file gets overlay
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileOverlaysManager — excluded file receives overlay", () => {
+suite("ExcludedFilesOverlays — excluded file receives overlay", () => {
   let originalEditors: unknown[];
 
   setup(() => {
@@ -142,7 +142,7 @@ suite("ExcludedFileOverlaysManager — excluded file receives overlay", () => {
     const editor = makeStubEditor(excludedPath);
     windowMock.visibleTextEditors = [editor];
 
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     manager.handleSnapshot(makeSnapshot([excludedPath], { showEditorOverlay: true }));
 
     assert.ok(editor.decorationCalls.length > 0, "setDecorations must be called");
@@ -156,7 +156,7 @@ suite("ExcludedFileOverlaysManager — excluded file receives overlay", () => {
     const editor = makeStubEditor(excludedPath);
     windowMock.visibleTextEditors = [editor];
 
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     manager.handleSnapshot(makeSnapshot([excludedPath], { showEditorOverlay: true }));
 
     const lastCall = editor.decorationCalls[editor.decorationCalls.length - 1];
@@ -172,7 +172,7 @@ suite("ExcludedFileOverlaysManager — excluded file receives overlay", () => {
 // Suite: handleSnapshot() — non-excluded files get cleared
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileOverlaysManager — non-excluded files are cleared", () => {
+suite("ExcludedFilesOverlays — non-excluded files are cleared", () => {
   let originalEditors: unknown[];
 
   setup(() => {
@@ -188,7 +188,7 @@ suite("ExcludedFileOverlaysManager — non-excluded files are cleared", () => {
     const editor = makeStubEditor(includedPath);
     windowMock.visibleTextEditors = [editor];
 
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     // main.c is NOT in the excluded set
     manager.handleSnapshot(makeSnapshot([absPath("core/embed/other.c")], { showEditorOverlay: true }));
 
@@ -201,7 +201,7 @@ suite("ExcludedFileOverlaysManager — non-excluded files are cleared", () => {
     const editor = makeStubEditor(absPath("core/embed/main.c"));
     windowMock.visibleTextEditors = [editor];
 
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     manager.handleSnapshot(makeSnapshot([], { showEditorOverlay: true }));
 
     const lastCall = editor.decorationCalls[editor.decorationCalls.length - 1];
@@ -214,7 +214,7 @@ suite("ExcludedFileOverlaysManager — non-excluded files are cleared", () => {
 // Suite: handleSnapshot() — mixed excluded/non-excluded editors
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileOverlaysManager — mixed excluded and non-excluded editors", () => {
+suite("ExcludedFilesOverlays — mixed excluded and non-excluded editors", () => {
   let originalEditors: unknown[];
 
   setup(() => {
@@ -232,7 +232,7 @@ suite("ExcludedFileOverlaysManager — mixed excluded and non-excluded editors",
     const includedEditor = makeStubEditor(includedPath);
     windowMock.visibleTextEditors = [excludedEditor, includedEditor];
 
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     manager.handleSnapshot(makeSnapshot([excludedPath], { showEditorOverlay: true }));
 
     const lastExcluded = excludedEditor.decorationCalls[excludedEditor.decorationCalls.length - 1];
@@ -247,7 +247,7 @@ suite("ExcludedFileOverlaysManager — mixed excluded and non-excluded editors",
 // Suite: applyToVisibleEditors() — no snapshot is a no-op
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileOverlaysManager — applyToVisibleEditors() with no snapshot", () => {
+suite("ExcludedFilesOverlays — applyToVisibleEditors() with no snapshot", () => {
   let originalEditors: unknown[];
 
   setup(() => {
@@ -262,7 +262,7 @@ suite("ExcludedFileOverlaysManager — applyToVisibleEditors() with no snapshot"
     const editor = makeStubEditor(absPath("core/embed/other.c"));
     windowMock.visibleTextEditors = [editor];
 
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
     manager.applyToVisibleEditors(); // called without handleSnapshot first
 
     assert.strictEqual(editor.decorationCalls.length, 0, "setDecorations must not be called before any snapshot");
@@ -274,7 +274,7 @@ suite("ExcludedFileOverlaysManager — applyToVisibleEditors() with no snapshot"
 // Suite: applyToVisibleEditors() — respects current snapshot
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileOverlaysManager — applyToVisibleEditors() uses latest snapshot", () => {
+suite("ExcludedFilesOverlays — applyToVisibleEditors() uses latest snapshot", () => {
   let originalEditors: unknown[];
 
   setup(() => {
@@ -287,7 +287,7 @@ suite("ExcludedFileOverlaysManager — applyToVisibleEditors() uses latest snaps
 
   test("applies overlay when called after snapshot with excluded file", () => {
     const excludedPath = absPath("core/embed/other.c");
-    const manager = new ExcludedFileOverlaysManager();
+    const manager = new ExcludedFilesOverlays();
 
     // Apply snapshot with empty editors first
     windowMock.visibleTextEditors = [];

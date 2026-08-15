@@ -79,8 +79,8 @@ import { applyProviderSettingFix } from "./intellisense/cpptools-provider";
 import { ActiveArtifactFileWatcher } from "./intellisense/artifact-file-watcher";
 import { ExcludedFilesService } from "./intellisense/excluded-files-service";
 import { ExcludedFilesRefreshCoordinator } from "./intellisense/excluded-files-refresh";
-import { ExcludedFileDecorationsProvider } from "./ui/excluded-file-decorations";
-import { ExcludedFileOverlaysManager } from "./ui/excluded-file-overlays";
+import { ExcludedFilesDecorationsProvider } from "./ui/excluded-files-decorations";
+import { ExcludedFilesOverlays } from "./ui/excluded-files-overlays";
 import {
   evaluateArtifactActionPreconditions,
   isArtifactActionApplicable,
@@ -145,8 +145,8 @@ let _intelliSenseService: IntelliSenseService | undefined;
 let _artifactFileWatcher: ActiveArtifactFileWatcher | undefined;
 let _excludedFilesService: ExcludedFilesService | undefined;
 let _excludedFilesRefreshCoordinator: ExcludedFilesRefreshCoordinator | undefined;
-let _excludedFileDecorations: ExcludedFileDecorationsProvider | undefined;
-let _excludedFileOverlays: ExcludedFileOverlaysManager | undefined;
+let _excludedFilesDecorations: ExcludedFilesDecorationsProvider | undefined;
+let _excludedFilesOverlays: ExcludedFilesOverlays | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
 let _debugConfigProviderRegistration: vscode.Disposable | undefined;
 /** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
@@ -692,28 +692,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     _excludedFilesService,
     workspaceFolder
   );
-  _excludedFileDecorations = new ExcludedFileDecorationsProvider();
-  _excludedFileOverlays = new ExcludedFileOverlaysManager();
+  _excludedFilesDecorations = new ExcludedFilesDecorationsProvider();
+  _excludedFilesOverlays = new ExcludedFilesOverlays();
   context.subscriptions.push(
     { dispose: () => { _excludedFilesService?.dispose(); _excludedFilesService = undefined; } },
     { dispose: () => { _excludedFilesRefreshCoordinator?.dispose(); _excludedFilesRefreshCoordinator = undefined; } },
-    { dispose: () => { _excludedFileDecorations?.dispose(); _excludedFileDecorations = undefined; } },
-    { dispose: () => { _excludedFileOverlays?.dispose(); _excludedFileOverlays = undefined; } },
-    vscode.window.registerFileDecorationProvider(_excludedFileDecorations)
+    { dispose: () => { _excludedFilesDecorations?.dispose(); _excludedFilesDecorations = undefined; } },
+    { dispose: () => { _excludedFilesOverlays?.dispose(); _excludedFilesOverlays = undefined; } },
+    vscode.window.registerFileDecorationProvider(_excludedFilesDecorations)
   );
 
   // Connect snapshot updates → decoration provider so Explorer badges refresh.
   context.subscriptions.push(
     _excludedFilesService.onDidUpdateSnapshot((snapshot) => {
-      _excludedFileDecorations?.handleSnapshot(snapshot);
-      _excludedFileOverlays?.handleSnapshot(snapshot);
+      _excludedFilesDecorations?.handleSnapshot(snapshot);
+      _excludedFilesOverlays?.handleSnapshot(snapshot);
     })
   );
 
   // Re-apply overlays whenever new editors become visible.
   context.subscriptions.push(
     vscode.window.onDidChangeVisibleTextEditors(() => {
-      _excludedFileOverlays?.applyToVisibleEditors();
+      _excludedFilesOverlays?.applyToVisibleEditors();
     })
   );
 
@@ -1170,10 +1170,10 @@ export function deactivate(): void {
   _excludedFilesService = undefined;
   _excludedFilesRefreshCoordinator?.dispose();
   _excludedFilesRefreshCoordinator = undefined;
-  _excludedFileDecorations?.dispose();
-  _excludedFileDecorations = undefined;
-  _excludedFileOverlays?.dispose();
-  _excludedFileOverlays = undefined;
+  _excludedFilesDecorations?.dispose();
+  _excludedFilesDecorations = undefined;
+  _excludedFilesOverlays?.dispose();
+  _excludedFilesOverlays = undefined;
   _manifestState = undefined;
   _activeConfig = undefined;
   _presetContext = undefined;

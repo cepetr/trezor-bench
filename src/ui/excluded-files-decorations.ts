@@ -34,7 +34,7 @@ export const EXCLUDED_TOOLTIP = "Not included in the active build configuration"
 const GRAY_THEME_COLOR_ID = "disabledForeground";
 
 // ---------------------------------------------------------------------------
-// ExcludedFileDecorationsProvider
+// ExcludedFilesDecorationsProvider
 // ---------------------------------------------------------------------------
 
 /**
@@ -44,7 +44,7 @@ const GRAY_THEME_COLOR_ID = "disabledForeground";
  * Subscribe to `ExcludedFilesService.onDidUpdateSnapshot` and call
  * `handleSnapshot()` on each emission.
  */
-export class ExcludedFileDecorationsProvider implements vscode.FileDecorationProvider {
+export class ExcludedFilesDecorationsProvider implements vscode.FileDecorationProvider {
   private _snapshot: ExcludedFilesSnapshot | undefined;
 
   private readonly _onDidChangeFileDecorations = new vscode.EventEmitter<
