@@ -3,7 +3,8 @@
  * login-shell startup files cannot alter the inherited environment.
  */
 import * as vscode from "vscode";
-import { readTaskExtraEnv, resolveCargoWorkspacePath } from "../workspace/settings";
+import { readTaskExtraEnv } from "../workspace/settings";
+import { resolveCargoWorkspacePath } from "../workspace/repository-config";
 
 /**
  * Creates a `ProcessExecution` for `cargo xtask`.

@@ -6,7 +6,7 @@
  */
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { resolvePresetUris } from "../../../workspace/settings";
+import { resolvePresetUris } from "../../../workspace/repository-config";
 import { setRepositoryConfig } from "../../../workspace/repository-config";
 
 const MOCK_WORKSPACE_FOLDER = {

@@ -5,8 +5,8 @@
  */
 import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder, isWorkflowWorkspaceSupported } from "./workspace/workspace-guard";
-import { resolveManifestUri, isStatusBarEnabled, resolveArtifactsPath, resolveDebugTemplatesPath, resolvePresetUris } from "./workspace/settings";
-import { RepositoryConfigService, loadRepositoryConfig, setRepositoryConfig } from "./workspace/repository-config";
+import { isStatusBarEnabled } from "./workspace/settings";
+import { RepositoryConfigService, loadRepositoryConfig, setRepositoryConfig, resolveManifestUri, resolveArtifactsPath, resolveDebugTemplatesPath, resolvePresetUris } from "./workspace/repository-config";
 import { ManifestService } from "./manifest/manifest-service";
 import { PresetService } from "./presets/preset-service";
 import { PresetState } from "./presets/preset-types";

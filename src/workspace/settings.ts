@@ -1,23 +1,11 @@
 /**
- * Typed accessors for tbench settings and repository-config-derived
- * paths (manifest, artifacts, presets, debug templates, excluded files).
+ * Typed accessors for tbench extension settings (status bar, task
+ * environment, excluded files).
  */
 import * as vscode from "vscode";
 import {
   resolveSettingsVariablesDeep,
 } from "./settings-variables";
-import { getRepositoryConfig } from "./repository-config";
-
-/**
- * Returns the manifest URI for the given workspace folder, resolved from the
- * `[paths].manifest` entry in the root-level `tbench.toml`. Falls back to
- * `core/embed/xtask/tf-tools/manifest.yaml` under the workspace root.
- */
-export function resolveManifestUri(
-  workspaceFolder: vscode.WorkspaceFolder
-): vscode.Uri {
-  return getRepositoryConfig(workspaceFolder).manifestUri;
-}
 
 /**
  * Returns true when status-bar visibility is enabled for the workspace.
@@ -27,18 +15,6 @@ export function isStatusBarEnabled(
 ): boolean {
   const cfg = vscode.workspace.getConfiguration("tbench", workspaceFolder.uri);
   return cfg.get<boolean>("showConfigurationInStatusBar") ?? true;
-}
-
-/**
- * Returns the cargo workspace directory for the given workspace folder,
- * resolved from the `[paths].cargo-workspace` entry in the root-level
- * `tbench.toml`. Defaults to `core/embed` under the workspace root; an empty
- * value resolves to the workspace root itself.
- */
-export function resolveCargoWorkspacePath(
-  workspaceFolder: vscode.WorkspaceFolder
-): string {
-  return getRepositoryConfig(workspaceFolder).cargoWorkspacePath;
 }
 
 /**
@@ -69,19 +45,6 @@ export function readTaskExtraEnv(
   }
 
   return env;
-}
-
-/**
- * Returns the resolved absolute artifacts root path for the given workspace
- * folder, from the `[paths].build-artifacts` entry in the root-level
- * `tbench.toml`. Defaults to `core/build-xtask/artifacts` under the workspace
- * root; an empty value returns an empty string, which disables artifact-based
- * resolution.
- */
-export function resolveArtifactsPath(
-  workspaceFolder: vscode.WorkspaceFolder
-): string {
-  return getRepositoryConfig(workspaceFolder).artifactsPath;
 }
 
 // ---------------------------------------------------------------------------
@@ -131,40 +94,6 @@ export function readExcludedFilesSettings(
       workspaceFolder
     ),
   };
-}
-
-// ---------------------------------------------------------------------------
-// Debug launch settings
-// ---------------------------------------------------------------------------
-
-/**
- * Returns the resolved absolute path to the debug templates directory for the
- * given workspace folder, from the `[paths].debug-templates` entry in the
- * root-level `tbench.toml`. Defaults to `core/embed/xtask/tf-tools/debug`
- * under the workspace root.
- */
-export function resolveDebugTemplatesPath(
-  workspaceFolder: vscode.WorkspaceFolder
-): string {
-  return getRepositoryConfig(workspaceFolder).debugTemplatesPath;
-}
-
-// ---------------------------------------------------------------------------
-// Preset input path resolution
-// ---------------------------------------------------------------------------
-
-/** Resolved locations of the two preset TOML inputs for a workspace folder. */
-export interface PresetUris {
-  readonly shared: vscode.Uri;
-  readonly user: vscode.Uri;
-}
-
-/**
- * Resolves both preset input URIs from the configured `xtask-presets` directory
- * by appending `presets.toml` and `user-presets.toml`.
- */
-export function resolvePresetUris(workspaceFolder: vscode.WorkspaceFolder): PresetUris {
-  return getRepositoryConfig(workspaceFolder).presetUris;
 }
 
 /**
