@@ -1,11 +1,10 @@
 <!--
 Sync Impact Report
-Version change: 1.6.0 -> 1.7.0
+Version change: 1.7.0 -> 1.8.0
 Modified principles:
-- III. Tests Are Mandatory: integration-level coverage now explicitly includes diagnostics.
-- Delivery Workflow: added Scope Discipline rules enforced by affected product areas.
-Added sections:
 - None
+Added sections:
+- VI. Code Must Stand Alone
 Removed sections:
 - None
 Follow-up TODOs:
@@ -57,6 +56,15 @@ reduce clarity; longer names MUST be justified by disambiguation or API constrai
 Complexity exceptions MUST be recorded in the implementation plan.
 Rationale: the extension spans UI, task orchestration, and editor integration;
 concise code and justified complexity keep it maintainable.
+
+### VI. Code Must Stand Alone
+Source and test files, including comments and test names, MUST NOT cite Speckit process
+artifacts: requirement identifiers, feature, task, user-story, or scenario numbers,
+research decisions, or paths under feature-specific `specs/` directories. When a
+reference carries needed information, code and tests MUST restate it in plain language.
+References to `specs/product-spec.md` remain permitted.
+Rationale: per-feature process artifacts become stale after merge; production code and
+tests must remain understandable from their own plain-language intent.
 
 ## Technical Guardrails
 
@@ -154,4 +162,4 @@ requirements, and PATCH for clarifications that do not change project obligation
 Compliance review is required for every plan, task list, and pull request that
 changes behavior, tooling, or development workflow.
 
-**Version**: 1.7.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-07-31
+**Version**: 1.8.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-08-15
