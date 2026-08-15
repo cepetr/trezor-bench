@@ -25,8 +25,8 @@ import {
   loadDebugTemplate,
   buildDebugVariableMap,
   applyTbenchSubstitution,
-  executeDebugLaunch,
-} from "../../commands/debug-launch";
+} from "../../debug/debug-template";
+import { executeDebugLaunch } from "../../commands/debug-launch";
 import {
   makeDebugLoadedState,
   makeComponentDebugProfile,

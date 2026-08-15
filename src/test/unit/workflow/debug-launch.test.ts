@@ -36,7 +36,7 @@ import {
   TBENCH_VAR_EXECUTABLE_PATH,
   TBENCH_VAR_EXECUTABLE,
   TBENCH_VAR_DEBUG_PROFILE_NAME,
-} from "../../../commands/debug-launch";
+} from "../../../debug/debug-template";
 import { makeComponentDebugProfile, makeIntelliSenseLoadedState, debugLaunchValidTemplatesRoot, debugLaunchFailuresWorkspaceRoot } from "../workflow-test-helpers";
 import {
   generateDebugConfigurations,

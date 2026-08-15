@@ -15,11 +15,11 @@
 import * as vscode from "vscode";
 import { ManifestStateLoaded, findManifestEntries } from "../manifest/manifest-types";
 import {
-  materializeDebugConfiguration,
   TBENCH_DEBUG_TYPE,
   labelForDefaultEntry,
   labelForProfileEntry,
 } from "../commands/debug-launch";
+import { materializeDebugConfiguration } from "./debug-template";
 import {
   resolveMatchingDebugProfiles,
   MatchingDebugProfileSet,

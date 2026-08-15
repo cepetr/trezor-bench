@@ -20,7 +20,7 @@ import {
   buildDebugVariableMap,
   applyTbenchSubstitution,
   TBENCH_VAR_MODEL_ID,
-} from "../../../commands/debug-launch";
+} from "../../../debug/debug-template";
 
 // ---------------------------------------------------------------------------
 // loadDebugTemplate: traversal edge cases
