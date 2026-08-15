@@ -11,7 +11,7 @@
 
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { MapArtifactItem } from "../../ui/configuration-tree";
+import { MapArtifactItem } from "../../ui/build-artifacts-pane";
 import { ResolvedArtifact } from "../../build/artifact-resolution";
 import { openMapFile } from "../../commands/artifact-actions";
 

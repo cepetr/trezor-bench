@@ -20,7 +20,9 @@ import {
   PresetContext,
   PresetEffectiveValue,
 } from "./presets/preset-resolution";
-import { ConfigurationTreeModel, PaneTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/configuration-tree";
+import { ConfigurationTreeModel, PaneTreeProvider } from "./ui/configuration-tree";
+import { SelectorHeaderItem } from "./ui/build-selection-pane";
+import { BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/build-options-pane";
 import { StatusBarPresenter } from "./ui/status-bar";
 import {
   disposeLogChannel,

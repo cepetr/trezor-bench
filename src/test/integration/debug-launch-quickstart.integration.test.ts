@@ -34,7 +34,7 @@ import {
   debugLaunchFailuresWorkspaceRoot,
 } from "../unit/workflow-test-helpers";
 import { ManifestStateLoaded, ManifestComponentDebugProfile } from "../../manifest/manifest-types";
-import { ExecutableArtifactItem } from "../../ui/configuration-tree";
+import { ExecutableArtifactItem } from "../../ui/build-artifacts-pane";
 
 // ---------------------------------------------------------------------------
 // Helpers

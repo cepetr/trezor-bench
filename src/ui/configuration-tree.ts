@@ -1,14 +1,30 @@
 /**
- * Tree items and providers for the three configuration panes — Build
- * Selection, Build Artifacts, and Build Options.
+ * State owner and per-pane providers for the three configuration panes —
+ * Build Selection, Build Artifacts, and Build Options. The pane-specific
+ * tree items live in the `build-*-pane.ts` modules.
  */
 import * as vscode from "vscode";
 import * as path from "path";
 import { BuildContext, ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
 import { ResolvedOption } from "../build/build-options";
-import { ArtifactKind, ArtifactsByKind, ArtifactStatus, ExecutableArtifact, ResolvedArtifact } from "../build/artifact-resolution";
+import { ArtifactKind, ArtifactsByKind } from "../build/artifact-resolution";
 import { PresetState } from "../presets/preset-types";
 import { PresetChoice } from "../presets/preset-resolution";
+import { SelectorKind, SelectorHeaderItem, SelectorChoiceItem } from "./build-selection-pane";
+import {
+  BuildOptionCheckboxItem,
+  BuildOptionGroupItem,
+  BuildOptionMismatchInfo,
+  BuildOptionMultistateHeaderItem,
+  BuildOptionStateItem,
+} from "./build-options-pane";
+import {
+  ArtifactUpdatedItem,
+  BinaryArtifactItem,
+  CompileCommandsArtifactItem,
+  ExecutableArtifactItem,
+  MapArtifactItem,
+} from "./build-artifacts-pane";
 
 // ---------------------------------------------------------------------------
 // Tree item types
@@ -34,335 +50,6 @@ export class PlaceholderItem extends vscode.TreeItem {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.contextValue = "placeholder";
     this.iconPath = new vscode.ThemeIcon("info");
-  }
-}
-
-function formatArtifactTooltip(
-  artifactPath: string,
-  status: ArtifactStatus,
-  missingReason?: string
-): string {
-  if (status === "present") {
-    return artifactPath;
-  }
-
-  if (!artifactPath) {
-    return missingReason ?? "Artifact missing.";
-  }
-
-  const lines = [`Missing: ${artifactPath}`];
-  if (missingReason && !isRedundantMissingReason(missingReason, artifactPath)) {
-    lines.push(missingReason);
-  }
-  return lines.join("\n");
-}
-
-function isRedundantMissingReason(reason: string, artifactPath: string): boolean {
-  return reason.includes(artifactPath)
-    || /(?:compile-commands|binary|map|executable) artifact not found/i.test(reason)
-    ;
-}
-
-export function formatArtifactAge(modifiedAt: Date, now: Date = new Date()): string {
-  const elapsedMinutes = Math.max(0, Math.floor((now.getTime() - modifiedAt.getTime()) / 60_000));
-  if (elapsedMinutes === 0) {
-    return "just now";
-  }
-  if (elapsedMinutes < 60) {
-    return `${elapsedMinutes} min ago`;
-  }
-
-  const elapsedHours = Math.floor(elapsedMinutes / 60);
-  if (elapsedHours < 24) {
-    return `${elapsedHours} hour${elapsedHours === 1 ? "" : "s"} ago`;
-  }
-
-  const elapsedDays = Math.floor(elapsedHours / 24);
-  return `${elapsedDays} day${elapsedDays === 1 ? "" : "s"} ago`;
-}
-
-export class ArtifactUpdatedItem extends vscode.TreeItem {
-  constructor(modifiedAt: Date, now: Date = new Date()) {
-    super("Updated", vscode.TreeItemCollapsibleState.None);
-    this.id = "artifact:updated";
-    this.contextValue = "artifact-updated";
-    this.iconPath = new vscode.ThemeIcon("clock");
-    this.description = formatArtifactAge(modifiedAt, now);
-    this.tooltip = `Last modified: ${modifiedAt.toISOString().replace("T", " ").slice(0, 16)} UTC`;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Build Artifacts section items
-// ---------------------------------------------------------------------------
-
-/**
- * Shared shape of a Build Artifacts row: `artifact:<kind>` id,
- * `artifact-<kind>` contextValue, pass/error icon, and a
- * `present`/`missing` description derived from the artifact status.
- */
-class ArtifactStatusItem extends vscode.TreeItem {
-  constructor(
-    label: string,
-    kind: string,
-    status: ArtifactStatus,
-    tooltip: string
-  ) {
-    super(label, vscode.TreeItemCollapsibleState.None);
-    this.id = `artifact:${kind}`;
-    this.contextValue = `artifact-${kind}`;
-    this.iconPath = new vscode.ThemeIcon(status === "present" ? "pass" : "error");
-    this.description = status;
-    this.tooltip = tooltip;
-  }
-}
-
-/**
- * The Compile Commands row in the Build Artifacts section.
- * Shows `present` or `missing` as description and the expected path as tooltip.
- */
-export class CompileCommandsArtifactItem extends ArtifactStatusItem {
-  constructor(artifact: ResolvedArtifact) {
-    super(
-      "Compile Commands",
-      "compile-commands",
-      artifact.status,
-      formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason)
-    );
-  }
-}
-
-/**
- * The Binary row in the Build Artifacts section.
- * contextValue "artifact-binary" enables Flash/Upload row actions via menus.view/item/context.
- */
-export class BinaryArtifactItem extends ArtifactStatusItem {
-  constructor(artifact: ResolvedArtifact) {
-    super(
-      "Binary",
-      "binary",
-      artifact.status,
-      formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason)
-    );
-  }
-}
-
-/**
- * The Map File row in the Build Artifacts section.
- * contextValue "artifact-map" enables the openMapFile row action via menus.view/item/context.
- */
-export class MapArtifactItem extends ArtifactStatusItem {
-  constructor(artifact: ResolvedArtifact) {
-    super(
-      "Map File",
-      "map",
-      artifact.status,
-      formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason)
-    );
-  }
-}
-
-/**
- * The Executable row in the Build Artifacts section (Debug Launch slice).
- * contextValue "artifact-executable" enables the Start Debugging row action via menus.view/item/context.
- * This row is always rendered when an ExecutableArtifact state has been computed — it remains
- * visible but disabled when the executable is missing or the profile cannot be resolved.
- * Start Debugging is invoked only through the inline row action, not by clicking the row.
- */
-export class ExecutableArtifactItem extends ArtifactStatusItem {
-  constructor(artifact: ExecutableArtifact) {
-    super("Executable", "executable", artifact.status, artifact.tooltip);
-  }
-}
-
-export type SelectorKind = "model" | "target" | "component" | "preset";
-
-const SELECTOR_ICONS: Readonly<Record<SelectorKind, string>> = {
-  model: "circuit-board",
-  target: "target",
-  component: "extensions",
-  preset: "layers",
-};
-
-const INACTIVE_CHOICE_ICON = vscode.Uri.file(
-  path.resolve(__dirname, "../../images/blank-tree-icon.svg")
-);
-
-export class SelectorHeaderItem extends vscode.TreeItem {
-  constructor(
-    public readonly selectorKind: SelectorKind,
-    label: string,
-    activeValue: string | undefined,
-    expanded: boolean
-  ) {
-    super(
-      label,
-      expanded
-        ? vscode.TreeItemCollapsibleState.Expanded
-        : vscode.TreeItemCollapsibleState.Collapsed
-    );
-    this.id = `selector:${selectorKind}:${expanded ? "expanded" : "collapsed"}`;
-    this.contextValue = `selector-${selectorKind}`;
-    this.description = activeValue ?? "—";
-    this.iconPath = new vscode.ThemeIcon(SELECTOR_ICONS[selectorKind]);
-    this.tooltip = "";
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Command identifiers for build-context selection.
-// ---------------------------------------------------------------------------
-
-export const SELECT_COMMANDS: Readonly<Record<SelectorKind, string>> = {
-  model: "tbench.selectModel",
-  target: "tbench.selectTarget",
-  component: "tbench.selectComponent",
-  preset: "tbench.selectPreset",
-};
-
-// ---------------------------------------------------------------------------
-// Command identifiers for build-option interaction.
-// ---------------------------------------------------------------------------
-
-export const TOGGLE_BUILD_OPTION_COMMAND = "tbench.toggleBuildOption";
-export const SELECT_BUILD_OPTION_STATE_COMMAND = "tbench.selectBuildOptionState";
-
-// ---------------------------------------------------------------------------
-// Build Option tree items
-// ---------------------------------------------------------------------------
-
-/** Group header for a named option group; its children are pre-built. */
-export class BuildOptionGroupItem extends vscode.TreeItem {
-  constructor(
-    public readonly groupLabel: string,
-    public readonly groupChildren: vscode.TreeItem[],
-    collapsed: boolean = false,
-    hasNonDefault: boolean = false
-  ) {
-    const showBold = collapsed && hasNonDefault;
-    super(
-      showBold ? { label: groupLabel, highlights: [[0, groupLabel.length]] } : groupLabel,
-      collapsed
-        ? vscode.TreeItemCollapsibleState.Collapsed
-        : vscode.TreeItemCollapsibleState.Expanded
-    );
-    this.id = `build-option-group:${groupLabel}:${collapsed ? "collapsed" : "expanded"}`;
-    this.contextValue = "build-option-group";
-    this.tooltip = "";
-  }
-}
-
-/** Info for rendering a preset-value mismatch: the warning icon plus a description naming the raw value. */
-export interface BuildOptionMismatchInfo {
-  readonly rawValue: boolean | string | number;
-}
-
-function mismatchDescription(mismatch: BuildOptionMismatchInfo): string {
-  return `Unrepresentable value: ${JSON.stringify(mismatch.rawValue)}`;
-}
-
-function formatBuildOptionTooltip(option: string, description?: string): vscode.MarkdownString {
-  const tooltipDescription = description?.trim();
-  return new vscode.MarkdownString(`**${option}**${tooltipDescription ? `  \n${tooltipDescription}` : ""}`);
-}
-
-/** A single checkbox-style build option row. Emphasis is driven by `isOverride`, not by `checked`. */
-export class BuildOptionCheckboxItem extends vscode.TreeItem {
-  constructor(
-    public readonly optionKey: string,
-    label: string,
-    checked: boolean,
-    isOverride: boolean = false,
-    description?: string,
-    mismatch?: BuildOptionMismatchInfo,
-    displayFlag: string = `--${optionKey}`
-  ) {
-    super(
-      isOverride ? { label, highlights: [[0, label.length]] } : label,
-      vscode.TreeItemCollapsibleState.None
-    );
-    this.id = `build-option:${optionKey}`;
-    this.contextValue = "build-option-checkbox";
-    this.checkboxState = checked
-      ? vscode.TreeItemCheckboxState.Checked
-      : vscode.TreeItemCheckboxState.Unchecked;
-    this.tooltip = formatBuildOptionTooltip(displayFlag, description);
-    if (mismatch) {
-      this.iconPath = new vscode.ThemeIcon("warning");
-      this.description = mismatchDescription(mismatch);
-    }
-  }
-}
-
-/** Expandable header for a multistate build option; shows active state inline. Emphasis is driven by `isOverride`. */
-export class BuildOptionMultistateHeaderItem extends vscode.TreeItem {
-  constructor(
-    public readonly optionKey: string,
-    label: string,
-    activeStateLabel: string,
-    public readonly stateChildren: BuildOptionStateItem[],
-    expanded: boolean,
-    isOverride: boolean = false,
-    description?: string,
-    mismatch?: BuildOptionMismatchInfo,
-    displayFlag: string = `--${optionKey}`
-  ) {
-    super(
-      isOverride ? { label, highlights: [[0, label.length]] } : label,
-      expanded
-        ? vscode.TreeItemCollapsibleState.Expanded
-        : vscode.TreeItemCollapsibleState.Collapsed
-    );
-    this.id = `build-option-multistate:${optionKey}:${expanded ? "expanded" : "collapsed"}`;
-    this.contextValue = "build-option-multistate";
-    this.description = mismatch ? mismatchDescription(mismatch) : activeStateLabel;
-    this.iconPath = new vscode.ThemeIcon(mismatch ? "warning" : "list-selection");
-    this.tooltip = formatBuildOptionTooltip(displayFlag, description);
-  }
-}
-
-/** A state choice under a multistate build option header. Non-selectable when the option is unresolved. */
-export class BuildOptionStateItem extends vscode.TreeItem {
-  constructor(
-    public readonly optionKey: string,
-    public readonly stateId: string,
-    label: string,
-    isActive: boolean,
-    description?: string,
-    selectable: boolean = true,
-    displayFlag: string = `--${optionKey} ${stateId}`
-  ) {
-    super(label, vscode.TreeItemCollapsibleState.None);
-    this.id = `build-option-state:${optionKey}:${stateId}`;
-    this.contextValue = selectable ? "build-option-state" : "build-option-state-disabled";
-    this.iconPath = isActive ? new vscode.ThemeIcon("check") : INACTIVE_CHOICE_ICON;
-    this.tooltip = formatBuildOptionTooltip(displayFlag, description);
-    if (selectable) {
-      this.command = {
-        title: `Select ${label}`,
-        command: SELECT_BUILD_OPTION_STATE_COMMAND,
-        arguments: [optionKey, stateId],
-      };
-    }
-  }
-}
-
-export class SelectorChoiceItem extends vscode.TreeItem {
-  constructor(
-    public readonly selectorKind: SelectorKind,
-    public readonly entryId: string,
-    label: string,
-    isActive: boolean
-  ) {
-    super(label, vscode.TreeItemCollapsibleState.None);
-    this.contextValue = `choice-${selectorKind}`;
-    this.description = isActive ? "active" : undefined;
-    this.iconPath = isActive ? new vscode.ThemeIcon("check") : INACTIVE_CHOICE_ICON;
-    this.command = {
-      title: `Select ${label}`,
-      command: SELECT_COMMANDS[selectorKind],
-      arguments: [entryId],
-    };
   }
 }
 

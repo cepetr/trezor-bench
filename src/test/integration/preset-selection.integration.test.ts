@@ -29,10 +29,8 @@ import {
 } from "../../build/build-selection";
 import { normalizePresetId } from "../../build/normalize-selection";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
-import {
-  ConfigurationTreeModel,
-  SelectorHeaderItem,
-} from "../../ui/configuration-tree";
+import { ConfigurationTreeModel } from "../../ui/configuration-tree";
+import { SelectorHeaderItem } from "../../ui/build-selection-pane";
 import { formatStatusBarText } from "../../ui/status-bar";
 import { deriveWorkflowArguments, formatTaskLabel } from "../../commands/build-workflow";
 

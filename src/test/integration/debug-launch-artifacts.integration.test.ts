@@ -21,11 +21,11 @@ import {
   resolveExecutableArtifact,
   ExecutableArtifact,
 } from "../../build/artifact-resolution";
+import { ConfigurationTreeModel } from "../../ui/configuration-tree";
 import {
-  ConfigurationTreeModel,
   CompileCommandsArtifactItem,
   ExecutableArtifactItem,
-} from "../../ui/configuration-tree";
+} from "../../ui/build-artifacts-pane";
 import {
   makeDebugLoadedState,
   makeComponentDebugProfile,

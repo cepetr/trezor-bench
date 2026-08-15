@@ -4,21 +4,27 @@ import {
   ConfigurationTreeModel,
   PaneTreeProvider,
   PaneId,
+  PlaceholderItem,
+  WarningItem,
+} from "../../../ui/configuration-tree";
+import {
   SelectorChoiceItem,
   SelectorHeaderItem,
+} from "../../../ui/build-selection-pane";
+import {
   BuildOptionGroupItem,
   BuildOptionMultistateHeaderItem,
   BuildOptionCheckboxItem,
   BuildOptionStateItem,
+} from "../../../ui/build-options-pane";
+import {
   CompileCommandsArtifactItem,
   BinaryArtifactItem,
   MapArtifactItem,
   ExecutableArtifactItem,
   ArtifactUpdatedItem,
-  PlaceholderItem,
-  WarningItem,
   formatArtifactAge,
-} from "../../../ui/configuration-tree";
+} from "../../../ui/build-artifacts-pane";
 import { ResolvedArtifact } from "../../../build/artifact-resolution";
 import { ExecutableArtifact } from "../../../build/artifact-resolution";
 import { ManifestStateLoaded, BuildOption } from "../../../manifest/manifest-types";

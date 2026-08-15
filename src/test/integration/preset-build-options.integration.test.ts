@@ -24,11 +24,11 @@ import {
   ResolvedOption,
 } from "../../build/build-options";
 import { BuildOption } from "../../manifest/manifest-types";
+import { ConfigurationTreeModel } from "../../ui/configuration-tree";
 import {
-  ConfigurationTreeModel,
   BuildOptionCheckboxItem,
   BuildOptionMultistateHeaderItem,
-} from "../../ui/configuration-tree";
+} from "../../ui/build-options-pane";
 import { BuildSelection } from "../../build/build-selection";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
 

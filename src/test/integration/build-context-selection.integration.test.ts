@@ -9,10 +9,12 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import {
   ConfigurationTreeModel,
-  SelectorHeaderItem,
-  SelectorChoiceItem,
   WarningItem,
 } from "../../ui/configuration-tree";
+import {
+  SelectorHeaderItem,
+  SelectorChoiceItem,
+} from "../../ui/build-selection-pane";
 import { normalizeBuildSelection } from "../../build/normalize-selection";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
 import { BuildSelection } from "../../build/build-selection";
@@ -261,10 +263,8 @@ suite("ConfigurationTreeModel – normalization integration", () => {
 // Suite: IntelliSense artifact state in the Build Artifacts section
 // ---------------------------------------------------------------------------
 
-import {
-  CompileCommandsArtifactItem,
-  PlaceholderItem,
-} from "../../ui/configuration-tree";
+import { PlaceholderItem } from "../../ui/configuration-tree";
+import { CompileCommandsArtifactItem } from "../../ui/build-artifacts-pane";
 import { ResolvedArtifact } from "../../build/artifact-resolution";
 
 function getBuildArtifactsChildren(

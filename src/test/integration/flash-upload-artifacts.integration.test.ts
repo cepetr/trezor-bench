@@ -13,7 +13,7 @@ import * as vscode from "vscode";
 import {
   BinaryArtifactItem,
   MapArtifactItem,
-} from "../../ui/configuration-tree";
+} from "../../ui/build-artifacts-pane";
 import { ResolvedArtifact } from "../../build/artifact-resolution";
 
 // ---------------------------------------------------------------------------
