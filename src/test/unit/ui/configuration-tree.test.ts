@@ -640,38 +640,38 @@ suite("ConfigurationTreeModel – Binary/Map artifact refresh", () => {
   }
 
   test("switching artifact context replaces Binary and Map rows with the new paths", () => {
-    treeModel.updateCompileCommandsArtifact(
+    treeModel.updateArtifact("compile-commands", 
       makePresentCompileCommandsArtifact({
         path: "/build/model-t/compile_commands_core.cc.json",
         contextKey: "T2T1::hw::core",
       })
     );
-    treeModel.updateBinaryArtifact(
+    treeModel.updateArtifact("binary", 
       makePresentBinaryArtifact({
         path: "/build/model-t/firmware_core.bin",
         contextKey: "T2T1::hw::core",
       })
     );
-    treeModel.updateMapArtifact(
+    treeModel.updateArtifact("map", 
       makePresentMapArtifact({
         path: "/build/model-t/firmware_core.map",
         contextKey: "T2T1::hw::core",
       })
     );
 
-    treeModel.updateCompileCommandsArtifact(
+    treeModel.updateArtifact("compile-commands", 
       makePresentCompileCommandsArtifact({
         path: "/build/model-t3/compile_commands_boot_emu.cc.json",
         contextKey: "T3W1::emu::bootloader",
       })
     );
-    treeModel.updateBinaryArtifact(
+    treeModel.updateArtifact("binary", 
       makePresentBinaryArtifact({
         path: "/build/model-t3/firmware_boot_emu.bin",
         contextKey: "T3W1::emu::bootloader",
       })
     );
-    treeModel.updateMapArtifact(
+    treeModel.updateArtifact("map", 
       makePresentMapArtifact({
         path: "/build/model-t3/firmware_boot_emu.map",
         contextKey: "T3W1::emu::bootloader",
@@ -703,12 +703,12 @@ suite("ConfigurationTreeModel – Binary/Map artifact refresh", () => {
   });
 
   test("clearing Binary and Map artifacts removes stale rows", () => {
-    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
-    treeModel.updateBinaryArtifact(makePresentBinaryArtifact());
-    treeModel.updateMapArtifact(makePresentMapArtifact());
+    treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
+    treeModel.updateArtifact("binary", makePresentBinaryArtifact());
+    treeModel.updateArtifact("map", makePresentMapArtifact());
 
-    treeModel.updateBinaryArtifact(null);
-    treeModel.updateMapArtifact(null);
+    treeModel.updateArtifact("binary", null);
+    treeModel.updateArtifact("map", null);
 
     const children = getBuildArtifactsChildren();
     assert.strictEqual(children.length, 1, "only compile-commands row should remain");
@@ -716,9 +716,9 @@ suite("ConfigurationTreeModel – Binary/Map artifact refresh", () => {
   });
 
   test("prepends the newest artifact modification time as an Updated row", () => {
-    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact({ modifiedAt: new Date("2026-08-12T09:00:00Z") }));
-    treeModel.updateBinaryArtifact(makePresentBinaryArtifact({ modifiedAt: new Date("2026-08-12T11:00:00Z") }));
-    treeModel.updateMapArtifact(makePresentMapArtifact({ modifiedAt: new Date("2026-08-12T10:00:00Z") }));
+    treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact({ modifiedAt: new Date("2026-08-12T09:00:00Z") }));
+    treeModel.updateArtifact("binary", makePresentBinaryArtifact({ modifiedAt: new Date("2026-08-12T11:00:00Z") }));
+    treeModel.updateArtifact("map", makePresentMapArtifact({ modifiedAt: new Date("2026-08-12T10:00:00Z") }));
 
     const children = getBuildArtifactsChildren();
     const updated = children[0] as ArtifactUpdatedItem;
@@ -728,9 +728,9 @@ suite("ConfigurationTreeModel – Binary/Map artifact refresh", () => {
   });
 
   test("omits the Updated row when no artifact is present", () => {
-    treeModel.updateCompileCommandsArtifact(makeMissingCompileCommandsArtifact());
-    treeModel.updateBinaryArtifact(makeMissingBinaryArtifact());
-    treeModel.updateMapArtifact(makeMissingMapArtifact());
+    treeModel.updateArtifact("compile-commands", makeMissingCompileCommandsArtifact());
+    treeModel.updateArtifact("binary", makeMissingBinaryArtifact());
+    treeModel.updateArtifact("map", makeMissingMapArtifact());
 
     const children = getBuildArtifactsChildren();
     assert.ok(!children.some((child) => child instanceof ArtifactUpdatedItem));
@@ -864,7 +864,7 @@ suite("ConfigurationTreeModel – Executable row", () => {
   }
 
   test("Executable row appears when updateExecutableArtifact is called with valid artifact", () => {
-    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
     treeModel.updateExecutableArtifact(makePresentExecutableArtifact());
     const children = getBuildArtifactsChildrenExec();
     assert.ok(
@@ -874,7 +874,7 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("Executable row appears even when status is missing", () => {
-    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
     treeModel.updateExecutableArtifact(makeMissingExecutableArtifact());
     const children = getBuildArtifactsChildrenExec();
     assert.ok(
@@ -884,7 +884,7 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("Executable row does not appear when updateExecutableArtifact is not called", () => {
-    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
     const children = getBuildArtifactsChildrenExec();
     assert.ok(
       !children.some((c) => c instanceof ExecutableArtifactItem),
@@ -893,7 +893,7 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("Executable row does not appear after updateExecutableArtifact(null)", () => {
-    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
     treeModel.updateExecutableArtifact(makePresentExecutableArtifact());
     treeModel.updateExecutableArtifact(null);
     const children = getBuildArtifactsChildrenExec();
@@ -904,9 +904,9 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("Executable row appears after Map File row when Binary and Map are present", () => {
-    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
-    treeModel.updateBinaryArtifact(makePresentBinaryArtifact());
-    treeModel.updateMapArtifact(makePresentMapArtifact());
+    treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
+    treeModel.updateArtifact("binary", makePresentBinaryArtifact());
+    treeModel.updateArtifact("map", makePresentMapArtifact());
     treeModel.updateExecutableArtifact(makePresentExecutableArtifact());
     const children = getBuildArtifactsChildrenExec();
     const binaryIdx = children.findIndex((c) => c instanceof BinaryArtifactItem);
@@ -918,7 +918,7 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("Executable row appears immediately after Compile Commands when no Binary/Map", () => {
-    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
     treeModel.updateExecutableArtifact(makePresentExecutableArtifact());
     const children = getBuildArtifactsChildrenExec();
     const ccIdx = children.findIndex((c) => c instanceof CompileCommandsArtifactItem);
@@ -928,7 +928,7 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("clearing Executable artifact removes the row", () => {
-    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
     treeModel.updateExecutableArtifact(makePresentExecutableArtifact());
     treeModel.updateExecutableArtifact(null);
     const children = getBuildArtifactsChildrenExec();
@@ -937,7 +937,7 @@ suite("ConfigurationTreeModel – Executable row", () => {
   });
 
   test("Executable row tooltip reflects the tooltip from the artifact", () => {
-    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
     const artifact = makePresentExecutableArtifact({ tooltip: "/custom/path/to/firmware.elf" });
     treeModel.updateExecutableArtifact(artifact);
     const children = getBuildArtifactsChildrenExec();
@@ -1504,8 +1504,8 @@ suite("ConfigurationTreeModel – paneRootChildren('build-artifacts')", () => {
   });
 
   test("evaluated: renders Compile Commands then Binary once both are set", () => {
-    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
-    treeModel.updateBinaryArtifact(makePresentBinaryArtifact());
+    treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
+    treeModel.updateArtifact("binary", makePresentBinaryArtifact());
     const children = treeModel.paneRootChildren("build-artifacts");
     assert.strictEqual(children.length, 2);
     assert.ok(children[0] instanceof CompileCommandsArtifactItem);
@@ -1548,18 +1548,18 @@ suite("ConfigurationTreeModel – onDidChangePane fan-out", () => {
     assert.deepStrictEqual(new Set(seen), new Set(["build-selection", "build-options"]));
   });
 
-  test("updateCompileCommandsArtifact() signals only build-artifacts", () => {
-    const seen = collectPanes(() => treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact()));
+  test("updateArtifact(\'compile-commands\') signals only build-artifacts", () => {
+    const seen = collectPanes(() => treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact()));
     assert.deepStrictEqual(seen, ["build-artifacts"]);
   });
 
-  test("updateBinaryArtifact() signals only build-artifacts", () => {
-    const seen = collectPanes(() => treeModel.updateBinaryArtifact(makePresentBinaryArtifact()));
+  test("updateArtifact(\'binary\') signals only build-artifacts", () => {
+    const seen = collectPanes(() => treeModel.updateArtifact("binary", makePresentBinaryArtifact()));
     assert.deepStrictEqual(seen, ["build-artifacts"]);
   });
 
-  test("updateMapArtifact() signals only build-artifacts", () => {
-    const seen = collectPanes(() => treeModel.updateMapArtifact(makePresentMapArtifact()));
+  test("updateArtifact(\'map\') signals only build-artifacts", () => {
+    const seen = collectPanes(() => treeModel.updateArtifact("map", makePresentMapArtifact()));
     assert.deepStrictEqual(seen, ["build-artifacts"]);
   });
 
@@ -1616,7 +1616,7 @@ suite("PaneTreeProvider – root delegation", () => {
   });
 
   test("getChildren(undefined) delegates to the owner's paneRootChildren for build-artifacts", () => {
-    owner.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    owner.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
     const facade = new PaneTreeProvider(owner, "build-artifacts");
     assert.deepStrictEqual(facade.getChildren(undefined), owner.paneRootChildren("build-artifacts"));
   });
@@ -1796,7 +1796,7 @@ suite("PaneTreeProvider – change-event relay", () => {
     const sub = facade.onDidChangeTreeData(() => {
       fired++;
     });
-    owner.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
+    owner.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
     sub.dispose();
     assert.strictEqual(fired, 1);
   });
@@ -1895,9 +1895,9 @@ suite("ConfigurationTreeModel – no section rows inside any pane", () => {
     treeModel.update(makeManifestState(), makeBuildSelection(), [resolved(optA), resolved(multi)]);
     treeModel.setExpandedSelector("model");
     treeModel.setExpandedMultistateKey("verbose");
-    treeModel.updateCompileCommandsArtifact(makePresentCompileCommandsArtifact());
-    treeModel.updateBinaryArtifact(makePresentBinaryArtifact());
-    treeModel.updateMapArtifact(makePresentMapArtifact());
+    treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
+    treeModel.updateArtifact("binary", makePresentBinaryArtifact());
+    treeModel.updateArtifact("map", makePresentMapArtifact());
     treeModel.updateExecutableArtifact(makePresentExecutableArtifact());
 
     for (const paneId of PANE_IDS) {

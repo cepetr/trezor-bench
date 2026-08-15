@@ -13,7 +13,7 @@ import {
 } from "./intellisense-types";
 import {
   buildResolutionInputs,
-  resolveCompileCommandsArtifact,
+  resolveArtifact,
   makeContextKey,
 } from "./artifact-resolution";
 import { checkProviderReadiness, resolveIntelliSenseBackend } from "./intellisense-backend";
@@ -217,7 +217,7 @@ export class IntelliSenseService {
 
     const inputs = buildResolutionInputs(manifest, buildContext, this._artifactsRoot);
     const artifact = inputs
-      ? resolveCompileCommandsArtifact(inputs, buildContext)
+      ? resolveArtifact("compile-commands", inputs, buildContext)
       : {
           path: "",
           exists: false,

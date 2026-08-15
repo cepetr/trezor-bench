@@ -62,6 +62,24 @@ export function buildResolutionInputs(
 }
 
 // ---------------------------------------------------------------------------
+// Artifact kinds
+// ---------------------------------------------------------------------------
+
+/**
+ * The file artifacts resolved per build context. The executable artifact is
+ * deliberately NOT a kind — it has different inputs (debug profiles) and a
+ * richer result type (`ExecutableArtifact`).
+ */
+export type ArtifactKind = "compile-commands" | "binary" | "map";
+
+/** Canonical on-disk extension per artifact kind. */
+const ARTIFACT_EXTENSIONS: Record<ArtifactKind, string> = {
+  "compile-commands": ".cc.json",
+  binary: ".bin",
+  map: ".map",
+};
+
+// ---------------------------------------------------------------------------
 // Path derivation
 // ---------------------------------------------------------------------------
 
@@ -87,19 +105,12 @@ function deriveArtifactPathWithExtension(
   );
 }
 
-/** Expected compile-commands artifact path (`.cc.json`), or `undefined` when underivable. */
-export function deriveArtifactPath(inputs: ArtifactResolutionInputs): string | undefined {
-  return deriveArtifactPathWithExtension(inputs, ".cc.json");
-}
-
-/** Expected binary artifact path (`.bin`), or `undefined` when underivable. */
-export function deriveBinaryArtifactPath(inputs: ArtifactResolutionInputs): string | undefined {
-  return deriveArtifactPathWithExtension(inputs, ".bin");
-}
-
-/** Expected map artifact path (`.map`), or `undefined` when underivable. */
-export function deriveMapArtifactPath(inputs: ArtifactResolutionInputs): string | undefined {
-  return deriveArtifactPathWithExtension(inputs, ".map");
+/** Expected on-disk path for the given artifact kind, or `undefined` when underivable. */
+export function deriveArtifactPath(
+  kind: ArtifactKind,
+  inputs: ArtifactResolutionInputs
+): string | undefined {
+  return deriveArtifactPathWithExtension(inputs, ARTIFACT_EXTENSIONS[kind]);
 }
 
 // ---------------------------------------------------------------------------
@@ -123,24 +134,24 @@ function readFileModifiedAt(filePath: string): Date | undefined {
 }
 
 /**
- * Resolves one on-disk artifact's status for the given inputs and extension.
+ * Resolves one on-disk artifact's status for the given kind and inputs.
  *
  * - Returns `status: "present"` only when the exact expected file exists.
  * - Returns `status: "missing"` in all other cases: when the path cannot be
  *   derived (missing fields) or when the file does not exist on disk.
  * - Does not fall back to any other artifact path.
  *
- * `label` names the artifact kind in missing-reason messages
+ * The kind names the artifact in missing-reason messages
  * (e.g. "binary" -> "Binary artifact not found ...").
  */
-function resolveFileArtifact(
+export function resolveArtifact(
+  kind: ArtifactKind,
   inputs: ArtifactResolutionInputs,
-  buildContext: BuildContext,
-  extension: string,
-  label: string
-) {
+  buildContext: BuildContext
+): ResolvedArtifact {
+  const label = kind;
   const contextKey = makeContextKey(buildContext);
-  const artifactPath = deriveArtifactPathWithExtension(inputs, extension);
+  const artifactPath = deriveArtifactPath(kind, inputs);
 
   if (!artifactPath) {
     return {
@@ -170,47 +181,6 @@ function resolveFileArtifact(
       `at the expected path: ${artifactPath}`,
     contextKey,
   };
-}
-
-/**
- * Resolves the active binary artifact status for the given inputs.
- * Returns `status: "present"` only when the exact expected `.bin` file exists.
- */
-export function resolveBinaryArtifact(
-  inputs: ArtifactResolutionInputs,
-  buildContext: BuildContext
-): ResolvedArtifact {
-  return resolveFileArtifact(inputs, buildContext, ".bin", "binary");
-}
-
-/**
- * Resolves the active map artifact status for the given inputs.
- * Returns `status: "present"` only when the exact expected `.map` file exists.
- */
-export function resolveMapArtifact(
-  inputs: ArtifactResolutionInputs,
-  buildContext: BuildContext
-): ResolvedArtifact {
-  return resolveFileArtifact(inputs, buildContext, ".map", "map");
-}
-
-// ---------------------------------------------------------------------------
-// Artifact status resolution (no fallback) — compile commands
-// ---------------------------------------------------------------------------
-
-/**
- * Resolves the active compile-commands artifact status for the given inputs.
- *
- * - Returns `status: "present"` only when the exact expected file exists.
- * - Returns `status: "missing"` in all other cases: when the path cannot be
- *   derived (missing fields) or when the file does not exist on disk.
- * - Does not fall back to any other artifact path.
- */
-export function resolveCompileCommandsArtifact(
-  inputs: ArtifactResolutionInputs,
-  buildContext: BuildContext
-): ResolvedArtifact {
-  return resolveFileArtifact(inputs, buildContext, ".cc.json", "compile-commands");
 }
 
 // ---------------------------------------------------------------------------

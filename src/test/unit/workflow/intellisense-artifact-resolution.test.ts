@@ -5,7 +5,7 @@
  *  - deriveArtifactPath: constructs correct path from all inputs
  *  - deriveArtifactPath: returns undefined when any required input is missing
  *  - resolveCompileCommandsArtifact: returns "missing" status when file does not exist
- *  - resolveCompileCommandsArtifact: no-fallback — uses only the exact expected path
+ *  - resolveArtifact: no-fallback — uses only the exact expected path
  *  - buildResolutionInputs: correctly extracts artifact fields from manifest
  *  - buildResolutionInputs: returns undefined for unknown model/target/component
  *  - resolveExecutableArtifact: status and profileResolutionState for all blocked cases
@@ -16,11 +16,7 @@ import * as assert from "assert";
 import * as path from "path";
 import {
   deriveArtifactPath,
-  deriveBinaryArtifactPath,
-  deriveMapArtifactPath,
-  resolveCompileCommandsArtifact,
-  resolveBinaryArtifact,
-  resolveMapArtifact,
+  resolveArtifact,
   resolveExecutableArtifact,
   buildResolutionInputs,
   makeContextKey,
@@ -82,46 +78,46 @@ suite("makeContextKey", () => {
 
 suite("deriveArtifactPath", () => {
   test("constructs the correct .cc.json path with no suffix", () => {
-    const result = deriveArtifactPath(makeInputs());
+    const result = deriveArtifactPath("compile-commands", makeInputs());
     const expected = path.join(ARTIFACTS_ROOT, "model-t", "compile_commands_core.cc.json");
     assert.strictEqual(result, expected);
   });
 
   test("appends artifactSuffix to the basename", () => {
-    const result = deriveArtifactPath(makeInputs({ artifactSuffix: "_emu" }));
+    const result = deriveArtifactPath("compile-commands", makeInputs({ artifactSuffix: "_emu" }));
     const expected = path.join(ARTIFACTS_ROOT, "model-t", "compile_commands_core_emu.cc.json");
     assert.strictEqual(result, expected);
   });
 
   test("returns undefined when artifactsRoot is empty", () => {
-    const result = deriveArtifactPath(makeInputs({ artifactsRoot: "" }));
+    const result = deriveArtifactPath("compile-commands", makeInputs({ artifactsRoot: "" }));
     assert.strictEqual(result, undefined);
   });
 
   test("returns undefined when artifactFolder is undefined", () => {
-    const result = deriveArtifactPath(makeInputs({ artifactFolder: undefined }));
+    const result = deriveArtifactPath("compile-commands", makeInputs({ artifactFolder: undefined }));
     assert.strictEqual(result, undefined);
   });
 
   test("returns undefined when artifactName is undefined", () => {
-    const result = deriveArtifactPath(makeInputs({ artifactName: undefined }));
+    const result = deriveArtifactPath("compile-commands", makeInputs({ artifactName: undefined }));
     assert.strictEqual(result, undefined);
   });
 
   test("treats an empty artifactSuffix as no suffix", () => {
-    const result = deriveArtifactPath(makeInputs({ artifactSuffix: "" }));
+    const result = deriveArtifactPath("compile-commands", makeInputs({ artifactSuffix: "" }));
     const expected = path.join(ARTIFACTS_ROOT, "model-t", "compile_commands_core.cc.json");
     assert.strictEqual(result, expected);
   });
 
   test("uses artifactFolder from model, not model id, as the folder segment", () => {
-    const result = deriveArtifactPath(makeInputs({ artifactFolder: "custom-folder", modelId: "SHOULD_NOT_APPEAR" }));
+    const result = deriveArtifactPath("compile-commands", makeInputs({ artifactFolder: "custom-folder", modelId: "SHOULD_NOT_APPEAR" }));
     assert.ok(result?.includes("custom-folder"), `expected 'custom-folder' in path, got: ${result}`);
     assert.ok(!result?.includes("SHOULD_NOT_APPEAR"), `model id should not appear in path: ${result}`);
   });
 
   test("uses artifactName from component, not component id, as the basename stem", () => {
-    const result = deriveArtifactPath(makeInputs({ artifactName: "cc_override", componentId: "SHOULD_NOT_APPEAR" }));
+    const result = deriveArtifactPath("compile-commands", makeInputs({ artifactName: "cc_override", componentId: "SHOULD_NOT_APPEAR" }));
     assert.ok(result?.includes("cc_override"), `expected 'cc_override' in path, got: ${result}`);
     assert.ok(!result?.includes("SHOULD_NOT_APPEAR"), `component id should not appear in path: ${result}`);
   });
@@ -136,20 +132,20 @@ suite("resolveCompileCommandsArtifact — status and no-fallback", () => {
 
   test("returns missing status when the expected file does not exist", () => {
     const inputs = makeInputs({ artifactsRoot: "/does/not/exist" });
-    const result = resolveCompileCommandsArtifact(inputs, config);
+    const result = resolveArtifact("compile-commands", inputs, config);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.exists, false);
   });
 
   test("includes the expected path in the result even when missing", () => {
     const inputs = makeInputs({ artifactsRoot: "/does/not/exist" });
-    const result = resolveCompileCommandsArtifact(inputs, config);
+    const result = resolveArtifact("compile-commands", inputs, config);
     assert.ok(result.path.endsWith(".cc.json"), `path should end with .cc.json, got: ${result.path}`);
   });
 
   test("reports missing-reason when artifactsRoot is empty (no-fallback: not searching elsewhere)", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveCompileCommandsArtifact(inputs, config);
+    const result = resolveArtifact("compile-commands", inputs, config);
     assert.strictEqual(result.status, "missing");
     assert.ok(
       result.missingReason?.includes("build-artifacts"),
@@ -159,21 +155,21 @@ suite("resolveCompileCommandsArtifact — status and no-fallback", () => {
 
   test("reports missing-reason when artifactFolder is missing", () => {
     const inputs = makeInputs({ artifactFolder: undefined });
-    const result = resolveCompileCommandsArtifact(inputs, config);
+    const result = resolveArtifact("compile-commands", inputs, config);
     assert.strictEqual(result.status, "missing");
     assert.ok(result.missingReason?.includes("artifactFolder"), `expected 'artifactFolder' in missingReason, got: ${result.missingReason}`);
   });
 
   test("reports missing-reason when artifactName is missing", () => {
     const inputs = makeInputs({ artifactName: undefined });
-    const result = resolveCompileCommandsArtifact(inputs, config);
+    const result = resolveArtifact("compile-commands", inputs, config);
     assert.strictEqual(result.status, "missing");
     assert.ok(result.missingReason?.includes("artifactName"), `expected 'artifactName' in missingReason, got: ${result.missingReason}`);
   });
 
   test("contextKey includes active model, target, and component", () => {
     const inputs = makeInputs({ artifactsRoot: "/does/not/exist" });
-    const result = resolveCompileCommandsArtifact(inputs, config);
+    const result = resolveArtifact("compile-commands", inputs, config);
     assert.strictEqual(result.contextKey, "T2T1::hw::core");
   });
 });
@@ -242,19 +238,19 @@ suite("buildResolutionInputs", () => {
 
 suite("artifactsPath change regression", () => {
   test("changing artifactsRoot produces a different path", () => {
-    const pathA = deriveArtifactPath(makeInputs({ artifactsRoot: "/build/v1" }));
-    const pathB = deriveArtifactPath(makeInputs({ artifactsRoot: "/build/v2" }));
+    const pathA = deriveArtifactPath("compile-commands", makeInputs({ artifactsRoot: "/build/v1" }));
+    const pathB = deriveArtifactPath("compile-commands", makeInputs({ artifactsRoot: "/build/v2" }));
     assert.notStrictEqual(pathA, pathB);
   });
 
   test("path with new artifactsRoot starts with the new root", () => {
     const newRoot = "/custom/artifacts";
-    const result = deriveArtifactPath(makeInputs({ artifactsRoot: newRoot }));
+    const result = deriveArtifactPath("compile-commands", makeInputs({ artifactsRoot: newRoot }));
     assert.ok(result?.startsWith(newRoot), `expected path to start with ${newRoot}, got ${result}`);
   });
 
   test("setting artifactsRoot to empty makes path undefined", () => {
-    const result = deriveArtifactPath(makeInputs({ artifactsRoot: "" }));
+    const result = deriveArtifactPath("compile-commands", makeInputs({ artifactsRoot: "" }));
     assert.strictEqual(result, undefined);
   });
 
@@ -268,25 +264,25 @@ suite("artifactsPath change regression", () => {
 
   test("resolveCompileCommandsArtifact reflects artifactsRoot in the returned path", () => {
     const inputs = makeInputs({ artifactsRoot: "/custom/root" });
-    const result = resolveCompileCommandsArtifact(inputs, makeBuildSelection());
+    const result = resolveArtifact("compile-commands", inputs, makeBuildSelection());
     assert.ok(result.path.startsWith("/custom/root"), `expected path to start with /custom/root, got ${result.path}`);
   });
 });
 
 suite("target suffix transition regression", () => {
   test("switching from no-suffix target to suffixed target changes the path", () => {
-    const noSuffix = deriveArtifactPath(makeInputs({ artifactSuffix: "" }));
-    const withSuffix = deriveArtifactPath(makeInputs({ artifactSuffix: "_emu" }));
+    const noSuffix = deriveArtifactPath("compile-commands", makeInputs({ artifactSuffix: "" }));
+    const withSuffix = deriveArtifactPath("compile-commands", makeInputs({ artifactSuffix: "_emu" }));
     assert.notStrictEqual(noSuffix, withSuffix);
   });
 
   test("path with suffix includes the suffix before .cc.json", () => {
-    const result = deriveArtifactPath(makeInputs({ artifactSuffix: "_emu" }));
+    const result = deriveArtifactPath("compile-commands", makeInputs({ artifactSuffix: "_emu" }));
     assert.ok(result?.endsWith("_emu.cc.json"), `expected path to end with '_emu.cc.json', got: ${result}`);
   });
 
   test("path without suffix ends with <artifactName>.cc.json (no extra underscore)", () => {
-    const result = deriveArtifactPath(makeInputs({ artifactSuffix: "" }));
+    const result = deriveArtifactPath("compile-commands", makeInputs({ artifactSuffix: "" }));
     assert.ok(result?.endsWith("compile_commands_core.cc.json"), `expected path to end with 'compile_commands_core.cc.json', got: ${result}`);
   });
 
@@ -321,7 +317,7 @@ suite("target suffix transition regression", () => {
 suite("deriveBinaryArtifactPath", () => {
   test("constructs correct .bin path for all inputs", () => {
     const inputs = makeInputs();
-    const result = deriveBinaryArtifactPath(inputs);
+    const result = deriveArtifactPath("binary", inputs);
     assert.strictEqual(
       result,
       path.join(ARTIFACTS_ROOT, "model-t", "compile_commands_core.bin")
@@ -330,7 +326,7 @@ suite("deriveBinaryArtifactPath", () => {
 
   test("appends artifactSuffix before .bin extension", () => {
     const inputs = makeInputs({ artifactSuffix: "_emu" });
-    const result = deriveBinaryArtifactPath(inputs);
+    const result = deriveArtifactPath("binary", inputs);
     assert.strictEqual(
       result,
       path.join(ARTIFACTS_ROOT, "model-t", "compile_commands_core_emu.bin")
@@ -339,17 +335,17 @@ suite("deriveBinaryArtifactPath", () => {
 
   test("returns undefined when artifactsRoot is missing", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    assert.strictEqual(deriveBinaryArtifactPath(inputs), undefined);
+    assert.strictEqual(deriveArtifactPath("binary", inputs), undefined);
   });
 
   test("returns undefined when artifactFolder is missing", () => {
     const inputs = makeInputs({ artifactFolder: "" });
-    assert.strictEqual(deriveBinaryArtifactPath(inputs), undefined);
+    assert.strictEqual(deriveArtifactPath("binary", inputs), undefined);
   });
 
   test("returns undefined when artifactName is missing", () => {
     const inputs = makeInputs({ artifactName: "" });
-    assert.strictEqual(deriveBinaryArtifactPath(inputs), undefined);
+    assert.strictEqual(deriveArtifactPath("binary", inputs), undefined);
   });
 });
 
@@ -360,7 +356,7 @@ suite("deriveBinaryArtifactPath", () => {
 suite("deriveMapArtifactPath", () => {
   test("constructs correct .map path for all inputs", () => {
     const inputs = makeInputs();
-    const result = deriveMapArtifactPath(inputs);
+    const result = deriveArtifactPath("map", inputs);
     assert.strictEqual(
       result,
       path.join(ARTIFACTS_ROOT, "model-t", "compile_commands_core.map")
@@ -369,7 +365,7 @@ suite("deriveMapArtifactPath", () => {
 
   test("appends artifactSuffix before .map extension", () => {
     const inputs = makeInputs({ artifactSuffix: "_emu" });
-    const result = deriveMapArtifactPath(inputs);
+    const result = deriveArtifactPath("map", inputs);
     assert.strictEqual(
       result,
       path.join(ARTIFACTS_ROOT, "model-t", "compile_commands_core_emu.map")
@@ -378,17 +374,17 @@ suite("deriveMapArtifactPath", () => {
 
   test("returns undefined when artifactsRoot is missing", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    assert.strictEqual(deriveMapArtifactPath(inputs), undefined);
+    assert.strictEqual(deriveArtifactPath("map", inputs), undefined);
   });
 
   test("returns undefined when artifactFolder is missing", () => {
     const inputs = makeInputs({ artifactFolder: "" });
-    assert.strictEqual(deriveMapArtifactPath(inputs), undefined);
+    assert.strictEqual(deriveArtifactPath("map", inputs), undefined);
   });
 
   test("returns undefined when artifactName is missing", () => {
     const inputs = makeInputs({ artifactName: "" });
-    assert.strictEqual(deriveMapArtifactPath(inputs), undefined);
+    assert.strictEqual(deriveArtifactPath("map", inputs), undefined);
   });
 });
 
@@ -401,32 +397,32 @@ suite("resolveBinaryArtifact", () => {
     const inputs = makeInputs({
       artifactsRoot: "/nonexistent/root",
     });
-    const result = resolveBinaryArtifact(inputs, makeBuildSelection());
+    const result = resolveArtifact("binary", inputs, makeBuildSelection());
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.exists, false);
   });
 
   test("sets contextKey matching active config", () => {
     const config = makeBuildSelection({ modelId: "T2T1", targetId: "hw", componentId: "core" });
-    const result = resolveBinaryArtifact(makeInputs(), config);
+    const result = resolveArtifact("binary", makeInputs(), config);
     assert.strictEqual(result.contextKey, "T2T1::hw::core");
   });
 
   test("includes expected path in result", () => {
-    const result = resolveBinaryArtifact(makeInputs(), makeBuildSelection());
+    const result = resolveArtifact("binary", makeInputs(), makeBuildSelection());
     assert.ok(result.path.endsWith(".bin"), `expected .bin path, got: ${result.path}`);
   });
 
   test("returns missing with missingReason when inputs cannot derive path", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveBinaryArtifact(inputs, makeBuildSelection());
+    const result = resolveArtifact("binary", inputs, makeBuildSelection());
     assert.strictEqual(result.status, "missing");
     assert.ok(result.missingReason, "expected a missingReason string");
   });
 
   test("path is empty string when inputs cannot derive path", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveBinaryArtifact(inputs, makeBuildSelection());
+    const result = resolveArtifact("binary", inputs, makeBuildSelection());
     assert.strictEqual(result.path, "");
   });
 });
@@ -440,32 +436,32 @@ suite("resolveMapArtifact", () => {
     const inputs = makeInputs({
       artifactsRoot: "/nonexistent/root",
     });
-    const result = resolveMapArtifact(inputs, makeBuildSelection());
+    const result = resolveArtifact("map", inputs, makeBuildSelection());
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.exists, false);
   });
 
   test("sets contextKey matching active config", () => {
     const config = makeBuildSelection({ modelId: "T2T1", targetId: "hw", componentId: "core" });
-    const result = resolveMapArtifact(makeInputs(), config);
+    const result = resolveArtifact("map", makeInputs(), config);
     assert.strictEqual(result.contextKey, "T2T1::hw::core");
   });
 
   test("includes expected path in result", () => {
-    const result = resolveMapArtifact(makeInputs(), makeBuildSelection());
+    const result = resolveArtifact("map", makeInputs(), makeBuildSelection());
     assert.ok(result.path.endsWith(".map"), `expected .map path, got: ${result.path}`);
   });
 
   test("returns missing with missingReason when inputs cannot derive path", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveMapArtifact(inputs, makeBuildSelection());
+    const result = resolveArtifact("map", inputs, makeBuildSelection());
     assert.strictEqual(result.status, "missing");
     assert.ok(result.missingReason, "expected a missingReason string");
   });
 
   test("path is empty string when inputs cannot derive path", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveMapArtifact(inputs, makeBuildSelection());
+    const result = resolveArtifact("map", inputs, makeBuildSelection());
     assert.strictEqual(result.path, "");
   });
 });

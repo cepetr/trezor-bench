@@ -9,7 +9,7 @@ import * as fs from "fs/promises";
 import * as os from "os";
 import { ManifestService } from "../../manifest/manifest-service";
 import { ManifestState, ManifestStateLoaded } from "../../manifest/manifest-types";
-import { resolveCompileCommandsArtifact, buildResolutionInputs, deriveArtifactPath } from "../../intellisense/artifact-resolution";
+import { resolveArtifact, buildResolutionInputs, deriveArtifactPath } from "../../intellisense/artifact-resolution";
 import { checkProviderReadiness } from "../../intellisense/intellisense-backend";
 import { IntelliSenseService } from "../../intellisense/intellisense-service";
 import { BuildSelection } from "../../build/build-selection";
@@ -170,7 +170,7 @@ function makeBuildSelection(modelId: string, targetId: string, componentId: stri
   return { modelId, targetId, componentId, persistedAt: new Date().toISOString() };
 }
 
-suite("resolveCompileCommandsArtifact – filesystem integration", () => {
+suite("resolveArtifact('compile-commands') – filesystem integration", () => {
   let tmpDir: string;
 
   setup(async () => {
@@ -187,7 +187,7 @@ suite("resolveCompileCommandsArtifact – filesystem integration", () => {
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs, "expected resolution inputs to resolve");
 
-    const artifact = resolveCompileCommandsArtifact(inputs!, config);
+    const artifact = resolveArtifact("compile-commands", inputs!, config);
     assert.strictEqual(artifact.status, "missing");
     assert.strictEqual(artifact.exists, false);
   });
@@ -199,12 +199,12 @@ suite("resolveCompileCommandsArtifact – filesystem integration", () => {
     assert.ok(inputs, "expected resolution inputs to resolve");
 
     // Create the artifact file on disk
-    const artifactPath = deriveArtifactPath(inputs!)!;
+    const artifactPath = deriveArtifactPath("compile-commands", inputs!)!;
     assert.ok(artifactPath, "expected derived artifact path");
     await fs.mkdir(path.dirname(artifactPath), { recursive: true });
     await fs.writeFile(artifactPath, "[]", "utf-8");
 
-    const artifact = resolveCompileCommandsArtifact(inputs!, config);
+    const artifact = resolveArtifact("compile-commands", inputs!, config);
     assert.strictEqual(artifact.status, "present");
     assert.strictEqual(artifact.exists, true);
     assert.strictEqual(artifact.path, artifactPath);
@@ -217,17 +217,17 @@ suite("resolveCompileCommandsArtifact – filesystem integration", () => {
     assert.ok(inputs, "expected resolution inputs to resolve");
 
     // First resolve: file absent
-    const before = resolveCompileCommandsArtifact(inputs!, config);
+    const before = resolveArtifact("compile-commands", inputs!, config);
     assert.strictEqual(before.status, "missing");
 
     // Create the file
-    const artifactPath = deriveArtifactPath(inputs!)!;
+    const artifactPath = deriveArtifactPath("compile-commands", inputs!)!;
     assert.ok(artifactPath, "expected derived artifact path");
     await fs.mkdir(path.dirname(artifactPath), { recursive: true });
     await fs.writeFile(artifactPath, "[]", "utf-8");
 
     // Second resolve: file present
-    const after = resolveCompileCommandsArtifact(inputs!, config);
+    const after = resolveArtifact("compile-commands", inputs!, config);
     assert.strictEqual(after.status, "present");
   });
 
@@ -236,7 +236,7 @@ suite("resolveCompileCommandsArtifact – filesystem integration", () => {
     const config = makeBuildSelection("T2T1", "hw", "core");
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs);
-    const derivedPath = deriveArtifactPath(inputs!);
+    const derivedPath = deriveArtifactPath("compile-commands", inputs!);
     assert.ok(derivedPath, "expected derived path");
     assert.ok(
       derivedPath!.includes("model-t"),
@@ -253,7 +253,7 @@ suite("resolveCompileCommandsArtifact – filesystem integration", () => {
     const config = makeBuildSelection("T2T1", "emu", "core");
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs);
-    const derivedPath = deriveArtifactPath(inputs!);
+    const derivedPath = deriveArtifactPath("compile-commands", inputs!);
     assert.ok(derivedPath, "expected derived path for emu target");
     assert.ok(
       derivedPath!.includes("_emu"),
@@ -267,7 +267,7 @@ suite("resolveCompileCommandsArtifact – filesystem integration", () => {
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs);
 
-    const artifact = resolveCompileCommandsArtifact(inputs!, config);
+    const artifact = resolveArtifact("compile-commands", inputs!, config);
     assert.strictEqual(artifact.contextKey, "T2T1::hw::core");
   });
 
@@ -277,7 +277,7 @@ suite("resolveCompileCommandsArtifact – filesystem integration", () => {
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs);
 
-    const artifact = resolveCompileCommandsArtifact(inputs!, config);
+    const artifact = resolveArtifact("compile-commands", inputs!, config);
     assert.strictEqual(artifact.status, "missing");
     // missingReason should reference the expected path
     assert.ok(

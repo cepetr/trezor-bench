@@ -11,8 +11,6 @@ import { BuildContext, ManifestStateLoaded } from "../manifest/manifest-types";
 import {
   buildResolutionInputs,
   deriveArtifactPath,
-  deriveBinaryArtifactPath,
-  deriveMapArtifactPath,
   resolveExecutableArtifact,
 } from "./artifact-resolution";
 
@@ -73,9 +71,9 @@ export function resolveArtifactWatchScopes(
   const scopesByFolder = new Map<string, Set<string>>();
   const inputs = buildResolutionInputs(manifest, buildContext, artifactsRoot);
   if (inputs) {
-    addWatchPath(scopesByFolder, artifactsRoot, deriveArtifactPath(inputs));
-    addWatchPath(scopesByFolder, artifactsRoot, deriveBinaryArtifactPath(inputs));
-    addWatchPath(scopesByFolder, artifactsRoot, deriveMapArtifactPath(inputs));
+    addWatchPath(scopesByFolder, artifactsRoot, deriveArtifactPath("compile-commands", inputs));
+    addWatchPath(scopesByFolder, artifactsRoot, deriveArtifactPath("binary", inputs));
+    addWatchPath(scopesByFolder, artifactsRoot, deriveArtifactPath("map", inputs));
   }
 
   const executableArtifact = resolveExecutableArtifact(
