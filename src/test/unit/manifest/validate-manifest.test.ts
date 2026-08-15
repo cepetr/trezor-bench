@@ -1244,6 +1244,17 @@ components:
     assert.strictEqual(result.hasDebugBlockingIssues, false);
   });
 
+  test("component debug profile vars reject obsolete tfTools variables", () => {
+    const source = baseManifest(`    debug:
+      - name: gdb
+        template: gdb.json
+        vars:
+          endpoint: "\${tfTools.artifactPath}"`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((entry) => entry.severity === "error" && entry.message.includes("obsolete ${tfTools.*}")));
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+  });
+
   test("multiple debug profiles on same component are parsed in order", () => {
     const source = baseManifest(`    debug:
       - name: first

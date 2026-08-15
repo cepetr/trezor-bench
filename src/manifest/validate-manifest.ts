@@ -523,6 +523,20 @@ function validateComponentDebugEntries(
           varsHasError = true;
           break;
         }
+        if (valNode.value.includes("${tfTools.")) {
+          const valRange = valNode as unknown as { range?: [number, number, number] };
+          issues.push(
+            issue(
+              "error",
+              "invalid-type",
+              `${contextLabel}: vars value for key "${keyNode.value}" uses obsolete \${tfTools.*} variable syntax`,
+              toVsRange(lineCounter, valRange?.range)
+            )
+          );
+          hasDebugBlockingIssuesRef.value = true;
+          varsHasError = true;
+          break;
+        }
         vars[keyNode.value] = valNode.value;
       }
       if (varsHasError) {
