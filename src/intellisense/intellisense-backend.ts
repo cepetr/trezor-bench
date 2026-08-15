@@ -6,11 +6,11 @@ import { IntelliSenseProviderReadiness } from "./intellisense-types";
 import {
   CLANGD_EXTENSION_ID,
   isClangdExtensionInstalled,
-} from "./clangd-provider";
+} from "./clangd-backend";
 import {
   CPPTOOLS_EXTENSION_ID,
   evaluateCpptoolsReadiness,
-} from "./cpptools-provider";
+} from "./cpptools-backend";
 
 // ---------------------------------------------------------------------------
 // IntelliSense backend selection

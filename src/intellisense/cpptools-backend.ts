@@ -1,5 +1,5 @@
 /**
- * cpptools IntelliSense backend adapter: readiness evaluation against the
+ * cpptools IntelliSense backend: readiness evaluation against the
  * custom-configuration API, the workspace provider-setting fix, and the
  * configuration provider that serves compile-commands payloads.
  */
@@ -149,20 +149,20 @@ export async function applyProviderSettingFix(
 }
 
 // ---------------------------------------------------------------------------
-// Cpptools provider adapter
+// Cpptools backend
 // ---------------------------------------------------------------------------
 
 /**
  * Implements the cpptools `CustomConfigurationProvider` interface.
  *
- * The adapter:
+ * The backend:
  *  - Registers with the cpptools API on first `activate()` call.
  *  - Serves per-file `SourceFileConfiguration` objects from the latest
  *    parsed `ProviderPayload`.
  *  - Returns the browse-configuration snapshot from the latest payload.
  *  - Accepts an injected `apiAccessor` factory for test injection.
  */
-export class CpptoolsProviderAdapter implements CpptoolsCustomConfigurationProvider {
+export class CpptoolsBackend implements CpptoolsCustomConfigurationProvider {
   readonly name = "Trezor Bench";
   readonly extensionId = TF_TOOLS_PROVIDER_ID;
 
@@ -186,7 +186,7 @@ export class CpptoolsProviderAdapter implements CpptoolsCustomConfigurationProvi
 
   /**
    * Attempts to register with cpptools. Safe to call multiple times;
-   * registers only once per adapter instance.
+   * registers only once per backend instance.
    */
   async activate(): Promise<void> {
     if (this._cpptoolsApi) {

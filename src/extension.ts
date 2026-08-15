@@ -75,7 +75,7 @@ import {
 } from "./tasks/build-task-provider";
 import { IntelliSenseService } from "./intellisense/intellisense-service";
 import { RefreshTrigger } from "./intellisense/intellisense-types";
-import { applyProviderSettingFix } from "./intellisense/cpptools-provider";
+import { applyProviderSettingFix } from "./intellisense/cpptools-backend";
 import { ActiveArtifactFileWatcher } from "./intellisense/artifact-file-watcher";
 import { ExcludedFilesService } from "./intellisense/excluded-files-service";
 import { ExcludedFilesRefreshCoordinator } from "./intellisense/excluded-files-refresh";

@@ -1,5 +1,5 @@
 /**
- * Unit tests for CpptoolsProviderAdapter in cpptools-provider.ts
+ * Unit tests for CpptoolsBackend in cpptools-backend.ts
  *
  * Covers:
  *  - getLastPayload before and after applyPayload
@@ -19,9 +19,9 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import {
-  CpptoolsProviderAdapter,
+  CpptoolsBackend,
   PROVIDER_SETTING_FIX,
-} from "../../../intellisense/cpptools-provider";
+} from "../../../intellisense/cpptools-backend";
 import { ProviderPayload, ParsedCompileEntry, BrowseConfigurationSnapshot } from "../../../intellisense/intellisense-types";
 
 // ---------------------------------------------------------------------------
@@ -73,24 +73,24 @@ function makeUri(fsPath: string): vscode.Uri {
 // getLastPayload
 // ---------------------------------------------------------------------------
 
-suite("CpptoolsProviderAdapter – getLastPayload", () => {
+suite("CpptoolsBackend – getLastPayload", () => {
   test("returns undefined before any payload is applied", () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    assert.strictEqual(adapter.getLastPayload(), undefined);
+    const backend = new CpptoolsBackend(() => undefined);
+    assert.strictEqual(backend.getLastPayload(), undefined);
   });
 
   test("returns the applied payload after applyPayload", () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    const backend = new CpptoolsBackend(() => undefined);
     const payload = makePayload([makeEntry("/workspace/main.c")]);
-    adapter.applyPayload(payload);
-    assert.strictEqual(adapter.getLastPayload(), payload);
+    backend.applyPayload(payload);
+    assert.strictEqual(backend.getLastPayload(), payload);
   });
 
   test("returns undefined after clearPayload", () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    adapter.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
-    adapter.clearPayload();
-    assert.strictEqual(adapter.getLastPayload(), undefined);
+    const backend = new CpptoolsBackend(() => undefined);
+    backend.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
+    backend.clearPayload();
+    assert.strictEqual(backend.getLastPayload(), undefined);
   });
 });
 
@@ -98,7 +98,7 @@ suite("CpptoolsProviderAdapter – getLastPayload", () => {
 // activate – registration and late replay
 // ---------------------------------------------------------------------------
 
-suite("CpptoolsProviderAdapter – activate", () => {
+suite("CpptoolsBackend – activate", () => {
   test("registers the provider when async api accessor resolves", async () => {
     let registeredProvider: unknown;
     const api = {
@@ -111,10 +111,10 @@ suite("CpptoolsProviderAdapter – activate", () => {
       dispose() {},
     };
 
-    const adapter = new CpptoolsProviderAdapter(async () => api);
-    await adapter.activate();
+    const backend = new CpptoolsBackend(async () => api);
+    await backend.activate();
 
-    assert.strictEqual(registeredProvider, adapter);
+    assert.strictEqual(registeredProvider, backend);
   });
 
   test("replays payload notifications after late registration", async () => {
@@ -135,10 +135,10 @@ suite("CpptoolsProviderAdapter – activate", () => {
       dispose() {},
     };
 
-    const adapter = new CpptoolsProviderAdapter(async () => api);
-    adapter.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
+    const backend = new CpptoolsBackend(async () => api);
+    backend.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
 
-    await adapter.activate();
+    await backend.activate();
 
     assert.deepStrictEqual(calls, [
       "register",
@@ -149,18 +149,18 @@ suite("CpptoolsProviderAdapter – activate", () => {
   });
 
   test("returns without registration when api accessor resolves to undefined", async () => {
-    const adapter = new CpptoolsProviderAdapter(async () => undefined);
-    await adapter.activate();
-    assert.strictEqual(adapter.getLastPayload(), undefined);
+    const backend = new CpptoolsBackend(async () => undefined);
+    await backend.activate();
+    assert.strictEqual(backend.getLastPayload(), undefined);
   });
 
   test("does not throw when v7 api acquisition is unsupported", async () => {
-    const adapter = new CpptoolsProviderAdapter(async () => {
+    const backend = new CpptoolsBackend(async () => {
       throw new RangeError("Invalid version");
     });
 
     await assert.doesNotReject(async () => {
-      await adapter.activate();
+      await backend.activate();
     });
   });
 });
@@ -169,39 +169,39 @@ suite("CpptoolsProviderAdapter – activate", () => {
 // canProvideConfiguration
 // ---------------------------------------------------------------------------
 
-suite("CpptoolsProviderAdapter – canProvideConfiguration", () => {
+suite("CpptoolsBackend – canProvideConfiguration", () => {
   test("returns false before any payload is applied", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    const result = await adapter.canProvideConfiguration(makeUri("/workspace/main.c"));
+    const backend = new CpptoolsBackend(() => undefined);
+    const result = await backend.canProvideConfiguration(makeUri("/workspace/main.c"));
     assert.strictEqual(result, false);
   });
 
   test("returns true for a URI present in the payload", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    adapter.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
-    const result = await adapter.canProvideConfiguration(makeUri("/workspace/main.c"));
+    const backend = new CpptoolsBackend(() => undefined);
+    backend.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
+    const result = await backend.canProvideConfiguration(makeUri("/workspace/main.c"));
     assert.strictEqual(result, true);
   });
 
   test("returns false for a URI not present in the payload", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    adapter.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
-    const result = await adapter.canProvideConfiguration(makeUri("/workspace/unknown.c"));
+    const backend = new CpptoolsBackend(() => undefined);
+    backend.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
+    const result = await backend.canProvideConfiguration(makeUri("/workspace/unknown.c"));
     assert.strictEqual(result, false);
   });
 
   test("returns false for a header when only the including source file is indexed", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    adapter.applyPayload(makePayload([makeEntry("/workspace/core/embed/main.c")]));
-    const result = await adapter.canProvideConfiguration(makeUri("/workspace/core/embed/mpu.h"));
+    const backend = new CpptoolsBackend(() => undefined);
+    backend.applyPayload(makePayload([makeEntry("/workspace/core/embed/main.c")]));
+    const result = await backend.canProvideConfiguration(makeUri("/workspace/core/embed/mpu.h"));
     assert.strictEqual(result, false);
   });
 
   test("returns false after clearPayload", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    adapter.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
-    adapter.clearPayload();
-    const result = await adapter.canProvideConfiguration(makeUri("/workspace/main.c"));
+    const backend = new CpptoolsBackend(() => undefined);
+    backend.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
+    backend.clearPayload();
+    const result = await backend.canProvideConfiguration(makeUri("/workspace/main.c"));
     assert.strictEqual(result, false);
   });
 });
@@ -210,121 +210,121 @@ suite("CpptoolsProviderAdapter – canProvideConfiguration", () => {
 // provideConfigurations – per-file fields
 // ---------------------------------------------------------------------------
 
-suite("CpptoolsProviderAdapter – provideConfigurations", () => {
+suite("CpptoolsBackend – provideConfigurations", () => {
   test("returns empty array when no payload is set", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    const items = await adapter.provideConfigurations([makeUri("/workspace/main.c")]);
+    const backend = new CpptoolsBackend(() => undefined);
+    const items = await backend.provideConfigurations([makeUri("/workspace/main.c")]);
     assert.deepStrictEqual(items, []);
   });
 
   test("returns empty array for URI not in the payload", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    adapter.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
-    const items = await adapter.provideConfigurations([makeUri("/workspace/unknown.c")]);
+    const backend = new CpptoolsBackend(() => undefined);
+    backend.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
+    const items = await backend.provideConfigurations([makeUri("/workspace/unknown.c")]);
     assert.deepStrictEqual(items, []);
   });
 
   test("returns empty array for a header that is not indexed in the payload", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    adapter.applyPayload(makePayload([makeEntry("/workspace/core/embed/main.c")]));
-    const items = await adapter.provideConfigurations([makeUri("/workspace/core/embed/mpu.h")]);
+    const backend = new CpptoolsBackend(() => undefined);
+    backend.applyPayload(makePayload([makeEntry("/workspace/core/embed/main.c")]));
+    const items = await backend.provideConfigurations([makeUri("/workspace/core/embed/mpu.h")]);
     assert.deepStrictEqual(items, []);
   });
 
   test("returns correct includePath for a known URI", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    const backend = new CpptoolsBackend(() => undefined);
     const entry = makeEntry("/workspace/main.c", { includePaths: ["/workspace/include", "/workspace/vendor"] });
-    adapter.applyPayload(makePayload([entry]));
-    const items = await adapter.provideConfigurations([makeUri("/workspace/main.c")]);
+    backend.applyPayload(makePayload([entry]));
+    const items = await backend.provideConfigurations([makeUri("/workspace/main.c")]);
     assert.strictEqual(items.length, 1);
     assert.deepStrictEqual(items[0].configuration.includePath, ["/workspace/include", "/workspace/vendor"]);
   });
 
   test("returns correct defines for a known URI", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    const backend = new CpptoolsBackend(() => undefined);
     const entry = makeEntry("/workspace/main.c", { defines: ["TREZOR_MODEL_T", "NDEBUG"] });
-    adapter.applyPayload(makePayload([entry]));
-    const items = await adapter.provideConfigurations([makeUri("/workspace/main.c")]);
+    backend.applyPayload(makePayload([entry]));
+    const items = await backend.provideConfigurations([makeUri("/workspace/main.c")]);
     assert.strictEqual(items.length, 1);
     assert.deepStrictEqual(items[0].configuration.defines, ["TREZOR_MODEL_T", "NDEBUG"]);
   });
 
   test("returns 'c11' standard for a .c entry with -std=c11", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    const backend = new CpptoolsBackend(() => undefined);
     const entry = makeEntry("/workspace/main.c", { standard: "c11" });
-    adapter.applyPayload(makePayload([entry]));
-    const items = await adapter.provideConfigurations([makeUri("/workspace/main.c")]);
+    backend.applyPayload(makePayload([entry]));
+    const items = await backend.provideConfigurations([makeUri("/workspace/main.c")]);
     assert.strictEqual(items[0].configuration.standard, "c11");
   });
 
   test("returns forcedInclude for a .c entry", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    const backend = new CpptoolsBackend(() => undefined);
     const entry = makeEntry("/workspace/main.c", { forcedIncludes: ["/workspace/config.h"] });
-    adapter.applyPayload(makePayload([entry]));
-    const items = await adapter.provideConfigurations([makeUri("/workspace/main.c")]);
+    backend.applyPayload(makePayload([entry]));
+    const items = await backend.provideConfigurations([makeUri("/workspace/main.c")]);
     assert.deepStrictEqual(items[0].configuration.forcedInclude, ["/workspace/config.h"]);
   });
 
   test("returns compilerPath for a .c entry", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    const backend = new CpptoolsBackend(() => undefined);
     const entry = makeEntry("/workspace/main.c", { compilerPath: "arm-none-eabi-gcc" });
-    adapter.applyPayload(makePayload([entry]));
-    const items = await adapter.provideConfigurations([makeUri("/workspace/main.c")]);
+    backend.applyPayload(makePayload([entry]));
+    const items = await backend.provideConfigurations([makeUri("/workspace/main.c")]);
     assert.strictEqual(items[0].configuration.compilerPath, "arm-none-eabi-gcc");
   });
 
   test("returns gcc-c intelliSenseMode for C entry with gcc compiler", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    const backend = new CpptoolsBackend(() => undefined);
     const entry = makeEntry("/workspace/main.c", {
       compilerPath: "arm-none-eabi-gcc",
       languageFamily: "c",
     });
-    adapter.applyPayload(makePayload([entry]));
-    const items = await adapter.provideConfigurations([makeUri("/workspace/main.c")]);
+    backend.applyPayload(makePayload([entry]));
+    const items = await backend.provideConfigurations([makeUri("/workspace/main.c")]);
     assert.strictEqual(items[0].configuration.intelliSenseMode, "gcc-c");
   });
 
   test("returns gcc-cpp intelliSenseMode for C++ entry with g++ compiler", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    const backend = new CpptoolsBackend(() => undefined);
     const entry = makeEntry("/workspace/sha256.cpp", {
       compilerPath: "arm-none-eabi-g++",
       languageFamily: "cpp",
     });
-    adapter.applyPayload(makePayload([entry]));
-    const items = await adapter.provideConfigurations([makeUri("/workspace/sha256.cpp")]);
+    backend.applyPayload(makePayload([entry]));
+    const items = await backend.provideConfigurations([makeUri("/workspace/sha256.cpp")]);
     assert.strictEqual(items[0].configuration.intelliSenseMode, "gcc-cpp");
   });
 
   test("returns clang-c intelliSenseMode for C entry with clang compiler", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    const backend = new CpptoolsBackend(() => undefined);
     const entry = makeEntry("/workspace/main.c", {
       compilerPath: "clang",
       languageFamily: "c",
     });
-    adapter.applyPayload(makePayload([entry]));
-    const items = await adapter.provideConfigurations([makeUri("/workspace/main.c")]);
+    backend.applyPayload(makePayload([entry]));
+    const items = await backend.provideConfigurations([makeUri("/workspace/main.c")]);
     assert.strictEqual(items[0].configuration.intelliSenseMode, "clang-c");
   });
 
   test("returns clang-cpp intelliSenseMode for C++ entry with clang++ compiler", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    const backend = new CpptoolsBackend(() => undefined);
     const entry = makeEntry("/workspace/foo.cpp", {
       compilerPath: "clang++",
       languageFamily: "cpp",
     });
-    adapter.applyPayload(makePayload([entry]));
-    const items = await adapter.provideConfigurations([makeUri("/workspace/foo.cpp")]);
+    backend.applyPayload(makePayload([entry]));
+    const items = await backend.provideConfigurations([makeUri("/workspace/foo.cpp")]);
     assert.strictEqual(items[0].configuration.intelliSenseMode, "clang-cpp");
   });
 
   test("handles multiple URIs in a single call", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    const backend = new CpptoolsBackend(() => undefined);
     const entries = [
       makeEntry("/workspace/a.c"),
       makeEntry("/workspace/b.c", { defines: ["B_DEFINE"] }),
     ];
-    adapter.applyPayload(makePayload(entries));
-    const items = await adapter.provideConfigurations([
+    backend.applyPayload(makePayload(entries));
+    const items = await backend.provideConfigurations([
       makeUri("/workspace/a.c"),
       makeUri("/workspace/b.c"),
       makeUri("/workspace/unknown.c"),
@@ -339,25 +339,25 @@ suite("CpptoolsProviderAdapter – provideConfigurations", () => {
 // canProvideBrowseConfiguration
 // ---------------------------------------------------------------------------
 
-suite("CpptoolsProviderAdapter – canProvideBrowseConfiguration", () => {
+suite("CpptoolsBackend – canProvideBrowseConfiguration", () => {
   test("returns false before any payload is applied", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    const result = await adapter.canProvideBrowseConfiguration();
+    const backend = new CpptoolsBackend(() => undefined);
+    const result = await backend.canProvideBrowseConfiguration();
     assert.strictEqual(result, false);
   });
 
   test("returns true after applyPayload", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    adapter.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
-    const result = await adapter.canProvideBrowseConfiguration();
+    const backend = new CpptoolsBackend(() => undefined);
+    backend.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
+    const result = await backend.canProvideBrowseConfiguration();
     assert.strictEqual(result, true);
   });
 
   test("returns false after clearPayload", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    adapter.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
-    adapter.clearPayload();
-    const result = await adapter.canProvideBrowseConfiguration();
+    const backend = new CpptoolsBackend(() => undefined);
+    backend.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
+    backend.clearPayload();
+    const result = await backend.canProvideBrowseConfiguration();
     assert.strictEqual(result, false);
   });
 });
@@ -366,36 +366,36 @@ suite("CpptoolsProviderAdapter – canProvideBrowseConfiguration", () => {
 // provideBrowseConfiguration
 // ---------------------------------------------------------------------------
 
-suite("CpptoolsProviderAdapter – provideBrowseConfiguration", () => {
+suite("CpptoolsBackend – provideBrowseConfiguration", () => {
   test("returns empty browsePath when no payload is set", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    const result = await adapter.provideBrowseConfiguration();
+    const backend = new CpptoolsBackend(() => undefined);
+    const result = await backend.provideBrowseConfiguration();
     assert.deepStrictEqual(result.browsePath, []);
   });
 
   test("returns browsePaths from the payload browse snapshot", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    const backend = new CpptoolsBackend(() => undefined);
     const entry = makeEntry("/workspace/main.c", { includePaths: ["/workspace/include", "/workspace/vendor"] });
     const payload = makePayload([entry]);
-    adapter.applyPayload(payload);
-    const result = await adapter.provideBrowseConfiguration();
+    backend.applyPayload(payload);
+    const result = await backend.provideBrowseConfiguration();
     assert.ok(result.browsePath.includes("/workspace/include"), "expected /workspace/include in browsePath");
     assert.ok(result.browsePath.includes("/workspace/vendor"), "expected /workspace/vendor in browsePath");
   });
 
   test("returns compilerPath from browse snapshot", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    const backend = new CpptoolsBackend(() => undefined);
     const entry = makeEntry("/workspace/main.c", { compilerPath: "arm-none-eabi-gcc" });
-    adapter.applyPayload(makePayload([entry]));
-    const result = await adapter.provideBrowseConfiguration();
+    backend.applyPayload(makePayload([entry]));
+    const result = await backend.provideBrowseConfiguration();
     assert.strictEqual(result.compilerPath, "arm-none-eabi-gcc");
   });
 
   test("returns empty browsePath after clearPayload", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    adapter.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
-    adapter.clearPayload();
-    const result = await adapter.provideBrowseConfiguration();
+    const backend = new CpptoolsBackend(() => undefined);
+    backend.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
+    backend.clearPayload();
+    const result = await backend.provideBrowseConfiguration();
     assert.deepStrictEqual(result.browsePath, []);
   });
 });
@@ -404,10 +404,10 @@ suite("CpptoolsProviderAdapter – provideBrowseConfiguration", () => {
 // canProvideBrowseConfigurationsPerFolder
 // ---------------------------------------------------------------------------
 
-suite("CpptoolsProviderAdapter – canProvideBrowseConfigurationsPerFolder", () => {
+suite("CpptoolsBackend – canProvideBrowseConfigurationsPerFolder", () => {
   test("always returns false", async () => {
-    const adapter = new CpptoolsProviderAdapter(() => undefined);
-    const result = await adapter.canProvideBrowseConfigurationsPerFolder();
+    const backend = new CpptoolsBackend(() => undefined);
+    const result = await backend.canProvideBrowseConfigurationsPerFolder();
     assert.strictEqual(result, false);
   });
 });

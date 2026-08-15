@@ -15,9 +15,9 @@ import {
   applyProviderSettingFix,
   PROVIDER_SETTING_FIX,
   CPPTOOLS_EXTENSION_ID,
-} from "../../../intellisense/cpptools-provider";
+} from "../../../intellisense/cpptools-backend";
 import { checkProviderReadiness } from "../../../intellisense/intellisense-backend";
-import { CLANGD_EXTENSION_ID } from "../../../intellisense/clangd-provider";
+import { CLANGD_EXTENSION_ID } from "../../../intellisense/clangd-backend";
 
 // ---------------------------------------------------------------------------
 // Access the vscode mock so we can control extension and configuration state

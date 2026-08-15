@@ -1,5 +1,5 @@
 /**
- * clangd IntelliSense backend adapter: maintains the managed `.tbench`
+ * clangd IntelliSense backend: maintains the managed `.tbench`
  * compile-commands link and `.clangd` configuration, and restarts clangd
  * when the database changes.
  */
@@ -57,14 +57,14 @@ export function isClangdExtensionInstalled(): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// clangd provider adapter
+// clangd backend
 // ---------------------------------------------------------------------------
 
 /**
  * Points clangd at the active compile database by symlinking it to a stable
  * workspace path and restarting the language server.
  */
-export class ClangdProviderAdapter {
+export class ClangdBackend {
   private _linkedArtifactPath: string | undefined;
 
   constructor(

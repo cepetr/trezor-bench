@@ -22,8 +22,8 @@ import {
   IntelliSenseProviderReadiness,
   ProviderPayload,
 } from "../../../intellisense/intellisense-types";
-import { CpptoolsProviderAdapter } from "../../../intellisense/cpptools-provider";
-import { ClangdProviderAdapter, CLANGD_EXTENSION_ID } from "../../../intellisense/clangd-provider";
+import { CpptoolsBackend } from "../../../intellisense/cpptools-backend";
+import { ClangdBackend, CLANGD_EXTENSION_ID } from "../../../intellisense/clangd-backend";
 import { makeIntelliSenseLoadedState, primaryCoreFixturePath } from "../workflow-test-helpers";
 import { ActiveConfig } from "../../../configuration/active-config";
 
@@ -42,10 +42,10 @@ function intellisenseValidArtifactsRoot(): string {
 }
 
 // ---------------------------------------------------------------------------
-// Stub adapter
+// Stub backend
 // ---------------------------------------------------------------------------
 
-class StubAdapter extends CpptoolsProviderAdapter {
+class StubCpptoolsBackend extends CpptoolsBackend {
   public payloadsApplied: Array<ProviderPayload | undefined> = [];
   public clearCount = 0;
   private _lastPayload: ProviderPayload | undefined;
@@ -70,7 +70,7 @@ class StubAdapter extends CpptoolsProviderAdapter {
   }
 }
 
-class StubClangdAdapter extends ClangdProviderAdapter {
+class StubClangdBackend extends ClangdBackend {
   public appliedPaths: string[] = [];
   public clearCount = 0;
 
@@ -137,8 +137,8 @@ async function awaitRefresh(svc: IntelliSenseService): Promise<[ActiveCompileCom
 
 suite("IntelliSenseService — refresh serialization", () => {
   test("emits onDidRefresh after scheduleRefresh", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
     const p = awaitRefresh(svc);
     svc.scheduleRefresh("activation");
     const [artifact] = await p;
@@ -148,8 +148,8 @@ suite("IntelliSenseService — refresh serialization", () => {
   });
 
   test("emits null artifact when no manifest is set", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
     const p = awaitRefresh(svc);
     svc.scheduleRefresh("activation");
     const [artifact] = await p;
@@ -158,8 +158,8 @@ suite("IntelliSenseService — refresh serialization", () => {
   });
 
   test("emits missing-status artifact when artifactsRoot is empty", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setActiveConfig(makeConfig());
     svc.setArtifactsRoot("");
@@ -171,8 +171,8 @@ suite("IntelliSenseService — refresh serialization", () => {
   });
 
   test("emits missing-status when expected file does not exist on disk", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setActiveConfig(makeConfig());
     svc.setArtifactsRoot("/nonexistent/path");
@@ -190,18 +190,18 @@ suite("IntelliSenseService — refresh serialization", () => {
 
 suite("IntelliSenseService — stale-state clearing", () => {
   test("calls clearPayload when artifact is missing after a previous apply", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
 
-    // Simulate a previously applied payload in the adapter.
+    // Simulate a previously applied payload in the backend.
     const fakePayload = {
       artifactPath: "/old/compile_commands.cc.json",
       contextKey: "T2T1::hw::core",
       entriesByFile: new Map(),
       browseSnapshot: { browsePaths: [], compilerPath: undefined, compilerArgs: [] },
     };
-    adapter.applyPayload(fakePayload);
-    adapter.payloadsApplied = []; // reset tracking
+    backend.applyPayload(fakePayload);
+    backend.payloadsApplied = []; // reset tracking
 
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setActiveConfig(makeConfig());
@@ -211,13 +211,13 @@ suite("IntelliSenseService — stale-state clearing", () => {
     svc.scheduleRefresh("active-config-change");
     await p;
 
-    assert.ok(adapter.clearCount > 0, "expected clearPayload to be called at least once");
+    assert.ok(backend.clearCount > 0, "expected clearPayload to be called at least once");
     svc.dispose();
   });
 
   test("does not apply payload when artifact is missing", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setActiveConfig(makeConfig());
     svc.setArtifactsRoot("/nonexistent/path");
@@ -226,14 +226,14 @@ suite("IntelliSenseService — stale-state clearing", () => {
     svc.scheduleRefresh("activation");
     await p;
 
-    assert.strictEqual(adapter.payloadsApplied.length, 0, "should not apply payload when artifact is missing");
+    assert.strictEqual(backend.payloadsApplied.length, 0, "should not apply payload when artifact is missing");
     svc.dispose();
   });
 
   test("does not apply payload when provider readiness has a warning", async () => {
     // Provider readiness warning appears when cpptools is absent (which is true in unit-test env)
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setActiveConfig(makeConfig());
     svc.setArtifactsRoot("/nonexistent/path");
@@ -244,13 +244,13 @@ suite("IntelliSenseService — stale-state clearing", () => {
 
     // In unit-test env cpptools is absent → provider warning expected
     assert.notStrictEqual(readiness.warningState, "none");
-    assert.strictEqual(adapter.payloadsApplied.length, 0);
+    assert.strictEqual(backend.payloadsApplied.length, 0);
     svc.dispose();
   });
 
   test("getLastArtifact reflects the most recent refresh result", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setActiveConfig(makeConfig());
     svc.setArtifactsRoot("/nonexistent/path");
@@ -265,8 +265,8 @@ suite("IntelliSenseService — stale-state clearing", () => {
   });
 
   test("getLastReadiness is populated after refresh", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
 
     const p = awaitRefresh(svc);
     svc.scheduleRefresh("activation");
@@ -284,8 +284,8 @@ suite("IntelliSenseService — stale-state clearing", () => {
 
 suite("IntelliSenseService — no-fallback through context key", () => {
   test("artifact contextKey reflects the active config at refresh time", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setActiveConfig(makeConfig({ modelId: "T3W1", targetId: "emu", componentId: "prodtest" }));
     svc.setArtifactsRoot("/nonexistent/path");
@@ -299,8 +299,8 @@ suite("IntelliSenseService — no-fallback through context key", () => {
   });
 
   test("does not reuse previous artifact path after context change", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setActiveConfig(makeConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" }));
     svc.setArtifactsRoot("/nonexistent/path");
@@ -330,8 +330,8 @@ suite("IntelliSenseService — no-fallback through context key", () => {
 
 suite("IntelliSenseService — eager parsing with real compile-commands fixture", () => {
   test("applies a parsed payload when the artifact exists on disk", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
 
     // Use real fixture path so parseCompileCommandsFile can read the file.
     svc.setManifest(makeIntelliSenseLoadedState());
@@ -357,8 +357,8 @@ suite("IntelliSenseService — eager parsing with real compile-commands fixture"
   });
 
   test("artifact path matches the expected .cc.json path", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setActiveConfig(makeConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" }));
     const artifactsRoot = intellisenseValidArtifactsRoot();
@@ -374,8 +374,8 @@ suite("IntelliSenseService — eager parsing with real compile-commands fixture"
   });
 
   test("getLastArtifact reflects found status when fixture exists on disk", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setActiveConfig(makeConfig());
     svc.setArtifactsRoot(intellisenseValidArtifactsRoot());
@@ -395,8 +395,8 @@ suite("IntelliSenseService — eager parsing with real compile-commands fixture"
 
 suite("IntelliSenseService — latest-refresh-wins serialization", () => {
   test("two consecutive scheduleRefresh calls both emit onDidRefresh", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setActiveConfig(makeConfig());
     svc.setArtifactsRoot("/nonexistent");
@@ -416,8 +416,8 @@ suite("IntelliSenseService — latest-refresh-wins serialization", () => {
   });
 
   test("final state after two calls reflects the second activeConfig", async () => {
-    const adapter = new StubAdapter();
-    const svc = new IntelliSenseService(adapter);
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setArtifactsRoot("/nonexistent");
 
@@ -458,9 +458,9 @@ suite("IntelliSenseService — clangd backend", () => {
   test("applies compile database through clangd when cpptools is unavailable", async () => {
     stubClangdOnlyBackend();
 
-    const cpptoolsAdapter = new StubAdapter();
-    const clangdAdapter = new StubClangdAdapter();
-    const svc = new IntelliSenseService(cpptoolsAdapter, clangdAdapter);
+    const cpptoolsBackend = new StubCpptoolsBackend();
+    const clangdBackend = new StubClangdBackend();
+    const svc = new IntelliSenseService(cpptoolsBackend, clangdBackend);
 
     svc.setWorkspaceFolder(intellisenseValidWorkspaceFolder());
     svc.setManifest(makeIntelliSenseLoadedState());
@@ -473,9 +473,9 @@ suite("IntelliSenseService — clangd backend", () => {
 
     assert.strictEqual(readiness.warningState, "none");
     assert.strictEqual(artifact?.status, "valid");
-    assert.strictEqual(cpptoolsAdapter.payloadsApplied.length, 0);
-    assert.strictEqual(clangdAdapter.appliedPaths.length, 1);
-    assert.strictEqual(clangdAdapter.appliedPaths[0], artifact?.path);
+    assert.strictEqual(cpptoolsBackend.payloadsApplied.length, 0);
+    assert.strictEqual(clangdBackend.appliedPaths.length, 1);
+    assert.strictEqual(clangdBackend.appliedPaths[0], artifact?.path);
     assert.ok(svc.getLastPayload());
     svc.dispose();
   });
@@ -484,7 +484,7 @@ suite("IntelliSenseService — clangd backend", () => {
     stubClangdOnlyBackend();
 
     // Simulate a workspace where a previous session left a managed compile
-    // database link behind; the freshly constructed adapter has no in-memory
+    // database link behind; the freshly constructed backend has no in-memory
     // record of it.
     const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-clangd-stale-"));
     try {
@@ -496,8 +496,8 @@ suite("IntelliSenseService — clangd backend", () => {
         "file"
       );
 
-      const clangdAdapter = new StubClangdAdapter();
-      const svc = new IntelliSenseService(new StubAdapter(), clangdAdapter);
+      const clangdBackend = new StubClangdBackend();
+      const svc = new IntelliSenseService(new StubCpptoolsBackend(), clangdBackend);
       svc.setWorkspaceFolder({
         uri: vscodeMock.Uri.file(tmpRoot),
         name: path.basename(tmpRoot),
@@ -509,7 +509,7 @@ suite("IntelliSenseService — clangd backend", () => {
       svc.scheduleRefresh("activation");
       await p;
 
-      assert.strictEqual(clangdAdapter.clearCount, 1);
+      assert.strictEqual(clangdBackend.clearCount, 1);
       svc.dispose();
     } finally {
       fs.rmSync(tmpRoot, { recursive: true, force: true });

@@ -17,8 +17,8 @@ import {
   makeContextKey,
 } from "./artifact-resolution";
 import { checkProviderReadiness, resolveIntelliSenseBackend } from "./intellisense-backend";
-import { CpptoolsProviderAdapter } from "./cpptools-provider";
-import { ClangdProviderAdapter } from "./clangd-provider";
+import { CpptoolsBackend } from "./cpptools-backend";
+import { ClangdBackend } from "./clangd-backend";
 import { parseCompileCommandsFile } from "./compile-commands-parser";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
@@ -101,15 +101,15 @@ export class IntelliSenseService {
   readonly onDidRefreshPayload: vscode.Event<ProviderPayload | null> =
     this._onDidRefreshPayload.event;
 
-  private readonly _cpptoolsAdapter: CpptoolsProviderAdapter;
-  private readonly _clangdAdapter: ClangdProviderAdapter;
+  private readonly _cpptoolsBackend: CpptoolsBackend;
+  private readonly _clangdBackend: ClangdBackend;
 
   constructor(
-    cpptoolsAdapter?: CpptoolsProviderAdapter,
-    clangdAdapter?: ClangdProviderAdapter
+    cpptoolsBackend?: CpptoolsBackend,
+    clangdBackend?: ClangdBackend
   ) {
-    this._cpptoolsAdapter = cpptoolsAdapter ?? new CpptoolsProviderAdapter();
-    this._clangdAdapter = clangdAdapter ?? new ClangdProviderAdapter();
+    this._cpptoolsBackend = cpptoolsBackend ?? new CpptoolsBackend();
+    this._clangdBackend = clangdBackend ?? new ClangdBackend();
   }
 
   // ---------------------------------------------------------------------------
@@ -178,7 +178,7 @@ export class IntelliSenseService {
 
     // Ensure cpptools registration is attempted when that backend is active.
     if (resolveIntelliSenseBackend() === "cpptools") {
-      void this._cpptoolsAdapter.activate();
+      void this._cpptoolsBackend.activate();
     }
 
     const readiness = checkProviderReadiness();
@@ -273,7 +273,7 @@ export class IntelliSenseService {
       }
 
       try {
-        await this._clangdAdapter.applyArtifact(workspaceFolder, artifactPath);
+        await this._clangdBackend.applyArtifact(workspaceFolder, artifactPath);
       } catch (error) {
         logIntelliSense(`Failed to apply clangd compile database: ${errorMessage(error)}`);
         await this._clearProviderState();
@@ -281,7 +281,7 @@ export class IntelliSenseService {
         return;
       }
     } else {
-      this._cpptoolsAdapter.applyPayload(payload);
+      this._cpptoolsBackend.applyPayload(payload);
     }
 
     this._lastPayload = payload;
@@ -300,27 +300,27 @@ export class IntelliSenseService {
   private async _clearProviderState(): Promise<void> {
     const workspaceFolder = this._workspaceFolder;
 
-    // clangd state can outlive the in-memory adapter: a managed compile-database
+    // clangd state can outlive the in-memory backend: a managed compile-database
     // link left on disk by a previous session must still be cleared, even though
     // `getLinkedArtifactPath()` is undefined right after activation.
     const clangdHasState =
-      this._clangdAdapter.getLinkedArtifactPath() !== undefined ||
+      this._clangdBackend.getLinkedArtifactPath() !== undefined ||
       (workspaceFolder !== undefined &&
-        this._clangdAdapter.hasManagedCompileDatabase(workspaceFolder));
+        this._clangdBackend.hasManagedCompileDatabase(workspaceFolder));
 
     if (
       this._lastRuntimeState.providerState === "inactive" &&
-      this._cpptoolsAdapter.getLastPayload() === undefined &&
+      this._cpptoolsBackend.getLastPayload() === undefined &&
       !clangdHasState
     ) {
       return;
     }
 
-    this._cpptoolsAdapter.clearPayload();
+    this._cpptoolsBackend.clearPayload();
 
     if (workspaceFolder && clangdHasState) {
       try {
-        await this._clangdAdapter.clear(workspaceFolder);
+        await this._clangdBackend.clear(workspaceFolder);
       } catch (error) {
         logIntelliSense(`Failed to clear clangd compile database: ${errorMessage(error)}`);
       }
@@ -338,7 +338,7 @@ export class IntelliSenseService {
   dispose(): void {
     this._onDidRefresh.dispose();
     this._onDidRefreshPayload.dispose();
-    this._cpptoolsAdapter.dispose();
+    this._cpptoolsBackend.dispose();
     this._pendingRefresh = null;
   }
 }
