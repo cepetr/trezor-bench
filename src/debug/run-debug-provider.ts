@@ -13,7 +13,7 @@
  */
 
 import * as vscode from "vscode";
-import { ManifestStateLoaded } from "../manifest/manifest-types";
+import { ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
 import {
   resolveMatchingDebugProfiles,
@@ -72,11 +72,8 @@ export function generateDebugConfigurations(
     return [];
   }
 
-  const component = manifest.components.find((c) => c.id === config.componentId);
-  const target = manifest.targets.find((t) => t.id === config.targetId);
-  const model = manifest.models.find((m) => m.id === config.modelId);
-
-  if (!component || !target || !model) {
+  const entries = activeManifestEntries(manifest, config);
+  if (!entries) {
     return [];
   }
 
@@ -87,7 +84,7 @@ export function generateDebugConfigurations(
   };
 
   const matchingSet: MatchingDebugProfileSet = resolveMatchingDebugProfiles(
-    component.debug ?? [],
+    entries.component.debug ?? [],
     evalCtx
   );
 

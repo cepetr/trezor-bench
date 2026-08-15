@@ -9,7 +9,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as jsonc from "jsonc-parser";
 import * as vscode from "vscode";
-import { ManifestComponentDebugProfile, ManifestStateLoaded } from "../manifest/manifest-types";
+import { ManifestComponentDebugProfile, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
 import { EvalContext, evaluateWhenExpression } from "../manifest/when-expressions";
 import { ActiveConfig } from "../configuration/active-config";
 import { logDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
@@ -484,17 +484,15 @@ export function materializeDebugConfiguration(
   templatesRoot: string,
   profile: ManifestComponentDebugProfile
 ): DebugMaterializationResult {
-  const component = manifest.components.find((c) => c.id === config.componentId);
-  const target = manifest.targets.find((t) => t.id === config.targetId);
-  const model = manifest.models.find((m) => m.id === config.modelId);
-
-  if (!component || !target || !model) {
+  const entries = activeManifestEntries(manifest, config);
+  if (!entries) {
     return {
       ok: false,
       reason: "unknown-active-config",
       message: "Cannot start debugging: active configuration references an unknown component, target, or model.",
     };
   }
+  const { model, target, component } = entries;
 
   // Derive executable file name and path
   const artifactFolder = model.artifactFolder ?? "";
@@ -674,11 +672,8 @@ export async function executeDebugLaunch(
   }
 
   // 2. Find selected component and target
-  const component = manifest.components.find((c) => c.id === config.componentId);
-  const target = manifest.targets.find((t) => t.id === config.targetId);
-  const model = manifest.models.find((m) => m.id === config.modelId);
-
-  if (!component || !target || !model) {
+  const entries = activeManifestEntries(manifest, config);
+  if (!entries) {
     reportDebugLaunchFailure(
       "unknown-active-config",
       config,
@@ -687,6 +682,7 @@ export async function executeDebugLaunch(
     );
     return;
   }
+  const { component } = entries;
 
   // 3. Resolve component debug profile (first-match declaration order = default profile)
   const evalCtx: EvalContext = {

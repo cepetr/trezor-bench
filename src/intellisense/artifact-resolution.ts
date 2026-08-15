@@ -4,12 +4,7 @@ import {
   ArtifactResolutionInputs,
   ActiveCompileCommandsArtifact,
 } from "./intellisense-types";
-import {
-  ManifestStateLoaded,
-  ManifestModel,
-  ManifestTarget,
-  ManifestComponent,
-} from "../manifest/manifest-types";
+import { ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
 import {
   DebugProfileResolutionState,
@@ -46,13 +41,11 @@ export function buildResolutionInputs(
   config: ActiveConfig,
   artifactsRoot: string
 ): ArtifactResolutionInputs | undefined {
-  const model: ManifestModel | undefined = manifest.models.find((m) => m.id === config.modelId);
-  const target: ManifestTarget | undefined = manifest.targets.find((t) => t.id === config.targetId);
-  const component: ManifestComponent | undefined = manifest.components.find((c) => c.id === config.componentId);
-
-  if (!model || !target || !component) {
+  const entries = activeManifestEntries(manifest, config);
+  if (!entries) {
     return undefined;
   }
+  const { model, target, component } = entries;
 
   return {
     artifactsRoot,

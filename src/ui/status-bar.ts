@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
+import { ManifestState, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
 
 /**
@@ -13,13 +13,11 @@ export function formatStatusBarText(
   state: ManifestStateLoaded,
   config: ActiveConfig
 ): string | undefined {
-  const model = state.models.find((m) => m.id === config.modelId);
-  const target = state.targets.find((t) => t.id === config.targetId);
-  const component = state.components.find((c) => c.id === config.componentId);
-
-  if (!model || !target || !component) {
+  const entries = activeManifestEntries(state, config);
+  if (!entries) {
     return undefined;
   }
+  const { model, target, component } = entries;
 
   const targetDisplay = target.shortName ?? target.name;
   return `${model.name} | ${targetDisplay} | ${component.name}`;
