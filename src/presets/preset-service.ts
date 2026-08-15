@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 import * as fs from "fs/promises";
-import * as fsSync from "fs";
 import * as path from "path";
 import { PresetFile, PresetSource, PresetState } from "./preset-types";
 import { parsePresetFile } from "./parse-presets";
 import { isFileNotFound } from "../util/errors";
 import { Debouncer } from "../util/debouncer";
 import { watchFile } from "../util/file-watch";
+import { FilePoller } from "../util/file-poller";
 
 const DEBOUNCE_MS = 300;
 const POLL_INTERVAL_MS = 1_000;
@@ -59,8 +59,9 @@ export class PresetService implements vscode.Disposable {
       // errors are captured inside _load and translated to invalid state
     });
   });
-  private _poller: ReturnType<typeof setInterval> | undefined;
-  private _fileStates = new Map<string, string>();
+  private readonly _filePoller = new FilePoller(POLL_INTERVAL_MS, () =>
+    this._debouncer.schedule()
+  );
   private readonly _disposables: vscode.Disposable[] = [];
 
   /** Fires whenever the combined preset state changes. */
@@ -83,7 +84,10 @@ export class PresetService implements vscode.Disposable {
   async start(): Promise<PresetState> {
     this._startWatchers();
     const state = await this._load();
-    this._startPolling();
+    // Periodic fallback alongside the file-system watchers: VS Code's
+    // watcher for a path outside any open workspace folder is not always
+    // reliable for every create/change/delete transition.
+    this._filePoller.start([this.sharedUri.fsPath, this.userUri.fsPath]);
     return state;
   }
 
@@ -94,7 +98,7 @@ export class PresetService implements vscode.Disposable {
 
   dispose(): void {
     this._debouncer.dispose();
-    this._stopPolling();
+    this._filePoller.dispose();
     this._sharedWatcher?.dispose();
     this._userWatcher?.dispose();
     this._onDidChangeState.dispose();
@@ -129,53 +133,9 @@ export class PresetService implements vscode.Disposable {
         : { status: "loaded", shared, user, loadedAt, validationIssues };
 
     this._state = newState;
-    this._fileStates = this._captureFileStates();
+    this._filePoller.resync();
     this._onDidChangeState.fire(newState);
     return newState;
-  }
-
-  /**
-   * Periodic fallback alongside the file-system watchers below: VS Code's
-   * watcher for a path outside any open workspace folder is not always
-   * reliable for every create/change/delete transition. Mirrors
-   * `ActiveArtifactFileWatcher`'s one-second reconciliation so preset
-   * changes are still picked up when a watcher event does not fire.
-   */
-  private _startPolling(): void {
-    this._stopPolling();
-    this._poller = setInterval(() => this._pollForChanges(), POLL_INTERVAL_MS);
-  }
-
-  private _stopPolling(): void {
-    if (this._poller !== undefined) {
-      clearInterval(this._poller);
-      this._poller = undefined;
-    }
-  }
-
-  private _pollForChanges(): void {
-    const next = this._captureFileStates();
-    const changed = [...next.entries()].some(([filePath, state]) => this._fileStates.get(filePath) !== state);
-    if (!changed) {
-      return;
-    }
-    this._debouncer.schedule();
-  }
-
-  private _captureFileStates(): Map<string, string> {
-    return new Map([
-      [this.sharedUri.fsPath, this._getFileState(this.sharedUri.fsPath)],
-      [this.userUri.fsPath, this._getFileState(this.userUri.fsPath)],
-    ]);
-  }
-
-  private _getFileState(filePath: string): string {
-    try {
-      const stat = fsSync.statSync(filePath);
-      return `${stat.size}:${stat.mtimeMs}`;
-    } catch {
-      return "missing";
-    }
   }
 
   private _startWatchers(): void {

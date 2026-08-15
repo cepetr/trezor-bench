@@ -1,6 +1,7 @@
 import * as path from "path";
-import * as fs from "fs";
 import * as vscode from "vscode";
+import { FilePoller } from "../util/file-poller";
+import { watchFile } from "../util/file-watch";
 import { ActiveConfig } from "../configuration/active-config";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
 import {
@@ -102,8 +103,7 @@ export class ActiveArtifactFileWatcher implements vscode.Disposable {
   private _scopeSignature = "";
   private _watchers: vscode.Disposable[] = [];
   private _watchedFilePaths: string[] = [];
-  private _fileStates = new Map<string, string>();
-  private _poller: ReturnType<typeof setInterval> | undefined;
+  private readonly _filePoller: FilePoller;
   private _refreshQueued = false;
   private _disposed = false;
 
@@ -112,7 +112,9 @@ export class ActiveArtifactFileWatcher implements vscode.Disposable {
     private readonly _createWatcher: FileSystemWatcherFactory = (globPattern) =>
       vscode.workspace.createFileSystemWatcher(globPattern),
     private readonly _pollIntervalMs = DEFAULT_POLL_INTERVAL_MS
-  ) {}
+  ) {
+    this._filePoller = new FilePoller(this._pollIntervalMs, () => this._queueRefresh());
+  }
 
   update(
     manifest: ManifestStateLoaded | undefined,
@@ -134,27 +136,20 @@ export class ActiveArtifactFileWatcher implements vscode.Disposable {
     this._watchedFilePaths = scopes.flatMap((scope) =>
       Array.from(scope.relativePaths, (relativePath) => path.join(scope.folderPath, relativePath))
     );
-    this._fileStates = this._captureFileStates();
 
     for (const scope of scopes) {
       for (const relativePath of scope.relativePaths) {
-        const watcher = this._createWatcher(
-          new vscode.RelativePattern(vscode.Uri.file(scope.folderPath), relativePath)
-        );
-        const handleEvent = (uri: vscode.Uri) => {
-          this._handleFileEvent(scope, uri);
-        };
-
         this._watchers.push(
-          watcher,
-          watcher.onDidCreate(handleEvent),
-          watcher.onDidChange(handleEvent),
-          watcher.onDidDelete(handleEvent)
+          watchFile(
+            new vscode.RelativePattern(vscode.Uri.file(scope.folderPath), relativePath),
+            (uri) => this._handleFileEvent(scope, uri),
+            this._createWatcher
+          )
         );
       }
     }
 
-    this._startPolling();
+    this._filePoller.start(this._watchedFilePaths);
   }
 
   dispose(): void {
@@ -165,9 +160,8 @@ export class ActiveArtifactFileWatcher implements vscode.Disposable {
     this._disposed = true;
     this._scopeSignature = "";
     this._disposeWatchers();
-    this._stopPolling();
+    this._filePoller.dispose();
     this._watchedFilePaths = [];
-    this._fileStates.clear();
   }
 
   private _disposeWatchers(): void {
@@ -183,58 +177,10 @@ export class ActiveArtifactFileWatcher implements vscode.Disposable {
       return;
     }
 
-    this._fileStates.set(uri.fsPath, this._getFileState(uri.fsPath));
+    // Re-baseline so the poller does not re-report the change this event
+    // already delivered.
+    this._filePoller.resync();
     this._queueRefresh();
-  }
-
-  private _startPolling(): void {
-    this._stopPolling();
-    if (this._watchedFilePaths.length === 0) {
-      return;
-    }
-
-    this._poller = setInterval(() => {
-      this._pollForChanges();
-    }, this._pollIntervalMs);
-  }
-
-  private _stopPolling(): void {
-    if (this._poller) {
-      clearInterval(this._poller);
-      this._poller = undefined;
-    }
-  }
-
-  private _pollForChanges(): void {
-    if (this._disposed) {
-      return;
-    }
-
-    const nextFileStates = this._captureFileStates();
-    const changed = this._watchedFilePaths.some(
-      (filePath) => this._fileStates.get(filePath) !== nextFileStates.get(filePath)
-    );
-    if (!changed) {
-      return;
-    }
-
-    this._fileStates = nextFileStates;
-    this._queueRefresh();
-  }
-
-  private _captureFileStates(): Map<string, string> {
-    return new Map(
-      this._watchedFilePaths.map((filePath) => [filePath, this._getFileState(filePath)])
-    );
-  }
-
-  private _getFileState(filePath: string): string {
-    try {
-      const stat = fs.statSync(filePath);
-      return stat.isFile() ? `${stat.size}:${stat.mtimeMs}` : "missing";
-    } catch {
-      return "missing";
-    }
   }
 
   private _queueRefresh(): void {
