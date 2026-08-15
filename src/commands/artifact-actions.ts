@@ -20,6 +20,7 @@ import { ActiveConfig } from "../configuration/active-config";
 import { evaluateWhenExpression, EvalContext } from "../manifest/when-expressions";
 import { createCargoTaskExecution } from "../tasks/xtask-execution";
 import { TASK_TYPE, TASK_SOURCE } from "../tasks/build-task-provider";
+import { errorMessage } from "../util/errors";
 import {
   logArtifactActionBlocked,
   logMapFileOpenFailure,
@@ -188,6 +189,11 @@ export function evaluateArtifactActionPreconditions(
 // Blocked-start reporting
 // ---------------------------------------------------------------------------
 
+/** Display name for an artifact action kind. */
+function actionNameFor(kind: ArtifactActionKind): string {
+  return kind === "flash" ? "Flash" : "Upload";
+}
+
 const BLOCK_REASON_MESSAGES: Record<
   Exclude<ArtifactActionBlockReason, "no-block">,
   string
@@ -213,7 +219,7 @@ export function reportArtifactActionBlocked(
   kind: ArtifactActionKind,
   reason: Exclude<ArtifactActionBlockReason, "no-block">
 ): void {
-  const actionName = kind === "flash" ? "Flash" : "Upload";
+  const actionName = actionNameFor(kind);
   const detail = BLOCK_REASON_MESSAGES[reason];
   logArtifactActionBlocked(actionName, detail);
   notifyError(`${actionName} blocked — ${detail}`);
@@ -292,8 +298,8 @@ export async function executeArtifactTask(
   try {
     await vscode.tasks.executeTask(task);
   } catch (err: unknown) {
-    const actionName = kind === "flash" ? "Flash" : "Upload";
-    const message = err instanceof Error ? err.message : String(err);
+    const actionName = actionNameFor(kind);
+    const message = errorMessage(err);
     logWorkflowFailure(actionName, message);
     notifyError(`${actionName} failed to start — ${message}`);
   }
@@ -317,7 +323,7 @@ export async function openMapFile(mapFilePath: string): Promise<void> {
     const uri = vscode.Uri.file(mapFilePath);
     await vscode.window.showTextDocument(uri);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = errorMessage(err);
     logMapFileOpenFailure(message);
     notifyError(`Cannot open map file — ${message}`);
   }

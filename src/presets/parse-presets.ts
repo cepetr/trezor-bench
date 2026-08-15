@@ -8,6 +8,7 @@ import * as vscode from "vscode";
 import { parse as parseToml, TomlError } from "smol-toml";
 import { ValidationIssue } from "../manifest/manifest-types";
 import { PresetFilter, PresetFragment, PresetRawValue, PresetSource } from "./preset-types";
+import { errorMessage } from "../util/errors";
 
 export interface ParsedPresetFile {
   /** Group names in first-declaration order, excluding `defaults` and `default`. */
@@ -152,7 +153,7 @@ export function parsePresetFile(source: string, presetSource: PresetSource): Par
         )
       );
     } else {
-      issues.push(issue("error", "toml-parse", err instanceof Error ? err.message : String(err)));
+      issues.push(issue("error", "toml-parse", errorMessage(err)));
     }
     return { names: [], fragments: [], issues };
   }

@@ -8,6 +8,7 @@
 import * as vscode from "vscode";
 import { ResolvedOption } from "../configuration/build-options";
 import { logWorkflowFailure, notifyError } from "../observability/log-channel";
+import { errorMessage } from "../util/errors";
 import { ManifestState } from "../manifest/manifest-types";
 import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 
@@ -223,7 +224,7 @@ export async function executeWorkflowTask(
   try {
     await vscode.tasks.executeTask(task);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = errorMessage(err);
     logWorkflowFailure(kind, message);
     notifyError(`${kind} failed to start — ${message}`);
   }

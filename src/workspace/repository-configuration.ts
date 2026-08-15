@@ -3,6 +3,7 @@ import * as fs from "fs/promises";
 import * as fsNative from "fs";
 import * as path from "path";
 import { parse as parseToml, TomlError } from "smol-toml";
+import { errorMessage } from "../util/errors";
 
 export const REPOSITORY_CONFIGURATION_FILE = "tbench.toml";
 
@@ -152,7 +153,7 @@ function parseConfigurationPaths(source: string):
       };
     }
     return {
-      validationIssues: [issue("toml-parse", error instanceof Error ? error.message : String(error))],
+      validationIssues: [issue("toml-parse", errorMessage(error))],
     };
   }
 
@@ -208,7 +209,7 @@ export async function loadRepositoryConfiguration(
       status: "invalid",
       configurationUri,
       validationIssues: [
-        issue("read-error", `Could not read repository configuration: ${error instanceof Error ? error.message : String(error)}`),
+        issue("read-error", `Could not read repository configuration: ${errorMessage(error)}`),
       ],
       loadedAt: new Date(),
     };

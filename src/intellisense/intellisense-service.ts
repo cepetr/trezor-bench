@@ -23,6 +23,7 @@ import {
   logProviderWarning,
   logProviderRecovery,
 } from "../observability/log-channel";
+import { errorMessage } from "../util/errors";
 
 // ---------------------------------------------------------------------------
 // Callbacks
@@ -269,11 +270,7 @@ export class IntelliSenseService {
       try {
         await this._clangdAdapter.applyArtifact(workspaceFolder, artifactPath);
       } catch (error) {
-        logIntelliSense(
-          `Failed to apply clangd compile database: ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
+        logIntelliSense(`Failed to apply clangd compile database: ${errorMessage(error)}`);
         await this._clearProviderState();
         this._lastPayload = null;
         return;
@@ -320,11 +317,7 @@ export class IntelliSenseService {
       try {
         await this._clangdAdapter.clear(workspaceFolder);
       } catch (error) {
-        logIntelliSense(
-          `Failed to clear clangd compile database: ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
+        logIntelliSense(`Failed to clear clangd compile database: ${errorMessage(error)}`);
       }
     }
 
