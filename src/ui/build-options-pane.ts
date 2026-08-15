@@ -12,7 +12,6 @@ import { INACTIVE_CHOICE_ICON, PlaceholderItem, WarningItem } from "./pane-items
 // Command identifiers for build-option interaction.
 // ---------------------------------------------------------------------------
 
-export const TOGGLE_BUILD_OPTION_COMMAND = "tbench.toggleBuildOption";
 export const SELECT_BUILD_OPTION_STATE_COMMAND = "tbench.selectBuildOptionState";
 
 // ---------------------------------------------------------------------------

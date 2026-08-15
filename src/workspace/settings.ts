@@ -96,19 +96,3 @@ export function readExcludedFilesSettings(
   };
 }
 
-/**
- * Returns true when a configuration change event affects any of the four
- * excluded-file settings for the given workspace folder.
- */
-export function excludedFilesSettingsChanged(
-  event: vscode.ConfigurationChangeEvent,
-  workspaceFolder: vscode.WorkspaceFolder
-): boolean {
-  const scope = workspaceFolder.uri;
-  return (
-    event.affectsConfiguration("tbench.excludedFiles.grayInTree", scope) ||
-    event.affectsConfiguration("tbench.excludedFiles.showEditorOverlay", scope) ||
-    event.affectsConfiguration("tbench.excludedFiles.fileNamePatterns", scope) ||
-    event.affectsConfiguration("tbench.excludedFiles.folderGlobs", scope)
-  );
-}

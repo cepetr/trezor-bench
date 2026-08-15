@@ -30,16 +30,6 @@ import {
 import { errorMessage } from "../util/errors";
 
 // ---------------------------------------------------------------------------
-// Callbacks
-// ---------------------------------------------------------------------------
-
-/** Called after each completed refresh with the latest artifact and UI state. */
-export type IntelliSenseRefreshCallback = (
-  artifact: ResolvedArtifact | null,
-  readiness: IntelliSenseProviderReadiness
-) => void;
-
-// ---------------------------------------------------------------------------
 // IntelliSense service
 // ---------------------------------------------------------------------------
 

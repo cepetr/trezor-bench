@@ -146,16 +146,3 @@ export interface ProviderSettingFix {
   /** Correct value to write (cepetr.tbench). */
   readonly correctValue: string;
 }
-
-/** One event that requires IntelliSense recomputation. */
-export interface IntelliSenseRefreshRequest {
-  /** What caused the refresh. */
-  readonly trigger: RefreshTrigger;
-  /** When the request was created. */
-  readonly requestedAt: Date;
-  /**
-   * Active configuration key at scheduling time.
-   * Used to collapse concurrent requests to the latest.
-   */
-  readonly targetContextKey: string;
-}

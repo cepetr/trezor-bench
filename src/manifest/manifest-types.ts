@@ -4,10 +4,6 @@
  */
 import * as vscode from "vscode";
 
-// --- Manifest entry kinds ---
-
-export type ManifestEntryKind = "model" | "target" | "component";
-
 // --- Build context ---
 
 /**

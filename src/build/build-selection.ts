@@ -50,21 +50,6 @@ export async function writeBuildSelection(
   return saved;
 }
 
-/**
- * Validates that all ids in `candidate` resolve to entries in `manifest`.
- * Returns false when any id is absent from its collection.
- */
-export function isSelectionValid(
-  candidate: BuildSelection,
-  manifest: ManifestStateLoaded
-): boolean {
-  return (
-    manifest.models.some((m) => m.id === candidate.modelId) &&
-    manifest.targets.some((t) => t.id === candidate.targetId) &&
-    manifest.components.some((c) => c.id === candidate.componentId)
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Selector mutation helpers
 // ---------------------------------------------------------------------------

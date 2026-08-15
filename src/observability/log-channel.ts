@@ -67,14 +67,6 @@ export function logWarning(message: string): void {
   notifyWarning(message);
 }
 
-/**
- * Appends a log line and also shows a VS Code error notification.
- */
-export function logError(message: string): void {
-  log(`[ERROR] ${message}`);
-  notifyError(message);
-}
-
 /** Logs repository configuration transitions, including persistent invalid-state details. */
 export function logRepositoryConfigState(state: RepositoryConfigState): void {
   if (state.status === "invalid") {
@@ -105,7 +97,6 @@ export function revealLogs(): void {
 export function disposeLogChannel(): void {
   _channel?.dispose();
   _channel = undefined;
-  _loggedUnknownPresetKeys.clear();
 }
 
 // ---------------------------------------------------------------------------
@@ -261,23 +252,6 @@ export function logOverridesPrunedForContext(
     `Build context changed from (${formatPresetContext(previousContext)}) to ` +
       `(${formatPresetContext(newContext)}): ${outcome}`
   );
-}
-
-/** Keys already logged as unknown-to-the-manifest, to avoid repeat entries. */
-const _loggedUnknownPresetKeys = new Set<string>();
-
-/**
- * Logs, once per key, an informational entry for a preset option key that no
- * manifest build option claims. Never blocks and never
- * produces a diagnostic — this is observability only.
- */
-export function logUnknownPresetKeys(keys: ReadonlyArray<string>): void {
-  const fresh = keys.filter((k) => !_loggedUnknownPresetKeys.has(k));
-  if (fresh.length === 0) {
-    return;
-  }
-  fresh.forEach((k) => _loggedUnknownPresetKeys.add(k));
-  log(`Preset option key(s) not recognized by the manifest (ignored): ${fresh.join(", ")}`);
 }
 
 // ---------------------------------------------------------------------------
