@@ -373,7 +373,18 @@ suite("QS5 – Template failures at invocation time", () => {
 
 suite("QS6 – tbench substitution and non-tbench variable pass-through", () => {
   test("buildDebugVariableMap includes all built-in tbench variables", () => {
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/artifacts/model-t", "firmware.elf", "/artifacts/model-t/firmware.elf", "gdb-remote", undefined);
+    const varMap = buildDebugVariableMap({
+      modelId: "T2T1",
+      modelName: "Trezor Model T (v1)",
+      targetId: "hw",
+      targetName: "Hardware",
+      componentId: "core",
+      componentName: "Core",
+      artifactPath: "/artifacts/model-t",
+      executableFileName: "firmware.elf",
+      executablePath: "/artifacts/model-t/firmware.elf",
+      debugProfileName: "gdb-remote",
+    });
     assert.strictEqual(varMap.resolvedVars["tbench.model.id"], "T2T1");
     assert.strictEqual(varMap.resolvedVars["tbench.target.id"], "hw");
     assert.strictEqual(varMap.resolvedVars["tbench.component.id"], "core");
@@ -383,7 +394,18 @@ suite("QS6 – tbench substitution and non-tbench variable pass-through", () => 
   });
 
   test("applyTbenchSubstitution resolves nested object and array string fields", () => {
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb-remote", undefined);
+    const varMap = buildDebugVariableMap({
+      modelId: "T2T1",
+      modelName: "Trezor Model T (v1)",
+      targetId: "hw",
+      targetName: "Hardware",
+      componentId: "core",
+      componentName: "Core",
+      artifactPath: "/build/model-t",
+      executableFileName: "firmware.elf",
+      executablePath: "/build/firmware.elf",
+      debugProfileName: "gdb-remote",
+    });
     const template = {
       type: "cortex-debug",
       executable: "${tbench.executablePath}",
@@ -400,7 +422,18 @@ suite("QS6 – tbench substitution and non-tbench variable pass-through", () => 
   });
 
   test("applyTbenchSubstitution leaves non-tbench VS Code variables untouched", () => {
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "fw.elf", "/build/fw.elf", "gdb-remote", undefined);
+    const varMap = buildDebugVariableMap({
+      modelId: "T2T1",
+      modelName: "Trezor Model T (v1)",
+      targetId: "hw",
+      targetName: "Hardware",
+      componentId: "core",
+      componentName: "Core",
+      artifactPath: "/build/model-t",
+      executableFileName: "fw.elf",
+      executablePath: "/build/fw.elf",
+      debugProfileName: "gdb-remote",
+    });
     const template = {
       cwd: "${workspaceFolder}",
       serverPath: "${env:OPENOCD_PATH}",
@@ -416,7 +449,18 @@ suite("QS6 – tbench substitution and non-tbench variable pass-through", () => 
   });
 
   test("applyTbenchSubstitution reports unknown tbench variables", () => {
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "fw.elf", "/build/fw.elf", "gdb-remote", undefined);
+    const varMap = buildDebugVariableMap({
+      modelId: "T2T1",
+      modelName: "Trezor Model T (v1)",
+      targetId: "hw",
+      targetName: "Hardware",
+      componentId: "core",
+      componentName: "Core",
+      artifactPath: "/build/model-t",
+      executableFileName: "fw.elf",
+      executablePath: "/build/fw.elf",
+      debugProfileName: "gdb-remote",
+    });
     const template = { serverPort: "${tbench.nonExistentPort}" };
     const { unknownVars } = applyTbenchSubstitution(template, varMap.resolvedVars);
 
@@ -428,7 +472,19 @@ suite("QS6 – tbench substitution and non-tbench variable pass-through", () => 
 
   test("buildDebugVariableMap surface cyclic profile vars as resolution errors", () => {
     const vars = { a: "${tbench.debug.var:b}", b: "${tbench.debug.var:a}" };
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "fw.elf", "/build/fw.elf", "gdb-remote", vars);
+    const varMap = buildDebugVariableMap({
+      modelId: "T2T1",
+      modelName: "Trezor Model T (v1)",
+      targetId: "hw",
+      targetName: "Hardware",
+      componentId: "core",
+      componentName: "Core",
+      artifactPath: "/build/model-t",
+      executableFileName: "fw.elf",
+      executablePath: "/build/fw.elf",
+      debugProfileName: "gdb-remote",
+      profileVars: vars,
+    });
 
     assert.ok(
       varMap.resolutionErrors.length > 0,

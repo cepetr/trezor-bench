@@ -176,7 +176,7 @@ suite("buildDebugVariableMap", () => {
   const debugProfileName = "gdb-remote";
 
   function makeMap(entryVars?: Record<string, string>) {
-    return buildDebugVariableMap(
+    return buildDebugVariableMap({
       modelId,
       modelName,
       targetId,
@@ -187,8 +187,8 @@ suite("buildDebugVariableMap", () => {
       executableFileName,
       executablePath,
       debugProfileName,
-      entryVars
-    );
+      profileVars: entryVars,
+    });
   }
 
   test("built-in variables are always populated", () => {
@@ -253,13 +253,35 @@ suite("buildDebugVariableMap", () => {
   });
 
   test("executable variable contains filename (not full path)", () => {
-    const map = buildDebugVariableMap(modelId, modelName, targetId, targetName, componentId, componentName, artifactPath, "my-firmware.elf", "/a/b/c/my-firmware.elf", debugProfileName, undefined);
+    const map = buildDebugVariableMap({
+      modelId,
+      modelName,
+      targetId,
+      targetName,
+      componentId,
+      componentName,
+      artifactPath,
+      executableFileName: "my-firmware.elf",
+      executablePath: "/a/b/c/my-firmware.elf",
+      debugProfileName,
+    });
     assert.strictEqual(map.resolvedVars[TBENCH_VAR_EXECUTABLE], "my-firmware.elf");
     assert.strictEqual(map.resolvedVars[TBENCH_VAR_EXECUTABLE_PATH], "/a/b/c/my-firmware.elf");
   });
 
   test("debugProfileName is exposed as tbench.debugProfileName", () => {
-    const map = buildDebugVariableMap(modelId, modelName, targetId, targetName, componentId, componentName, artifactPath, executableFileName, executablePath, "my-profile", undefined);
+    const map = buildDebugVariableMap({
+      modelId,
+      modelName,
+      targetId,
+      targetName,
+      componentId,
+      componentName,
+      artifactPath,
+      executableFileName,
+      executablePath,
+      debugProfileName: "my-profile",
+    });
     assert.strictEqual(map.resolvedVars[TBENCH_VAR_DEBUG_PROFILE_NAME], "my-profile");
   });
 });

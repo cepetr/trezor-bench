@@ -292,7 +292,18 @@ suite("Debug Launch Failures – unresolved-variable", () => {
     const result = loadDebugTemplate("unknown-var-template.json", failuresTemplatesRoot);
     assert.strictEqual(result.parseState, "loaded");
 
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb", undefined);
+    const varMap = buildDebugVariableMap({
+      modelId: "T2T1",
+      modelName: "Trezor Model T (v1)",
+      targetId: "hw",
+      targetName: "Hardware",
+      componentId: "core",
+      componentName: "Core",
+      artifactPath: "/build/model-t",
+      executableFileName: "firmware.elf",
+      executablePath: "/build/firmware.elf",
+      debugProfileName: "gdb",
+    });
     const { unknownVars } = applyTbenchSubstitution(result.configuration, varMap.resolvedVars);
     assert.ok(
       unknownVars.some((v) => v.includes("nonExistentVariable")),

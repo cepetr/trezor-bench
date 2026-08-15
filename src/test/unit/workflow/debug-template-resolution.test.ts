@@ -188,7 +188,19 @@ suite("buildDebugVariableMap – cyclic variable edge cases", () => {
 
   test("self-referencing var (a → a) produces a resolution error", () => {
     const vars = { a: "${tbench.debug.var:a}" };
-    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
+    const result = buildDebugVariableMap({
+      modelId: MODEL,
+      modelName: MODEL_NAME,
+      targetId: TARGET,
+      targetName: TARGET_NAME,
+      componentId: COMPONENT,
+      componentName: COMPONENT_NAME,
+      artifactPath: ARTIFACT_PATH,
+      executableFileName: EXE_FILE,
+      executablePath: EXE,
+      debugProfileName: PROFILE_NAME,
+      profileVars: vars,
+    });
     assert.ok(result.resolutionErrors.length > 0, "expected a resolution error for self-cycle");
     assert.ok(
       result.resolutionErrors.some((e) => e.toLowerCase().includes("cyclic") || e.toLowerCase().includes("cycle")),
@@ -202,7 +214,19 @@ suite("buildDebugVariableMap – cyclic variable edge cases", () => {
       b: "${tbench.debug.var:c}",
       c: "${tbench.debug.var:a}",
     };
-    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
+    const result = buildDebugVariableMap({
+      modelId: MODEL,
+      modelName: MODEL_NAME,
+      targetId: TARGET,
+      targetName: TARGET_NAME,
+      componentId: COMPONENT,
+      componentName: COMPONENT_NAME,
+      artifactPath: ARTIFACT_PATH,
+      executableFileName: EXE_FILE,
+      executablePath: EXE,
+      debugProfileName: PROFILE_NAME,
+      profileVars: vars,
+    });
     assert.ok(result.resolutionErrors.length > 0, "expected resolution error for 3-way cycle");
   });
 
@@ -211,7 +235,19 @@ suite("buildDebugVariableMap – cyclic variable edge cases", () => {
       b: "hello",
       a: "${tbench.debug.var:b}-world",
     };
-    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
+    const result = buildDebugVariableMap({
+      modelId: MODEL,
+      modelName: MODEL_NAME,
+      targetId: TARGET,
+      targetName: TARGET_NAME,
+      componentId: COMPONENT,
+      componentName: COMPONENT_NAME,
+      artifactPath: ARTIFACT_PATH,
+      executableFileName: EXE_FILE,
+      executablePath: EXE,
+      debugProfileName: PROFILE_NAME,
+      profileVars: vars,
+    });
     assert.strictEqual(result.resolutionErrors.length, 0);
     assert.strictEqual(result.resolvedVars["tbench.debug.var:a"], "hello-world");
     assert.strictEqual(result.resolvedVars["tbench.debug.var:b"], "hello");
@@ -221,14 +257,38 @@ suite("buildDebugVariableMap – cyclic variable edge cases", () => {
     const vars = {
       x: "${tbench.debug.var:x}", // self-cycle
     };
-    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
+    const result = buildDebugVariableMap({
+      modelId: MODEL,
+      modelName: MODEL_NAME,
+      targetId: TARGET,
+      targetName: TARGET_NAME,
+      componentId: COMPONENT,
+      componentName: COMPONENT_NAME,
+      artifactPath: ARTIFACT_PATH,
+      executableFileName: EXE_FILE,
+      executablePath: EXE,
+      debugProfileName: PROFILE_NAME,
+      profileVars: vars,
+    });
     // Built-ins must still be present even when profile vars cycle
     assert.strictEqual(result.resolvedVars[TBENCH_VAR_MODEL_ID], MODEL);
   });
 
   test("profile var referencing undefined tbench var produces a resolution error", () => {
     const vars = { foo: "${tbench.undefined_key}" };
-    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
+    const result = buildDebugVariableMap({
+      modelId: MODEL,
+      modelName: MODEL_NAME,
+      targetId: TARGET,
+      targetName: TARGET_NAME,
+      componentId: COMPONENT,
+      componentName: COMPONENT_NAME,
+      artifactPath: ARTIFACT_PATH,
+      executableFileName: EXE_FILE,
+      executablePath: EXE,
+      debugProfileName: PROFILE_NAME,
+      profileVars: vars,
+    });
     assert.ok(result.resolutionErrors.length > 0);
     assert.ok(
       result.resolutionErrors.some((e) => e.includes("undefined_key")),

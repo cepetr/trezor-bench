@@ -197,6 +197,21 @@ export interface DebugVariableMap {
   readonly resolutionErrors: ReadonlyArray<string>;
 }
 
+/** Inputs for the built-in tbench variables plus optional profile-defined vars. */
+export interface DebugVariableInputs {
+  readonly modelId: string;
+  readonly modelName: string;
+  readonly targetId: string;
+  readonly targetName: string;
+  readonly componentId: string;
+  readonly componentName: string;
+  readonly artifactPath: string;
+  readonly executableFileName: string;
+  readonly executablePath: string;
+  readonly debugProfileName: string;
+  readonly profileVars?: Readonly<Record<string, string>>;
+}
+
 /**
  * Builds the complete tbench variable map for the active debug context.
  *
@@ -206,33 +221,21 @@ export interface DebugVariableMap {
  * unknown tbench references in profile vars are reported as resolution errors
  * that block launch.
  */
-export function buildDebugVariableMap(
-  modelId: string,
-  modelName: string,
-  targetId: string,
-  targetName: string,
-  componentId: string,
-  componentName: string,
-  artifactPath: string,
-  executableFileName: string,
-  executablePath: string,
-  debugProfileName: string,
-  profileVars: Readonly<Record<string, string>> | undefined
-): DebugVariableMap {
+export function buildDebugVariableMap(inputs: DebugVariableInputs): DebugVariableMap {
   const builtIns: Readonly<Record<string, string>> = {
-    [TBENCH_VAR_ARTIFACT_PATH]: artifactPath,
-    [TBENCH_VAR_MODEL_ID]: modelId,
-    [TBENCH_VAR_MODEL_NAME]: modelName,
-    [TBENCH_VAR_TARGET_ID]: targetId,
-    [TBENCH_VAR_TARGET_NAME]: targetName,
-    [TBENCH_VAR_COMPONENT_ID]: componentId,
-    [TBENCH_VAR_COMPONENT_NAME]: componentName,
-    [TBENCH_VAR_EXECUTABLE]: executableFileName,
-    [TBENCH_VAR_EXECUTABLE_PATH]: executablePath,
-    [TBENCH_VAR_DEBUG_PROFILE_NAME]: debugProfileName,
+    [TBENCH_VAR_ARTIFACT_PATH]: inputs.artifactPath,
+    [TBENCH_VAR_MODEL_ID]: inputs.modelId,
+    [TBENCH_VAR_MODEL_NAME]: inputs.modelName,
+    [TBENCH_VAR_TARGET_ID]: inputs.targetId,
+    [TBENCH_VAR_TARGET_NAME]: inputs.targetName,
+    [TBENCH_VAR_COMPONENT_ID]: inputs.componentId,
+    [TBENCH_VAR_COMPONENT_NAME]: inputs.componentName,
+    [TBENCH_VAR_EXECUTABLE]: inputs.executableFileName,
+    [TBENCH_VAR_EXECUTABLE_PATH]: inputs.executablePath,
+    [TBENCH_VAR_DEBUG_PROFILE_NAME]: inputs.debugProfileName,
   };
 
-  const rawVars = profileVars ?? {};
+  const rawVars = inputs.profileVars ?? {};
   const rawVarNames = Object.keys(rawVars);
 
   if (rawVarNames.length === 0) {
@@ -484,19 +487,19 @@ export function materializeDebugConfiguration(
   const configuration = templateResult.configuration!;
 
   // Build tbench variable map
-  const varMap = buildDebugVariableMap(
-    buildContext.modelId,
-    model.name,
-    buildContext.targetId,
-    target.name,
-    buildContext.componentId,
-    component.name,
+  const varMap = buildDebugVariableMap({
+    modelId: buildContext.modelId,
+    modelName: model.name,
+    targetId: buildContext.targetId,
+    targetName: target.name,
+    componentId: buildContext.componentId,
+    componentName: component.name,
     artifactPath,
     executableFileName,
     executablePath,
-    profile.name,
-    profile.vars
-  );
+    debugProfileName: profile.name,
+    profileVars: profile.vars,
+  });
 
   if (varMap.resolutionErrors.length > 0) {
     return {

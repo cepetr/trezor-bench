@@ -213,19 +213,18 @@ suite("Debug Launch – substitution pipeline integration", () => {
     const templateResult = loadDebugTemplate("gdb-remote.json", templatesRoot);
     assert.strictEqual(templateResult.parseState, "loaded");
 
-    const varMap = buildDebugVariableMap(
-      "T2T1",
-      "Trezor Model T (v1)",
-      "hw",
-      "Hardware",
-      "core",
-      "Core",
-      "/build/model-t",
-      "firmware.elf",
-      "/build/model-t/firmware.elf",
-      "gdb-remote",
-      undefined
-    );
+    const varMap = buildDebugVariableMap({
+      modelId: "T2T1",
+      modelName: "Trezor Model T (v1)",
+      targetId: "hw",
+      targetName: "Hardware",
+      componentId: "core",
+      componentName: "Core",
+      artifactPath: "/build/model-t",
+      executableFileName: "firmware.elf",
+      executablePath: "/build/model-t/firmware.elf",
+      debugProfileName: "gdb-remote",
+    });
     assert.strictEqual(varMap.resolutionErrors.length, 0);
 
     const { value, unknownVars } = applyTbenchSubstitution(
@@ -243,7 +242,18 @@ suite("Debug Launch – substitution pipeline integration", () => {
     const templateResult = loadDebugTemplate("gdb-remote.json", templatesRoot);
     assert.strictEqual(templateResult.parseState, "loaded");
 
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb-remote", undefined);
+    const varMap = buildDebugVariableMap({
+      modelId: "T2T1",
+      modelName: "Trezor Model T (v1)",
+      targetId: "hw",
+      targetName: "Hardware",
+      componentId: "core",
+      componentName: "Core",
+      artifactPath: "/build/model-t",
+      executableFileName: "firmware.elf",
+      executablePath: "/build/firmware.elf",
+      debugProfileName: "gdb-remote",
+    });
     const { value } = applyTbenchSubstitution(templateResult.configuration, varMap.resolvedVars);
     const cfg = value as Record<string, unknown>;
 
@@ -255,7 +265,18 @@ suite("Debug Launch – substitution pipeline integration", () => {
     const templateResult = loadDebugTemplate("gdb-remote.json", templatesRoot);
     assert.strictEqual(templateResult.parseState, "loaded");
 
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb-remote", undefined);
+    const varMap = buildDebugVariableMap({
+      modelId: "T2T1",
+      modelName: "Trezor Model T (v1)",
+      targetId: "hw",
+      targetName: "Hardware",
+      componentId: "core",
+      componentName: "Core",
+      artifactPath: "/build/model-t",
+      executableFileName: "firmware.elf",
+      executablePath: "/build/firmware.elf",
+      debugProfileName: "gdb-remote",
+    });
     const { value } = applyTbenchSubstitution(templateResult.configuration, varMap.resolvedVars);
     const cfg = value as { environment: Array<{ name: string; value: string }> };
     const targetEnv = cfg.environment.find((e) => e.name === "TARGET");
@@ -272,9 +293,19 @@ suite("Debug Launch – substitution pipeline integration", () => {
       template: "gdb-remote.json",
       vars: { debugPort: "3333" },
     });
-    const varMap = buildDebugVariableMap(
-      "T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", entry.name, entry.vars
-    );
+    const varMap = buildDebugVariableMap({
+      modelId: "T2T1",
+      modelName: "Trezor Model T (v1)",
+      targetId: "hw",
+      targetName: "Hardware",
+      componentId: "core",
+      componentName: "Core",
+      artifactPath: "/build/model-t",
+      executableFileName: "firmware.elf",
+      executablePath: "/build/firmware.elf",
+      debugProfileName: entry.name,
+      profileVars: entry.vars,
+    });
     assert.strictEqual(varMap.resolvedVars["tbench.debug.var:debugPort"], "3333");
     assert.strictEqual(varMap.resolutionErrors.length, 0);
   });
