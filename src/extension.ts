@@ -943,60 +943,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- Build-context selector commands. ---
   // Each selection also re-normalizes the active preset against the new
-  // build context (FR-009), via refreshPresetsAndActiveConfig.
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.selectModel", async (modelId: string) => {
-      const state = _manifestState;
-      if (!state || state.status !== "loaded") { return; }
-      await selectModel(context, modelId, state);
-      await refreshPresetsAndActiveConfig(context);
-      refreshStatusBar();
-      _intelliSenseService?.setActiveConfig(_activeConfig);
-      refreshArtifactFileWatcher();
-      refreshBuildArtifacts("active-config-change");
-    })
-  );
+  // build context (FR-009), via refreshPresetsAndActiveConfig. All selectors
+  // share the same guard and post-selection refresh chain.
+  const registerSelector = (
+    command: string,
+    apply: (id: string, state: ManifestStateLoaded) => Promise<unknown>
+  ): void => {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(command, async (id: string) => {
+        const state = _manifestState;
+        if (!state || state.status !== "loaded") { return; }
+        await apply(id, state);
+        await refreshPresetsAndActiveConfig(context);
+        refreshStatusBar();
+        _intelliSenseService?.setActiveConfig(_activeConfig);
+        refreshArtifactFileWatcher();
+        refreshBuildArtifacts("active-config-change");
+      })
+    );
+  };
 
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.selectTarget", async (targetId: string) => {
-      const state = _manifestState;
-      if (!state || state.status !== "loaded") { return; }
-      await selectTarget(context, targetId, state);
-      await refreshPresetsAndActiveConfig(context);
-      refreshStatusBar();
-      _intelliSenseService?.setActiveConfig(_activeConfig);
-      refreshArtifactFileWatcher();
-      refreshBuildArtifacts("active-config-change");
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.selectComponent", async (componentId: string) => {
-      const state = _manifestState;
-      if (!state || state.status !== "loaded") { return; }
-      await selectComponent(context, componentId, state);
-      await refreshPresetsAndActiveConfig(context);
-      refreshStatusBar();
-      _intelliSenseService?.setActiveConfig(_activeConfig);
-      refreshArtifactFileWatcher();
-      refreshBuildArtifacts("active-config-change");
-    })
-  );
-
-  // --- Preset selector command (feature 009). Not a contributed command —
-  // invoked only through the Preset selector's tree-item command binding. ---
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.selectPreset", async (presetId: string) => {
-      const state = _manifestState;
-      if (!state || state.status !== "loaded") { return; }
-      await selectPreset(context, presetId, state);
-      await refreshPresetsAndActiveConfig(context);
-      refreshStatusBar();
-      _intelliSenseService?.setActiveConfig(_activeConfig);
-      refreshArtifactFileWatcher();
-      refreshBuildArtifacts("active-config-change");
-    })
-  );
+  registerSelector("tbench.selectModel", (id, state) => selectModel(context, id, state));
+  registerSelector("tbench.selectTarget", (id, state) => selectTarget(context, id, state));
+  registerSelector("tbench.selectComponent", (id, state) => selectComponent(context, id, state));
+  // Preset selector (feature 009): not a contributed command — invoked only
+  // through the Preset selector's tree-item command binding.
+  registerSelector("tbench.selectPreset", (id, state) => selectPreset(context, id, state));
 
   // --- Workflow commands: Build / Clippy / Check / Clean. ---
   // Build/Clippy/Check reload preset inputs and recompute before deriving
