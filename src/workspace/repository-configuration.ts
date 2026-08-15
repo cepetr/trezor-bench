@@ -3,7 +3,7 @@ import * as fs from "fs/promises";
 import * as fsNative from "fs";
 import * as path from "path";
 import { parse as parseToml, TomlError } from "smol-toml";
-import { errorMessage } from "../util/errors";
+import { errorMessage, isFileNotFound } from "../util/errors";
 
 export const REPOSITORY_CONFIGURATION_FILE = "tbench.toml";
 
@@ -198,8 +198,7 @@ export async function loadRepositoryConfiguration(
   try {
     source = await fs.readFile(configurationUri.fsPath, "utf-8");
   } catch (error) {
-    const code = error instanceof Error ? (error as NodeJS.ErrnoException).code : undefined;
-    if (code === "ENOENT") {
+    if (isFileNotFound(error)) {
       return {
         status: "absent",
         configuration: resolveConfiguration(workspaceFolder, {}),

@@ -4,6 +4,7 @@ import * as fsSync from "fs";
 import * as path from "path";
 import { PresetFile, PresetSource, PresetState } from "./preset-types";
 import { parsePresetFile } from "./parse-presets";
+import { isFileNotFound } from "../util/errors";
 
 const DEBOUNCE_MS = 300;
 const POLL_INTERVAL_MS = 1_000;
@@ -21,9 +22,7 @@ async function loadPresetFile(uri: vscode.Uri, source: PresetSource): Promise<Pr
       issues: parsed.issues,
     };
   } catch (err: unknown) {
-    const notFound =
-      err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT";
-    if (notFound) {
+    if (isFileNotFound(err)) {
       // Absence carries no issue of its own: for `user-presets.toml` it is
       // equivalent to an empty file, and for the shared file `_load` turns it
       // into the `unavailable` state instead (FR-027).

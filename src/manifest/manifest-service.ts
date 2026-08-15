@@ -4,6 +4,7 @@ import * as path from "path";
 import { ManifestState, ManifestStatus } from "./manifest-types";
 import { validateManifest } from "./validate-manifest";
 import { notifyWarning, notifyError } from "../observability/log-channel";
+import { isFileNotFound } from "../util/errors";
 
 const DEBOUNCE_MS = 300;
 
@@ -68,10 +69,7 @@ export class ManifestService implements vscode.Disposable {
       const raw = await fs.readFile(this.manifestUri.fsPath, "utf-8");
       newState = validateManifest(raw, this.manifestUri);
     } catch (err: unknown) {
-      const notFound =
-        err instanceof Error &&
-        (err as NodeJS.ErrnoException).code === "ENOENT";
-      if (notFound) {
+      if (isFileNotFound(err)) {
         newState = { status: "missing", manifestUri: this.manifestUri };
       } else {
         // Unreadable file — treat as invalid so diagnostics fire

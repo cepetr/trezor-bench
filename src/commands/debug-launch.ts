@@ -14,6 +14,7 @@ import { EvalContext, evaluateWhenExpression } from "../manifest/when-expression
 import { ActiveConfig } from "../configuration/active-config";
 import { logDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
 import { makeContextKey } from "../intellisense/artifact-resolution";
+import { isFileNotFound } from "../util/errors";
 
 // ---------------------------------------------------------------------------
 // Proxy debug configuration identity
@@ -178,7 +179,7 @@ export function loadDebugTemplate(
   try {
     content = fs.readFileSync(candidatePath, "utf8");
   } catch (err: unknown) {
-    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+    if (isFileNotFound(err)) {
       return {
         parseState: "missing",
         templatePath: candidatePath,

@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 import { logIntelliSense } from "../observability/log-channel";
+import { isFileNotFound } from "../util/errors";
 
 // ---------------------------------------------------------------------------
 // clangd extension constants
@@ -183,7 +184,7 @@ function removeCompileCommandsSymlink(workspaceFolder: vscode.WorkspaceFolder): 
       fs.unlinkSync(linkPath);
     }
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+    if (!isFileNotFound(error)) {
       throw error;
     }
   }
