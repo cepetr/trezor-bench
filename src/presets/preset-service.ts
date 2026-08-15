@@ -59,6 +59,12 @@ export class PresetService implements vscode.Disposable {
       // errors are captured inside _load and translated to invalid state
     });
   });
+  /**
+   * Reliability backstop for the file-system watchers: VS Code does not
+   * dependably deliver events for these paths in every host — the
+   * integration harness, for one, runs with no workspace folder open,
+   * where watcher events never arrive at all.
+   */
   private readonly _filePoller = new FilePoller(POLL_INTERVAL_MS, () =>
     this._debouncer.schedule()
   );
@@ -84,9 +90,6 @@ export class PresetService implements vscode.Disposable {
   async start(): Promise<PresetState> {
     this._startWatchers();
     const state = await this._load();
-    // Periodic fallback alongside the file-system watchers: VS Code's
-    // watcher for a path outside any open workspace folder is not always
-    // reliable for every create/change/delete transition.
     this._filePoller.start([this.sharedUri.fsPath, this.userUri.fsPath]);
     return state;
   }
