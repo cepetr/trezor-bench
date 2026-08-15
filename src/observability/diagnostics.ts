@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { ValidationIssue, ManifestState } from "../manifest/manifest-types";
+import { ValidationSeverity, ManifestState } from "../manifest/manifest-types";
 import { PresetState } from "../presets/preset-types";
 import { RepositoryConfigurationState } from "../workspace/repository-configuration";
 
@@ -21,19 +21,28 @@ export function getDiagnosticCollection(): vscode.DiagnosticCollection {
   return _collection;
 }
 
+/** The minimal issue shape needed to publish a diagnostic. */
+export interface DiagnosticIssue {
+  readonly message: string;
+  readonly code: string;
+  readonly range?: vscode.Range;
+  /** Treated as `"error"` when absent. */
+  readonly severity?: ValidationSeverity;
+}
+
 /**
  * Publishes `issues` as VS Code diagnostics attached to `uri`.
  * Clears any previous diagnostics on `uri` before publishing.
  */
 export function publishDiagnostics(
   uri: vscode.Uri,
-  issues: ReadonlyArray<ValidationIssue>
+  issues: ReadonlyArray<DiagnosticIssue>
 ): void {
   const collection = getDiagnosticCollection();
   const diagnostics = issues.map((issue) => {
     const range = issue.range ?? new vscode.Range(0, 0, 0, 0);
     const severity =
-      issue.severity === "error"
+      (issue.severity ?? "error") === "error"
         ? vscode.DiagnosticSeverity.Error
         : vscode.DiagnosticSeverity.Warning;
     const diagnostic = new vscode.Diagnostic(range, issue.message, severity);
@@ -118,15 +127,5 @@ export function handleRepositoryConfigurationDiagnostics(
     clearDiagnostics(state.configuration.configurationUri);
     return;
   }
-  const diagnostics = state.validationIssues.map((issue) => {
-    const diagnostic = new vscode.Diagnostic(
-      issue.range ?? new vscode.Range(0, 0, 0, 0),
-      issue.message,
-      vscode.DiagnosticSeverity.Error
-    );
-    diagnostic.source = "tbench";
-    diagnostic.code = issue.code;
-    return diagnostic;
-  });
-  getDiagnosticCollection().set(state.configurationUri, diagnostics);
+  publishDiagnostics(state.configurationUri, state.validationIssues);
 }
