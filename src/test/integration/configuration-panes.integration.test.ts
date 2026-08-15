@@ -211,11 +211,12 @@ suite("Configuration panes – initial collapse state", () => {
 suite("Configuration panes – no Collapse All on any view", () => {
   // showCollapseAll is a vscode.window.createTreeView() option, not a
   // package.json contribution field, so it cannot be introspected from the
-  // running extension's manifest — this reads the compiled extension.js
-  // that this very test process is running alongside.
-  test("extension.ts creates all three TreeViews with showCollapseAll: false", () => {
-    const extensionJsPath = path.join(__dirname, "../../extension.js");
-    const extensionSource = fs.readFileSync(extensionJsPath, "utf-8");
+  // running extension's manifest — this reads the compiled
+  // pane-tree-wiring.js (the module that creates the three views) that
+  // this very test process is running alongside.
+  test("pane-tree-wiring.ts creates all three TreeViews with showCollapseAll: false", () => {
+    const wiringJsPath = path.join(__dirname, "../../ui/pane-tree-wiring.js");
+    const extensionSource = fs.readFileSync(wiringJsPath, "utf-8");
     const createTreeViewCalls = extensionSource.match(/createTreeView\([^;]*?\}\)/gs) ?? [];
     assert.strictEqual(createTreeViewCalls.length, 3, "expected exactly 3 createTreeView calls");
     for (const call of createTreeViewCalls) {
