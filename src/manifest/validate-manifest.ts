@@ -152,13 +152,28 @@ function validateStringField(
   return node.value;
 }
 
-function validateModels(
+/** One collection entry that survived the shared skeleton checks. */
+interface ValidatedEntryBase {
+  readonly item: YAMLMap;
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * Walks one manifest entry collection: reports a missing or empty
+ * collection, validates each entry's required `id` and `name`, and reports
+ * duplicate ids. Returns the surviving entries with their YAML nodes;
+ * kind-specific field extraction stays with the caller.
+ */
+function validateEntryCollection(
   doc: YAMLMap,
+  key: "models" | "targets" | "components",
+  singular: string,
   lineCounter: LineCounter,
   issues: ValidationIssue[]
-): ManifestModel[] {
-  const models: ManifestModel[] = [];
-  const seqNode = doc.get("models", true);
+): ValidatedEntryBase[] {
+  const entries: ValidatedEntryBase[] = [];
+  const seqNode = doc.get(key, true);
 
   if (!(seqNode instanceof YAMLSeq) || seqNode.items.length === 0) {
     const seqRange = seqNode instanceof YAMLSeq
@@ -168,11 +183,11 @@ function validateModels(
       issue(
         "error",
         "empty-collection",
-        "manifest must define at least one model",
+        `manifest must define at least one ${singular}`,
         toVsRange(lineCounter, seqRange)
       )
     );
-    return models;
+    return entries;
   }
 
   const seen = new Set<string>();
@@ -180,8 +195,8 @@ function validateModels(
     if (!(item instanceof YAMLMap)) {
       continue;
     }
-    const id = validateStringField(item, "id", lineCounter, issues, "models entry");
-    const name = validateStringField(item, "name", lineCounter, issues, "models entry");
+    const id = validateStringField(item, "id", lineCounter, issues, `${key} entry`);
+    const name = validateStringField(item, "name", lineCounter, issues, `${key} entry`);
     if (!id || !name) {
       continue;
     }
@@ -191,18 +206,30 @@ function validateModels(
         issue(
           "error",
           "duplicate-id",
-          `models: duplicate id "${id}"`,
+          `${key}: duplicate id "${id}"`,
           toVsRange(lineCounter, idNode?.range)
         )
       );
       continue;
     }
     seen.add(id);
-    const artifactFolderValue = getScalarStringField(item, "artifactFolder", "artifact-folder");
-    const artifactFolder = artifactFolderValue?.trim() ? artifactFolderValue : undefined;
-    models.push({ kind: "model", id, name, artifactFolder });
+    entries.push({ item, id, name });
   }
-  return models;
+  return entries;
+}
+
+function validateModels(
+  doc: YAMLMap,
+  lineCounter: LineCounter,
+  issues: ValidationIssue[]
+): ManifestModel[] {
+  return validateEntryCollection(doc, "models", "model", lineCounter, issues).map(
+    ({ item, id, name }): ManifestModel => {
+      const artifactFolderValue = getScalarStringField(item, "artifactFolder", "artifact-folder");
+      const artifactFolder = artifactFolderValue?.trim() ? artifactFolderValue : undefined;
+      return { kind: "model", id, name, artifactFolder };
+    }
+  );
 }
 
 function validateTargets(
@@ -210,64 +237,25 @@ function validateTargets(
   lineCounter: LineCounter,
   issues: ValidationIssue[]
 ): ManifestTarget[] {
-  const targets: ManifestTarget[] = [];
-  const seqNode = doc.get("targets", true);
-
-  if (!(seqNode instanceof YAMLSeq) || seqNode.items.length === 0) {
-    const seqRange = seqNode instanceof YAMLSeq
-      ? (seqNode as YAMLSeq & { range?: [number, number, number] }).range
-      : undefined;
-    issues.push(
-      issue(
-        "error",
-        "empty-collection",
-        "manifest must define at least one target",
-        toVsRange(lineCounter, seqRange)
-      )
-    );
-    return targets;
-  }
-
-  const seen = new Set<string>();
-  for (const item of seqNode.items) {
-    if (!(item instanceof YAMLMap)) {
-      continue;
-    }
-    const id = validateStringField(item, "id", lineCounter, issues, "targets entry");
-    const name = validateStringField(item, "name", lineCounter, issues, "targets entry");
-    if (!id || !name) {
-      continue;
-    }
-    if (seen.has(id)) {
-      const idNode = item.get("id", true) as unknown as { range?: [number, number, number] };
-      issues.push(
-        issue(
-          "error",
-          "duplicate-id",
-          `targets: duplicate id "${id}"`,
-          toVsRange(lineCounter, idNode?.range)
-        )
-      );
-      continue;
-    }
-    seen.add(id);
-    const shortNameNode = item.get("shortName", true);
-    const shortName =
-      shortNameNode instanceof Scalar && typeof shortNameNode.value === "string"
-        ? shortNameNode.value
-        : undefined;
-    const flagNode = item.get("flag", true);
-    const flag: string | null | undefined =
-      flagNode instanceof Scalar && typeof flagNode.value === "string" && flagNode.value.length > 0
-        ? flagNode.value
-        : flagNode instanceof Scalar && flagNode.value === null
-          ? null
+  return validateEntryCollection(doc, "targets", "target", lineCounter, issues).map(
+    ({ item, id, name }): ManifestTarget => {
+      const shortNameNode = item.get("shortName", true);
+      const shortName =
+        shortNameNode instanceof Scalar && typeof shortNameNode.value === "string"
+          ? shortNameNode.value
           : undefined;
-    const artifactSuffix = getScalarStringField(item, "artifactSuffix", "artifact-suffix");
-    const executableExtension = getScalarStringField(item, "executableExtension", "executable-extension");
-    targets.push({ kind: "target", id, name, shortName, flag, artifactSuffix, executableExtension });
-  }
-  return targets;
+      const flagNode = item.get("flag", true);
+      const flag: string | null | undefined =
+        flagNode instanceof Scalar && typeof flagNode.value === "string" && flagNode.value.length > 0
+          ? flagNode.value
+          : flagNode instanceof Scalar && flagNode.value === null
+            ? null
+            : undefined;
+      const artifactSuffix = getScalarStringField(item, "artifactSuffix", "artifact-suffix");
+      const executableExtension = getScalarStringField(item, "executableExtension", "executable-extension");
+      return { kind: "target", id, name, shortName, flag, artifactSuffix, executableExtension };
+    }
+  );
 }
 
 function validateComponents(
@@ -278,56 +266,13 @@ function validateComponents(
   hasDebugBlockingIssuesRef: { value: boolean }
 ): ManifestComponent[] {
   const components: ManifestComponent[] = [];
-  const seqNode = doc.get("components", true);
-
-  if (!(seqNode instanceof YAMLSeq) || seqNode.items.length === 0) {
-    const seqRange = seqNode instanceof YAMLSeq
-      ? (seqNode as YAMLSeq & { range?: [number, number, number] }).range
-      : undefined;
-    issues.push(
-      issue(
-        "error",
-        "empty-collection",
-        "manifest must define at least one component",
-        toVsRange(lineCounter, seqRange)
-      )
-    );
-    return components;
-  }
-
-  const seen = new Set<string>();
-  const drafts: Array<{
-    item: YAMLMap;
-    id: string;
-    name: string;
-    artifactName: string | undefined;
-  }> = [];
-  for (const item of seqNode.items) {
-    if (!(item instanceof YAMLMap)) {
-      continue;
+  const drafts = validateEntryCollection(doc, "components", "component", lineCounter, issues).map(
+    ({ item, id, name }) => {
+      const artifactNameValue = getScalarStringField(item, "artifactName", "artifact-name");
+      const artifactName = artifactNameValue?.trim() ? artifactNameValue : undefined;
+      return { item, id, name, artifactName };
     }
-    const id = validateStringField(item, "id", lineCounter, issues, "components entry");
-    const name = validateStringField(item, "name", lineCounter, issues, "components entry");
-    if (!id || !name) {
-      continue;
-    }
-    if (seen.has(id)) {
-      const idNode = item.get("id", true) as unknown as { range?: [number, number, number] };
-      issues.push(
-        issue(
-          "error",
-          "duplicate-id",
-          `components: duplicate id "${id}"`,
-          toVsRange(lineCounter, idNode?.range)
-        )
-      );
-      continue;
-    }
-    seen.add(id);
-    const artifactNameValue = getScalarStringField(item, "artifactName", "artifact-name");
-    const artifactName = artifactNameValue?.trim() ? artifactNameValue : undefined;
-    drafts.push({ item, id, name, artifactName });
-  }
+  );
 
   const whenContext: WhenContext = {
     ...baseWhenContext,
