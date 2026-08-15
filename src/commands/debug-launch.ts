@@ -13,6 +13,29 @@ import { ManifestComponentDebugProfile, ManifestStateLoaded } from "../manifest/
 import { EvalContext, evaluateWhenExpression } from "../manifest/when-expressions";
 import { ActiveConfig } from "../configuration/active-config";
 import { logDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
+import { makeContextKey } from "../intellisense/artifact-resolution";
+
+// ---------------------------------------------------------------------------
+// Proxy debug configuration identity
+// ---------------------------------------------------------------------------
+
+export const TBENCH_DEBUG_TYPE = "tbench";
+
+/**
+ * Builds a display label for the default tbench Run and Debug entry.
+ * Format: "Trezor"
+ */
+export function labelForDefaultEntry(): string {
+  return "Trezor";
+}
+
+/**
+ * Builds a display label for a profile-specific Run and Debug entry.
+ * Format: "Trezor: {profile-name}"
+ */
+export function labelForProfileEntry(profileName: string): string {
+  return `Trezor: ${profileName}`;
+}
 
 // ---------------------------------------------------------------------------
 // Profile resolution
@@ -589,12 +612,12 @@ function buildTbenchProxyDebugConfiguration(
   mode: "default" | "profile"
 ): TbenchProxyDebugConfiguration {
   return {
-    type: "tbench",
+    type: TBENCH_DEBUG_TYPE,
     request: "launch",
-    name: mode === "default" ? "Trezor" : `Trezor: ${profile.name}`,
+    name: mode === "default" ? labelForDefaultEntry() : labelForProfileEntry(profile.name),
     tbenchMode: mode,
     tbenchProfileId: profile.id,
-    tbenchContextKey: `${config.modelId}::${config.targetId}::${config.componentId}`,
+    tbenchContextKey: makeContextKey(config),
   };
 }
 

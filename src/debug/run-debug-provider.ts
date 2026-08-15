@@ -19,36 +19,15 @@ import {
   resolveMatchingDebugProfiles,
   materializeDebugConfiguration,
   MatchingDebugProfileSet,
+  TBENCH_DEBUG_TYPE,
+  labelForDefaultEntry,
+  labelForProfileEntry,
 } from "../commands/debug-launch";
+
+export { TBENCH_DEBUG_TYPE, labelForDefaultEntry, labelForProfileEntry };
 import { makeContextKey, resolveActiveExecutableArtifact } from "../intellisense/artifact-resolution";
 import { EvalContext } from "../manifest/when-expressions";
 import { logProviderDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
-
-// ---------------------------------------------------------------------------
-// Proxy debug type constant
-// ---------------------------------------------------------------------------
-
-export const TBENCH_DEBUG_TYPE = "tbench";
-
-// ---------------------------------------------------------------------------
-// Label helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Builds a display label for the default tbench Run and Debug entry.
- * Format: "Trezor"
- */
-export function labelForDefaultEntry(): string {
-  return "Trezor";
-}
-
-/**
- * Builds a display label for a profile-specific Run and Debug entry.
- * Format: "Trezor: {profile-name}"
- */
-export function labelForProfileEntry(profileName: string): string {
-  return `Trezor: ${profileName}`;
-}
 
 function dedupeDebugConfigurations(
   configs: ReadonlyArray<vscode.DebugConfiguration>
