@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
-import { ActiveConfig } from "../../configuration/active-config";
+import { ActiveBuildContext } from "../../configuration/active-build-context";
 import {
   ActiveArtifactFileWatcher,
   FileSystemWatcherLike,
@@ -36,7 +36,7 @@ function makeManifest() {
   });
 }
 
-const activeConfig: ActiveConfig = {
+const activeBuildContext: ActiveBuildContext = {
   modelId: "model-a",
   targetId: "target-a",
   componentId: "component-a",
@@ -65,7 +65,7 @@ async function waitFor(predicate: () => boolean): Promise<void> {
 suite("Artifact file watcher", () => {
   test("watches the parent of the artifacts root for externally recreated artifacts", () => {
     const artifactsRoot = path.join("/tmp", "tbench-artifacts");
-    const scopes = resolveArtifactWatchScopes(makeManifest(), activeConfig, artifactsRoot);
+    const scopes = resolveArtifactWatchScopes(makeManifest(), activeBuildContext, artifactsRoot);
 
     assert.strictEqual(scopes.length, 1);
     assert.strictEqual(scopes[0].folderPath, path.dirname(artifactsRoot));
@@ -87,7 +87,7 @@ suite("Artifact file watcher", () => {
     );
 
     try {
-      watcher.update(makeManifest(), activeConfig, path.join("/tmp", "artifacts"));
+      watcher.update(makeManifest(), activeBuildContext, path.join("/tmp", "artifacts"));
 
       assert.deepStrictEqual(
         patterns.map((pattern) => (pattern as vscode.RelativePattern).pattern).sort(),
@@ -115,7 +115,7 @@ suite("Artifact file watcher", () => {
     );
 
     try {
-      watcher.update(makeManifest(), activeConfig, artifactsRoot);
+      watcher.update(makeManifest(), activeBuildContext, artifactsRoot);
       const binaryPath = path.join(
         artifactsRoot,
         "model-a-out",

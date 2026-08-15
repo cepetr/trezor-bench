@@ -21,7 +21,7 @@ import {
 } from "../../configuration/build-options";
 import { deriveWorkflowArguments } from "../../commands/build-workflow";
 import { BuildOption, ManifestStateLoaded } from "../../manifest/manifest-types";
-import { ActiveConfig } from "../../configuration/active-config";
+import { ActiveBuildContext } from "../../configuration/active-build-context";
 import { DEFAULT_PRESET_ID } from "../../presets/preset-types";
 
 // ---------------------------------------------------------------------------
@@ -93,7 +93,7 @@ function manifest(): ManifestStateLoaded {
   };
 }
 
-function activeConfig(overrides: Partial<ActiveConfig> = {}): ActiveConfig {
+function activeBuildContext(overrides: Partial<ActiveBuildContext> = {}): ActiveBuildContext {
   return {
     modelId: "T2T1",
     targetId: "hw",
@@ -120,7 +120,7 @@ async function launchArgsFor(
   if (state.status !== "loaded") {
     return [];
   }
-  const presetCtx = derivePresetContext(manifest(), activeConfig());
+  const presetCtx = derivePresetContext(manifest(), activeBuildContext());
   const effective = computePresetEffectiveValues(BUILD_OPTIONS, state.shared, state.user, presetId, presetCtx);
   const resolved = normalizeBuildOptions(BUILD_OPTIONS, readBuildOptions(context), BUILD_CONTEXT_ADAPTER, effective);
   return deriveWorkflowArguments("Build", WF_CTX, resolved, presetId);
@@ -228,7 +228,7 @@ suite("Preset-aware workflow – recalculation before launch", () => {
 
     // First launch: frozen effective = true.
     const context = createFakeContext();
-    const presetCtx = derivePresetContext(manifest(), activeConfig());
+    const presetCtx = derivePresetContext(manifest(), activeBuildContext());
     const firstState = service.state;
     assert.ok(firstState && firstState.status === "loaded");
     const firstEffective = computePresetEffectiveValues(

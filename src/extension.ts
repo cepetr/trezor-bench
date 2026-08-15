@@ -43,16 +43,16 @@ import {
   handleRepositoryConfigDiagnostics,
 } from "./observability/diagnostics";
 import {
-  restoreActiveConfig,
-  readActiveConfig,
+  restoreActiveBuildContext,
+  readActiveBuildContext,
   selectModel,
   selectTarget,
   selectComponent,
   selectPreset,
   activePresetId,
-  ActiveConfig,
-} from "./configuration/active-config";
-import { normalizeActiveConfig } from "./configuration/normalize-config";
+  ActiveBuildContext,
+} from "./configuration/active-build-context";
+import { normalizeActiveBuildContext } from "./configuration/normalize-config";
 import {
   readBuildOptions,
   writeBuildOption,
@@ -131,10 +131,10 @@ let _buildArtifactsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _buildOptionsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _statusBar: StatusBarPresenter | undefined;
 let _manifestState: ManifestState | undefined;
-let _activeConfig: ActiveConfig | undefined;
+let _activeBuildContext: ActiveBuildContext | undefined;
 /**
  * The preset context the last refresh resolved against. Held beside
- * `_activeConfig` — the two are always written together — so a refresh can tell
+ * `_activeBuildContext` — the two are always written together — so a refresh can tell
  * whether the calculated values every stored override was authored against
  * still hold. `undefined` until the first refresh with a loaded
  * manifest, which is what keeps activation from wiping a restored session.
@@ -245,16 +245,16 @@ function assertNoUnauthorizedContributions(
  */
 function computeResolvedOptions(
   state: ManifestState,
-  activeConfig: ActiveConfig | undefined,
+  activeBuildContext: ActiveBuildContext | undefined,
   context: vscode.ExtensionContext,
   presetEffectiveValues: ReadonlyMap<string, PresetEffectiveValue> = new Map()
 ): ResolvedOption[] {
   const manifest = loadedManifest(state);
-  if (!manifest || !activeConfig) {
+  if (!manifest || !activeBuildContext) {
     return [];
   }
   const saved = readBuildOptions(context);
-  return normalizeBuildOptions(manifest.buildOptions, saved, activeConfig, presetEffectiveValues);
+  return normalizeBuildOptions(manifest.buildOptions, saved, activeBuildContext, presetEffectiveValues);
 }
 
 /**
@@ -268,7 +268,7 @@ function computeResolvedOptions(
  * trigger: activation, preset-state change, manifest-state change, and
  * active model/target/component change.
  */
-async function refreshPresetsAndActiveConfig(
+async function refreshPresetsAndActiveBuildContext(
   context: vscode.ExtensionContext
 ): Promise<void> {
   const manifest = loadedManifest(_manifestState);
@@ -281,7 +281,7 @@ async function refreshPresetsAndActiveConfig(
     return;
   }
 
-  const savedAxes = normalizeActiveConfig(manifest, readActiveConfig(context));
+  const savedAxes = normalizeActiveBuildContext(manifest, readActiveBuildContext(context));
   const presetCtx = derivePresetContext(manifest, savedAxes);
 
   const currentPresetState = _presetState;
@@ -297,9 +297,9 @@ async function refreshPresetsAndActiveConfig(
     knownIds = new Set(choices.map((p) => p.id));
   }
 
-  const previousPresetId = _activeConfig ? activePresetId(_activeConfig) : undefined;
+  const previousPresetId = _activeBuildContext ? activePresetId(_activeBuildContext) : undefined;
   const previousPresetContext = _presetContext;
-  const normalizedConfig = await restoreActiveConfig(context, manifest, knownIds);
+  const normalizedConfig = await restoreActiveBuildContext(context, manifest, knownIds);
   const newPresetId = activePresetId(normalizedConfig);
 
   const presetIdChanged = previousPresetId !== undefined && previousPresetId !== newPresetId;
@@ -345,7 +345,7 @@ async function refreshPresetsAndActiveConfig(
     }
   }
 
-  _activeConfig = normalizedConfig;
+  _activeBuildContext = normalizedConfig;
   _presetContext = presetCtx;
   _resolvedOptions = computeResolvedOptions(manifest, normalizedConfig, context, _presetEffectiveValues);
 
@@ -366,15 +366,15 @@ async function refreshPresetsAndActiveConfig(
  */
 function updateWorkflowBlockedContext(state: ManifestState): void {
   const manifest = loadedManifest(state);
-  const activeConfigResolved = !!(
-    manifest && _activeConfig && resolveWorkflowContext(manifest, _activeConfig)
+  const activeBuildContextResolved = !!(
+    manifest && _activeBuildContext && resolveWorkflowContext(manifest, _activeBuildContext)
   );
   const blocked =
     evaluateWorkflowPreconditions({
       manifestStatus: state.status,
       hasWorkflowBlockingIssues: manifest?.hasWorkflowBlockingIssues ?? false,
       workspaceSupported: isWorkflowWorkspaceSupported(),
-      activeConfigResolved,
+      activeBuildContextResolved,
     }) !== "no-block";
   vscode.commands.executeCommand("setContext", "tbench.workflowBlocked", blocked);
 }
@@ -385,7 +385,7 @@ function updateWorkflowBlockedContext(state: ManifestState): void {
  */
 function updateArtifactActionContext(
   state: ManifestState,
-  config: ActiveConfig | undefined,
+  config: ActiveBuildContext | undefined,
   artifactsRoot: string,
   workspaceFolder: vscode.WorkspaceFolder
 ): void {
@@ -443,7 +443,7 @@ function updateArtifactActionContext(
  */
 function updateDebugContext(
   state: ManifestState,
-  config: ActiveConfig | undefined,
+  config: ActiveBuildContext | undefined,
   artifactsRoot: string
 ): void {
   const manifest = loadedManifest(state);
@@ -461,7 +461,7 @@ function updateDebugContext(
 
 function updateCompileCommandsTreeArtifact(
   state: ManifestState,
-  config: ActiveConfig | undefined,
+  config: ActiveBuildContext | undefined,
   artifactsRoot: string
 ): void {
   const manifest = loadedManifest(state);
@@ -592,8 +592,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
       const manifestState = _manifestState;
       if (manifestState) {
-        _resolvedOptions = computeResolvedOptions(manifestState, _activeConfig, context, _presetEffectiveValues);
-        _treeModel?.update(manifestState, _activeConfig, _resolvedOptions);
+        _resolvedOptions = computeResolvedOptions(manifestState, _activeBuildContext, context, _presetEffectiveValues);
+        _treeModel?.update(manifestState, _activeBuildContext, _resolvedOptions);
       }
     })
   );
@@ -620,7 +620,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     _artifactFileWatcher?.update(
       manifest,
-      _activeConfig,
+      _activeBuildContext,
       resolveArtifactsPath(workspaceFolder)
     );
   };
@@ -631,13 +631,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     updateArtifactActionContext(
       _manifestState,
-      _activeConfig,
+      _activeBuildContext,
       resolveArtifactsPath(workspaceFolder),
       workspaceFolder
     );
     updateDebugContext(
       _manifestState,
-      _activeConfig,
+      _activeBuildContext,
       resolveArtifactsPath(workspaceFolder)
     );
   };
@@ -648,7 +648,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     _statusBar?.update(
       _manifestState,
-      _activeConfig,
+      _activeBuildContext,
       isStatusBarEnabled(workspaceFolder)
     );
   };
@@ -656,7 +656,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (_manifestState) {
       updateCompileCommandsTreeArtifact(
         _manifestState,
-        _activeConfig,
+        _activeBuildContext,
         resolveArtifactsPath(workspaceFolder)
       );
     }
@@ -742,7 +742,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           if (selection === "Fix") {
             applyProviderSettingFix(workspaceFolder, () => {
               _lastShownProviderFixState = "none";
-              _intelliSenseService?.scheduleRefresh("active-config-change");
+              _intelliSenseService?.scheduleRefresh("active-build-context-change");
             });
           }
         });
@@ -788,9 +788,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const onManifestStateChange = async (state: ManifestState): Promise<void> => {
     _manifestState = state;
     if (state.status === "loaded") {
-      await refreshPresetsAndActiveConfig(context);
+      await refreshPresetsAndActiveBuildContext(context);
     } else {
-      _activeConfig = undefined;
+      _activeBuildContext = undefined;
       _presetContext = undefined;
       _resolvedOptions = [];
       _treeModel?.update(state, undefined, []);
@@ -804,7 +804,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Update IntelliSense service with the new manifest state
     const manifest = loadedManifest(state);
     _intelliSenseService?.setManifest(manifest);
-    _intelliSenseService?.setActiveConfig(_activeConfig);
+    _intelliSenseService?.setActiveBuildContext(_activeBuildContext);
     refreshArtifactFileWatcher();
     refreshBuildArtifacts("manifest-change");
   };
@@ -827,7 +827,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     _presetState = state;
     handlePresetStateDiagnostics(state);
     logPresetState(state);
-    await refreshPresetsAndActiveConfig(context);
+    await refreshPresetsAndActiveBuildContext(context);
   };
 
   _presetStateSubscription = _presetService.onDidChangeState(onPresetStateChange);
@@ -849,7 +849,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Flash and Upload commands. Identical except for the action kind. ---
   const runArtifactAction = async (kind: ArtifactActionKind): Promise<void> => {
     const state = _manifestState;
-    const config = _activeConfig;
+    const config = _activeBuildContext;
     const manifest = loadedManifest(state);
     const actionCtx = manifest && config ? resolveArtifactActionContext(manifest, config) : undefined;
     const component = manifest?.components.find((c) => c.id === config?.componentId);
@@ -861,7 +861,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       workspaceSupported: isWorkflowWorkspaceSupported(),
       manifestStatus: state?.status ?? "missing",
       hasWorkflowBlockingIssues: manifest?.hasWorkflowBlockingIssues ?? false,
-      activeConfigResolved: !!actionCtx,
+      activeBuildContextResolved: !!actionCtx,
       actionApplicable: !!(component && evalCtx && isArtifactActionApplicable(kind, component, evalCtx)),
       binaryExists: _binaryArtifact?.exists ?? false,
     });
@@ -892,7 +892,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.commands.registerCommand("tbench.startDebugging", async () => {
       const state = _manifestState;
-      const config = _activeConfig;
+      const config = _activeBuildContext;
       const manifest = loadedManifest(state);
       if (!manifest || !config) {
         logDebugLaunchFailure("unsupported-workspace", {
@@ -909,7 +909,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Run and Debug provider (Run and Debug Integration slice) ---
   const debugConfigProvider = new RunDebugConfigProvider(
     () => loadedManifest(_manifestState),
-    () => _activeConfig,
+    () => _activeBuildContext,
     () => resolveArtifactsPath(workspaceFolder),
     () => resolveDebugTemplatesPath(workspaceFolder),
     workspaceFolder
@@ -944,7 +944,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- Build-context selector commands. ---
   // Each selection also re-normalizes the active preset against the new
-  // build context, via refreshPresetsAndActiveConfig. All selectors
+  // build context, via refreshPresetsAndActiveBuildContext. All selectors
   // share the same guard and post-selection refresh chain.
   const registerSelector = (
     command: string,
@@ -955,11 +955,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const state = _manifestState;
         if (!state || state.status !== "loaded") { return; }
         await apply(id, state);
-        await refreshPresetsAndActiveConfig(context);
+        await refreshPresetsAndActiveBuildContext(context);
         refreshStatusBar();
-        _intelliSenseService?.setActiveConfig(_activeConfig);
+        _intelliSenseService?.setActiveBuildContext(_activeBuildContext);
         refreshArtifactFileWatcher();
-        refreshBuildArtifacts("active-config-change");
+        refreshBuildArtifacts("active-build-context-change");
       })
     );
   };
@@ -979,18 +979,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand(`tbench.${kind.toLowerCase()}`, async () => {
       if (kind !== "Clean") {
         await _presetService?.reload();
-        await refreshPresetsAndActiveConfig(context);
+        await refreshPresetsAndActiveBuildContext(context);
       }
 
       const state = _manifestState;
       const manifest = loadedManifest(state);
-      const activeConfig = _activeConfig;
-      const wfCtx = manifest && activeConfig ? resolveWorkflowContext(manifest, activeConfig) : undefined;
+      const activeBuildContext = _activeBuildContext;
+      const wfCtx = manifest && activeBuildContext ? resolveWorkflowContext(manifest, activeBuildContext) : undefined;
       const blockReason = evaluateWorkflowPreconditions({
         manifestStatus: state?.status ?? "missing",
         hasWorkflowBlockingIssues: manifest?.hasWorkflowBlockingIssues ?? false,
         workspaceSupported: isWorkflowWorkspaceSupported(),
-        activeConfigResolved: !!wfCtx,
+        activeBuildContextResolved: !!wfCtx,
         presetsUnavailable: kind !== "Clean" && _presetsUnavailable,
         presetsInvalid: kind !== "Clean" && _presetBlocked,
       });
@@ -1005,7 +1005,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return;
       }
 
-      const task = createWorkflowTask(kind, wfCtx, workspaceFolder, _resolvedOptions, activePresetId(activeConfig!));
+      const task = createWorkflowTask(kind, wfCtx, workspaceFolder, _resolvedOptions, activePresetId(activeBuildContext!));
       await executeWorkflowTask(task, kind);
     });
 
@@ -1027,8 +1027,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await writeBuildOption(context, key, newValue);
       const state = _manifestState;
       if (state) {
-        _resolvedOptions = computeResolvedOptions(state, _activeConfig, context, _presetEffectiveValues);
-        _treeModel?.update(state, _activeConfig, _resolvedOptions);
+        _resolvedOptions = computeResolvedOptions(state, _activeBuildContext, context, _presetEffectiveValues);
+        _treeModel?.update(state, _activeBuildContext, _resolvedOptions);
       }
     })
   );
@@ -1047,8 +1047,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         await writeBuildOption(context, key, stateId);
         const state = _manifestState;
         if (state) {
-          _resolvedOptions = computeResolvedOptions(state, _activeConfig, context, _presetEffectiveValues);
-          _treeModel?.update(state, _activeConfig, _resolvedOptions);
+          _resolvedOptions = computeResolvedOptions(state, _activeBuildContext, context, _presetEffectiveValues);
+          _treeModel?.update(state, _activeBuildContext, _resolvedOptions);
         }
       }
     )
@@ -1057,9 +1057,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Task provider. ---
   const taskProvider = new BuildTaskProvider({
     getManifestState: () => loadedManifest(_manifestState),
-    getActiveConfig: () => _activeConfig,
+    getActiveBuildContext: () => _activeBuildContext,
     getResolvedOptions: () => _resolvedOptions,
-    getActivePresetId: () => activePresetId(_activeConfig),
+    getActivePresetId: () => activePresetId(_activeBuildContext),
     getWorkspaceFolder: () => workspaceFolder,
   });
   context.subscriptions.push(vscode.tasks.registerTaskProvider(TASK_TYPE, taskProvider));
@@ -1100,10 +1100,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _presetService = undefined;
       _manifestState = undefined;
       _presetState = undefined;
-      _activeConfig = undefined;
+      _activeBuildContext = undefined;
       _resolvedOptions = [];
       _intelliSenseService?.setManifest(undefined);
-      _intelliSenseService?.setActiveConfig(undefined);
+      _intelliSenseService?.setActiveBuildContext(undefined);
       _intelliSenseService?.setArtifactsRoot("");
       void vscode.commands.executeCommand("setContext", "tbench.workflowBlocked", true);
       if (!repositoryConfigWasInvalid) {
@@ -1175,7 +1175,7 @@ export function deactivate(): void {
   _excludedFilesOverlays?.dispose();
   _excludedFilesOverlays = undefined;
   _manifestState = undefined;
-  _activeConfig = undefined;
+  _activeBuildContext = undefined;
   _presetContext = undefined;
   _resolvedOptions = [];
   _binaryArtifact = undefined;

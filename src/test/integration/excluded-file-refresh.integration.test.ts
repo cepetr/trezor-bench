@@ -1,5 +1,5 @@
 /**
- * Integration tests for excluded-file refresh: active-config refresh,
+ * Integration tests for excluded-file refresh: active-build-context refresh,
  * settings-driven refresh, manual refresh reuse, workspace-change refresh,
  * and stale-state clearing.
  *
@@ -106,7 +106,7 @@ function wireOverlayToService(
 // Suite: Active-config refresh
 // ---------------------------------------------------------------------------
 
-suite("Excluded-file refresh — active-config refresh", () => {
+suite("Excluded-file refresh — active-build-context refresh", () => {
   test("recompute() with a new contextKey produces a snapshot with the updated key", () => {
     const svc = new ExcludedFilesService();
     const snapshots: ExcludedFilesSnapshot[] = [];
@@ -145,7 +145,7 @@ suite("Excluded-file refresh — active-config refresh", () => {
     svc.dispose();
   });
 
-  test("ExcludedFilesDecorationsProvider updates after active-config recompute", () => {
+  test("ExcludedFilesDecorationsProvider updates after active-build-context recompute", () => {
     const svc = new ExcludedFilesService();
     const provider = new ExcludedFilesDecorationsProvider();
     const sub = wireProviderToService(svc, provider);

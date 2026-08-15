@@ -14,7 +14,7 @@
 
 import * as vscode from "vscode";
 import { ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
-import { ActiveConfig } from "../configuration/active-config";
+import { ActiveBuildContext } from "../configuration/active-build-context";
 import {
   resolveMatchingDebugProfiles,
   materializeDebugConfiguration,
@@ -65,7 +65,7 @@ function dedupeDebugConfigurations(
  */
 export function generateDebugConfigurations(
   manifest: ManifestStateLoaded,
-  config: ActiveConfig,
+  config: ActiveBuildContext,
   artifactsRoot: string
 ): vscode.DebugConfiguration[] {
   if (manifest.hasDebugBlockingIssues) {
@@ -142,20 +142,20 @@ export function generateDebugConfigurations(
  */
 export class RunDebugConfigProvider implements vscode.DebugConfigurationProvider {
   private readonly _getManifest: () => ManifestStateLoaded | undefined;
-  private readonly _getActiveConfig: () => ActiveConfig | undefined;
+  private readonly _getActiveBuildContext: () => ActiveBuildContext | undefined;
   private readonly _getArtifactsRoot: () => string;
   private readonly _getTemplatesRoot: () => string;
   private readonly _workspaceFolder: vscode.WorkspaceFolder;
 
   constructor(
     getManifest: () => ManifestStateLoaded | undefined,
-    getActiveConfig: () => ActiveConfig | undefined,
+    getActiveBuildContext: () => ActiveBuildContext | undefined,
     getArtifactsRoot: () => string,
     getTemplatesRoot: () => string,
     workspaceFolder: vscode.WorkspaceFolder
   ) {
     this._getManifest = getManifest;
-    this._getActiveConfig = getActiveConfig;
+    this._getActiveBuildContext = getActiveBuildContext;
     this._getArtifactsRoot = getArtifactsRoot;
     this._getTemplatesRoot = getTemplatesRoot;
     this._workspaceFolder = workspaceFolder;
@@ -170,7 +170,7 @@ export class RunDebugConfigProvider implements vscode.DebugConfigurationProvider
     _token: vscode.CancellationToken
   ): vscode.ProviderResult<vscode.DebugConfiguration[]> {
     const manifest = this._getManifest();
-    const config = this._getActiveConfig();
+    const config = this._getActiveBuildContext();
 
     if (!manifest || !config) {
       return [];
@@ -197,7 +197,7 @@ export class RunDebugConfigProvider implements vscode.DebugConfigurationProvider
     }
 
     const manifest = this._getManifest();
-    const config = this._getActiveConfig();
+    const config = this._getActiveBuildContext();
 
     if (!manifest || !config) {
       const msg = "Cannot start debugging: manifest not loaded or no active configuration.";

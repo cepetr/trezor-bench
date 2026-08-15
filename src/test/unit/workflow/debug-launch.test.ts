@@ -816,7 +816,7 @@ suite("materializeDebugConfiguration – failure paths", () => {
     }
   });
 
-  test("unknown active config (missing component) → ok: false, reason: 'unknown-active-config'", () => {
+  test("unknown active config (missing component) → ok: false, reason: 'unknown-active-build-context'", () => {
     const brokenManifest = makeIntelliSenseLoadedState({
       components: [], // remove all components
     });
@@ -833,7 +833,7 @@ suite("materializeDebugConfiguration – failure paths", () => {
 
     assert.strictEqual(result.ok, false);
     if (!result.ok) {
-      assert.strictEqual(result.reason, "unknown-active-config");
+      assert.strictEqual(result.reason, "unknown-active-build-context");
     }
   });
 

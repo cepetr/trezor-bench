@@ -6,7 +6,7 @@ import {
   FileSystemWatcherLike,
   resolveArtifactWatchScopes,
 } from "../../../intellisense/artifact-file-watcher";
-import { ActiveConfig } from "../../../configuration/active-config";
+import { ActiveBuildContext } from "../../../configuration/active-build-context";
 import {
   makeDebugLoadedState,
   makeDebugTargetWithExtension,
@@ -59,7 +59,7 @@ class FakeWatcher implements FileSystemWatcherLike {
   }
 }
 
-function makeConfig(overrides: Partial<ActiveConfig> = {}): ActiveConfig {
+function makeConfig(overrides: Partial<ActiveBuildContext> = {}): ActiveBuildContext {
   return {
     modelId: "model-a",
     targetId: "target-a",

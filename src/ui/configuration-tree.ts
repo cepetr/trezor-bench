@@ -5,7 +5,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import { ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
-import { ActiveConfig } from "../configuration/active-config";
+import { ActiveBuildContext } from "../configuration/active-build-context";
 import { ResolvedOption } from "../configuration/build-options";
 import { ActiveCompileCommandsArtifact } from "../intellisense/intellisense-types";
 import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../intellisense/artifact-resolution";
@@ -376,7 +376,7 @@ export class ConfigurationTreeModel
   implements vscode.TreeDataProvider<vscode.TreeItem>
 {
   private _state: ManifestState | undefined;
-  private _activeConfig: ActiveConfig | undefined;
+  private _activeBuildContext: ActiveBuildContext | undefined;
   private _expandedSelector: SelectorKind | undefined;
   private _expandedMultistateKey: string | undefined;
   private _collapsedGroups = new Set<string>();
@@ -418,11 +418,11 @@ export class ConfigurationTreeModel
   /** Updates the displayed manifest state and refreshes the view. */
   update(
     state: ManifestState,
-    activeConfig?: ActiveConfig,
+    activeBuildContext?: ActiveBuildContext,
     resolvedOptions?: ReadonlyArray<ResolvedOption>
   ): void {
     this._state = state;
-    this._activeConfig = activeConfig;
+    this._activeBuildContext = activeBuildContext;
     this._resolvedOptions = resolvedOptions ?? [];
     if (state.status !== "loaded") {
       this._expandedSelector = undefined;
@@ -667,12 +667,12 @@ export class ConfigurationTreeModel
       return [];
     }
     const manifest = this._state;
-    const activeId = this._activeConfig
+    const activeId = this._activeBuildContext
       ? kind === "model"
-        ? this._activeConfig.modelId
+        ? this._activeBuildContext.modelId
         : kind === "target"
-        ? this._activeConfig.targetId
-        : this._activeConfig.componentId
+        ? this._activeBuildContext.targetId
+        : this._activeBuildContext.componentId
       : undefined;
 
     const entries =
@@ -729,20 +729,20 @@ export class ConfigurationTreeModel
     state: ManifestStateLoaded,
     kind: SelectorKind
   ): string | undefined {
-    if (!this._activeConfig) {
+    if (!this._activeBuildContext) {
       return undefined;
     }
 
     if (kind === "model") {
-      return state.models.find((entry) => entry.id === this._activeConfig?.modelId)?.name;
+      return state.models.find((entry) => entry.id === this._activeBuildContext?.modelId)?.name;
     }
 
     if (kind === "target") {
-      const target = state.targets.find((entry) => entry.id === this._activeConfig?.targetId);
+      const target = state.targets.find((entry) => entry.id === this._activeBuildContext?.targetId);
       return target ? (target.shortName ?? target.name) : undefined;
     }
 
-    return state.components.find((entry) => entry.id === this._activeConfig?.componentId)?.name;
+    return state.components.find((entry) => entry.id === this._activeBuildContext?.componentId)?.name;
   }
 
   // -------------------------------------------------------------------------
@@ -896,7 +896,7 @@ export class ConfigurationTreeModel
 
 /**
  * Thin, stateless `TreeDataProvider` for one pane. `ConfigurationTreeModel`
- * stays the sole owner of manifest, active-configuration, preset, resolved-option,
+ * stays the sole owner of manifest, active-build-contexturation, preset, resolved-option,
  * and artifact state; this facade only routes to it.
  */
 export class PaneTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {

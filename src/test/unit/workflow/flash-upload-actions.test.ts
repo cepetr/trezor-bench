@@ -25,7 +25,7 @@ import {
 } from "../../../commands/artifact-actions";
 import { ManifestComponent, WhenExpression } from "../../../manifest/manifest-types";
 import { makeLoadedState } from "../workflow-test-helpers";
-import { ActiveConfig } from "../../../configuration/active-config";
+import { ActiveBuildContext } from "../../../configuration/active-build-context";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -175,7 +175,7 @@ suite("evaluateArtifactActionPreconditions", () => {
       manifestStatus: "loaded",
       hasWorkflowBlockingIssues: false,
       workspaceSupported: true,
-      activeConfigResolved: true,
+      activeBuildContextResolved: true,
       actionApplicable: true,
       binaryExists: true,
       ...overrides,
@@ -219,7 +219,7 @@ suite("evaluateArtifactActionPreconditions", () => {
   test("blocks with context-unresolved before action applicability", () => {
     assert.strictEqual(
       evaluateArtifactActionPreconditions(
-        makeInputs({ activeConfigResolved: false, actionApplicable: false })
+        makeInputs({ activeBuildContextResolved: false, actionApplicable: false })
       ),
       "context-unresolved"
     );
@@ -247,7 +247,7 @@ suite("evaluateArtifactActionPreconditions", () => {
 // ---------------------------------------------------------------------------
 
 suite("resolveArtifactActionContext", () => {
-  function makeConfig(overrides: Partial<ActiveConfig> = {}): ActiveConfig {
+  function makeConfig(overrides: Partial<ActiveBuildContext> = {}): ActiveBuildContext {
     return {
       modelId: "T2T1",
       targetId: "hw",

@@ -11,7 +11,7 @@ import * as jsonc from "jsonc-parser";
 import * as vscode from "vscode";
 import { ManifestComponentDebugProfile, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
 import { EvalContext, evaluateWhenExpression } from "../manifest/when-expressions";
-import { ActiveConfig } from "../configuration/active-config";
+import { ActiveBuildContext } from "../configuration/active-build-context";
 import { logDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
 import { makeContextKey } from "../intellisense/artifact-resolution";
 import { isFileNotFound } from "../util/errors";
@@ -479,7 +479,7 @@ export type DebugMaterializationResult =
 export function materializeDebugConfiguration(
   _workspaceFolder: vscode.WorkspaceFolder,
   manifest: ManifestStateLoaded,
-  config: ActiveConfig,
+  config: ActiveBuildContext,
   artifactsRoot: string,
   templatesRoot: string,
   profile: ManifestComponentDebugProfile
@@ -488,7 +488,7 @@ export function materializeDebugConfiguration(
   if (!entries) {
     return {
       ok: false,
-      reason: "unknown-active-config",
+      reason: "unknown-active-build-context",
       message: "Cannot start debugging: active configuration references an unknown component, target, or model.",
     };
   }
@@ -606,7 +606,7 @@ async function pickDebugProfile(
 }
 
 function buildTbenchProxyDebugConfiguration(
-  config: ActiveConfig,
+  config: ActiveBuildContext,
   profile: ManifestComponentDebugProfile,
   mode: "default" | "profile"
 ): TbenchProxyDebugConfiguration {
@@ -622,7 +622,7 @@ function buildTbenchProxyDebugConfiguration(
 
 function reportDebugLaunchFailure(
   reason: Parameters<typeof logDebugLaunchFailure>[0],
-  config: ActiveConfig,
+  config: ActiveBuildContext,
   message: string,
   detail?: string
 ): void {
@@ -658,7 +658,7 @@ function reportDebugLaunchFailure(
 export async function executeDebugLaunch(
   workspaceFolder: vscode.WorkspaceFolder,
   manifest: ManifestStateLoaded,
-  config: ActiveConfig
+  config: ActiveBuildContext
 ): Promise<void> {
   // 1. Validate manifest debug state
   if (manifest.hasDebugBlockingIssues) {
@@ -675,7 +675,7 @@ export async function executeDebugLaunch(
   const entries = activeManifestEntries(manifest, config);
   if (!entries) {
     reportDebugLaunchFailure(
-      "unknown-active-config",
+      "unknown-active-build-context",
       config,
       "Cannot start debugging: active configuration references an unknown component, target, or model.",
       "active configuration references an unknown component, target, or model"

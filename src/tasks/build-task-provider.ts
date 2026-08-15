@@ -20,7 +20,7 @@ import {
 } from "../commands/build-workflow";
 import { ResolvedOption } from "../configuration/build-options";
 import { ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
-import { ActiveConfig } from "../configuration/active-config";
+import { ActiveBuildContext } from "../configuration/active-build-context";
 import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 import { createCargoTaskExecution } from "./xtask-execution";
 
@@ -58,21 +58,21 @@ export function buildTaskLabel(kind: WorkflowKind, ctx: WorkflowContext): string
  */
 export function resolveWorkflowContext(
   state: ManifestStateLoaded,
-  activeConfig: ActiveConfig
+  activeBuildContext: ActiveBuildContext
 ): WorkflowContext | undefined {
-  const entries = activeManifestEntries(state, activeConfig);
+  const entries = activeManifestEntries(state, activeBuildContext);
   if (!entries) {
     return undefined;
   }
   const { model, target, component } = entries;
 
   return {
-    modelId: activeConfig.modelId,
+    modelId: activeBuildContext.modelId,
     modelName: model.name,
-    targetId: activeConfig.targetId,
+    targetId: activeBuildContext.targetId,
     targetDisplay: target.shortName ?? target.name,
     targetFlag: target.flag ?? null,
-    componentId: activeConfig.componentId,
+    componentId: activeBuildContext.componentId,
     componentName: component.name,
   };
 }
@@ -136,7 +136,7 @@ export function createWorkflowTask(
 
 export interface BuildTaskProviderDependencies {
   getManifestState: () => ManifestStateLoaded | undefined;
-  getActiveConfig: () => ActiveConfig | undefined;
+  getActiveBuildContext: () => ActiveBuildContext | undefined;
   getResolvedOptions: () => ReadonlyArray<ResolvedOption>;
   getActivePresetId: () => string;
   getWorkspaceFolder: () => vscode.WorkspaceFolder | undefined;
@@ -155,14 +155,14 @@ export class BuildTaskProvider implements vscode.TaskProvider {
 
   provideTasks(): vscode.Task[] | undefined {
     const state = this._deps.getManifestState();
-    const activeConfig = this._deps.getActiveConfig();
+    const activeBuildContext = this._deps.getActiveBuildContext();
     const workspaceFolder = this._deps.getWorkspaceFolder();
 
-    if (!state || !activeConfig || !workspaceFolder) {
+    if (!state || !activeBuildContext || !workspaceFolder) {
       return [];
     }
 
-    const wfCtx = resolveWorkflowContext(state, activeConfig);
+    const wfCtx = resolveWorkflowContext(state, activeBuildContext);
     if (!wfCtx) {
       return [];
     }

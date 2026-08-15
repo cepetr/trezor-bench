@@ -3,7 +3,7 @@
  * Runs inside the VS Code extension host via @vscode/test-electron.
  *
  * Exercises the real preset-valid/preset-no-defaults fixtures through
- * PresetService + preset-resolution, together with active-config
+ * PresetService + preset-resolution, together with active-build-context
  * persistence and the Configuration tree.
  */
 import * as assert from "assert";
@@ -19,14 +19,14 @@ import {
 import { PresetState } from "../../presets/preset-types";
 import { BuildOption } from "../../manifest/manifest-types";
 import {
-  ActiveConfig,
+  ActiveBuildContext,
   DEFAULT_PRESET_ID,
   activePresetId,
   selectPreset,
-  restoreActiveConfig,
-  writeActiveConfig,
-  readActiveConfig,
-} from "../../configuration/active-config";
+  restoreActiveBuildContext,
+  writeActiveBuildContext,
+  readActiveBuildContext,
+} from "../../configuration/active-build-context";
 import { normalizePresetId } from "../../configuration/normalize-config";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
 import {
@@ -83,7 +83,7 @@ function makeManifest(overrides: Partial<ManifestStateLoaded> = {}): ManifestSta
   } as ManifestStateLoaded;
 }
 
-function activeConfig(overrides: Partial<ActiveConfig> = {}): ActiveConfig {
+function activeBuildContext(overrides: Partial<ActiveBuildContext> = {}): ActiveBuildContext {
   return {
     modelId: "T2T1",
     targetId: "hw",
@@ -113,7 +113,7 @@ suite("Preset selection – preset-valid fixture", () => {
     }
 
     const manifest = makeManifest();
-    const config = activeConfig();
+    const config = activeBuildContext();
     const available = listPresetChoices(state.shared, state.user);
 
     assert.deepStrictEqual(
@@ -157,18 +157,18 @@ suite("Preset selection – preset-no-defaults fixture", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Selection persists into tbench.activeConfig
+// Selection persists into tbench.activeBuildContext
 // ---------------------------------------------------------------------------
 
 suite("Preset selection – select and persist", () => {
   test("selectPreset persists presetId and the tree description reflects it", async () => {
     const context = createFakeContext();
     const manifest = makeManifest();
-    await writeActiveConfig(context, { modelId: "T2T1", targetId: "hw", componentId: "firmware" });
+    await writeActiveBuildContext(context, { modelId: "T2T1", targetId: "hw", componentId: "firmware" });
 
     const updated = await selectPreset(context, "test", manifest);
     assert.strictEqual(updated.presetId, "test");
-    assert.strictEqual(readActiveConfig(context)?.presetId, "test");
+    assert.strictEqual(readActiveBuildContext(context)?.presetId, "test");
 
     const available: PresetChoice[] = [
       { id: "default", label: "Default", isDefault: true },
@@ -214,12 +214,12 @@ suite("Preset selection – legacy record migration", () => {
   test("a legacy activeConfig record without presetId restores as default and is not rewritten merely for that", async () => {
     const context = createFakeContext();
     const manifest = makeManifest();
-    await writeActiveConfig(context, { modelId: "T2T1", targetId: "hw", componentId: "firmware" });
-    const legacy = readActiveConfig(context);
+    await writeActiveBuildContext(context, { modelId: "T2T1", targetId: "hw", componentId: "firmware" });
+    const legacy = readActiveBuildContext(context);
     assert.strictEqual(legacy?.presetId, undefined);
 
     const availableIds = new Set(["default", "test"]);
-    const restored = await restoreActiveConfig(context, manifest, availableIds);
+    const restored = await restoreActiveBuildContext(context, manifest, availableIds);
 
     assert.strictEqual(activePresetId(restored), DEFAULT_PRESET_ID);
     assert.strictEqual(
@@ -275,7 +275,7 @@ suite("Preset selection – build-context change keeps every preset", () => {
 
     // Under firmware, `[[dev]]` applies and turns pyopt off against the
     // `[[defaults]]` layer's `true`.
-    const firmwareCtx = derivePresetContext(manifest, activeConfig({ componentId: "firmware" }));
+    const firmwareCtx = derivePresetContext(manifest, activeBuildContext({ componentId: "firmware" }));
     const firmwareValues = computePresetEffectiveValues(
       [PYOPT_OPTION],
       state.shared,
@@ -287,7 +287,7 @@ suite("Preset selection – build-context change keeps every preset", () => {
 
     // Under bootloader it applies to nothing, so the `[[defaults]]` layer
     // alone calculates the option — exactly what `Default` would produce.
-    const bootloaderCtx = derivePresetContext(manifest, activeConfig({ componentId: "bootloader" }));
+    const bootloaderCtx = derivePresetContext(manifest, activeBuildContext({ componentId: "bootloader" }));
     const bootloaderValues = computePresetEffectiveValues(
       [PYOPT_OPTION],
       state.shared,
@@ -328,15 +328,15 @@ suite("Preset selection – invalidity preserves and later resolves the saved id
     await selectPreset(context, "test", manifest);
 
     // Preset state invalid: knownPresetIds is undefined -> preserved unresolved.
-    const whileInvalid = await restoreActiveConfig(context, manifest, undefined);
+    const whileInvalid = await restoreActiveBuildContext(context, manifest, undefined);
     assert.strictEqual(activePresetId(whileInvalid), "test");
 
     // Valid again, the files still declare "test" -> restored.
-    const whenAvailable = await restoreActiveConfig(context, manifest, new Set(["default", "test"]));
+    const whenAvailable = await restoreActiveBuildContext(context, manifest, new Set(["default", "test"]));
     assert.strictEqual(activePresetId(whenAvailable), "test");
 
     // Valid again, no file declares "test" any more -> normalized to default.
-    const whenUnavailable = await restoreActiveConfig(context, manifest, new Set(["default"]));
+    const whenUnavailable = await restoreActiveBuildContext(context, manifest, new Set(["default"]));
     assert.strictEqual(activePresetId(whenUnavailable), DEFAULT_PRESET_ID);
   });
 });
@@ -348,7 +348,7 @@ suite("Preset selection – invalidity preserves and later resolves the saved id
 suite("Preset selection – excluded from display surfaces", () => {
   test("status bar text and task labels never include the preset name", () => {
     const manifest = makeManifest();
-    const config = activeConfig({ presetId: "test" });
+    const config = activeBuildContext({ presetId: "test" });
 
     const statusText = formatStatusBarText(manifest, config);
     assert.ok(statusText, "expected status bar text to resolve");

@@ -3,7 +3,7 @@
  */
 import * as vscode from "vscode";
 import { ManifestState, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
-import { ActiveConfig } from "../configuration/active-config";
+import { ActiveBuildContext } from "../configuration/active-build-context";
 
 /**
  * Formats the status-bar text for the active build configuration.
@@ -14,7 +14,7 @@ import { ActiveConfig } from "../configuration/active-config";
  */
 export function formatStatusBarText(
   state: ManifestStateLoaded,
-  config: ActiveConfig
+  config: ActiveBuildContext
 ): string | undefined {
   const entries = activeManifestEntries(state, config);
   if (!entries) {
@@ -51,15 +51,15 @@ export class StatusBarPresenter implements vscode.Disposable {
    */
   update(
     state: ManifestState,
-    activeConfig: ActiveConfig | undefined,
+    activeBuildContext: ActiveBuildContext | undefined,
     isEnabled: boolean
   ): void {
-    if (state.status !== "loaded" || !activeConfig || !isEnabled) {
+    if (state.status !== "loaded" || !activeBuildContext || !isEnabled) {
       this._item.hide();
       return;
     }
 
-    const text = formatStatusBarText(state, activeConfig);
+    const text = formatStatusBarText(state, activeBuildContext);
     if (!text) {
       this._item.hide();
       return;

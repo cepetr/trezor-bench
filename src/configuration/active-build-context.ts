@@ -5,7 +5,7 @@
  */
 import * as vscode from "vscode";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
-import { normalizeActiveConfig, normalizePresetId } from "./normalize-config";
+import { normalizeActiveBuildContext, normalizePresetId } from "./normalize-config";
 import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 
 // Active configuration storage key in workspace state
@@ -13,7 +13,7 @@ export const ACTIVE_CONFIG_KEY = "tbench.activeConfig";
 
 export { DEFAULT_PRESET_ID };
 
-export interface ActiveConfig {
+export interface ActiveBuildContext {
   readonly modelId: string;
   readonly targetId: string;
   readonly componentId: string;
@@ -27,7 +27,7 @@ export interface ActiveConfig {
 }
 
 /** Reads the active preset id, defaulting to `DEFAULT_PRESET_ID` when absent. */
-export function activePresetId(config: ActiveConfig | undefined): string {
+export function activePresetId(config: ActiveBuildContext | undefined): string {
   return config?.presetId ?? DEFAULT_PRESET_ID;
 }
 
@@ -35,20 +35,20 @@ export function activePresetId(config: ActiveConfig | undefined): string {
  * Reads the saved active configuration from workspace state.
  * Returns undefined when no configuration has been saved yet.
  */
-export function readActiveConfig(
+export function readActiveBuildContext(
   context: vscode.ExtensionContext
-): ActiveConfig | undefined {
-  return context.workspaceState.get<ActiveConfig>(ACTIVE_CONFIG_KEY);
+): ActiveBuildContext | undefined {
+  return context.workspaceState.get<ActiveBuildContext>(ACTIVE_CONFIG_KEY);
 }
 
 /**
  * Persists the active configuration to workspace state.
  */
-export async function writeActiveConfig(
+export async function writeActiveBuildContext(
   context: vscode.ExtensionContext,
-  config: Omit<ActiveConfig, "persistedAt">
-): Promise<ActiveConfig> {
-  const saved: ActiveConfig = { ...config, persistedAt: new Date().toISOString() };
+  config: Omit<ActiveBuildContext, "persistedAt">
+): Promise<ActiveBuildContext> {
+  const saved: ActiveBuildContext = { ...config, persistedAt: new Date().toISOString() };
   await context.workspaceState.update(ACTIVE_CONFIG_KEY, saved);
   return saved;
 }
@@ -58,7 +58,7 @@ export async function writeActiveConfig(
  * Returns false when any id is absent from its collection.
  */
 export function isConfigValid(
-  candidate: ActiveConfig,
+  candidate: ActiveBuildContext,
   manifest: ManifestStateLoaded
 ): boolean {
   return (
@@ -80,10 +80,10 @@ export async function selectModel(
   context: vscode.ExtensionContext,
   modelId: string,
   manifest: ManifestStateLoaded
-): Promise<ActiveConfig> {
-  const saved = readActiveConfig(context);
-  const base = normalizeActiveConfig(manifest, saved);
-  return writeActiveConfig(context, { ...base, modelId, presetId: saved?.presetId });
+): Promise<ActiveBuildContext> {
+  const saved = readActiveBuildContext(context);
+  const base = normalizeActiveBuildContext(manifest, saved);
+  return writeActiveBuildContext(context, { ...base, modelId, presetId: saved?.presetId });
 }
 
 /**
@@ -94,10 +94,10 @@ export async function selectTarget(
   context: vscode.ExtensionContext,
   targetId: string,
   manifest: ManifestStateLoaded
-): Promise<ActiveConfig> {
-  const saved = readActiveConfig(context);
-  const base = normalizeActiveConfig(manifest, saved);
-  return writeActiveConfig(context, { ...base, targetId, presetId: saved?.presetId });
+): Promise<ActiveBuildContext> {
+  const saved = readActiveBuildContext(context);
+  const base = normalizeActiveBuildContext(manifest, saved);
+  return writeActiveBuildContext(context, { ...base, targetId, presetId: saved?.presetId });
 }
 
 /**
@@ -108,10 +108,10 @@ export async function selectComponent(
   context: vscode.ExtensionContext,
   componentId: string,
   manifest: ManifestStateLoaded
-): Promise<ActiveConfig> {
-  const saved = readActiveConfig(context);
-  const base = normalizeActiveConfig(manifest, saved);
-  return writeActiveConfig(context, { ...base, componentId, presetId: saved?.presetId });
+): Promise<ActiveBuildContext> {
+  const saved = readActiveBuildContext(context);
+  const base = normalizeActiveBuildContext(manifest, saved);
+  return writeActiveBuildContext(context, { ...base, componentId, presetId: saved?.presetId });
 }
 
 /**
@@ -123,9 +123,9 @@ export async function selectPreset(
   context: vscode.ExtensionContext,
   presetId: string,
   manifest: ManifestStateLoaded
-): Promise<ActiveConfig> {
-  const base = normalizeActiveConfig(manifest, readActiveConfig(context));
-  return writeActiveConfig(context, { ...base, presetId });
+): Promise<ActiveBuildContext> {
+  const base = normalizeActiveBuildContext(manifest, readActiveBuildContext(context));
+  return writeActiveBuildContext(context, { ...base, presetId });
 }
 
 // ---------------------------------------------------------------------------
@@ -144,13 +144,13 @@ export async function selectPreset(
  * Use this at activation time and on every manifest or preset state change
  * to keep the workspace-state selection in sync.
  */
-export async function restoreActiveConfig(
+export async function restoreActiveBuildContext(
   context: vscode.ExtensionContext,
   manifest: ManifestStateLoaded,
   knownPresetIds?: ReadonlySet<string>
-): Promise<ActiveConfig> {
-  const saved = readActiveConfig(context);
-  const normalized = normalizeActiveConfig(manifest, saved);
+): Promise<ActiveBuildContext> {
+  const saved = readActiveBuildContext(context);
+  const normalized = normalizeActiveBuildContext(manifest, saved);
   const savedPresetId = activePresetId(saved);
   const normalizedPresetId = normalizePresetId(savedPresetId, knownPresetIds);
 
@@ -162,7 +162,7 @@ export async function restoreActiveConfig(
     savedPresetId !== normalizedPresetId;
 
   if (changed) {
-    return writeActiveConfig(context, { ...normalized, presetId: normalizedPresetId });
+    return writeActiveBuildContext(context, { ...normalized, presetId: normalizedPresetId });
   }
   return saved;
 }

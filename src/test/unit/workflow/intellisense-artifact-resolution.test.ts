@@ -27,7 +27,7 @@ import {
 } from "../../../intellisense/artifact-resolution";
 import { ArtifactResolutionInputs } from "../../../intellisense/intellisense-types";
 import { makeIntelliSenseLoadedState, makeDebugLoadedState, makeComponentDebugProfile, makeDebugTargetWithExtension } from "../workflow-test-helpers";
-import { ActiveConfig } from "../../../configuration/active-config";
+import { ActiveBuildContext } from "../../../configuration/active-build-context";
 import { ManifestStateLoaded } from "../../../manifest/manifest-types";
 
 // ---------------------------------------------------------------------------
@@ -49,7 +49,7 @@ function makeInputs(overrides: Partial<ArtifactResolutionInputs> = {}): Artifact
   };
 }
 
-function makeActiveConfig(overrides: Partial<ActiveConfig> = {}): ActiveConfig {
+function makeActiveBuildContext(overrides: Partial<ActiveBuildContext> = {}): ActiveBuildContext {
   return {
     modelId: "T2T1",
     targetId: "hw",
@@ -65,13 +65,13 @@ function makeActiveConfig(overrides: Partial<ActiveConfig> = {}): ActiveConfig {
 
 suite("makeContextKey", () => {
   test("produces a stable key from model, target, and component ids", () => {
-    const key = makeContextKey(makeActiveConfig());
+    const key = makeContextKey(makeActiveBuildContext());
     assert.strictEqual(key, "T2T1::hw::core");
   });
 
   test("distinct configs produce distinct keys", () => {
-    const keyA = makeContextKey(makeActiveConfig({ modelId: "T2T1" }));
-    const keyB = makeContextKey(makeActiveConfig({ modelId: "T3W1" }));
+    const keyA = makeContextKey(makeActiveBuildContext({ modelId: "T2T1" }));
+    const keyB = makeContextKey(makeActiveBuildContext({ modelId: "T3W1" }));
     assert.notStrictEqual(keyA, keyB);
   });
 });
@@ -132,7 +132,7 @@ suite("deriveArtifactPath", () => {
 // ---------------------------------------------------------------------------
 
 suite("resolveActiveArtifact — status and no-fallback", () => {
-  const config = makeActiveConfig();
+  const config = makeActiveBuildContext();
 
   test("returns missing status when the expected file does not exist", () => {
     const inputs = makeInputs({ artifactsRoot: "/does/not/exist" });
@@ -183,7 +183,7 @@ suite("resolveActiveArtifact — status and no-fallback", () => {
 // ---------------------------------------------------------------------------
 
 suite("buildResolutionInputs", () => {
-  const validConfig: ActiveConfig = {
+  const validConfig: ActiveBuildContext = {
     modelId: "T2T1",
     targetId: "hw",
     componentId: "core",
@@ -210,21 +210,21 @@ suite("buildResolutionInputs", () => {
 
   test("extracts non-empty artifactSuffix for target with suffix", () => {
     const manifest = makeIntelliSenseLoadedState();
-    const config: ActiveConfig = { ...validConfig, targetId: "emu" };
+    const config: ActiveBuildContext = { ...validConfig, targetId: "emu" };
     const result = buildResolutionInputs(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result?.artifactSuffix, "_emu");
   });
 
   test("returns undefined for unknown model id", () => {
     const manifest = makeIntelliSenseLoadedState();
-    const config: ActiveConfig = { ...validConfig, modelId: "UNKNOWN" };
+    const config: ActiveBuildContext = { ...validConfig, modelId: "UNKNOWN" };
     const result = buildResolutionInputs(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result, undefined);
   });
 
   test("returns undefined for unknown component id", () => {
     const manifest = makeIntelliSenseLoadedState();
-    const config: ActiveConfig = { ...validConfig, componentId: "UNKNOWN" };
+    const config: ActiveBuildContext = { ...validConfig, componentId: "UNKNOWN" };
     const result = buildResolutionInputs(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result, undefined);
   });
@@ -260,7 +260,7 @@ suite("artifactsPath change regression", () => {
 
   test("buildResolutionInputs passes the provided artifactsRoot without modification", () => {
     const manifest = makeIntelliSenseLoadedState();
-    const config = makeActiveConfig();
+    const config = makeActiveBuildContext();
     const root = "/new/artifacts/root";
     const inputs = buildResolutionInputs(manifest, config, root);
     assert.strictEqual(inputs?.artifactsRoot, root);
@@ -268,7 +268,7 @@ suite("artifactsPath change regression", () => {
 
   test("resolveActiveArtifact reflects artifactsRoot in the returned path", () => {
     const inputs = makeInputs({ artifactsRoot: "/custom/root" });
-    const result = resolveActiveArtifact(inputs, makeActiveConfig());
+    const result = resolveActiveArtifact(inputs, makeActiveBuildContext());
     assert.ok(result.path.startsWith("/custom/root"), `expected path to start with /custom/root, got ${result.path}`);
   });
 });
@@ -293,7 +293,7 @@ suite("target suffix transition regression", () => {
   test("buildResolutionInputs picks up artifactSuffix from target", () => {
     const manifest = makeIntelliSenseLoadedState();
     // The intellisense-valid state has an 'emu' target with artifactSuffix
-    const config = makeActiveConfig({ targetId: "emu" });
+    const config = makeActiveBuildContext({ targetId: "emu" });
     const inputs = buildResolutionInputs(manifest, config, ARTIFACTS_ROOT);
     assert.ok(inputs, "expected inputs to be defined for emu target");
     assert.strictEqual(inputs!.artifactSuffix, "_emu");
@@ -301,15 +301,15 @@ suite("target suffix transition regression", () => {
 
   test("buildResolutionInputs uses empty string artifactSuffix for target without suffix", () => {
     const manifest = makeIntelliSenseLoadedState();
-    const config = makeActiveConfig({ targetId: "hw" });
+    const config = makeActiveBuildContext({ targetId: "hw" });
     const inputs = buildResolutionInputs(manifest, config, ARTIFACTS_ROOT);
     assert.ok(inputs, "expected inputs for hw target");
     assert.strictEqual(inputs!.artifactSuffix, "");
   });
 
   test("contextKey differs between suffixed and non-suffixed target", () => {
-    const keyHw = makeContextKey(makeActiveConfig({ targetId: "hw" }));
-    const keyEmu = makeContextKey(makeActiveConfig({ targetId: "emu" }));
+    const keyHw = makeContextKey(makeActiveBuildContext({ targetId: "hw" }));
+    const keyEmu = makeContextKey(makeActiveBuildContext({ targetId: "emu" }));
     assert.notStrictEqual(keyHw, keyEmu);
   });
 });
@@ -401,32 +401,32 @@ suite("resolveActiveBinaryArtifact", () => {
     const inputs = makeInputs({
       artifactsRoot: "/nonexistent/root",
     });
-    const result = resolveActiveBinaryArtifact(inputs, makeActiveConfig());
+    const result = resolveActiveBinaryArtifact(inputs, makeActiveBuildContext());
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.exists, false);
   });
 
   test("sets contextKey matching active config", () => {
-    const config = makeActiveConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" });
+    const config = makeActiveBuildContext({ modelId: "T2T1", targetId: "hw", componentId: "core" });
     const result = resolveActiveBinaryArtifact(makeInputs(), config);
     assert.strictEqual(result.contextKey, "T2T1::hw::core");
   });
 
   test("includes expected path in result", () => {
-    const result = resolveActiveBinaryArtifact(makeInputs(), makeActiveConfig());
+    const result = resolveActiveBinaryArtifact(makeInputs(), makeActiveBuildContext());
     assert.ok(result.path.endsWith(".bin"), `expected .bin path, got: ${result.path}`);
   });
 
   test("returns missing with missingReason when inputs cannot derive path", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveActiveBinaryArtifact(inputs, makeActiveConfig());
+    const result = resolveActiveBinaryArtifact(inputs, makeActiveBuildContext());
     assert.strictEqual(result.status, "missing");
     assert.ok(result.missingReason, "expected a missingReason string");
   });
 
   test("path is empty string when inputs cannot derive path", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveActiveBinaryArtifact(inputs, makeActiveConfig());
+    const result = resolveActiveBinaryArtifact(inputs, makeActiveBuildContext());
     assert.strictEqual(result.path, "");
   });
 });
@@ -440,32 +440,32 @@ suite("resolveActiveMapArtifact", () => {
     const inputs = makeInputs({
       artifactsRoot: "/nonexistent/root",
     });
-    const result = resolveActiveMapArtifact(inputs, makeActiveConfig());
+    const result = resolveActiveMapArtifact(inputs, makeActiveBuildContext());
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.exists, false);
   });
 
   test("sets contextKey matching active config", () => {
-    const config = makeActiveConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" });
+    const config = makeActiveBuildContext({ modelId: "T2T1", targetId: "hw", componentId: "core" });
     const result = resolveActiveMapArtifact(makeInputs(), config);
     assert.strictEqual(result.contextKey, "T2T1::hw::core");
   });
 
   test("includes expected path in result", () => {
-    const result = resolveActiveMapArtifact(makeInputs(), makeActiveConfig());
+    const result = resolveActiveMapArtifact(makeInputs(), makeActiveBuildContext());
     assert.ok(result.path.endsWith(".map"), `expected .map path, got: ${result.path}`);
   });
 
   test("returns missing with missingReason when inputs cannot derive path", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveActiveMapArtifact(inputs, makeActiveConfig());
+    const result = resolveActiveMapArtifact(inputs, makeActiveBuildContext());
     assert.strictEqual(result.status, "missing");
     assert.ok(result.missingReason, "expected a missingReason string");
   });
 
   test("path is empty string when inputs cannot derive path", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
-    const result = resolveActiveMapArtifact(inputs, makeActiveConfig());
+    const result = resolveActiveMapArtifact(inputs, makeActiveBuildContext());
     assert.strictEqual(result.path, "");
   });
 });
@@ -477,7 +477,7 @@ suite("resolveActiveMapArtifact", () => {
 suite("resolveActiveExecutableArtifact", () => {
   test("returns manifest-invalid state when hasDebugBlockingIssues is true", () => {
     const manifest = makeDebugLoadedState([], { hasDebugBlockingIssues: true });
-    const config = makeActiveConfig();
+    const config = makeActiveBuildContext();
     const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "manifest-invalid");
@@ -486,7 +486,7 @@ suite("resolveActiveExecutableArtifact", () => {
 
   test("returns no-match state when component has no debug profiles", () => {
     const manifest = makeDebugLoadedState([]);
-    const config = makeActiveConfig();
+    const config = makeActiveBuildContext();
     const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "no-match");
@@ -500,7 +500,7 @@ suite("resolveActiveExecutableArtifact", () => {
       when: { type: "model", id: "T3W1" },
     });
     const manifest = makeDebugLoadedState([profile]);
-    const config = makeActiveConfig({ modelId: "T2T1" });
+    const config = makeActiveBuildContext({ modelId: "T2T1" });
     const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "no-match");
@@ -516,7 +516,7 @@ suite("resolveActiveExecutableArtifact", () => {
       ],
       hasDebugBlockingIssues: false,
     });
-    const config = makeActiveConfig();
+    const config = makeActiveBuildContext();
     const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "selected");
@@ -540,7 +540,7 @@ suite("resolveActiveExecutableArtifact", () => {
       ],
       hasDebugBlockingIssues: false,
     });
-    const config = makeActiveConfig();
+    const config = makeActiveBuildContext();
     const result = resolveActiveExecutableArtifact(manifest, config, artifactsRoot);
     assert.strictEqual(result.status, "valid");
     assert.strictEqual(result.profileResolutionState, "selected");
@@ -558,7 +558,7 @@ suite("resolveActiveExecutableArtifact", () => {
       ],
       hasDebugBlockingIssues: false,
     });
-    const config = makeActiveConfig();
+    const config = makeActiveBuildContext();
     const result = resolveActiveExecutableArtifact(manifest, config, "");
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "selected");
@@ -567,7 +567,7 @@ suite("resolveActiveExecutableArtifact", () => {
 
   test("contextKey contains modelId, targetId, and componentId", () => {
     const manifest = makeDebugLoadedState([]);
-    const config = makeActiveConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" });
+    const config = makeActiveBuildContext({ modelId: "T2T1", targetId: "hw", componentId: "core" });
     const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result.contextKey, "T2T1::hw::core");
   });
@@ -578,14 +578,14 @@ suite("resolveActiveExecutableArtifact", () => {
       makeDebugLoadedState([]),
     ];
     for (const manifest of cases) {
-      const result = resolveActiveExecutableArtifact(manifest, makeActiveConfig(), ARTIFACTS_ROOT);
+      const result = resolveActiveExecutableArtifact(manifest, makeActiveBuildContext(), ARTIFACTS_ROOT);
       assert.ok(result.tooltip.length > 0, `expected non-empty tooltip, got: "${result.tooltip}"`);
     }
   });
 
   test("expectedPath is empty when profile resolution returns no-match", () => {
     const manifest = makeDebugLoadedState([]);
-    const config = makeActiveConfig();
+    const config = makeActiveBuildContext();
     const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.strictEqual(result.expectedPath, "");
   });
@@ -599,7 +599,7 @@ suite("resolveActiveExecutableArtifact", () => {
       ],
       hasDebugBlockingIssues: false,
     });
-    const config = makeActiveConfig();
+    const config = makeActiveBuildContext();
     const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
     assert.ok(result.expectedPath.includes("specific.elf"), `expectedPath should include specific.elf, got: ${result.expectedPath}`);
   });

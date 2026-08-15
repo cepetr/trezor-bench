@@ -3,7 +3,7 @@
  * declared presets, replacing ids that no longer resolve.
  */
 import { ManifestStateLoaded } from "../manifest/manifest-types";
-import { ActiveConfig } from "./active-config";
+import { ActiveBuildContext } from "./active-build-context";
 import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 
 /**
@@ -15,12 +15,12 @@ import { DEFAULT_PRESET_ID } from "../presets/preset-types";
  * entry for that kind.
  *
  * The returned object contains only the id fields — callers are responsible
- * for writing the result to workspace state via `writeActiveConfig`.
+ * for writing the result to workspace state via `writeActiveBuildContext`.
  */
-export function normalizeActiveConfig(
+export function normalizeActiveBuildContext(
   manifest: ManifestStateLoaded,
-  saved?: ActiveConfig
-): Pick<ActiveConfig, "modelId" | "targetId" | "componentId"> {
+  saved?: ActiveBuildContext
+): Pick<ActiveBuildContext, "modelId" | "targetId" | "componentId"> {
   const modelId =
     saved && manifest.models.some((m) => m.id === saved.modelId)
       ? saved.modelId

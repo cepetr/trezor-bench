@@ -7,7 +7,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { FilePoller } from "../util/file-poller";
 import { watchFile } from "../util/file-watch";
-import { ActiveConfig } from "../configuration/active-config";
+import { ActiveBuildContext } from "../configuration/active-build-context";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
 import {
   buildResolutionInputs,
@@ -64,7 +64,7 @@ function addWatchPath(
 
 export function resolveArtifactWatchScopes(
   manifest: ManifestStateLoaded | undefined,
-  config: ActiveConfig | undefined,
+  config: ActiveBuildContext | undefined,
   artifactsRoot: string
 ): ArtifactWatchScope[] {
   if (!manifest || !config) {
@@ -123,7 +123,7 @@ export class ActiveArtifactFileWatcher implements vscode.Disposable {
 
   update(
     manifest: ManifestStateLoaded | undefined,
-    config: ActiveConfig | undefined,
+    config: ActiveBuildContext | undefined,
     artifactsRoot: string
   ): void {
     if (this._disposed) {

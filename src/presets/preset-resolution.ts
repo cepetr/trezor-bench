@@ -36,13 +36,13 @@ export interface PresetChoice {
  */
 export function derivePresetContext(
   manifest: ManifestStateLoaded,
-  activeConfig: ActiveBuildContext
+  activeBuildContext: ActiveBuildContext
 ): PresetContext {
-  const target = manifest.targets.find((t) => t.id === activeConfig.targetId);
+  const target = manifest.targets.find((t) => t.id === activeBuildContext.targetId);
   const emulator = target?.flag === "--emulator" || target?.flag === "-e";
   return {
-    modelId: activeConfig.modelId,
-    projectId: activeConfig.componentId,
+    modelId: activeBuildContext.modelId,
+    projectId: activeBuildContext.componentId,
     emulator,
   };
 }

@@ -16,7 +16,7 @@ import {
   ManifestState,
   ManifestStateLoaded,
 } from "../manifest/manifest-types";
-import { ActiveConfig } from "../configuration/active-config";
+import { ActiveBuildContext } from "../configuration/active-build-context";
 import { evaluateWhenExpression, EvalContext } from "../manifest/when-expressions";
 import { createCargoTaskExecution } from "../tasks/xtask-execution";
 import { TASK_TYPE, TASK_SOURCE } from "../tasks/build-task-provider";
@@ -92,7 +92,7 @@ export function shouldShowArtifactRows(
  */
 export function resolveArtifactActionContext(
   state: ManifestStateLoaded,
-  config: ActiveConfig
+  config: ActiveBuildContext
 ): ArtifactActionContext | undefined {
   const model = state.models.find((m) => m.id === config.modelId);
   const target = state.targets.find((t) => t.id === config.targetId);
@@ -141,7 +141,7 @@ export interface ArtifactActionPreconditionInputs {
   readonly hasWorkflowBlockingIssues?: boolean;
   readonly workspaceSupported: boolean;
   /** True when the active configuration resolves to manifest entries. */
-  readonly activeConfigResolved?: boolean;
+  readonly activeBuildContextResolved?: boolean;
   readonly actionApplicable: boolean;
   readonly binaryExists: boolean;
 }
@@ -162,7 +162,7 @@ export function evaluateArtifactActionPreconditions(
   if (inputs.manifestStatus === "invalid" || inputs.hasWorkflowBlockingIssues) {
     return "manifest-invalid";
   }
-  if (inputs.activeConfigResolved === false) {
+  if (inputs.activeBuildContextResolved === false) {
     return "context-unresolved";
   }
   if (!inputs.actionApplicable) {

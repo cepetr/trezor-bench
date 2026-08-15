@@ -29,7 +29,7 @@ import {
   BuildOptionCheckboxItem,
   BuildOptionMultistateHeaderItem,
 } from "../../ui/configuration-tree";
-import { ActiveConfig } from "../../configuration/active-config";
+import { ActiveBuildContext } from "../../configuration/active-build-context";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
 
 // ---------------------------------------------------------------------------
@@ -111,7 +111,7 @@ function manifest(): ManifestStateLoaded {
   };
 }
 
-function activeConfig(overrides: Partial<ActiveConfig> = {}): ActiveConfig {
+function activeBuildContext(overrides: Partial<ActiveBuildContext> = {}): ActiveBuildContext {
   return {
     modelId: "T2T1",
     targetId: "hw",
@@ -138,11 +138,11 @@ async function shiftedFor(
   fixtureName: string,
   fromPresetId: string,
   toPresetId: string,
-  fromConfig: ActiveConfig = activeConfig(),
-  toConfig: ActiveConfig = fromConfig
+  fromConfig: ActiveBuildContext = activeBuildContext(),
+  toConfig: ActiveBuildContext = fromConfig
 ): Promise<string[]> {
   const state = await loadPresets(fixtureName);
-  const effective = (presetId: string, config: ActiveConfig) =>
+  const effective = (presetId: string, config: ActiveBuildContext) =>
     computePresetEffectiveValues(
       BUILD_OPTIONS,
       state.shared,
@@ -157,7 +157,7 @@ async function resolveFor(
   fixtureName: string,
   activePresetId: string,
   context: vscode.ExtensionContext,
-  config: ActiveConfig = activeConfig()
+  config: ActiveBuildContext = activeBuildContext()
 ): Promise<ResolvedOption[]> {
   const state = await loadPresets(fixtureName);
   const presetCtx = derivePresetContext(manifest(), config);
@@ -309,7 +309,7 @@ suite("Preset-relative Build Options – override emphasis round-trip", () => {
     const resolved = await resolveFor("preset-valid", "default", context);
 
     const treeModel = new ConfigurationTreeModel();
-    treeModel.update(manifest(), activeConfig(), resolved);
+    treeModel.update(manifest(), activeBuildContext(), resolved);
     const children = treeModel.paneRootChildren("build-options") as vscode.TreeItem[];
     treeModel.dispose();
 
@@ -329,9 +329,9 @@ suite("Preset-relative Build Options – override emphasis round-trip", () => {
 // ---------------------------------------------------------------------------
 
 suite("Preset-relative Build Options – preset-context change prunes overrides", () => {
-  const HW = activeConfig({ targetId: "hw" });
-  const EMU = activeConfig({ targetId: "emu" });
-  const OTHER_MODEL = activeConfig({ modelId: "T3W1" });
+  const HW = activeBuildContext({ targetId: "hw" });
+  const EMU = activeBuildContext({ targetId: "emu" });
+  const OTHER_MODEL = activeBuildContext({ modelId: "T3W1" });
 
   test("the [[defaults]] layer calculates different values for the hardware and emulator contexts", async () => {
     const context = createFakeContext();
@@ -387,7 +387,7 @@ suite("Preset-relative Build Options – preset-context change prunes overrides"
 
     assert.strictEqual(samePresetContext(base, derivePresetContext(manifest(), OTHER_MODEL)), false);
     assert.strictEqual(
-      samePresetContext(base, derivePresetContext(manifest(), activeConfig({ componentId: "bootloader" }))),
+      samePresetContext(base, derivePresetContext(manifest(), activeBuildContext({ componentId: "bootloader" }))),
       false
     );
 
@@ -414,7 +414,7 @@ suite("Preset-relative Build Options – preset-context change prunes overrides"
     // and normalizes the active preset to `default`, since dev is no longer
     // available there.
     const context = createFakeContext();
-    const bootloader = activeConfig({ componentId: "bootloader" });
+    const bootloader = activeBuildContext({ componentId: "bootloader" });
 
     await writeBuildOption(context, "dbg_console", "vcp");
     const shifted = await shiftedFor("preset-valid", "dev", "default", HW, bootloader);
@@ -461,7 +461,7 @@ suite("Preset-relative Build Options – option-level mismatch", () => {
     assert.strictEqual(dbgConsole.isOverride, false);
 
     const treeModel = new ConfigurationTreeModel();
-    treeModel.update(manifest(), activeConfig(), resolved);
+    treeModel.update(manifest(), activeBuildContext(), resolved);
     const children = treeModel.paneRootChildren("build-options") as vscode.TreeItem[];
     treeModel.dispose();
 

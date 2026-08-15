@@ -97,6 +97,6 @@ export type PresetState = PresetStateLoaded | PresetStateUnavailable | PresetSta
 
 /**
  * Reserved id for the synthetic `Default` choice. The only preset id that
- * suppresses `-p`. Re-exported from `configuration/active-config.ts`.
+ * suppresses `-p`. Re-exported from `configuration/active-build-context.ts`.
  */
 export const DEFAULT_PRESET_ID = "default";

@@ -99,7 +99,7 @@ suite("Build Task Provider – task failure visibility", () => {
   });
 
   test("build task defines a process execution", () => {
-    const activeConfig = {
+    const activeBuildContext = {
       modelId: "model-t2t1",
       targetId: "hw",
       componentId: "core",
@@ -117,7 +117,7 @@ suite("Build Task Provider – task failure visibility", () => {
       validationIssues: [],
       loadedAt: new Date("2026-01-01T00:00:00Z"),
     };
-    const wfCtx = resolveWorkflowContext(state, activeConfig);
+    const wfCtx = resolveWorkflowContext(state, activeBuildContext);
     assert.ok(wfCtx, "expected valid workflow context");
     assert.strictEqual(wfCtx?.modelName, "T2T1");
 

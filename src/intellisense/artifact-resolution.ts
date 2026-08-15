@@ -9,7 +9,7 @@ import {
   ActiveCompileCommandsArtifact,
 } from "./intellisense-types";
 import { ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
-import { ActiveConfig } from "../configuration/active-config";
+import { ActiveBuildContext } from "../configuration/active-build-context";
 import {
   DebugProfileResolutionState,
   resolveMatchingDebugProfiles,
@@ -24,7 +24,7 @@ import {
  * Produces a stable string key for the given active configuration.
  * Used to detect when stale IntelliSense state must be cleared.
  */
-export function makeContextKey(config: ActiveConfig): string {
+export function makeContextKey(config: ActiveBuildContext): string {
   return `${config.modelId}::${config.targetId}::${config.componentId}`;
 }
 
@@ -42,7 +42,7 @@ export function makeContextKey(config: ActiveConfig): string {
  */
 export function buildResolutionInputs(
   manifest: ManifestStateLoaded,
-  config: ActiveConfig,
+  config: ActiveBuildContext,
   artifactsRoot: string
 ): ArtifactResolutionInputs | undefined {
   const entries = activeManifestEntries(manifest, config);
@@ -157,7 +157,7 @@ function readFileModifiedAt(filePath: string): Date | undefined {
  */
 function resolveFileArtifact(
   inputs: ArtifactResolutionInputs,
-  config: ActiveConfig,
+  config: ActiveBuildContext,
   extension: string,
   label: string
 ) {
@@ -200,7 +200,7 @@ function resolveFileArtifact(
  */
 export function resolveActiveBinaryArtifact(
   inputs: ArtifactResolutionInputs,
-  config: ActiveConfig
+  config: ActiveBuildContext
 ): ActiveBinaryArtifact {
   return resolveFileArtifact(inputs, config, ".bin", "binary");
 }
@@ -211,7 +211,7 @@ export function resolveActiveBinaryArtifact(
  */
 export function resolveActiveMapArtifact(
   inputs: ArtifactResolutionInputs,
-  config: ActiveConfig
+  config: ActiveBuildContext
 ): ActiveMapArtifact {
   return resolveFileArtifact(inputs, config, ".map", "map");
 }
@@ -230,7 +230,7 @@ export function resolveActiveMapArtifact(
  */
 export function resolveActiveArtifact(
   inputs: ArtifactResolutionInputs,
-  config: ActiveConfig
+  config: ActiveBuildContext
 ): ActiveCompileCommandsArtifact {
   return resolveFileArtifact(inputs, config, ".cc.json", "compile-commands");
 }
@@ -303,7 +303,7 @@ function formatExecutableArtifactTooltip(expectedPath: string, missingReason?: s
  */
 export function resolveActiveExecutableArtifact(
   manifest: ManifestStateLoaded,
-  config: ActiveConfig,
+  config: ActiveBuildContext,
   artifactsRoot: string
 ): ActiveExecutableArtifact {
   const contextKey = makeContextKey(config);

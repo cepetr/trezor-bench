@@ -25,7 +25,7 @@ import {
 import { CpptoolsBackend } from "../../../intellisense/cpptools-backend";
 import { ClangdBackend, CLANGD_EXTENSION_ID } from "../../../intellisense/clangd-backend";
 import { makeIntelliSenseLoadedState, primaryCoreFixturePath } from "../workflow-test-helpers";
-import { ActiveConfig } from "../../../configuration/active-config";
+import { ActiveBuildContext } from "../../../configuration/active-build-context";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const vscodeMock = require("vscode");
@@ -111,7 +111,7 @@ function stubClangdOnlyBackend(): void {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeConfig(overrides: Partial<ActiveConfig> = {}): ActiveConfig {
+function makeConfig(overrides: Partial<ActiveBuildContext> = {}): ActiveBuildContext {
   return {
     modelId: "T2T1",
     targetId: "hw",
@@ -161,7 +161,7 @@ suite("IntelliSenseService — refresh serialization", () => {
     const backend = new StubCpptoolsBackend();
     const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
-    svc.setActiveConfig(makeConfig());
+    svc.setActiveBuildContext(makeConfig());
     svc.setArtifactsRoot("");
     const p = awaitRefresh(svc);
     svc.scheduleRefresh("activation");
@@ -174,7 +174,7 @@ suite("IntelliSenseService — refresh serialization", () => {
     const backend = new StubCpptoolsBackend();
     const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
-    svc.setActiveConfig(makeConfig());
+    svc.setActiveBuildContext(makeConfig());
     svc.setArtifactsRoot("/nonexistent/path");
     const p = awaitRefresh(svc);
     svc.scheduleRefresh("activation");
@@ -204,11 +204,11 @@ suite("IntelliSenseService — stale-state clearing", () => {
     backend.payloadsApplied = []; // reset tracking
 
     svc.setManifest(makeIntelliSenseLoadedState());
-    svc.setActiveConfig(makeConfig());
+    svc.setActiveBuildContext(makeConfig());
     svc.setArtifactsRoot("/nonexistent/path");
 
     const p = awaitRefresh(svc);
-    svc.scheduleRefresh("active-config-change");
+    svc.scheduleRefresh("active-build-context-change");
     await p;
 
     assert.ok(backend.clearCount > 0, "expected clearPayload to be called at least once");
@@ -219,7 +219,7 @@ suite("IntelliSenseService — stale-state clearing", () => {
     const backend = new StubCpptoolsBackend();
     const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
-    svc.setActiveConfig(makeConfig());
+    svc.setActiveBuildContext(makeConfig());
     svc.setArtifactsRoot("/nonexistent/path");
 
     const p = awaitRefresh(svc);
@@ -235,7 +235,7 @@ suite("IntelliSenseService — stale-state clearing", () => {
     const backend = new StubCpptoolsBackend();
     const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
-    svc.setActiveConfig(makeConfig());
+    svc.setActiveBuildContext(makeConfig());
     svc.setArtifactsRoot("/nonexistent/path");
 
     const p = awaitRefresh(svc);
@@ -252,7 +252,7 @@ suite("IntelliSenseService — stale-state clearing", () => {
     const backend = new StubCpptoolsBackend();
     const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
-    svc.setActiveConfig(makeConfig());
+    svc.setActiveBuildContext(makeConfig());
     svc.setArtifactsRoot("/nonexistent/path");
 
     const p = awaitRefresh(svc);
@@ -287,11 +287,11 @@ suite("IntelliSenseService — no-fallback through context key", () => {
     const backend = new StubCpptoolsBackend();
     const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
-    svc.setActiveConfig(makeConfig({ modelId: "T3W1", targetId: "emu", componentId: "prodtest" }));
+    svc.setActiveBuildContext(makeConfig({ modelId: "T3W1", targetId: "emu", componentId: "prodtest" }));
     svc.setArtifactsRoot("/nonexistent/path");
 
     const p = awaitRefresh(svc);
-    svc.scheduleRefresh("active-config-change");
+    svc.scheduleRefresh("active-build-context-change");
     const [artifact] = await p;
 
     assert.strictEqual(artifact?.contextKey, "T3W1::emu::prodtest");
@@ -302,7 +302,7 @@ suite("IntelliSenseService — no-fallback through context key", () => {
     const backend = new StubCpptoolsBackend();
     const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
-    svc.setActiveConfig(makeConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" }));
+    svc.setActiveBuildContext(makeConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" }));
     svc.setArtifactsRoot("/nonexistent/path");
 
     // First refresh: missing artifact
@@ -312,9 +312,9 @@ suite("IntelliSenseService — no-fallback through context key", () => {
     assert.strictEqual(first?.status, "missing");
 
     // Change context — new refresh also missing (from a different path)
-    svc.setActiveConfig(makeConfig({ modelId: "T3W1", targetId: "emu", componentId: "prodtest" }));
+    svc.setActiveBuildContext(makeConfig({ modelId: "T3W1", targetId: "emu", componentId: "prodtest" }));
     const p2 = awaitRefresh(svc);
-    svc.scheduleRefresh("active-config-change");
+    svc.scheduleRefresh("active-build-context-change");
     const [second] = await p2;
     assert.strictEqual(second?.status, "missing");
     assert.strictEqual(second?.contextKey, "T3W1::emu::prodtest");
@@ -335,7 +335,7 @@ suite("IntelliSenseService — eager parsing with real compile-commands fixture"
 
     // Use real fixture path so parseCompileCommandsFile can read the file.
     svc.setManifest(makeIntelliSenseLoadedState());
-    svc.setActiveConfig(makeConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" }));
+    svc.setActiveBuildContext(makeConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" }));
     svc.setArtifactsRoot(intellisenseValidArtifactsRoot());
 
     const p = awaitRefresh(svc);
@@ -360,7 +360,7 @@ suite("IntelliSenseService — eager parsing with real compile-commands fixture"
     const backend = new StubCpptoolsBackend();
     const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
-    svc.setActiveConfig(makeConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" }));
+    svc.setActiveBuildContext(makeConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" }));
     const artifactsRoot = intellisenseValidArtifactsRoot();
     svc.setArtifactsRoot(artifactsRoot);
 
@@ -377,7 +377,7 @@ suite("IntelliSenseService — eager parsing with real compile-commands fixture"
     const backend = new StubCpptoolsBackend();
     const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
-    svc.setActiveConfig(makeConfig());
+    svc.setActiveBuildContext(makeConfig());
     svc.setArtifactsRoot(intellisenseValidArtifactsRoot());
 
     const p = awaitRefresh(svc);
@@ -398,14 +398,14 @@ suite("IntelliSenseService — latest-refresh-wins serialization", () => {
     const backend = new StubCpptoolsBackend();
     const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
-    svc.setActiveConfig(makeConfig());
+    svc.setActiveBuildContext(makeConfig());
     svc.setArtifactsRoot("/nonexistent");
 
     const events: Array<[ActiveCompileCommandsArtifact | null, IntelliSenseProviderReadiness]> = [];
     const sub = svc.onDidRefresh((args) => events.push(args));
 
     svc.scheduleRefresh("activation");
-    svc.scheduleRefresh("active-config-change");
+    svc.scheduleRefresh("active-build-context-change");
 
     // Wait for both to complete
     await new Promise<void>((resolve) => setTimeout(resolve, 50));
@@ -415,20 +415,20 @@ suite("IntelliSenseService — latest-refresh-wins serialization", () => {
     svc.dispose();
   });
 
-  test("final state after two calls reflects the second activeConfig", async () => {
+  test("final state after two calls reflects the second activeBuildContext", async () => {
     const backend = new StubCpptoolsBackend();
     const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setArtifactsRoot("/nonexistent");
 
     // First context
-    svc.setActiveConfig(makeConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" }));
+    svc.setActiveBuildContext(makeConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" }));
     svc.scheduleRefresh("activation");
 
     // Immediately change context and schedule another refresh
-    svc.setActiveConfig(makeConfig({ modelId: "T3W1", targetId: "emu", componentId: "prodtest" }));
+    svc.setActiveBuildContext(makeConfig({ modelId: "T3W1", targetId: "emu", componentId: "prodtest" }));
     const p = awaitRefresh(svc);
-    svc.scheduleRefresh("active-config-change");
+    svc.scheduleRefresh("active-build-context-change");
     const [artifact] = await p;
 
     // The last refresh uses the second config
@@ -464,7 +464,7 @@ suite("IntelliSenseService — clangd backend", () => {
 
     svc.setWorkspaceFolder(intellisenseValidWorkspaceFolder());
     svc.setManifest(makeIntelliSenseLoadedState());
-    svc.setActiveConfig(makeConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" }));
+    svc.setActiveBuildContext(makeConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" }));
     svc.setArtifactsRoot(intellisenseValidArtifactsRoot());
 
     const p = awaitRefresh(svc);

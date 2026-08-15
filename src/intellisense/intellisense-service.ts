@@ -21,7 +21,7 @@ import { CpptoolsBackend } from "./cpptools-backend";
 import { ClangdBackend } from "./clangd-backend";
 import { parseCompileCommandsFile } from "./compile-commands-parser";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
-import { ActiveConfig } from "../configuration/active-config";
+import { ActiveBuildContext } from "../configuration/active-build-context";
 import {
   logIntelliSense,
   logMissingArtifact,
@@ -57,7 +57,7 @@ export type IntelliSenseRefreshCallback = (
  */
 export class IntelliSenseService {
   private _manifest: ManifestStateLoaded | undefined;
-  private _activeConfig: ActiveConfig | undefined;
+  private _activeBuildContext: ActiveBuildContext | undefined;
   private _artifactsRoot: string = "";
   private _workspaceFolder: vscode.WorkspaceFolder | undefined;
 
@@ -120,8 +120,8 @@ export class IntelliSenseService {
     this._manifest = manifest;
   }
 
-  setActiveConfig(config: ActiveConfig | undefined): void {
-    this._activeConfig = config;
+  setActiveBuildContext(config: ActiveBuildContext | undefined): void {
+    this._activeBuildContext = config;
   }
 
   setArtifactsRoot(root: string): void {
@@ -204,7 +204,7 @@ export class IntelliSenseService {
     }
 
     const manifest = this._manifest;
-    const config = this._activeConfig;
+    const config = this._activeBuildContext;
 
     if (!manifest || !config) {
       // No active context — clear any previously applied state.
