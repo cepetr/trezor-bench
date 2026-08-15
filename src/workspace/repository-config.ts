@@ -4,11 +4,12 @@
  */
 import * as vscode from "vscode";
 import * as fs from "fs/promises";
-import * as fsNative from "fs";
 import * as path from "path";
 import { parse as parseToml, TomlError } from "smol-toml";
 import { errorMessage, isFileNotFound } from "../util/errors";
 import { Debouncer } from "../util/debouncer";
+import { watchFile } from "../util/file-watch";
+import { FilePoller } from "../util/file-poller";
 
 export const REPOSITORY_CONFIG_FILE = "tbench.toml";
 
@@ -299,27 +300,43 @@ export async function loadRepositoryConfig(
   };
 }
 
+const DEBOUNCE_MS = 300;
+const POLL_INTERVAL_MS = 1_000;
+
 export class RepositoryConfigService implements vscode.Disposable {
   private readonly onDidChangeStateEmitter = new vscode.EventEmitter<RepositoryConfigState>();
-  private readonly watcher: fsNative.FSWatcher;
   private readonly configPath: string;
-  private readonly debouncer = new Debouncer(100, () => {
+  private readonly debouncer = new Debouncer(DEBOUNCE_MS, () => {
     void this.reload();
   });
+  /**
+   * Fallback for hosts where VS Code watcher events are not dependable —
+   * the integration harness, for one, runs with no workspace folder open,
+   * where watcher events never arrive at all.
+   */
+  private readonly filePoller = new FilePoller(POLL_INTERVAL_MS, () =>
+    this.debouncer.schedule()
+  );
+  private readonly disposables: vscode.Disposable[] = [];
   private currentState: RepositoryConfigState | undefined;
 
   readonly onDidChangeState = this.onDidChangeStateEmitter.event;
 
   constructor(private readonly workspaceFolder: vscode.WorkspaceFolder) {
     this.configPath = path.join(workspaceFolder.uri.fsPath, REPOSITORY_CONFIG_FILE);
-    this.watcher = fsNative.watch(workspaceFolder.uri.fsPath, (_event, fileName) => {
-      if (fileName?.toString() === REPOSITORY_CONFIG_FILE) {
-        this.debouncer.schedule();
-      }
-    });
-    fsNative.watchFile(this.configPath, { interval: 100, persistent: false }, () => {
-      this.debouncer.schedule();
-    });
+    // Watch the folder with a wildcard rather than the exact filename:
+    // tbench.toml is commonly absent, and a literal (non-glob) pattern for a
+    // path outside any open workspace folder never establishes when the
+    // target does not yet exist. Filtering by exact path keeps behavior
+    // scoped to this one file.
+    const pattern = new vscode.RelativePattern(workspaceFolder.uri, "*");
+    this.disposables.push(
+      watchFile(pattern, (changedUri) => {
+        if (changedUri.fsPath === this.configPath) {
+          this.debouncer.schedule();
+        }
+      })
+    );
   }
 
   get state(): RepositoryConfigState | undefined {
@@ -327,19 +344,24 @@ export class RepositoryConfigService implements vscode.Disposable {
   }
 
   async start(): Promise<RepositoryConfigState> {
-    return this.reload();
+    const state = await this.reload();
+    this.filePoller.start([this.configPath]);
+    return state;
   }
 
   dispose(): void {
     this.debouncer.dispose();
-    this.watcher.close();
-    fsNative.unwatchFile(this.configPath);
+    this.filePoller.dispose();
+    for (const disposable of this.disposables) {
+      disposable.dispose();
+    }
     this.onDidChangeStateEmitter.dispose();
   }
 
   private async reload(): Promise<RepositoryConfigState> {
     const state = await loadRepositoryConfig(this.workspaceFolder);
     this.currentState = state;
+    this.filePoller.resync();
     this.onDidChangeStateEmitter.fire(state);
     return state;
   }
