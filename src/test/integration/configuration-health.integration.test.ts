@@ -12,7 +12,7 @@ import { ManifestState, ManifestStateLoaded } from "../../manifest/manifest-type
 import { resolveActiveArtifact, buildResolutionInputs, deriveArtifactPath } from "../../intellisense/artifact-resolution";
 import { checkProviderReadiness } from "../../intellisense/intellisense-backend";
 import { IntelliSenseService } from "../../intellisense/intellisense-service";
-import { ActiveBuildContext } from "../../configuration/active-build-context";
+import { BuildSelection } from "../../configuration/build-selection";
 import { ConfigurationTreeModel } from "../../ui/configuration-tree";
 
 const VALID_MANIFEST = `
@@ -166,7 +166,7 @@ function makeIntellisenseLoadedState(overrides: Partial<ManifestStateLoaded> = {
   } as ManifestStateLoaded;
 }
 
-function makeActiveBuildContext(modelId: string, targetId: string, componentId: string): ActiveBuildContext {
+function makeBuildSelection(modelId: string, targetId: string, componentId: string): BuildSelection {
   return { modelId, targetId, componentId, persistedAt: new Date().toISOString() };
 }
 
@@ -183,7 +183,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
 
   test("status is 'missing' when artifact file does not exist on disk", async () => {
     const manifest = makeIntellisenseLoadedState();
-    const config = makeActiveBuildContext("T2T1", "hw", "core");
+    const config = makeBuildSelection("T2T1", "hw", "core");
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs, "expected resolution inputs to resolve");
 
@@ -194,7 +194,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
 
   test("status is 'valid' when artifact file exists on disk", async () => {
     const manifest = makeIntellisenseLoadedState();
-    const config = makeActiveBuildContext("T2T1", "hw", "core");
+    const config = makeBuildSelection("T2T1", "hw", "core");
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs, "expected resolution inputs to resolve");
 
@@ -212,7 +212,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
 
   test("status transitions from missing to valid when file is created", async () => {
     const manifest = makeIntellisenseLoadedState();
-    const config = makeActiveBuildContext("T2T1", "hw", "core");
+    const config = makeBuildSelection("T2T1", "hw", "core");
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs, "expected resolution inputs to resolve");
 
@@ -233,7 +233,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
 
   test("path contains artifactFolder in directory, not model id", async () => {
     const manifest = makeIntellisenseLoadedState();
-    const config = makeActiveBuildContext("T2T1", "hw", "core");
+    const config = makeBuildSelection("T2T1", "hw", "core");
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs);
     const derivedPath = deriveArtifactPath(inputs!);
@@ -250,7 +250,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
 
   test("path contains artifactSuffix for suffixed target", async () => {
     const manifest = makeIntellisenseLoadedState();
-    const config = makeActiveBuildContext("T2T1", "emu", "core");
+    const config = makeBuildSelection("T2T1", "emu", "core");
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs);
     const derivedPath = deriveArtifactPath(inputs!);
@@ -263,7 +263,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
 
   test("contextKey encodes model, target, and component ids", async () => {
     const manifest = makeIntellisenseLoadedState();
-    const config = makeActiveBuildContext("T2T1", "hw", "core");
+    const config = makeBuildSelection("T2T1", "hw", "core");
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs);
 
@@ -273,7 +273,7 @@ suite("resolveActiveArtifact – filesystem integration", () => {
 
   test("missing artifact tooltip reports expected path in missingReason", async () => {
     const manifest = makeIntellisenseLoadedState();
-    const config = makeActiveBuildContext("T2T1", "hw", "core");
+    const config = makeBuildSelection("T2T1", "hw", "core");
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
     assert.ok(inputs);
 
@@ -442,7 +442,7 @@ suite("IntelliSenseService – provider warning flows", () => {
   test("consecutive refreshes do not corrupt state", async () => {
     const svc = new IntelliSenseService();
     svc.scheduleRefresh("activation");
-    svc.scheduleRefresh("active-build-context-change");
+    svc.scheduleRefresh("build-selection-change");
     svc.scheduleRefresh("manual-refresh");
     await drainRefresh();
     // State should reflect a valid final readiness (no crash or null)
@@ -468,13 +468,13 @@ suite("IntelliSenseService – provider warning flows", () => {
     // Verify that each fresh refresh captures the current readiness state.
     // This tests the "recovery flow" path where a new refresh re-evaluates readiness.
     const svc = new IntelliSenseService();
-    svc.scheduleRefresh("active-build-context-change");
+    svc.scheduleRefresh("build-selection-change");
     await drainRefresh();
     const firstReadiness = svc.getLastReadiness()!;
 
     // A second refresh should yield the same stable state (recovery requires env change;
     // here we verify the refresh path itself runs without caching the first warning)
-    svc.scheduleRefresh("active-build-context-change");
+    svc.scheduleRefresh("build-selection-change");
     await drainRefresh();
     const secondReadiness = svc.getLastReadiness()!;
 
@@ -545,12 +545,12 @@ suite("IntelliSenseService – artifacts-path change regression", () => {
     svc.setArtifactsRoot("/artifacts");
 
     svc.setBuildContext({ modelId: "T2T1", targetId: "hw", componentId: "core" });
-    svc.scheduleRefresh("active-build-context-change");
+    svc.scheduleRefresh("build-selection-change");
     await drainRefresh();
     const hwArtifact = svc.getLastArtifact();
 
     svc.setBuildContext({ modelId: "T2T1", targetId: "emu", componentId: "core" });
-    svc.scheduleRefresh("active-build-context-change");
+    svc.scheduleRefresh("build-selection-change");
     await drainRefresh();
     const emuArtifact = svc.getLastArtifact();
 
@@ -565,7 +565,7 @@ suite("IntelliSenseService – artifacts-path change regression", () => {
     svc.setManifest(makeManifest());
     svc.setArtifactsRoot("/artifacts");
     svc.setBuildContext({ modelId: "T2T1", targetId: "emu", componentId: "core" });
-    svc.scheduleRefresh("active-build-context-change");
+    svc.scheduleRefresh("build-selection-change");
     await drainRefresh();
     const artifact = svc.getLastArtifact();
     assert.ok(artifact !== null);
@@ -580,7 +580,7 @@ suite("IntelliSenseService – artifacts-path change regression", () => {
     svc.setManifest(makeManifest());
     svc.setArtifactsRoot("/artifacts");
     svc.setBuildContext({ modelId: "T2T1", targetId: "hw", componentId: "core" });
-    svc.scheduleRefresh("active-build-context-change");
+    svc.scheduleRefresh("build-selection-change");
     await drainRefresh();
     const artifact = svc.getLastArtifact();
     assert.ok(artifact !== null);

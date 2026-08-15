@@ -80,7 +80,7 @@ export type IntelliSenseProviderStateKind = "inactive" | "applied" | "cleared";
 export interface IntelliSenseRuntimeState {
   /** Last compile-commands path successfully applied to the provider, or null. */
   readonly appliedArtifactPath: string | null;
-  /** Last active-build-contexturation key successfully applied, or null. */
+  /** Last build-selection key successfully applied, or null. */
   readonly appliedContextKey: string | null;
   /** Timestamp of the last explicit stale-state clearing action, or null. */
   readonly clearedAt: Date | null;
@@ -94,7 +94,7 @@ export interface IntelliSenseRuntimeState {
 
 export type RefreshTrigger =
   | "activation"
-  | "active-build-context-change"
+  | "build-selection-change"
   | "artifact-file-change"
   | "manual-refresh"
   | "provider-change"

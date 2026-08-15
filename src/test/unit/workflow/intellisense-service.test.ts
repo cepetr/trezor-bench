@@ -25,7 +25,7 @@ import {
 import { CpptoolsBackend } from "../../../intellisense/cpptools-backend";
 import { ClangdBackend, CLANGD_EXTENSION_ID } from "../../../intellisense/clangd-backend";
 import { makeIntelliSenseLoadedState, primaryCoreFixturePath } from "../workflow-test-helpers";
-import { ActiveBuildContext } from "../../../configuration/active-build-context";
+import { BuildSelection } from "../../../configuration/build-selection";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const vscodeMock = require("vscode");
@@ -111,7 +111,7 @@ function stubClangdOnlyBackend(): void {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeConfig(overrides: Partial<ActiveBuildContext> = {}): ActiveBuildContext {
+function makeConfig(overrides: Partial<BuildSelection> = {}): BuildSelection {
   return {
     modelId: "T2T1",
     targetId: "hw",
@@ -208,7 +208,7 @@ suite("IntelliSenseService — stale-state clearing", () => {
     svc.setArtifactsRoot("/nonexistent/path");
 
     const p = awaitRefresh(svc);
-    svc.scheduleRefresh("active-build-context-change");
+    svc.scheduleRefresh("build-selection-change");
     await p;
 
     assert.ok(backend.clearCount > 0, "expected clearPayload to be called at least once");
@@ -291,7 +291,7 @@ suite("IntelliSenseService — no-fallback through context key", () => {
     svc.setArtifactsRoot("/nonexistent/path");
 
     const p = awaitRefresh(svc);
-    svc.scheduleRefresh("active-build-context-change");
+    svc.scheduleRefresh("build-selection-change");
     const [artifact] = await p;
 
     assert.strictEqual(artifact?.contextKey, "T3W1::emu::prodtest");
@@ -314,7 +314,7 @@ suite("IntelliSenseService — no-fallback through context key", () => {
     // Change context — new refresh also missing (from a different path)
     svc.setBuildContext(makeConfig({ modelId: "T3W1", targetId: "emu", componentId: "prodtest" }));
     const p2 = awaitRefresh(svc);
-    svc.scheduleRefresh("active-build-context-change");
+    svc.scheduleRefresh("build-selection-change");
     const [second] = await p2;
     assert.strictEqual(second?.status, "missing");
     assert.strictEqual(second?.contextKey, "T3W1::emu::prodtest");
@@ -405,7 +405,7 @@ suite("IntelliSenseService — latest-refresh-wins serialization", () => {
     const sub = svc.onDidRefresh((args) => events.push(args));
 
     svc.scheduleRefresh("activation");
-    svc.scheduleRefresh("active-build-context-change");
+    svc.scheduleRefresh("build-selection-change");
 
     // Wait for both to complete
     await new Promise<void>((resolve) => setTimeout(resolve, 50));
@@ -415,7 +415,7 @@ suite("IntelliSenseService — latest-refresh-wins serialization", () => {
     svc.dispose();
   });
 
-  test("final state after two calls reflects the second activeBuildContext", async () => {
+  test("final state after two calls reflects the second buildSelection", async () => {
     const backend = new StubCpptoolsBackend();
     const svc = new IntelliSenseService(backend);
     svc.setManifest(makeIntelliSenseLoadedState());
@@ -428,7 +428,7 @@ suite("IntelliSenseService — latest-refresh-wins serialization", () => {
     // Immediately change context and schedule another refresh
     svc.setBuildContext(makeConfig({ modelId: "T3W1", targetId: "emu", componentId: "prodtest" }));
     const p = awaitRefresh(svc);
-    svc.scheduleRefresh("active-build-context-change");
+    svc.scheduleRefresh("build-selection-change");
     const [artifact] = await p;
 
     // The last refresh uses the second config

@@ -22,7 +22,7 @@ import {
 import { ActiveCompileCommandsArtifact } from "../../../intellisense/intellisense-types";
 import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../../../intellisense/artifact-resolution";
 import { ManifestStateLoaded, BuildOption } from "../../../manifest/manifest-types";
-import { ActiveBuildContext } from "../../../configuration/active-build-context";
+import { BuildSelection } from "../../../configuration/build-selection";
 import { PresetFile, PresetState } from "../../../presets/preset-types";
 import { PresetChoice } from "../../../presets/preset-resolution";
 import { ResolvedOption } from "../../../configuration/build-options";
@@ -969,7 +969,7 @@ function makeManifestState(): ManifestStateLoaded {
   };
 }
 
-function makeActiveBuildContext(): ActiveBuildContext {
+function makeBuildSelection(): BuildSelection {
   return {
     modelId: "T2T1",
     targetId: "hw",
@@ -1020,7 +1020,7 @@ suite("ConfigurationTreeModel – Preset selector", () => {
   }
 
   test("Preset is the fourth Build Selection child, directly below Component", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     const children = buildContextChildren() as SelectorHeaderItem[];
     assert.strictEqual(children.length, 4);
     assert.deepStrictEqual(
@@ -1034,13 +1034,13 @@ suite("ConfigurationTreeModel – Preset selector", () => {
   });
 
   test("description shows '—' before preset state has resolved", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     const children = buildContextChildren() as SelectorHeaderItem[];
     assert.strictEqual(children[3].description, "—");
   });
 
   test("description shows 'Default' for the synthetic choice", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     const { state } = makeLoadedPresetState(DEFAULT_ONLY);
     treeModel.updatePresets(state, "default", DEFAULT_ONLY);
     const children = buildContextChildren() as SelectorHeaderItem[];
@@ -1048,7 +1048,7 @@ suite("ConfigurationTreeModel – Preset selector", () => {
   });
 
   test("description shows the active named preset's label", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     const available: PresetChoice[] = [
       { id: "default", label: "Default", isDefault: true },
       { id: "test", label: "test", isDefault: false },
@@ -1060,7 +1060,7 @@ suite("ConfigurationTreeModel – Preset selector", () => {
   });
 
   test("preset state undefined renders the loading placeholder when expanded", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     treeModel.setExpandedSelector("preset");
     const children = treeModel.getChildren(
       new SelectorHeaderItem("preset", "Preset", undefined, true)
@@ -1070,7 +1070,7 @@ suite("ConfigurationTreeModel – Preset selector", () => {
   });
 
   test("preset state invalid replaces all choices with a warning row naming the failing file", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     const invalidState: PresetState = {
       status: "invalid",
       shared: makePresetFile({
@@ -1095,7 +1095,7 @@ suite("ConfigurationTreeModel – Preset selector", () => {
   });
 
   test("preset state unavailable replaces all choices with a presets.toml-is-unavailable row", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     const unavailableState: PresetState = {
       status: "unavailable",
       // The shared file does not exist; the user file may or may not.
@@ -1124,7 +1124,7 @@ suite("ConfigurationTreeModel – Preset selector", () => {
   });
 
   test("description reads 'Unavailable' while presets.toml is absent", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     const unavailableState: PresetState = {
       status: "unavailable",
       shared: makePresetFile({ source: "shared", present: false }),
@@ -1140,7 +1140,7 @@ suite("ConfigurationTreeModel – Preset selector", () => {
   });
 
   test("preset state loaded lists Default first, then named presets, with the active one marked", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     const available: PresetChoice[] = [
       { id: "default", label: "Default", isDefault: true },
       { id: "test", label: "test", isDefault: false },
@@ -1159,7 +1159,7 @@ suite("ConfigurationTreeModel – Preset selector", () => {
   });
 
   test("every listed preset renders as a plain selectable row, whatever the build context", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     // The tree model is handed the full declared list, including presets no
     // fragment of which applies here; none of them is marked or disabled.
     const available: PresetChoice[] = [
@@ -1185,7 +1185,7 @@ suite("ConfigurationTreeModel – Preset selector", () => {
   });
 
   test("only one selector expands at a time; expanding preset collapses model", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     treeModel.setExpandedSelector("model");
     assert.strictEqual(treeModel.getExpandedSelector(), "model");
     treeModel.setExpandedSelector("preset");
@@ -1247,7 +1247,7 @@ suite("ConfigurationTreeModel – Build Options preset-relative emphasis", () =>
     const opt = checkboxOption("frozen", "--frozen");
     treeModel.update(
       makeManifestState(),
-      makeActiveBuildContext(),
+      makeBuildSelection(),
       [resolved(opt, { value: false, presetState: "resolved", isOverride: true })]
     );
     const [item] = getBuildOptionsChildren(treeModel) as BuildOptionCheckboxItem[];
@@ -1258,7 +1258,7 @@ suite("ConfigurationTreeModel – Build Options preset-relative emphasis", () =>
     const opt = checkboxOption("frozen", "--frozen");
     treeModel.update(
       makeManifestState(),
-      makeActiveBuildContext(),
+      makeBuildSelection(),
       [resolved(opt, { value: true, presetState: "resolved", isOverride: false })]
     );
     const [item] = getBuildOptionsChildren(treeModel) as BuildOptionCheckboxItem[];
@@ -1269,7 +1269,7 @@ suite("ConfigurationTreeModel – Build Options preset-relative emphasis", () =>
     const opt = checkboxOption("bootloader_devel", "--bootloader-devel");
     treeModel.update(
       makeManifestState(),
-      makeActiveBuildContext(),
+      makeBuildSelection(),
       [resolved(opt, { presetState: "resolved" })]
     );
     const [item] = getBuildOptionsChildren(treeModel) as BuildOptionCheckboxItem[];
@@ -1284,7 +1284,7 @@ suite("ConfigurationTreeModel – Build Options preset-relative emphasis", () =>
     const opt = multistateOption("dbg-console", "--dbg-console", states);
     treeModel.update(
       makeManifestState(),
-      makeActiveBuildContext(),
+      makeBuildSelection(),
       [resolved(opt, { value: "swo", presetState: "resolved", presetValue: "null", isOverride: true })]
     );
     const [item] = getBuildOptionsChildren(treeModel) as BuildOptionMultistateHeaderItem[];
@@ -1299,7 +1299,7 @@ suite("ConfigurationTreeModel – Build Options preset-relative emphasis", () =>
     const opt = multistateOption("dbg-console", "--dbg-console", states);
     treeModel.update(
       makeManifestState(),
-      makeActiveBuildContext(),
+      makeBuildSelection(),
       [resolved(opt, { value: "swo", presetState: "resolved", presetValue: "swo", isOverride: false })]
     );
     const [item] = getBuildOptionsChildren(treeModel) as BuildOptionMultistateHeaderItem[];
@@ -1311,7 +1311,7 @@ suite("ConfigurationTreeModel – Build Options preset-relative emphasis", () =>
     const optB = checkboxOption("beta", "--beta", "Group");
     treeModel.update(
       makeManifestState(),
-      makeActiveBuildContext(),
+      makeBuildSelection(),
       [
         resolved(optA, { value: false, presetState: "resolved", isOverride: false }),
         resolved(optB, { value: true, presetState: "resolved", isOverride: true }),
@@ -1326,7 +1326,7 @@ suite("ConfigurationTreeModel – Build Options preset-relative emphasis", () =>
     const opt = checkboxOption("frozen", "--frozen");
     treeModel.update(
       makeManifestState(),
-      makeActiveBuildContext(),
+      makeBuildSelection(),
       [resolved(opt, { presetState: "mismatch", isOverride: false })]
     );
     const [item] = getBuildOptionsChildren(treeModel) as BuildOptionCheckboxItem[];
@@ -1341,7 +1341,7 @@ suite("ConfigurationTreeModel – Build Options preset-relative emphasis", () =>
     const opt = multistateOption("pyopt", "--pyopt", states);
     treeModel.update(
       makeManifestState(),
-      makeActiveBuildContext(),
+      makeBuildSelection(),
       [resolved(opt, { value: "true", presetState: "unresolved", isOverride: false })]
     );
     treeModel.setExpandedMultistateKey("pyopt");
@@ -1402,7 +1402,7 @@ suite("ConfigurationTreeModel – paneRootChildren('build-selection')", () => {
   });
 
   test("loaded: renders the four selector headers in order", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     const paneChildren = treeModel.paneRootChildren("build-selection") as SelectorHeaderItem[];
     assert.strictEqual(paneChildren.length, 4);
     assert.deepStrictEqual(
@@ -1454,7 +1454,7 @@ suite("ConfigurationTreeModel – paneRootChildren('build-options')", () => {
   });
 
   test("workflow-blocked: renders the blocked-workflow warning and placeholder", () => {
-    treeModel.update({ ...makeManifestState(), hasWorkflowBlockingIssues: true }, makeActiveBuildContext(), []);
+    treeModel.update({ ...makeManifestState(), hasWorkflowBlockingIssues: true }, makeBuildSelection(), []);
     const children = treeModel.paneRootChildren("build-options");
     assert.ok(children[0] instanceof WarningItem);
     assert.ok(String(children[0].label).includes("Build workflow blocked"));
@@ -1462,7 +1462,7 @@ suite("ConfigurationTreeModel – paneRootChildren('build-options')", () => {
   });
 
   test("no-options-defined: renders the no-build-options placeholder when nothing was resolved", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     const children = treeModel.paneRootChildren("build-options");
     assert.strictEqual(children.length, 1);
     assert.strictEqual(children[0].label, "No build options defined");
@@ -1470,7 +1470,7 @@ suite("ConfigurationTreeModel – paneRootChildren('build-options')", () => {
 
   test("no-options-available: renders the not-available placeholder when every option is unavailable", () => {
     const opt = checkboxOption("frozen", "--frozen");
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), [resolved(opt, { available: false })]);
+    treeModel.update(makeManifestState(), makeBuildSelection(), [resolved(opt, { available: false })]);
     const children = treeModel.paneRootChildren("build-options");
     assert.strictEqual(children.length, 1);
     assert.strictEqual(children[0].label, "No options available for the active build context");
@@ -1478,7 +1478,7 @@ suite("ConfigurationTreeModel – paneRootChildren('build-options')", () => {
 
   test("loaded: renders an emphasized checkbox row for an overridden option", () => {
     const opt = checkboxOption("frozen", "--frozen");
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), [resolved(opt, { value: true, isOverride: true })]);
+    treeModel.update(makeManifestState(), makeBuildSelection(), [resolved(opt, { value: true, isOverride: true })]);
     const [item] = treeModel.paneRootChildren("build-options") as BuildOptionCheckboxItem[];
     assert.strictEqual(item.checkboxState, vscode.TreeItemCheckboxState.Checked);
     assert.deepStrictEqual(item.label, { label: "frozen", highlights: [[0, 6]] });
@@ -1539,7 +1539,7 @@ suite("ConfigurationTreeModel – onDidChangePane fan-out", () => {
   }
 
   test("update() signals build-selection and build-options", () => {
-    const seen = collectPanes(() => treeModel.update(makeManifestState(), makeActiveBuildContext(), []));
+    const seen = collectPanes(() => treeModel.update(makeManifestState(), makeBuildSelection(), []));
     assert.deepStrictEqual(new Set(seen), new Set(["build-selection", "build-options"]));
   });
 
@@ -1569,7 +1569,7 @@ suite("ConfigurationTreeModel – onDidChangePane fan-out", () => {
   });
 
   test("setExpandedSelector() signals only build-selection", () => {
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), []);
+    treeModel.update(makeManifestState(), makeBuildSelection(), []);
     const seen = collectPanes(() => treeModel.setExpandedSelector("model"));
     assert.deepStrictEqual(seen, ["build-selection"]);
   });
@@ -1603,14 +1603,14 @@ suite("PaneTreeProvider – root delegation", () => {
   });
 
   test("getChildren(undefined) delegates to the owner's paneRootChildren for build-selection", () => {
-    owner.update(makeManifestState(), makeActiveBuildContext(), []);
+    owner.update(makeManifestState(), makeBuildSelection(), []);
     const facade = new PaneTreeProvider(owner, "build-selection");
     assert.deepStrictEqual(facade.getChildren(undefined), owner.paneRootChildren("build-selection"));
   });
 
   test("getChildren(undefined) delegates to the owner's paneRootChildren for build-options", () => {
     const opt = checkboxOption("frozen", "--frozen");
-    owner.update(makeManifestState(), makeActiveBuildContext(), [resolved(opt)]);
+    owner.update(makeManifestState(), makeBuildSelection(), [resolved(opt)]);
     const facade = new PaneTreeProvider(owner, "build-options");
     assert.deepStrictEqual(facade.getChildren(undefined), owner.paneRootChildren("build-options"));
   });
@@ -1622,7 +1622,7 @@ suite("PaneTreeProvider – root delegation", () => {
   });
 
   test("a build-options facade never returns build-selection's root rows", () => {
-    owner.update(makeManifestState(), makeActiveBuildContext(), []);
+    owner.update(makeManifestState(), makeBuildSelection(), []);
     const facade = new PaneTreeProvider(owner, "build-options");
     const rows = facade.getChildren(undefined);
     assert.ok(!rows.some((r) => r instanceof SelectorHeaderItem));
@@ -1641,7 +1641,7 @@ suite("PaneTreeProvider – non-root delegation to the owner's element dispatch"
   });
 
   test("expands a selector header through the same dispatch as the owner", () => {
-    owner.update(makeManifestState(), makeActiveBuildContext(), []);
+    owner.update(makeManifestState(), makeBuildSelection(), []);
     owner.setExpandedSelector("model");
     const facade = new PaneTreeProvider(owner, "build-selection");
     const [modelHeader] = facade.getChildren(undefined) as SelectorHeaderItem[];
@@ -1652,7 +1652,7 @@ suite("PaneTreeProvider – non-root delegation to the owner's element dispatch"
   test("expands a multistate option header through the same dispatch as the owner", () => {
     const states = [{ id: "off", label: "Off", flag: "" }];
     const opt = multistateOption("verbose", "--verbose", states);
-    owner.update(makeManifestState(), makeActiveBuildContext(), [resolved(opt)]);
+    owner.update(makeManifestState(), makeBuildSelection(), [resolved(opt)]);
     owner.setExpandedMultistateKey("verbose");
     const facade = new PaneTreeProvider(owner, "build-options");
     const [header] = facade.getChildren(undefined) as BuildOptionMultistateHeaderItem[];
@@ -1661,7 +1661,7 @@ suite("PaneTreeProvider – non-root delegation to the owner's element dispatch"
 
   test("expands a build-option group through the same dispatch as the owner", () => {
     const optA = checkboxOption("alpha", "--alpha", "Group");
-    owner.update(makeManifestState(), makeActiveBuildContext(), [resolved(optA)]);
+    owner.update(makeManifestState(), makeBuildSelection(), [resolved(optA)]);
     const facade = new PaneTreeProvider(owner, "build-options");
     const [group] = facade.getChildren(undefined) as BuildOptionGroupItem[];
     assert.deepStrictEqual(facade.getChildren(group), owner.getChildren(group));
@@ -1681,7 +1681,7 @@ suite("PaneTreeProvider – selector accordion behavior", () => {
   setup(() => {
     owner = new ConfigurationTreeModel();
     buildSelection = new PaneTreeProvider(owner, "build-selection");
-    owner.update(makeManifestState(), makeActiveBuildContext(), []);
+    owner.update(makeManifestState(), makeBuildSelection(), []);
   });
 
   teardown(() => {
@@ -1723,7 +1723,7 @@ suite("PaneTreeProvider – multistate expansion, group collapse, and checkbox s
       { id: "swo", label: "SWO", flag: "--dbg-console=swo" },
     ];
     const opt = multistateOption("dbg-console", "--dbg-console", states);
-    owner.update(makeManifestState(), makeActiveBuildContext(), [resolved(opt, { value: "off", presetState: "resolved" })]);
+    owner.update(makeManifestState(), makeBuildSelection(), [resolved(opt, { value: "off", presetState: "resolved" })]);
 
     owner.setExpandedMultistateKey("dbg-console");
     const [header] = buildOptions.getChildren(undefined) as BuildOptionMultistateHeaderItem[];
@@ -1740,7 +1740,7 @@ suite("PaneTreeProvider – multistate expansion, group collapse, and checkbox s
   test("collapsing an option group hides its members but keeps the header emphasized on override", () => {
     const optA = checkboxOption("alpha", "--alpha", "Group");
     const optB = checkboxOption("beta", "--beta", "Group");
-    owner.update(makeManifestState(), makeActiveBuildContext(), [
+    owner.update(makeManifestState(), makeBuildSelection(), [
       resolved(optA, { isOverride: false }),
       resolved(optB, { value: true, isOverride: true }),
     ]);
@@ -1758,12 +1758,12 @@ suite("PaneTreeProvider – multistate expansion, group collapse, and checkbox s
 
   test("checkbox row reflects the stored value unchanged through the facade", () => {
     const opt = checkboxOption("frozen", "--frozen");
-    owner.update(makeManifestState(), makeActiveBuildContext(), [resolved(opt, { value: false })]);
+    owner.update(makeManifestState(), makeBuildSelection(), [resolved(opt, { value: false })]);
     let [checkbox] = buildOptions.getChildren(undefined) as BuildOptionCheckboxItem[];
     assert.strictEqual(checkbox.checkboxState, vscode.TreeItemCheckboxState.Unchecked);
 
     // Simulate the extension re-resolving and re-rendering after a checkbox toggle.
-    owner.update(makeManifestState(), makeActiveBuildContext(), [resolved(opt, { value: true })]);
+    owner.update(makeManifestState(), makeBuildSelection(), [resolved(opt, { value: true })]);
     [checkbox] = buildOptions.getChildren(undefined) as BuildOptionCheckboxItem[];
     assert.strictEqual(checkbox.checkboxState, vscode.TreeItemCheckboxState.Checked);
   });
@@ -1807,7 +1807,7 @@ suite("PaneTreeProvider – change-event relay", () => {
     const sub = facade.onDidChangeTreeData(() => {
       fired++;
     });
-    owner.update(makeManifestState(), makeActiveBuildContext(), []);
+    owner.update(makeManifestState(), makeBuildSelection(), []);
     sub.dispose();
     assert.strictEqual(fired, 0);
   });
@@ -1892,7 +1892,7 @@ suite("ConfigurationTreeModel – no section rows inside any pane", () => {
     const optA = checkboxOption("alpha", "--alpha", "Group");
     const states = [{ id: "off", label: "Off", flag: "" }];
     const multi = multistateOption("verbose", "--verbose", states);
-    treeModel.update(makeManifestState(), makeActiveBuildContext(), [resolved(optA), resolved(multi)]);
+    treeModel.update(makeManifestState(), makeBuildSelection(), [resolved(optA), resolved(multi)]);
     treeModel.setExpandedSelector("model");
     treeModel.setExpandedMultistateKey("verbose");
     treeModel.updateArtifact(makeValidArtifact());

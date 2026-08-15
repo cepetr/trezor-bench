@@ -129,7 +129,7 @@ suite("IntelliSenseService – manual refresh trigger", () => {
     svc.setBuildContext({ modelId: "model-t2t1", targetId: "hw", componentId: "component-core" });
     svc.setArtifactsRoot(path.join(__dirname, "../../../../test-fixtures/workspaces/intellisense-missing-artifact"));
 
-    svc.scheduleRefresh("active-build-context-change");
+    svc.scheduleRefresh("build-selection-change");
     await drainMicrotasks();
     const afterConfig = svc.getLastReadiness();
 

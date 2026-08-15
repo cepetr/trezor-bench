@@ -488,7 +488,7 @@ export function materializeDebugConfiguration(
   if (!entries) {
     return {
       ok: false,
-      reason: "unknown-active-build-context",
+      reason: "unknown-build-selection",
       message: "Cannot start debugging: active configuration references an unknown component, target, or model.",
     };
   }
@@ -675,7 +675,7 @@ export async function executeDebugLaunch(
   const entries = activeManifestEntries(manifest, buildContext);
   if (!entries) {
     reportDebugLaunchFailure(
-      "unknown-active-build-context",
+      "unknown-build-selection",
       buildContext,
       "Cannot start debugging: active configuration references an unknown component, target, or model.",
       "active configuration references an unknown component, target, or model"

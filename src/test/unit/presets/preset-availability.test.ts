@@ -10,7 +10,7 @@ import * as vscode from "vscode";
 import { derivePresetContext, samePresetContext, listPresetChoices } from "../../../presets/preset-resolution";
 import { PresetFile, PresetFragment } from "../../../presets/preset-types";
 import { ManifestStateLoaded } from "../../../manifest/manifest-types";
-import { ActiveBuildContext } from "../../../configuration/active-build-context";
+import { BuildSelection } from "../../../configuration/build-selection";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -31,7 +31,7 @@ function manifest(targets: ManifestStateLoaded["targets"]): ManifestStateLoaded 
   };
 }
 
-function config(overrides?: Partial<ActiveBuildContext>): ActiveBuildContext {
+function config(overrides?: Partial<BuildSelection>): BuildSelection {
   return {
     modelId: "T2T1",
     targetId: "hw",

@@ -28,7 +28,7 @@ function inputs(
     manifestStatus,
     hasWorkflowBlockingIssues,
     workspaceSupported,
-    activeBuildContextResolved: true,
+    buildSelectionResolved: true,
     presetsInvalid,
     presetsUnavailable,
   };
@@ -76,7 +76,7 @@ suite("evaluateWorkflowPreconditions – blocking logic", () => {
 
   test("context-unresolved blocks when the active configuration no longer resolves", () => {
     assert.strictEqual(
-      evaluateWorkflowPreconditions({ ...inputs("loaded", false, true), activeBuildContextResolved: false }),
+      evaluateWorkflowPreconditions({ ...inputs("loaded", false, true), buildSelectionResolved: false }),
       "context-unresolved"
     );
   });

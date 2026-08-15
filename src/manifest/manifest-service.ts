@@ -158,7 +158,7 @@ export class ManifestService implements vscode.Disposable {
     }
     // Watch the exact manifest file for create, change, and delete events.
     // File-change events trigger re-normalization of the active config via
-    // the onDidChangeState -> restoreActiveBuildContext chain in extension.ts.
+    // the onDidChangeState -> restoreBuildSelection chain in extension.ts.
     const pattern = new vscode.RelativePattern(
       vscode.Uri.file(path.dirname(this.manifestUri.fsPath)),
       path.basename(this.manifestUri.fsPath)

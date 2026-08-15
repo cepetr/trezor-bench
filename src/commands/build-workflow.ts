@@ -46,7 +46,7 @@ export interface PreconditionInputs {
   readonly hasWorkflowBlockingIssues: boolean;
   readonly workspaceSupported: boolean;
   /** True when the active configuration resolves to manifest entries. */
-  readonly activeBuildContextResolved?: boolean;
+  readonly buildSelectionResolved?: boolean;
   /**
    * True when the shared `presets.toml` does not exist, so the workspace's
    * `xtask` does not support presets. Reported ahead of
@@ -174,7 +174,7 @@ export function evaluateWorkflowPreconditions(
   if (inputs.manifestStatus === "invalid" || inputs.hasWorkflowBlockingIssues) {
     return "manifest-invalid";
   }
-  if (inputs.activeBuildContextResolved === false) {
+  if (inputs.buildSelectionResolved === false) {
     return "context-unresolved";
   }
   if (inputs.presetsUnavailable) {

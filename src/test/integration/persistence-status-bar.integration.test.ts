@@ -1,18 +1,18 @@
 /**
- * Integration tests for active-build-contexturation persistence and status-bar behavior.
+ * Integration tests for build-selectionuration persistence and status-bar behavior.
  * Runs inside the VS Code extension host via @vscode/test-electron.
  */
 import * as assert from "assert";
 import * as vscode from "vscode";
 import { StatusBarPresenter, formatStatusBarText } from "../../ui/status-bar";
 import {
-  readActiveBuildContext,
-  writeActiveBuildContext,
+  readBuildSelection,
+  writeBuildSelection,
   selectModel,
   selectTarget,
   selectComponent,
-} from "../../configuration/active-build-context";
-import { normalizeActiveBuildContext } from "../../configuration/normalize-config";
+} from "../../configuration/build-selection";
+import { normalizeBuildSelection } from "../../configuration/normalize-selection";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
 
 // ---------------------------------------------------------------------------
@@ -64,10 +64,10 @@ function makeLoadedState(
 // Suite: Active-configuration persistence round-trip
 // ---------------------------------------------------------------------------
 
-suite("active-build-context persistence", () => {
-  test("writeActiveBuildContext persists all three ids and persistedAt", async () => {
+suite("build-selection persistence", () => {
+  test("writeBuildSelection persists all three ids and persistedAt", async () => {
     const ctx = createFakeContext();
-    const saved = await writeActiveBuildContext(ctx, {
+    const saved = await writeBuildSelection(ctx, {
       modelId: "T3W1",
       targetId: "emu",
       componentId: "prodtest",
@@ -78,16 +78,16 @@ suite("active-build-context persistence", () => {
     assert.ok(saved.persistedAt, "expected persistedAt timestamp");
   });
 
-  test("readActiveBuildContext returns undefined when nothing has been saved", () => {
+  test("readBuildSelection returns undefined when nothing has been saved", () => {
     const ctx = createFakeContext();
-    assert.strictEqual(readActiveBuildContext(ctx), undefined);
+    assert.strictEqual(readBuildSelection(ctx), undefined);
   });
 
-  test("readActiveBuildContext returns the last written config", async () => {
+  test("readBuildSelection returns the last written config", async () => {
     const ctx = createFakeContext();
-    await writeActiveBuildContext(ctx, { modelId: "T2T1", targetId: "hw", componentId: "core" });
-    const read = readActiveBuildContext(ctx);
-    assert.ok(read, "expected readActiveBuildContext to return a config");
+    await writeBuildSelection(ctx, { modelId: "T2T1", targetId: "hw", componentId: "core" });
+    const read = readBuildSelection(ctx);
+    assert.ok(read, "expected readBuildSelection to return a config");
     assert.strictEqual(read!.modelId, "T2T1");
     assert.strictEqual(read!.targetId, "hw");
     assert.strictEqual(read!.componentId, "core");
@@ -102,7 +102,7 @@ suite("selector mutation helpers", () => {
   test("selectModel updates only the modelId; existing valid target+component are preserved", async () => {
     const ctx = createFakeContext();
     const manifest = makeLoadedState();
-    await writeActiveBuildContext(ctx, { modelId: "T2T1", targetId: "emu", componentId: "prodtest" });
+    await writeBuildSelection(ctx, { modelId: "T2T1", targetId: "emu", componentId: "prodtest" });
 
     const updated = await selectModel(ctx, "T3W1", manifest);
     assert.strictEqual(updated.modelId, "T3W1");
@@ -113,7 +113,7 @@ suite("selector mutation helpers", () => {
   test("selectTarget updates only the targetId; existing valid model+component are preserved", async () => {
     const ctx = createFakeContext();
     const manifest = makeLoadedState();
-    await writeActiveBuildContext(ctx, { modelId: "T3W1", targetId: "hw", componentId: "prodtest" });
+    await writeBuildSelection(ctx, { modelId: "T3W1", targetId: "hw", componentId: "prodtest" });
 
     const updated = await selectTarget(ctx, "emu", manifest);
     assert.strictEqual(updated.modelId, "T3W1");
@@ -124,7 +124,7 @@ suite("selector mutation helpers", () => {
   test("selectComponent updates only the componentId; existing valid model+target are preserved", async () => {
     const ctx = createFakeContext();
     const manifest = makeLoadedState();
-    await writeActiveBuildContext(ctx, { modelId: "T3W1", targetId: "emu", componentId: "core" });
+    await writeBuildSelection(ctx, { modelId: "T3W1", targetId: "emu", componentId: "core" });
 
     const updated = await selectComponent(ctx, "prodtest", manifest);
     assert.strictEqual(updated.modelId, "T3W1");
@@ -141,10 +141,10 @@ suite("restore-on-reload normalization", () => {
   test("stale modelId is replaced with first model on reload", async () => {
     const ctx = createFakeContext();
     // Persist a config with a stale modelId
-    await writeActiveBuildContext(ctx, { modelId: "OLD_MODEL", targetId: "hw", componentId: "core" });
-    const saved = readActiveBuildContext(ctx);
+    await writeBuildSelection(ctx, { modelId: "OLD_MODEL", targetId: "hw", componentId: "core" });
+    const saved = readBuildSelection(ctx);
     const manifest = makeLoadedState();
-    const normalized = normalizeActiveBuildContext(manifest, saved);
+    const normalized = normalizeBuildSelection(manifest, saved);
     assert.strictEqual(normalized.modelId, "T2T1");
     assert.strictEqual(normalized.targetId, "hw");
     assert.strictEqual(normalized.componentId, "core");
@@ -152,10 +152,10 @@ suite("restore-on-reload normalization", () => {
 
   test("valid persisted config is unchanged after normalization on reload", async () => {
     const ctx = createFakeContext();
-    await writeActiveBuildContext(ctx, { modelId: "T3W1", targetId: "emu", componentId: "prodtest" });
-    const saved = readActiveBuildContext(ctx);
+    await writeBuildSelection(ctx, { modelId: "T3W1", targetId: "emu", componentId: "prodtest" });
+    const saved = readBuildSelection(ctx);
     const manifest = makeLoadedState();
-    const normalized = normalizeActiveBuildContext(manifest, saved);
+    const normalized = normalizeBuildSelection(manifest, saved);
     assert.strictEqual(normalized.modelId, "T3W1");
     assert.strictEqual(normalized.targetId, "emu");
     assert.strictEqual(normalized.componentId, "prodtest");
@@ -163,7 +163,7 @@ suite("restore-on-reload normalization", () => {
 
   test("absent saved config results in first-entry defaults after normalization", () => {
     const manifest = makeLoadedState();
-    const normalized = normalizeActiveBuildContext(manifest, undefined);
+    const normalized = normalizeBuildSelection(manifest, undefined);
     assert.strictEqual(normalized.modelId, "T2T1");
     assert.strictEqual(normalized.targetId, "hw");
     assert.strictEqual(normalized.componentId, "core");

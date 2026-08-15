@@ -1,13 +1,13 @@
 /**
- * Normalizes a saved active configuration against the loaded manifest and
+ * Normalizes a saved build selection against the loaded manifest and
  * declared presets, replacing ids that no longer resolve.
  */
 import { ManifestStateLoaded } from "../manifest/manifest-types";
-import { ActiveBuildContext } from "./active-build-context";
+import { BuildSelection } from "./build-selection";
 import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 
 /**
- * Returns a valid active configuration for `manifest`.
+ * Returns a valid selection for `manifest`.
  *
  * When `saved` is provided, each id is preserved if it still resolves to an
  * entry in the manifest; otherwise it is replaced with the first entry of that
@@ -15,12 +15,12 @@ import { DEFAULT_PRESET_ID } from "../presets/preset-types";
  * entry for that kind.
  *
  * The returned object contains only the id fields — callers are responsible
- * for writing the result to workspace state via `writeActiveBuildContext`.
+ * for writing the result to workspace state via `writeBuildSelection`.
  */
-export function normalizeActiveBuildContext(
+export function normalizeBuildSelection(
   manifest: ManifestStateLoaded,
-  saved?: ActiveBuildContext
-): Pick<ActiveBuildContext, "modelId" | "targetId" | "componentId"> {
+  saved?: BuildSelection
+): Pick<BuildSelection, "modelId" | "targetId" | "componentId"> {
   const modelId =
     saved && manifest.models.some((m) => m.id === saved.modelId)
       ? saved.modelId

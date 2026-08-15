@@ -141,7 +141,7 @@ export interface ArtifactActionPreconditionInputs {
   readonly hasWorkflowBlockingIssues?: boolean;
   readonly workspaceSupported: boolean;
   /** True when the active configuration resolves to manifest entries. */
-  readonly activeBuildContextResolved?: boolean;
+  readonly buildSelectionResolved?: boolean;
   readonly actionApplicable: boolean;
   readonly binaryExists: boolean;
 }
@@ -162,7 +162,7 @@ export function evaluateArtifactActionPreconditions(
   if (inputs.manifestStatus === "invalid" || inputs.hasWorkflowBlockingIssues) {
     return "manifest-invalid";
   }
-  if (inputs.activeBuildContextResolved === false) {
+  if (inputs.buildSelectionResolved === false) {
     return "context-unresolved";
   }
   if (!inputs.actionApplicable) {

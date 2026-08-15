@@ -13,7 +13,7 @@ export type ManifestEntryKind = "model" | "target" | "component";
 /**
  * The active model/target/component triple — the identity every
  * context-dependent computation keys on (`when` evaluation, artifact
- * resolution, context keys). `ActiveBuildContext` extends it with the
+ * resolution, context keys). `BuildSelection` extends it with the
  * persisted preset selection, which is deliberately NOT part of this
  * identity.
  */

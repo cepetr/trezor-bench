@@ -2,7 +2,7 @@
  * Integration tests for build-context selector behavior.
  * Runs inside the VS Code extension host via @vscode/test-electron.
  *
- * These tests exercise ConfigurationTreeModel and normalizeActiveBuildContext
+ * These tests exercise ConfigurationTreeModel and normalizeBuildSelection
  * together to validate selector rendering and normalization behavior.
  */
 import * as assert from "assert";
@@ -13,9 +13,9 @@ import {
   SelectorChoiceItem,
   WarningItem,
 } from "../../ui/configuration-tree";
-import { normalizeActiveBuildContext } from "../../configuration/normalize-config";
+import { normalizeBuildSelection } from "../../configuration/normalize-selection";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
-import { ActiveBuildContext } from "../../configuration/active-build-context";
+import { BuildSelection } from "../../configuration/build-selection";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -49,11 +49,11 @@ function makeLoadedState(
   } as ManifestStateLoaded;
 }
 
-function activeBuildContext(
+function buildSelection(
   modelId: string,
   targetId: string,
   componentId: string
-): ActiveBuildContext {
+): BuildSelection {
   return { modelId, targetId, componentId, persistedAt: new Date().toISOString() };
 }
 
@@ -79,7 +79,7 @@ suite("ConfigurationTreeModel – selector rendering", () => {
   });
 
   test("build-context shows four SelectorHeaderItems when manifest is loaded", () => {
-    const config = activeBuildContext("T2T1", "hw", "core");
+    const config = buildSelection("T2T1", "hw", "core");
     treeModel.update(makeLoadedState(), config);
 
     const children = getBuildContextChildren(treeModel);
@@ -91,7 +91,7 @@ suite("ConfigurationTreeModel – selector rendering", () => {
   });
 
   test("SelectorHeaderItems have correct selectorKind values", () => {
-    treeModel.update(makeLoadedState(), activeBuildContext("T2T1", "hw", "core"));
+    treeModel.update(makeLoadedState(), buildSelection("T2T1", "hw", "core"));
     const [model, target, component] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
     assert.strictEqual(model.selectorKind, "model");
     assert.strictEqual(target.selectorKind, "target");
@@ -99,7 +99,7 @@ suite("ConfigurationTreeModel – selector rendering", () => {
   });
 
   test("SelectorHeaderItems reflect user-facing selected values as description", () => {
-    treeModel.update(makeLoadedState(), activeBuildContext("T3W1", "emu", "prodtest"));
+    treeModel.update(makeLoadedState(), buildSelection("T3W1", "emu", "prodtest"));
     const [model, target, component] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
     assert.strictEqual(model.description, "Trezor Model T3");
     assert.strictEqual(target.description, "Emulator");
@@ -107,13 +107,13 @@ suite("ConfigurationTreeModel – selector rendering", () => {
   });
 
   test("SelectorHeaderItems use target shortName when available", () => {
-    treeModel.update(makeLoadedState(), activeBuildContext("T2T1", "hw", "core"));
+    treeModel.update(makeLoadedState(), buildSelection("T2T1", "hw", "core"));
     const [, target] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
     assert.strictEqual(target.description, "HW");
   });
 
   test("SelectorHeaderItem description falls back to em dash when no active config is set", () => {
-    treeModel.update(makeLoadedState()); // no activeBuildContext
+    treeModel.update(makeLoadedState()); // no buildSelection
     const [model] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
     assert.strictEqual(model.description, "—");
   });
@@ -144,7 +144,7 @@ suite("ConfigurationTreeModel – choice item rendering", () => {
   });
 
   test("model SelectorHeader expands to show all model choice items", () => {
-    treeModel.update(makeLoadedState(), activeBuildContext("T2T1", "hw", "core"));
+    treeModel.update(makeLoadedState(), buildSelection("T2T1", "hw", "core"));
     treeModel.setExpandedSelector("model");
     const [modelHeader] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
     const choices = treeModel.getChildren(modelHeader) as SelectorChoiceItem[];
@@ -154,7 +154,7 @@ suite("ConfigurationTreeModel – choice item rendering", () => {
   });
 
   test("active model choice item is marked active, others are inactive", () => {
-    treeModel.update(makeLoadedState(), activeBuildContext("T3W1", "hw", "core"));
+    treeModel.update(makeLoadedState(), buildSelection("T3W1", "hw", "core"));
     treeModel.setExpandedSelector("model");
     const [modelHeader] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
     const choices = treeModel.getChildren(modelHeader) as SelectorChoiceItem[];
@@ -165,7 +165,7 @@ suite("ConfigurationTreeModel – choice item rendering", () => {
   });
 
   test("target SelectorHeader expands to show all target choice items", () => {
-    treeModel.update(makeLoadedState(), activeBuildContext("T2T1", "emu", "core"));
+    treeModel.update(makeLoadedState(), buildSelection("T2T1", "emu", "core"));
     treeModel.setExpandedSelector("target");
     const [, targetHeader] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
     const choices = treeModel.getChildren(targetHeader) as SelectorChoiceItem[];
@@ -177,13 +177,13 @@ suite("ConfigurationTreeModel – choice item rendering", () => {
   });
 
   test("component SelectorHeader expands to show all component choice items", () => {
-    treeModel.update(makeLoadedState(), activeBuildContext("T2T1", "hw", "prodtest"));
+    treeModel.update(makeLoadedState(), buildSelection("T2T1", "hw", "prodtest"));
     treeModel.setExpandedSelector("component");
     const [, , componentHeader] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
     const choices = treeModel.getChildren(componentHeader) as SelectorChoiceItem[];
     assert.strictEqual(choices.length, 2);
       test("only one selector header is expanded at a time", () => {
-        treeModel.update(makeLoadedState(), activeBuildContext("T2T1", "hw", "core"));
+        treeModel.update(makeLoadedState(), buildSelection("T2T1", "hw", "core"));
 
         treeModel.setExpandedSelector("model");
         let [modelHeader, targetHeader, componentHeader] = getBuildContextChildren(
@@ -227,9 +227,9 @@ suite("ConfigurationTreeModel – normalization integration", () => {
   test("normalizing a stale config and updating the tree renders the corrected selection", () => {
     const manifest = makeLoadedState();
     // Saved config has a stale modelId
-    const stale = activeBuildContext("OLD_MODEL", "hw", "core");
-    const normalized = normalizeActiveBuildContext(manifest, stale);
-    const normConfig = activeBuildContext(normalized.modelId, normalized.targetId, normalized.componentId);
+    const stale = buildSelection("OLD_MODEL", "hw", "core");
+    const normalized = normalizeBuildSelection(manifest, stale);
+    const normConfig = buildSelection(normalized.modelId, normalized.targetId, normalized.componentId);
     treeModel.update(manifest, normConfig);
 
     const [modelHeader] = getBuildContextChildren(treeModel) as SelectorHeaderItem[];
@@ -244,8 +244,8 @@ suite("ConfigurationTreeModel – normalization integration", () => {
 
   test("fresh normalization with no saved config defaults to first entries in the tree", () => {
     const manifest = makeLoadedState();
-    const normalized = normalizeActiveBuildContext(manifest);
-    const normConfig = activeBuildContext(normalized.modelId, normalized.targetId, normalized.componentId);
+    const normalized = normalizeBuildSelection(manifest);
+    const normConfig = buildSelection(normalized.modelId, normalized.targetId, normalized.componentId);
     treeModel.update(manifest, normConfig);
 
     const [modelHeader, targetHeader, componentHeader] = getBuildContextChildren(

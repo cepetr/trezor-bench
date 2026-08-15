@@ -1,7 +1,7 @@
 import * as assert from "assert";
-import { normalizeActiveBuildContext, normalizePresetId } from "../../../configuration/normalize-config";
+import { normalizeBuildSelection, normalizePresetId } from "../../../configuration/normalize-selection";
 import { ManifestStateLoaded } from "../../../manifest/manifest-types";
-import { ActiveBuildContext } from "../../../configuration/active-build-context";
+import { BuildSelection } from "../../../configuration/build-selection";
 import { DEFAULT_PRESET_ID } from "../../../presets/preset-types";
 import * as vscode from "vscode";
 
@@ -35,7 +35,7 @@ function makeManifest(overrides?: Partial<ManifestStateLoaded>): ManifestStateLo
   } as ManifestStateLoaded;
 }
 
-function makeConfig(overrides?: Partial<ActiveBuildContext>): ActiveBuildContext {
+function makeConfig(overrides?: Partial<BuildSelection>): BuildSelection {
   return {
     modelId: "T2T1",
     targetId: "hw",
@@ -49,9 +49,9 @@ function makeConfig(overrides?: Partial<ActiveBuildContext>): ActiveBuildContext
 // No saved config — fresh start
 // ---------------------------------------------------------------------------
 
-suite("normalizeActiveBuildContext – no saved config", () => {
+suite("normalizeBuildSelection – no saved config", () => {
   test("returns first model, target, and component when no saved config is provided", () => {
-    const result = normalizeActiveBuildContext(makeManifest());
+    const result = normalizeBuildSelection(makeManifest());
     assert.strictEqual(result.modelId, "T2T1");
     assert.strictEqual(result.targetId, "hw");
     assert.strictEqual(result.componentId, "core");
@@ -63,7 +63,7 @@ suite("normalizeActiveBuildContext – no saved config", () => {
       targets: [{ kind: "target", id: "emu", name: "Emulator" }],
       components: [{ kind: "component", id: "core", name: "Core" }],
     });
-    const result = normalizeActiveBuildContext(manifest);
+    const result = normalizeBuildSelection(manifest);
     assert.strictEqual(result.modelId, "ONLY");
     assert.strictEqual(result.targetId, "emu");
     assert.strictEqual(result.componentId, "core");
@@ -74,10 +74,10 @@ suite("normalizeActiveBuildContext – no saved config", () => {
 // Saved config still valid
 // ---------------------------------------------------------------------------
 
-suite("normalizeActiveBuildContext – saved config still valid", () => {
+suite("normalizeBuildSelection – saved config still valid", () => {
   test("returns saved ids unchanged when all ids are present in the manifest", () => {
     const saved = makeConfig({ modelId: "T3W1", targetId: "emu", componentId: "prodtest" });
-    const result = normalizeActiveBuildContext(makeManifest(), saved);
+    const result = normalizeBuildSelection(makeManifest(), saved);
     assert.strictEqual(result.modelId, "T3W1");
     assert.strictEqual(result.targetId, "emu");
     assert.strictEqual(result.componentId, "prodtest");
@@ -85,7 +85,7 @@ suite("normalizeActiveBuildContext – saved config still valid", () => {
 
   test("preserves all three ids when saved config refers to second entries", () => {
     const saved = makeConfig({ modelId: "T3W1", targetId: "hw", componentId: "prodtest" });
-    const result = normalizeActiveBuildContext(makeManifest(), saved);
+    const result = normalizeBuildSelection(makeManifest(), saved);
     assert.strictEqual(result.modelId, "T3W1");
     assert.strictEqual(result.targetId, "hw");
     assert.strictEqual(result.componentId, "prodtest");
@@ -96,10 +96,10 @@ suite("normalizeActiveBuildContext – saved config still valid", () => {
 // Saved config partially stale
 // ---------------------------------------------------------------------------
 
-suite("normalizeActiveBuildContext – saved config partially stale", () => {
+suite("normalizeBuildSelection – saved config partially stale", () => {
   test("replaces stale modelId with first model, keeps valid targetId and componentId", () => {
     const saved = makeConfig({ modelId: "DELETED", targetId: "emu", componentId: "prodtest" });
-    const result = normalizeActiveBuildContext(makeManifest(), saved);
+    const result = normalizeBuildSelection(makeManifest(), saved);
     assert.strictEqual(result.modelId, "T2T1");
     assert.strictEqual(result.targetId, "emu");
     assert.strictEqual(result.componentId, "prodtest");
@@ -107,7 +107,7 @@ suite("normalizeActiveBuildContext – saved config partially stale", () => {
 
   test("replaces stale targetId with first target, keeps valid modelId and componentId", () => {
     const saved = makeConfig({ modelId: "T3W1", targetId: "DELETED", componentId: "prodtest" });
-    const result = normalizeActiveBuildContext(makeManifest(), saved);
+    const result = normalizeBuildSelection(makeManifest(), saved);
     assert.strictEqual(result.modelId, "T3W1");
     assert.strictEqual(result.targetId, "hw");
     assert.strictEqual(result.componentId, "prodtest");
@@ -115,7 +115,7 @@ suite("normalizeActiveBuildContext – saved config partially stale", () => {
 
   test("replaces stale componentId with first component, keeps valid modelId and targetId", () => {
     const saved = makeConfig({ modelId: "T3W1", targetId: "emu", componentId: "DELETED" });
-    const result = normalizeActiveBuildContext(makeManifest(), saved);
+    const result = normalizeBuildSelection(makeManifest(), saved);
     assert.strictEqual(result.modelId, "T3W1");
     assert.strictEqual(result.targetId, "emu");
     assert.strictEqual(result.componentId, "core");
@@ -126,22 +126,22 @@ suite("normalizeActiveBuildContext – saved config partially stale", () => {
 // Saved config fully stale
 // ---------------------------------------------------------------------------
 
-suite("normalizeActiveBuildContext – saved config fully stale", () => {
+suite("normalizeBuildSelection – saved config fully stale", () => {
   test("replaces all three ids with first-entry defaults when all saved ids are stale", () => {
     const saved = makeConfig({ modelId: "OLD_M", targetId: "OLD_T", componentId: "OLD_C" });
-    const result = normalizeActiveBuildContext(makeManifest(), saved);
+    const result = normalizeBuildSelection(makeManifest(), saved);
     assert.strictEqual(result.modelId, "T2T1");
     assert.strictEqual(result.targetId, "hw");
     assert.strictEqual(result.componentId, "core");
   });
 
-  test("normalizeActiveBuildContext behavior for the manifest axes is unaffected by presetId (unchanged)", () => {
+  test("normalizeBuildSelection behavior for the manifest axes is unaffected by presetId (unchanged)", () => {
     const saved = makeConfig({ modelId: "T3W1", targetId: "emu", componentId: "prodtest" });
-    const result = normalizeActiveBuildContext(makeManifest(), saved);
+    const result = normalizeBuildSelection(makeManifest(), saved);
     assert.strictEqual(result.modelId, "T3W1");
     assert.strictEqual(result.targetId, "emu");
     assert.strictEqual(result.componentId, "prodtest");
-    assert.ok(!("presetId" in result), "normalizeActiveBuildContext must not touch presetId");
+    assert.ok(!("presetId" in result), "normalizeBuildSelection must not touch presetId");
   });
 });
 

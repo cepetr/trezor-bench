@@ -1,7 +1,7 @@
 import * as assert from "assert";
 import { formatStatusBarText } from "../../../ui/status-bar";
 import { ManifestStateLoaded } from "../../../manifest/manifest-types";
-import { ActiveBuildContext } from "../../../configuration/active-build-context";
+import { BuildSelection } from "../../../configuration/build-selection";
 import * as vscode from "vscode";
 
 // ---------------------------------------------------------------------------
@@ -40,7 +40,7 @@ function config(
   modelId: string,
   targetId: string,
   componentId: string
-): ActiveBuildContext {
+): BuildSelection {
   return { modelId, targetId, componentId, persistedAt: new Date().toISOString() };
 }
 

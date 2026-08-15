@@ -895,7 +895,7 @@ export class ConfigurationTreeModel
 
 /**
  * Thin, stateless `TreeDataProvider` for one pane. `ConfigurationTreeModel`
- * stays the sole owner of manifest, active-build-contexturation, preset, resolved-option,
+ * stays the sole owner of manifest, build-selection, preset, resolved-option,
  * and artifact state; this facade only routes to it.
  */
 export class PaneTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
