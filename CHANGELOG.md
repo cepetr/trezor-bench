@@ -4,6 +4,7 @@
 ### Changed
 - All notification popups now start with a unified `Trezor Bench:`
 - Command-palette entries and Run and Debug entry labels now use the `Trezor Bench` prefix instead of `Trezor`; the redundant `(Trezor)` marker was removed from setting descriptions.
+- Build, Clippy, Check, and Clean start-failure messages now read `<action> failed to start — <error>`, matching the Flash and Upload wording.
 ### Fixed
 - Build, Flash, and Upload now explain when the active build context is incomplete or no longer matches the manifest, instead of failing silently.
 - Flash and Upload are now blocked when manifest availability-rule validation errors block workflow actions.
