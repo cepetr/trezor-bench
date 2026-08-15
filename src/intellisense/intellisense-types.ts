@@ -1,62 +1,9 @@
 /**
  * IntelliSense domain types for the Trezor Bench extension.
  *
- * Covers artifact-resolution inputs, the active compile-commands artifact state,
- * provider readiness, runtime IntelliSense state, and refresh request tracking.
+ * Covers provider readiness, runtime IntelliSense state, parsed compile
+ * entries, provider payloads, and refresh request tracking.
  */
-
-// ---------------------------------------------------------------------------
-// Artifact resolution inputs
-// ---------------------------------------------------------------------------
-
-/** All manifest and repository-config inputs needed to compute the expected artifact path. */
-export interface ArtifactResolutionInputs {
-  /** Resolved absolute path from `[paths].build-artifacts`. Empty string when disabled. */
-  readonly artifactsRoot: string;
-  /** Active model id. */
-  readonly modelId: string;
-  /** Selected model's required artifactFolder manifest field, or undefined. */
-  readonly artifactFolder: string | undefined;
-  /** Active component id. */
-  readonly componentId: string;
-  /** Selected component's required artifactName manifest field, or undefined. */
-  readonly artifactName: string | undefined;
-  /** Active target id. */
-  readonly targetId: string;
-  /** Selected target's optional artifactSuffix manifest field. Defaults to "". */
-  readonly artifactSuffix: string;
-  /** Selected target's optional executableExtension manifest field. Defaults to "". */
-  readonly executableExtension?: string;
-}
-
-// ---------------------------------------------------------------------------
-// Resolved on-disk artifact
-// ---------------------------------------------------------------------------
-
-export type ArtifactStatus = "present" | "missing";
-
-/**
- * A build artifact resolved for a build context — the shared result shape of
- * the compile-commands, binary, and map resolvers (which artifact a value
- * describes is carried by the binding, e.g. `_binaryArtifact`).
- */
-export interface ResolvedArtifact {
-  /** Resolved absolute artifact path (the expected path when missing). */
-  readonly path: string;
-  /** Whether the file exists on disk. */
-  readonly exists: boolean;
-  /** File modification time when the artifact exists and metadata can be read. */
-  readonly modifiedAt?: Date;
-  /** Artifact presence status. */
-  readonly status: ArtifactStatus;
-  /** User-facing explanation when the artifact is absent. */
-  readonly missingReason?: string;
-  /**
-   * Stable key combining the model, target, and component that produced
-   * this artifact record. Used to detect stale state.
-   */
-  readonly contextKey: string;
-}
 
 // ---------------------------------------------------------------------------
 // IntelliSense provider readiness

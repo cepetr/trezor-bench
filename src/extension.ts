@@ -76,7 +76,7 @@ import {
 import { IntelliSenseService } from "./intellisense/intellisense-service";
 import { RefreshTrigger } from "./intellisense/intellisense-types";
 import { applyProviderSettingFix } from "./intellisense/cpptools-backend";
-import { ArtifactFileWatcher } from "./intellisense/artifact-file-watcher";
+import { ArtifactFileWatcher } from "./build/artifact-file-watcher";
 import { ExcludedFilesService } from "./intellisense/excluded-files-service";
 import { ExcludedFilesRefresher } from "./intellisense/excluded-files-refresh";
 import { ExcludedFilesDecorationsProvider } from "./ui/excluded-files-decorations";
@@ -97,8 +97,8 @@ import {
   resolveArtifact,
   resolveExecutableArtifact,
   ArtifactKind,
-} from "./intellisense/artifact-resolution";
-import { ResolvedArtifact } from "./intellisense/intellisense-types";
+} from "./build/artifact-resolution";
+import { ResolvedArtifact } from "./build/artifact-resolution";
 import { executeDebugLaunch } from "./commands/debug-launch";
 import { logDebugLaunchFailure } from "./observability/log-channel";
 import { BuildContext } from "./manifest/manifest-types";

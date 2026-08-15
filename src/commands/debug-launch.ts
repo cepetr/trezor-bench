@@ -13,7 +13,7 @@ import { ManifestComponentDebugProfile, ManifestStateLoaded, findManifestEntries
 import { BuildContext } from "../manifest/manifest-types";
 import { evaluateWhenExpression } from "../manifest/when-expressions";
 import { logDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
-import { makeContextKey } from "../intellisense/artifact-resolution";
+import { makeContextKey } from "../build/artifact-resolution";
 import { isFileNotFound } from "../util/errors";
 
 // ---------------------------------------------------------------------------

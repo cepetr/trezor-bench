@@ -6,8 +6,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import { BuildContext, ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
 import { ResolvedOption } from "../build/build-options";
-import { ArtifactStatus, ResolvedArtifact } from "../intellisense/intellisense-types";
-import { ArtifactKind, ArtifactsByKind, ExecutableArtifact } from "../intellisense/artifact-resolution";
+import { ArtifactKind, ArtifactsByKind, ArtifactStatus, ExecutableArtifact, ResolvedArtifact } from "../build/artifact-resolution";
 import { PresetState } from "../presets/preset-types";
 import { PresetChoice } from "../presets/preset-resolution";
 

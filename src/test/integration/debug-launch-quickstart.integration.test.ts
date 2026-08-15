@@ -18,7 +18,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import {
   resolveExecutableArtifact,
-} from "../../intellisense/artifact-resolution";
+} from "../../build/artifact-resolution";
 import {
   resolveDebugProfile,
   deriveExecutableFileName,

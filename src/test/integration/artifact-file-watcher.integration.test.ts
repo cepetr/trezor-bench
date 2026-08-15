@@ -8,7 +8,7 @@ import {
   ArtifactFileWatcher,
   FileSystemWatcherLike,
   resolveArtifactWatchScopes,
-} from "../../intellisense/artifact-file-watcher";
+} from "../../build/artifact-file-watcher";
 import {
   makeDebugLoadedState,
   makeDebugTargetWithExtension,

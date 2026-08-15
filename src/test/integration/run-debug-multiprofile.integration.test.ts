@@ -34,7 +34,7 @@ import {
   debugLaunchValidTemplatesRoot,
 } from "../unit/workflow-test-helpers";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
-import { makeContextKey } from "../../intellisense/artifact-resolution";
+import { makeContextKey } from "../../build/artifact-resolution";
 
 // ---------------------------------------------------------------------------
 // Helpers shared across suites

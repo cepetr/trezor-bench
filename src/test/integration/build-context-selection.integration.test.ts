@@ -265,7 +265,7 @@ import {
   CompileCommandsArtifactItem,
   PlaceholderItem,
 } from "../../ui/configuration-tree";
-import { ResolvedArtifact } from "../../intellisense/intellisense-types";
+import { ResolvedArtifact } from "../../build/artifact-resolution";
 
 function getBuildArtifactsChildren(
   treeModel: ConfigurationTreeModel

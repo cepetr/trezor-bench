@@ -20,7 +20,7 @@ import * as os from "os";
 import * as vscode from "vscode";
 import {
   resolveExecutableArtifact,
-} from "../../intellisense/artifact-resolution";
+} from "../../build/artifact-resolution";
 import {
   loadDebugTemplate,
   buildDebugVariableMap,

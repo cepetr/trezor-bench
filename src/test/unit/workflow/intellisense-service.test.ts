@@ -18,10 +18,10 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { IntelliSenseService } from "../../../intellisense/intellisense-service";
 import {
-  ResolvedArtifact,
   IntelliSenseProviderReadiness,
   ProviderPayload,
 } from "../../../intellisense/intellisense-types";
+import { ResolvedArtifact } from "../../../build/artifact-resolution";
 import { CpptoolsBackend } from "../../../intellisense/cpptools-backend";
 import { ClangdBackend, CLANGD_EXTENSION_ID } from "../../../intellisense/clangd-backend";
 import { makeIntelliSenseLoadedState, primaryCoreFixturePath } from "../workflow-test-helpers";

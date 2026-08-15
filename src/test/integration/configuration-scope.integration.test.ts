@@ -19,7 +19,7 @@ import {
 import { executeDebugLaunch } from "../../commands/debug-launch";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
 import { RunDebugConfigProvider, TBENCH_DEBUG_TYPE } from "../../debug/run-debug-provider";
-import { makeContextKey } from "../../intellisense/artifact-resolution";
+import { makeContextKey } from "../../build/artifact-resolution";
 
 /** Commands that must never be registered in any current slice. */
 const BANNED_COMMAND_PATTERNS = [

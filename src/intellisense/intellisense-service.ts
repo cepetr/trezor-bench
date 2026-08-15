@@ -5,7 +5,6 @@
  */
 import * as vscode from "vscode";
 import {
-  ResolvedArtifact,
   IntelliSenseProviderReadiness,
   IntelliSenseRuntimeState,
   ProviderPayload,
@@ -15,7 +14,8 @@ import {
   buildResolutionInputs,
   resolveArtifact,
   makeContextKey,
-} from "./artifact-resolution";
+  ResolvedArtifact,
+} from "../build/artifact-resolution";
 import { checkProviderReadiness, resolveIntelliSenseBackend } from "./intellisense-backend";
 import { CpptoolsBackend } from "./cpptools-backend";
 import { ClangdBackend } from "./clangd-backend";

@@ -20,7 +20,7 @@ import * as vscode from "vscode";
 import {
   resolveExecutableArtifact,
   ExecutableArtifact,
-} from "../../intellisense/artifact-resolution";
+} from "../../build/artifact-resolution";
 import {
   ConfigurationTreeModel,
   CompileCommandsArtifactItem,
@@ -47,7 +47,7 @@ function makeConfig(modelId: string, targetId = "hw", componentId = "core"): {
   return { modelId, targetId, componentId, persistedAt: "" };
 }
 
-function makePresentCompileCommandsArtifact(): import("../../intellisense/intellisense-types").ResolvedArtifact {
+function makePresentCompileCommandsArtifact(): import("../../build/artifact-resolution").ResolvedArtifact {
   return {
     contextKey: "T2T1::hw::core",
     path: "/build/model-t/compile_commands_core.cc.json",

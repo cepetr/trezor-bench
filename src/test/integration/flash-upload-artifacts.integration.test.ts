@@ -14,7 +14,7 @@ import {
   BinaryArtifactItem,
   MapArtifactItem,
 } from "../../ui/configuration-tree";
-import { ResolvedArtifact } from "../../intellisense/intellisense-types";
+import { ResolvedArtifact } from "../../build/artifact-resolution";
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -9,7 +9,7 @@ import * as fs from "fs/promises";
 import * as os from "os";
 import { ManifestService } from "../../manifest/manifest-service";
 import { ManifestState, ManifestStateLoaded } from "../../manifest/manifest-types";
-import { resolveArtifact, buildResolutionInputs, deriveArtifactPath } from "../../intellisense/artifact-resolution";
+import { resolveArtifact, buildResolutionInputs, deriveArtifactPath } from "../../build/artifact-resolution";
 import { checkProviderReadiness } from "../../intellisense/intellisense-backend";
 import { IntelliSenseService } from "../../intellisense/intellisense-service";
 import { BuildSelection } from "../../build/build-selection";

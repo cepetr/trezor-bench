@@ -24,7 +24,7 @@ import {
 } from "../commands/debug-launch";
 
 export { TBENCH_DEBUG_TYPE, labelForDefaultEntry, labelForProfileEntry };
-import { makeContextKey, resolveExecutableArtifact } from "../intellisense/artifact-resolution";
+import { makeContextKey, resolveExecutableArtifact } from "../build/artifact-resolution";
 import { BuildContext } from "../manifest/manifest-types";
 import { logProviderDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
 

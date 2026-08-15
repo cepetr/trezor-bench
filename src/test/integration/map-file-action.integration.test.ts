@@ -12,7 +12,7 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import { MapArtifactItem } from "../../ui/configuration-tree";
-import { ResolvedArtifact } from "../../intellisense/intellisense-types";
+import { ResolvedArtifact } from "../../build/artifact-resolution";
 import { openMapFile } from "../../commands/artifact-actions";
 
 // ---------------------------------------------------------------------------

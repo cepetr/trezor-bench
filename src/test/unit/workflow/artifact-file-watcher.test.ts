@@ -5,7 +5,7 @@ import {
   ArtifactFileWatcher,
   FileSystemWatcherLike,
   resolveArtifactWatchScopes,
-} from "../../../intellisense/artifact-file-watcher";
+} from "../../../build/artifact-file-watcher";
 import { BuildSelection } from "../../../build/build-selection";
 import {
   makeDebugLoadedState,

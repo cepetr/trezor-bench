@@ -20,8 +20,8 @@ import {
   resolveExecutableArtifact,
   buildResolutionInputs,
   makeContextKey,
-} from "../../../intellisense/artifact-resolution";
-import { ArtifactResolutionInputs } from "../../../intellisense/intellisense-types";
+} from "../../../build/artifact-resolution";
+import { ArtifactResolutionInputs } from "../../../build/artifact-resolution";
 import { makeIntelliSenseLoadedState, makeDebugLoadedState, makeComponentDebugProfile, makeDebugTargetWithExtension } from "../workflow-test-helpers";
 import { BuildSelection } from "../../../build/build-selection";
 import { ManifestStateLoaded } from "../../../manifest/manifest-types";

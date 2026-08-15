@@ -33,7 +33,7 @@ import {
   isTbenchProxyConfig,
 } from "../unit/workflow-test-helpers";
 import { ManifestStateLoaded, ManifestComponentDebugProfile } from "../../manifest/manifest-types";
-import { makeContextKey } from "../../intellisense/artifact-resolution";
+import { makeContextKey } from "../../build/artifact-resolution";
 
 // ---------------------------------------------------------------------------
 // Helpers

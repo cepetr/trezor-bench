@@ -3,7 +3,7 @@ node_modules/
 out/
 coverage/
 *.vsix
-build/
+/build/
 dist/
 *.log
 .env*

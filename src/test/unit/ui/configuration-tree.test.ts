@@ -19,8 +19,8 @@ import {
   WarningItem,
   formatArtifactAge,
 } from "../../../ui/configuration-tree";
-import { ResolvedArtifact } from "../../../intellisense/intellisense-types";
-import { ExecutableArtifact } from "../../../intellisense/artifact-resolution";
+import { ResolvedArtifact } from "../../../build/artifact-resolution";
+import { ExecutableArtifact } from "../../../build/artifact-resolution";
 import { ManifestStateLoaded, BuildOption } from "../../../manifest/manifest-types";
 import { BuildSelection } from "../../../build/build-selection";
 import { PresetFile, PresetState } from "../../../presets/preset-types";
