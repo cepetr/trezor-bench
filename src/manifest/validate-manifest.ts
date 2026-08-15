@@ -1,3 +1,8 @@
+/**
+ * YAML manifest parser/validator: turns manifest text into typed models,
+ * targets, components, and build options plus range-anchored validation
+ * issues.
+ */
 import * as vscode from "vscode";
 import { parseDocument, LineCounter, YAMLMap, YAMLSeq, Scalar } from "yaml";
 import {

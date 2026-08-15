@@ -1,3 +1,7 @@
+/**
+ * Observability surface: the shared output channel, timestamped log
+ * helpers, and user notifications carrying the extension prefix.
+ */
 import * as vscode from "vscode";
 import { ManifestState } from "../manifest/manifest-types";
 import { PresetState } from "../presets/preset-types";

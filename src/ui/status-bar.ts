@@ -1,3 +1,6 @@
+/**
+ * Status-bar item showing the active build configuration.
+ */
 import * as vscode from "vscode";
 import { ManifestState, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";

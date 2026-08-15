@@ -1,3 +1,7 @@
+/**
+ * Single-file watching helper: one watcher, one handler for create,
+ * change, and delete.
+ */
 import * as vscode from "vscode";
 
 /** The subset of `vscode.FileSystemWatcher` that `watchFile` needs. */

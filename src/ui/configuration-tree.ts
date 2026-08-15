@@ -1,3 +1,7 @@
+/**
+ * Tree items and providers for the three configuration panes — Build
+ * Selection, Build Artifacts, and Build Options.
+ */
 import * as vscode from "vscode";
 import * as path from "path";
 import { ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";

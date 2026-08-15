@@ -1,3 +1,8 @@
+/**
+ * Watches the active build context's on-disk artifacts (compile commands,
+ * binary, map, executable) using file-system watchers with a polling
+ * reconciliation fallback, and reports relevant changes.
+ */
 import * as path from "path";
 import * as vscode from "vscode";
 import { FilePoller } from "../util/file-poller";

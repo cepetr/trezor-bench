@@ -1,3 +1,8 @@
+/**
+ * cpptools IntelliSense backend adapter: readiness evaluation against the
+ * custom-configuration API, the workspace provider-setting fix, and the
+ * configuration provider that serves compile-commands payloads.
+ */
 import * as vscode from "vscode";
 import { ProviderPayload, ProviderSettingFix } from "./intellisense-types";
 

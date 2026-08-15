@@ -1,3 +1,8 @@
+/**
+ * Active build configuration: the persisted model/target/component/preset
+ * selection. Reads, writes, and restores it from workspace state and applies
+ * the selector commands' changes.
+ */
 import * as vscode from "vscode";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
 import { normalizeActiveConfig, normalizePresetId } from "./normalize-config";

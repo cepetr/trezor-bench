@@ -1,3 +1,7 @@
+/**
+ * Interval-based change detection for a fixed set of files, as a fallback
+ * for hosts where file-system watchers are not dependable.
+ */
 import * as fs from "fs";
 
 /**

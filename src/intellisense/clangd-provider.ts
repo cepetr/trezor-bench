@@ -1,3 +1,8 @@
+/**
+ * clangd IntelliSense backend adapter: maintains the managed `.tbench`
+ * compile-commands link and `.clangd` configuration, and restarts clangd
+ * when the database changes.
+ */
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";

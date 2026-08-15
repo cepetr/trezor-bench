@@ -1,3 +1,7 @@
+/**
+ * IntelliSense backend selection: picks cpptools or clangd for the current
+ * workspace and evaluates provider readiness and warning states.
+ */
 import { IntelliSenseProviderReadiness } from "./intellisense-types";
 import {
   CLANGD_EXTENSION_ID,

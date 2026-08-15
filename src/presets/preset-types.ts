@@ -1,3 +1,7 @@
+/**
+ * Preset domain types: sources, files, fragments, filters, and the
+ * combined preset state.
+ */
 import * as vscode from "vscode";
 import { ValidationIssue } from "../manifest/manifest-types";
 

@@ -1,3 +1,8 @@
+/**
+ * Recomputes the excluded-files set when its inputs change: gathers
+ * candidate files per the settings and coordinates refreshes of the
+ * exclusion decorations and overlays.
+ */
 import * as vscode from "vscode";
 import { ExcludedFilesService } from "./excluded-files-service";
 import { ProviderPayload } from "./intellisense-types";

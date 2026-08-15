@@ -1,3 +1,6 @@
+/**
+ * Single-root workspace guards gating extension activation and commands.
+ */
 import * as vscode from "vscode";
 
 /**

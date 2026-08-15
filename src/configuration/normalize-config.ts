@@ -1,3 +1,7 @@
+/**
+ * Normalizes a saved active configuration against the loaded manifest and
+ * declared presets, replacing ids that no longer resolve.
+ */
 import { ManifestStateLoaded } from "../manifest/manifest-types";
 import { ActiveConfig } from "./active-config";
 import { DEFAULT_PRESET_ID } from "../presets/preset-types";

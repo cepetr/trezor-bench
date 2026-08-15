@@ -1,3 +1,7 @@
+/**
+ * Manifest domain types — entries, build options, validation issues, the
+ * when-expression AST, and manifest state — plus small state helpers.
+ */
 import * as vscode from "vscode";
 
 // --- Manifest entry kinds ---

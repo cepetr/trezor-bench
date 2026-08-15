@@ -1,3 +1,7 @@
+/**
+ * Process execution for `cargo xtask`: spawns the command directly so
+ * login-shell startup files cannot alter the inherited environment.
+ */
 import * as vscode from "vscode";
 import { readTaskExtraEnv, resolveCargoWorkspacePath } from "../workspace/settings";
 

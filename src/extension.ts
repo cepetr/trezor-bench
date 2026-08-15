@@ -1,3 +1,8 @@
+/**
+ * Extension entry point: wires up the manifest, preset, repository
+ * configuration, and IntelliSense services, registers commands, views, and
+ * task and debug providers, and coordinates state refreshes between them.
+ */
 import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder, isWorkflowWorkspaceSupported } from "./workspace/workspace-guard";
 import { resolveManifestUri, isStatusBarEnabled, resolveArtifactsPath, resolveDebugTemplatesPath, resolvePresetUris } from "./workspace/settings";

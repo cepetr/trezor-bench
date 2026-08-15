@@ -1,3 +1,7 @@
+/**
+ * Typed accessors for tbench settings and repository-configuration-derived
+ * paths (manifest, artifacts, presets, debug templates, excluded files).
+ */
 import * as vscode from "vscode";
 import {
   resolveConfigurationVariablesDeep,

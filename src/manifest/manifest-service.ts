@@ -1,3 +1,7 @@
+/**
+ * Loads, validates, watches, and republishes the manifest state, debouncing
+ * file changes and notifying on load failures.
+ */
 import * as vscode from "vscode";
 import * as fs from "fs/promises";
 import * as path from "path";

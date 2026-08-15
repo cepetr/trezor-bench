@@ -1,3 +1,7 @@
+/**
+ * Root `tbench.toml` repository configuration: loading, validation, path
+ * resolution, and watching for changes.
+ */
 import * as vscode from "vscode";
 import * as fs from "fs/promises";
 import * as fsNative from "fs";

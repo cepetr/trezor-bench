@@ -1,3 +1,8 @@
+/**
+ * Orchestrates IntelliSense: on each refresh trigger, resolves the active
+ * compile-commands artifact and applies or clears it on the selected
+ * backend, reporting provider warnings and recovery.
+ */
 import * as vscode from "vscode";
 import {
   ActiveCompileCommandsArtifact,

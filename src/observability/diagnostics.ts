@@ -1,3 +1,7 @@
+/**
+ * Publishes manifest, preset, and repository-configuration validation
+ * issues as VS Code diagnostics on their source files.
+ */
 import * as vscode from "vscode";
 import { ValidationSeverity, ManifestState } from "../manifest/manifest-types";
 import { PresetState } from "../presets/preset-types";

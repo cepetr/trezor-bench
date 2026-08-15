@@ -1,3 +1,7 @@
+/**
+ * Resolves the supported subset of VS Code `${variable}` references in
+ * configuration values.
+ */
 import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";

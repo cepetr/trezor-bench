@@ -1,3 +1,7 @@
+/**
+ * Loads, validates, watches, and republishes the combined preset state
+ * from `presets.toml` and `user-presets.toml`.
+ */
 import * as vscode from "vscode";
 import * as fs from "fs/promises";
 import * as path from "path";

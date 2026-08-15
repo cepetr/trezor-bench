@@ -1,3 +1,7 @@
+/**
+ * Pure resolution of the active build context's artifact paths and on-disk
+ * status: compile commands, binary, map, and executable.
+ */
 import * as path from "path";
 import * as fs from "fs";
 import {
