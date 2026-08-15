@@ -98,9 +98,7 @@ import {
   buildResolutionInputs,
   resolveArtifact,
   resolveExecutableArtifact,
-  ArtifactKind,
 } from "./build/artifact-resolution";
-import { ResolvedArtifact } from "./build/artifact-resolution";
 import { executeDebugLaunch } from "./commands/debug-launch";
 import { logDebugLaunchFailure } from "./observability/log-channel";
 import { BuildContext } from "./manifest/manifest-types";
@@ -151,9 +149,6 @@ let _manifestStateSubscription: vscode.Disposable | undefined;
 let _debugConfigProviderRegistration: vscode.Disposable | undefined;
 /** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
 let _lastShownProviderFixState: string = "none";
-/** Binary and Map artifact state for Flash/Upload/openMapFile context keys. */
-let _fileArtifacts: Partial<Record<ArtifactKind, ResolvedArtifact>> = {};
-
 /** The kinds updateArtifactActionContext resolves and publishes context keys for. */
 const ACTION_ARTIFACT_KINDS = ["binary", "map"] as const;
 
@@ -392,10 +387,10 @@ function updateArtifactActionContext(
 ): void {
   const manifest = loadedManifest(state);
   if (!manifest || !buildContext) {
-    _fileArtifacts = {};
     vscode.commands.executeCommand("setContext", "tbench.flashApplicable", false);
     vscode.commands.executeCommand("setContext", "tbench.uploadApplicable", false);
     for (const kind of ACTION_ARTIFACT_KINDS) {
+      _treeModel?.updateArtifact(kind, null);
       vscode.commands.executeCommand("setContext", `tbench.${kind}Exists`, false);
     }
     return;
@@ -413,7 +408,6 @@ function updateArtifactActionContext(
   vscode.commands.executeCommand("setContext", "tbench.uploadApplicable", uploadApplicable);
   for (const kind of ACTION_ARTIFACT_KINDS) {
     const artifact = inputs && showArtifactRows ? resolveArtifact(kind, inputs, buildContext) : undefined;
-    _fileArtifacts[kind] = artifact;
     _treeModel?.updateArtifact(kind, artifact ?? null);
     vscode.commands.executeCommand("setContext", `tbench.${kind}Exists`, artifact?.exists ?? false);
   }
@@ -841,7 +835,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       hasWorkflowBlockingIssues: manifest?.hasWorkflowBlockingIssues ?? false,
       buildSelectionResolved: !!actionCtx,
       actionApplicable: !!(component && buildContext && isArtifactActionApplicable(kind, component, buildContext)),
-      binaryExists: _fileArtifacts.binary?.exists ?? false,
+      binaryExists: _treeModel?.getArtifact("binary")?.exists ?? false,
     });
 
     if (blockReason !== "no-block") {
@@ -903,7 +897,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- openMapFile command, scoped to the artifact row. ---
   context.subscriptions.push(
     vscode.commands.registerCommand("tbench.openMapFile", async () => {
-      const mapArtifact = _fileArtifacts.map;
+      const mapArtifact = _treeModel?.getArtifact("map");
       if (!mapArtifact?.exists) {
         // Action is disabled in the UI when the map file is missing;
         // silently return if somehow invoked without a valid path.
@@ -1156,7 +1150,6 @@ export function deactivate(): void {
   _buildSelection = undefined;
   _presetContext = undefined;
   _resolvedOptions = [];
-  _fileArtifacts = {};
   disposeDiagnostics();
   disposeLogChannel();
 }

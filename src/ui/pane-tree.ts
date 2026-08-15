@@ -128,6 +128,11 @@ export class PaneTreeModel
     this.firePanes("build-artifacts");
   }
 
+  /** The given kind's last published artifact state, or null before any update. */
+  getArtifact<K extends ArtifactKind>(kind: K): ArtifactsByKind[K] | null {
+    return this._artifacts[kind];
+  }
+
   setExpandedSelector(selectorKind: SelectorKind | undefined): void {
     if (this._expandedSelector === selectorKind) {
       return;
