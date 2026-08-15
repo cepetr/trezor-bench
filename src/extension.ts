@@ -72,6 +72,7 @@ import {
   BuildTaskProvider,
   resolveWorkflowContext,
   createWorkflowTask,
+  isSuccessfulArtifactRefreshTaskProcess,
   TASK_TYPE,
 } from "./tasks/build-task-provider";
 import { IntelliSenseService } from "./intellisense/intellisense-service";
@@ -118,29 +119,6 @@ let _manifestStateSubscription: vscode.Disposable | undefined;
 let _debugConfigProviderRegistration: vscode.Disposable | undefined;
 /** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
 let _lastShownProviderFixState: string = "none";
-
-export interface TaskProcessEndLike {
-  readonly exitCode?: number;
-  readonly execution: {
-    readonly task: {
-      readonly definition: { readonly type?: string; readonly kind?: string };
-      readonly name: string;
-    };
-  };
-}
-
-export function isSuccessfulArtifactRefreshTaskProcess(
-  event: TaskProcessEndLike
-): boolean {
-  if (event.exitCode !== 0 || event.execution.task.definition.type !== TASK_TYPE) {
-    return false;
-  }
-
-  const kind = event.execution.task.definition.kind;
-  return kind === "Build" || kind === "Clean" ||
-    event.execution.task.name.startsWith("Build ") ||
-    event.execution.task.name === "Clean";
-}
 
 // ---------------------------------------------------------------------------
 // Scope guard for the supported command surface, now expanded for

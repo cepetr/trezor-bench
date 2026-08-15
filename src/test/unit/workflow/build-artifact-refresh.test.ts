@@ -2,7 +2,7 @@ import * as assert from "assert";
 import {
   isSuccessfulArtifactRefreshTaskProcess,
   TaskProcessEndLike,
-} from "../../../extension";
+} from "../../../tasks/build-task-provider";
 
 function makeEvent(overrides: Partial<TaskProcessEndLike> = {}): TaskProcessEndLike {
   return {

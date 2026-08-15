@@ -180,3 +180,35 @@ export class BuildTaskProvider implements vscode.TaskProvider {
     return task;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Artifact-refresh task detection
+// ---------------------------------------------------------------------------
+
+/** The slice of a `vscode.TaskProcessEndEvent` the refresh predicate reads. */
+export interface TaskProcessEndLike {
+  readonly exitCode?: number;
+  readonly execution: {
+    readonly task: {
+      readonly definition: { readonly type?: string; readonly kind?: string };
+      readonly name: string;
+    };
+  };
+}
+
+/**
+ * True for a successfully completed tbench Build or Clean task process —
+ * the completions that change on-disk artifacts and warrant a refresh.
+ */
+export function isSuccessfulArtifactRefreshTaskProcess(
+  event: TaskProcessEndLike
+): boolean {
+  if (event.exitCode !== 0 || event.execution.task.definition.type !== TASK_TYPE) {
+    return false;
+  }
+
+  const kind = event.execution.task.definition.kind;
+  return kind === "Build" || kind === "Clean" ||
+    event.execution.task.name.startsWith("Build ") ||
+    event.execution.task.name === "Clean";
+}
