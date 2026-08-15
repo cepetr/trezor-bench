@@ -361,11 +361,15 @@ async function refreshPresetsAndActiveConfig(
  */
 function updateWorkflowBlockedContext(state: ManifestState): void {
   const loaded = state.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
+  const activeConfigResolved = !!(
+    loaded && _activeConfig && resolveWorkflowContext(loaded, _activeConfig)
+  );
   const blocked =
     evaluateWorkflowPreconditions({
       manifestStatus: state.status,
       hasWorkflowBlockingIssues: loaded?.hasWorkflowBlockingIssues ?? false,
       workspaceSupported: isWorkflowWorkspaceSupported(),
+      activeConfigResolved,
     }) !== "no-block";
   vscode.commands.executeCommand("setContext", "tbench.workflowBlocked", blocked);
 }
@@ -848,6 +852,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const state = _manifestState;
       const config = _activeConfig;
       const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
+      const actionCtx = loaded && config ? resolveArtifactActionContext(loaded, config) : undefined;
       const component = loaded?.components.find((c) => c.id === config?.componentId);
       const evalCtx: EvalContext | undefined = config
         ? { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId }
@@ -856,6 +861,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const blockReason = evaluateArtifactActionPreconditions({
         workspaceSupported: isWorkflowWorkspaceSupported(),
         manifestStatus: state?.status ?? "missing",
+        activeConfigResolved: !!actionCtx,
         actionApplicable: !!(component && evalCtx && isFlashApplicable(component, evalCtx)),
         binaryExists: _binaryArtifact?.exists ?? false,
       });
@@ -865,10 +871,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return;
       }
 
-      const ctx = loaded && config ? resolveArtifactActionContext(loaded, config) : undefined;
-      if (!ctx) { return; }
+      if (!actionCtx) {
+        reportArtifactActionBlocked("flash", "context-unresolved");
+        return;
+      }
 
-      const task = createFlashTask(ctx, workspaceFolder);
+      const task = createFlashTask(actionCtx, workspaceFolder);
       await executeArtifactTask(task, "flash");
     })
   );
@@ -879,6 +887,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const state = _manifestState;
       const config = _activeConfig;
       const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
+      const actionCtx = loaded && config ? resolveArtifactActionContext(loaded, config) : undefined;
       const component = loaded?.components.find((c) => c.id === config?.componentId);
       const evalCtx: EvalContext | undefined = config
         ? { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId }
@@ -887,6 +896,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const blockReason = evaluateArtifactActionPreconditions({
         workspaceSupported: isWorkflowWorkspaceSupported(),
         manifestStatus: state?.status ?? "missing",
+        activeConfigResolved: !!actionCtx,
         actionApplicable: !!(component && evalCtx && isUploadApplicable(component, evalCtx)),
         binaryExists: _binaryArtifact?.exists ?? false,
       });
@@ -896,10 +906,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return;
       }
 
-      const ctx = loaded && config ? resolveArtifactActionContext(loaded, config) : undefined;
-      if (!ctx) { return; }
+      if (!actionCtx) {
+        reportArtifactActionBlocked("upload", "context-unresolved");
+        return;
+      }
 
-      const task = createUploadTask(ctx, workspaceFolder);
+      const task = createUploadTask(actionCtx, workspaceFolder);
       await executeArtifactTask(task, "upload");
     })
   );
@@ -1028,10 +1040,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
       const state = _manifestState;
       const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
+      const activeConfig = _activeConfig;
+      const wfCtx = loaded && activeConfig ? resolveWorkflowContext(loaded, activeConfig) : undefined;
       const blockReason = evaluateWorkflowPreconditions({
         manifestStatus: state?.status ?? "missing",
         hasWorkflowBlockingIssues: loaded?.hasWorkflowBlockingIssues ?? false,
         workspaceSupported: isWorkflowWorkspaceSupported(),
+        activeConfigResolved: !!wfCtx,
         presetsUnavailable: kind !== "Clean" && _presetsUnavailable,
         presetsInvalid: kind !== "Clean" && _presetBlocked,
       });
@@ -1041,17 +1056,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return;
       }
 
-      const activeConfig = _activeConfig;
-      if (!loaded || !activeConfig) {
-        return;
-      }
-
-      const wfCtx = resolveWorkflowContext(loaded, activeConfig);
       if (!wfCtx) {
+        reportWorkflowBlocked(kind, "context-unresolved");
         return;
       }
 
-      const task = createWorkflowTask(kind, wfCtx, workspaceFolder, _resolvedOptions, activePresetId(activeConfig));
+      const task = createWorkflowTask(kind, wfCtx, workspaceFolder, _resolvedOptions, activePresetId(activeConfig!));
       await executeWorkflowTask(task, kind);
     });
 

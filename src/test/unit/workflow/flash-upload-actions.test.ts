@@ -178,6 +178,7 @@ suite("evaluateArtifactActionPreconditions", () => {
     return {
       manifestStatus: "loaded",
       workspaceSupported: true,
+      activeConfigResolved: true,
       actionApplicable: true,
       binaryExists: true,
       ...overrides,
@@ -208,6 +209,15 @@ suite("evaluateArtifactActionPreconditions", () => {
     assert.strictEqual(
       evaluateArtifactActionPreconditions(makeInputs({ manifestStatus: "invalid" })),
       "manifest-invalid"
+    );
+  });
+
+  test("blocks with context-unresolved before action applicability", () => {
+    assert.strictEqual(
+      evaluateArtifactActionPreconditions(
+        makeInputs({ activeConfigResolved: false, actionApplicable: false })
+      ),
+      "context-unresolved"
     );
   });
 

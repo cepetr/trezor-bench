@@ -2,6 +2,7 @@
 
 ## Unreleased
 ### Fixed
+- Build, Flash, and Upload now explain when the active build context is incomplete or no longer matches the manifest, instead of failing silently.
 - Debug-profile variables using obsolete `${tfTools.*}` aliases now report a manifest validation error before launch.
 - Blocked build messages now identify the correct manifest and preset locations to check.
 - Build, Clippy, Check, and Clean tasks can now be referenced from `.vscode/tasks.json`.

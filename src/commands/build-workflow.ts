@@ -23,6 +23,7 @@ export type WorkflowBlockReason =
   | "workspace-unsupported"
   | "manifest-missing"
   | "manifest-invalid"
+  | "context-unresolved"
   | "presets-unavailable"
   | "presets-invalid";
 
@@ -43,6 +44,8 @@ export interface PreconditionInputs {
   readonly manifestStatus: ManifestState["status"];
   readonly hasWorkflowBlockingIssues: boolean;
   readonly workspaceSupported: boolean;
+  /** True when the active configuration resolves to manifest entries. */
+  readonly activeConfigResolved?: boolean;
   /**
    * True when the shared `presets.toml` does not exist, so the workspace's
    * `xtask` does not support presets (FR-027). Reported ahead of
@@ -156,7 +159,7 @@ export function deriveCleanArguments(_ctx: {
  * Returns the first blocking reason found, or "no-block" if all clear.
  *
  * Priority order: workspace-unsupported > manifest-missing > manifest-invalid >
- * presets-unavailable > presets-invalid
+ * context-unresolved > presets-unavailable > presets-invalid
  */
 export function evaluateWorkflowPreconditions(
   inputs: PreconditionInputs
@@ -169,6 +172,9 @@ export function evaluateWorkflowPreconditions(
   }
   if (inputs.manifestStatus === "invalid" || inputs.hasWorkflowBlockingIssues) {
     return "manifest-invalid";
+  }
+  if (inputs.activeConfigResolved === false) {
+    return "context-unresolved";
   }
   if (inputs.presetsUnavailable) {
     return "presets-unavailable";
@@ -190,6 +196,8 @@ export function blockReasonMessage(reason: WorkflowBlockReason): string {
       return "Build Workflow is blocked: the manifest file (manifest.yaml) was not found. Check [paths].manifest in tbench.toml, then create or restore the file to enable build actions.";
     case "manifest-invalid":
       return "Build Workflow is blocked: the manifest has validation errors or invalid availability rules. Check the Problems view and fix all errors to enable build actions.";
+    case "context-unresolved":
+      return "Build Workflow is blocked: the active build context is incomplete or no longer matches the manifest. Select a model, target, and component, then try again.";
     case "presets-unavailable":
       return "Build Workflow is blocked: presets.toml is unavailable under the configured xtask-presets directory (default core/embed/xtask). This repository's xtask does not support build presets; open a revision that provides presets.toml to enable build actions.";
     case "presets-invalid":

@@ -28,6 +28,7 @@ function inputs(
     manifestStatus,
     hasWorkflowBlockingIssues,
     workspaceSupported,
+    activeConfigResolved: true,
     presetsInvalid,
     presetsUnavailable,
   };
@@ -70,6 +71,13 @@ suite("evaluateWorkflowPreconditions – blocking logic", () => {
     assert.strictEqual(
       evaluateWorkflowPreconditions(inputs("loaded", true, true)),
       "manifest-invalid"
+    );
+  });
+
+  test("context-unresolved blocks when the active configuration no longer resolves", () => {
+    assert.strictEqual(
+      evaluateWorkflowPreconditions({ ...inputs("loaded", false, true), activeConfigResolved: false }),
+      "context-unresolved"
     );
   });
 
@@ -199,6 +207,7 @@ suite("blockReasonMessage – user-facing failure text", () => {
     "workspace-unsupported",
     "manifest-missing",
     "manifest-invalid",
+    "context-unresolved",
     "presets-unavailable",
     "presets-invalid",
   ];

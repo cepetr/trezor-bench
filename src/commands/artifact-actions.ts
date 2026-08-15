@@ -37,6 +37,7 @@ export type ArtifactActionBlockReason =
   | "workspace-unsupported"
   | "manifest-missing"
   | "manifest-invalid"
+  | "context-unresolved"
   | "action-inapplicable"
   | "binary-missing";
 
@@ -145,6 +146,8 @@ export function formatArtifactTaskLabel(
 export interface ArtifactActionPreconditionInputs {
   readonly manifestStatus: ManifestState["status"];
   readonly workspaceSupported: boolean;
+  /** True when the active configuration resolves to manifest entries. */
+  readonly activeConfigResolved?: boolean;
   readonly actionApplicable: boolean;
   readonly binaryExists: boolean;
 }
@@ -164,6 +167,9 @@ export function evaluateArtifactActionPreconditions(
   }
   if (inputs.manifestStatus === "invalid") {
     return "manifest-invalid";
+  }
+  if (inputs.activeConfigResolved === false) {
+    return "context-unresolved";
   }
   if (!inputs.actionApplicable) {
     return "action-inapplicable";
@@ -188,6 +194,8 @@ const BLOCK_REASON_MESSAGES: Record<
     "Cannot start: the manifest file is missing. Check [paths].manifest in tbench.toml.",
   "manifest-invalid":
     "Cannot start: the manifest file has validation errors. Check the Problems view.",
+  "context-unresolved":
+    "Cannot start: the active build context is incomplete or no longer matches the manifest. Select a model, target, and component, then try again.",
   "action-inapplicable":
     "Cannot start: this action is not available for the active build context.",
   "binary-missing":
