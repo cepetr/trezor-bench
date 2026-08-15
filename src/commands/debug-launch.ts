@@ -1,6 +1,6 @@
 /**
- * Debug Launch helpers: profile resolution, executable path derivation,
- * template loading, variable-map construction, and tbench substitution.
+ * Debug Launch helpers: executable path derivation, template loading,
+ * variable-map construction, and tbench substitution.
  *
  * Covers debug launch behavior for the active build context.
  */
@@ -12,11 +12,9 @@ import * as vscode from "vscode";
 import { ManifestComponentDebugProfile, ManifestStateLoaded, findManifestEntries } from "../manifest/manifest-types";
 import { BuildContext } from "../manifest/manifest-types";
 import {
-  DebugProfileResolutionState,
   MatchingDebugProfileSet,
   resolveMatchingDebugProfiles,
 } from "../manifest/debug-profiles";
-import { evaluateWhenExpression } from "../manifest/when-expressions";
 import { logDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
 import { makeContextKey } from "../build/artifact-resolution";
 import { isFileNotFound } from "../util/errors";
@@ -44,37 +42,8 @@ export function labelForProfileEntry(profileName: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Profile resolution
+// Proxy debug configuration and QuickPick types
 // ---------------------------------------------------------------------------
-
-/** Result of matching a component's debug profiles against the active build context. */
-export interface DebugProfileResolution {
-  readonly resolutionState: DebugProfileResolutionState;
-  readonly selectedProfile?: ManifestComponentDebugProfile;
-}
-
-/**
- * Resolves component-scoped debug profiles against the active build context
- * using first-match declaration order.
- *
- * - Profiles without a `when` expression match all contexts (match-all).
- * - The first matching profile in declaration order is selected.
- * - No matches → `"no-match"`.
- */
-export function resolveDebugProfile(
-  profiles: ReadonlyArray<ManifestComponentDebugProfile>,
-  buildContext: BuildContext
-): DebugProfileResolution {
-  const selectedProfile = profiles.find((profile) =>
-    profile.when === undefined ? true : evaluateWhenExpression(profile.when, buildContext)
-  );
-
-  if (selectedProfile === undefined) {
-    return { resolutionState: "no-match" };
-  }
-
-  return { resolutionState: "selected", selectedProfile };
-}
 
 interface DebugProfileQuickPickItem extends vscode.QuickPickItem {
   readonly profile: ManifestComponentDebugProfile;

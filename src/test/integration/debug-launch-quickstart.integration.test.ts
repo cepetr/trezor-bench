@@ -20,13 +20,13 @@ import {
   resolveExecutableArtifact,
 } from "../../build/artifact-resolution";
 import {
-  resolveDebugProfile,
   deriveExecutableFileName,
   loadDebugTemplate,
   buildDebugVariableMap,
   applyTbenchSubstitution,
   executeDebugLaunch,
 } from "../../commands/debug-launch";
+import { resolveMatchingDebugProfiles } from "../../manifest/debug-profiles";
 import {
   makeComponentDebugProfile,
   makeDebugTargetWithExtension,
@@ -145,15 +145,14 @@ suite("QS1 – Unique matching profile", () => {
 // ---------------------------------------------------------------------------
 
 suite("QS2 – First-match-wins selection among multiple matching profiles", () => {
-  test("resolveDebugProfile selects first profile in declaration order when all match", () => {
+  test("resolveMatchingDebugProfiles defaults to the first profile in declaration order when all match", () => {
     const first = makeComponentDebugProfile({ name: "first", template: "first.json", declarationIndex: 0 });
     const second = makeComponentDebugProfile({ name: "second", template: "second.json", declarationIndex: 1 });
     const buildContext = { modelId: "T2T1", targetId: "hw", componentId: "core" };
 
-    const result = resolveDebugProfile([first, second], buildContext);
+    const result = resolveMatchingDebugProfiles([first, second], buildContext);
 
-    assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedProfile?.name, "first");
+    assert.strictEqual(result.defaultProfile?.name, "first");
   });
 
   test("resolveExecutableArtifact selects first matching profile for executable path", () => {

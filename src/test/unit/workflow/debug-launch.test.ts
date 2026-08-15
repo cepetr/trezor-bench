@@ -2,8 +2,8 @@
  * Unit tests for Debug Launch core helpers.
  *
  * Covers:
- *  - resolveDebugProfile: omitted-when matches all, conditional when,
- *    first-match declaration order wins, no-match result
+ *  - resolveMatchingDebugProfiles: omitted-when matches all, conditional when,
+ *    declaration order preserved, first match is the default, empty set
  *  - deriveExecutableFileName: artifact name + suffix + extension
  *  - loadDebugTemplate: valid JSONC loads, traversal blocked, missing file,
  *    malformed JSONC invalid, per-invocation fresh read
@@ -22,7 +22,6 @@ import * as os from "os";
 import * as vscode from "vscode";
 import { resolveMatchingDebugProfiles } from "../../../manifest/debug-profiles";
 import {
-  resolveDebugProfile,
   deriveExecutableFileName,
   loadDebugTemplate,
   buildDebugVariableMap,
@@ -54,61 +53,6 @@ import {
 function makeProfile(overrides: Parameters<typeof makeComponentDebugProfile>[0] = { name: "gdb", template: "gdb-remote.json" }) {
   return makeComponentDebugProfile(overrides);
 }
-
-// ---------------------------------------------------------------------------
-// resolveDebugProfile
-// ---------------------------------------------------------------------------
-
-suite("resolveDebugProfile", () => {
-  const ctx = { modelId: "T2T1", targetId: "hw", componentId: "core" };
-
-  test("profile without when matches any context", () => {
-    const profile = makeProfile({ name: "p1", template: "gdb-remote.json" }); // no when
-    const result = resolveDebugProfile([profile], ctx);
-    assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedProfile, profile);
-  });
-
-  test("profile with matching when selects that profile", () => {
-    const profile = makeProfile({ name: "p1", template: "gdb-remote.json", when: { type: "model", id: "T2T1" } });
-    const result = resolveDebugProfile([profile], ctx);
-    assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedProfile, profile);
-  });
-
-  test("profile with non-matching when is excluded", () => {
-    const profile = makeProfile({ name: "p1", template: "gdb-remote.json", when: { type: "model", id: "T3W1" } });
-    const result = resolveDebugProfile([profile], ctx);
-    assert.strictEqual(result.resolutionState, "no-match");
-  });
-
-  test("first matching profile wins (declaration order)", () => {
-    const first = makeProfile({ name: "first", template: "a.json", declarationIndex: 0 });
-    const second = makeProfile({ name: "second", template: "b.json", declarationIndex: 1 });
-    const result = resolveDebugProfile([first, second], ctx);
-    assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedProfile?.name, "first");
-  });
-
-  test("first matching conditional profile wins over later unconditional one", () => {
-    const nonMatch = makeProfile({ name: "no", template: "a.json", when: { type: "model", id: "T3W1" }, declarationIndex: 0 });
-    const match = makeProfile({ name: "yes", template: "b.json", when: { type: "model", id: "T2T1" }, declarationIndex: 1 });
-    const result = resolveDebugProfile([nonMatch, match], ctx);
-    assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedProfile?.name, "yes");
-  });
-
-  test("no matching profiles returns no-match", () => {
-    const profile = makeProfile({ name: "p1", template: "gdb-remote.json", when: { type: "target", id: "emu" } });
-    const result = resolveDebugProfile([profile], ctx);
-    assert.strictEqual(result.resolutionState, "no-match");
-  });
-
-  test("empty profile list returns no-match", () => {
-    const result = resolveDebugProfile([], ctx);
-    assert.strictEqual(result.resolutionState, "no-match");
-  });
-});
 
 // ---------------------------------------------------------------------------
 // deriveExecutableFileName
@@ -508,14 +452,6 @@ suite("resolveMatchingDebugProfiles", () => {
     const result = resolveMatchingDebugProfiles([noMatch, matchAll], ctxForT3W1);
     assert.strictEqual(result.profiles.length, 2);
     assert.strictEqual(result.defaultProfile, noMatch);
-  });
-
-  test("resolveMatchingDebugProfiles default always equals resolveDebugProfile selected profile", () => {
-    const p1 = makeProfile({ name: "p1", template: "a.json", when: { type: "model", id: "T2T1" }, declarationIndex: 0 });
-    const p2 = makeProfile({ name: "p2", template: "b.json", declarationIndex: 1 });
-    const matchAll = resolveMatchingDebugProfiles([p1, p2], ctx);
-    const single = resolveDebugProfile([p1, p2], ctx);
-    assert.strictEqual(matchAll.defaultProfile, single.selectedProfile);
   });
 });
 
