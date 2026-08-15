@@ -4,7 +4,7 @@
  * task and debug providers, and coordinates state refreshes between them.
  */
 import * as vscode from "vscode";
-import { hasSupportedWorkspace, requireWorkspaceFolder, isWorkflowWorkspaceSupported } from "./workspace/workspace-guard";
+import { hasSupportedWorkspace, requireWorkspaceFolder } from "./workspace/workspace-guard";
 import { isStatusBarEnabled } from "./workspace/settings";
 import { RepositoryConfigService, loadRepositoryConfig, setRepositoryConfig, resolveManifestUri, resolveArtifactsPath, resolveDebugTemplatesPath, resolvePresetUris } from "./workspace/repository-config";
 import { ManifestService } from "./manifest/manifest-service";
@@ -46,10 +46,6 @@ import {
 import {
   restoreBuildSelection,
   readBuildSelection,
-  selectModel,
-  selectTarget,
-  selectComponent,
-  selectPreset,
   activePresetId,
   BuildSelection,
 } from "./build/build-selection";
@@ -61,17 +57,9 @@ import {
   normalizeBuildOptions,
   ResolvedOption,
 } from "./build/build-options";
-import { ManifestState, ManifestStateLoaded, loadedManifest } from "./manifest/manifest-types";
-import {
-  evaluateWorkflowPreconditions,
-  reportWorkflowBlocked,
-  executeWorkflowTask,
-  WorkflowKind,
-} from "./commands/build-workflow";
+import { ManifestState, loadedManifest } from "./manifest/manifest-types";
 import {
   BuildTaskProvider,
-  resolveWorkflowContext,
-  createWorkflowTask,
   isSuccessfulArtifactRefreshTaskProcess,
   TASK_TYPE,
 } from "./tasks/build-task-provider";
@@ -80,25 +68,18 @@ import { RefreshTrigger } from "./intellisense/intellisense-types";
 import { applyProviderSettingFix } from "./intellisense/cpptools-backend";
 import { ArtifactFileWatcher } from "./build/artifact-file-watcher";
 import { registerExcludedFilesVisibility } from "./intellisense/excluded-files-wiring";
-import {
-  evaluateArtifactActionPreconditions,
-  isArtifactActionApplicable,
-  resolveArtifactActionContext,
-  createArtifactTask,
-  executeArtifactTask,
-  reportArtifactActionBlocked,
-  openMapFile,
-  ArtifactActionKind,
-} from "./commands/artifact-actions";
+import { registerArtifactActionCommands } from "./commands/artifact-actions";
 import { registerUnsupportedWorkspaceCommands } from "./commands/unsupported-workspace-commands";
+import { registerDebugLaunchCommand } from "./commands/debug-launch";
+import { registerSelectionCommands } from "./commands/selection-commands";
+import { registerWorkflowCommands } from "./commands/workflow-commands";
+import { CommandDeps } from "./commands/command-deps";
 import {
   updateWorkflowBlockedContext,
   updateArtifactActionContext,
   updateDebugContext,
   updateCompileCommandsTreeArtifact,
 } from "./ui/context-keys";
-import { executeDebugLaunch } from "./commands/debug-launch";
-import { logDebugLaunchFailure } from "./observability/log-channel";
 import { BuildContext } from "./manifest/manifest-types";
 import {
   RunDebugConfigProvider,
@@ -465,6 +446,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     _intelliSenseService?.scheduleRefresh(trigger);
   };
 
+  // The dependency surface handed to the per-slice command registrations.
+  const commandDeps: CommandDeps = {
+    workspaceFolder,
+    getManifestState: () => _manifestState,
+    getBuildSelection: () => _buildSelection,
+    getResolvedOptions: () => _presetOptions.resolvedOptions,
+    getPresetBlocked: () => _presetOptions.presetBlocked,
+    getPresetsUnavailable: () => _presetOptions.presetsUnavailable,
+    getFileArtifact: (kind) => _treeModel?.getArtifact(kind) ?? null,
+    reloadPresets: async () => {
+      await _presetService?.reload();
+    },
+    refreshPresetOptions: () => _presetOptions.refresh(context),
+    refreshResolvedOptionsView,
+    refreshStatusBar,
+    refreshArtifactFileWatcher,
+    refreshBuildArtifacts,
+    setIntelliSenseBuildContext: () => {
+      _intelliSenseService?.setBuildContext(_buildSelection);
+    },
+  };
+
   // --- Status-bar presenter. ---
   _statusBar = new StatusBarPresenter();
   context.subscriptions.push(_statusBar);
@@ -611,62 +614,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  // --- Flash and Upload commands. Identical except for the action kind. ---
-  const runArtifactAction = async (kind: ArtifactActionKind): Promise<void> => {
-    const state = _manifestState;
-    const buildContext = _buildSelection;
-    const manifest = loadedManifest(state);
-    const actionCtx = manifest && buildContext ? resolveArtifactActionContext(manifest, buildContext) : undefined;
-    const component = manifest?.components.find((c) => c.id === buildContext?.componentId);
-
-    const blockReason = evaluateArtifactActionPreconditions({
-      workspaceSupported: isWorkflowWorkspaceSupported(),
-      manifestStatus: state?.status ?? "missing",
-      hasWorkflowBlockingIssues: manifest?.hasWorkflowBlockingIssues ?? false,
-      buildSelectionResolved: !!actionCtx,
-      actionApplicable: !!(component && buildContext && isArtifactActionApplicable(kind, component, buildContext)),
-      binaryExists: _treeModel?.getArtifact("binary")?.exists ?? false,
-    });
-
-    if (blockReason !== "no-block") {
-      reportArtifactActionBlocked(kind, blockReason);
-      return;
-    }
-
-    if (!actionCtx) {
-      reportArtifactActionBlocked(kind, "context-unresolved");
-      return;
-    }
-
-    const task = createArtifactTask(kind, actionCtx, workspaceFolder);
-    await executeArtifactTask(task, kind);
-  };
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.flash", () => runArtifactAction("flash"))
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.upload", () => runArtifactAction("upload"))
-  );
-
-  // --- startDebugging command (Debug Launch slice) ---
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.startDebugging", async () => {
-      const state = _manifestState;
-      const config = _buildSelection;
-      const manifest = loadedManifest(state);
-      if (!manifest || !config) {
-        logDebugLaunchFailure("unsupported-workspace", {
-          detail: "manifest not loaded or no active configuration",
-        });
-        revealLogs();
-        notifyError("Cannot start debugging: manifest not loaded.");
-        return;
-      }
-      await executeDebugLaunch(workspaceFolder, manifest, config);
-    })
-  );
+  // --- Per-slice command registrations. ---
+  registerArtifactActionCommands(context, commandDeps);
+  registerDebugLaunchCommand(context, commandDeps);
+  registerSelectionCommands(context, commandDeps);
+  registerWorkflowCommands(context, commandDeps);
 
   // --- Run and Debug provider (Run and Debug Integration slice) ---
   const debugConfigProvider = new RunDebugConfigProvider(
@@ -683,128 +635,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
   context.subscriptions.push(_debugConfigProviderRegistration);
 
-  // --- openMapFile command, scoped to the artifact row. ---
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.openMapFile", async () => {
-      const mapArtifact = _treeModel?.getArtifact("map");
-      if (!mapArtifact?.exists) {
-        // Action is disabled in the UI when the map file is missing;
-        // silently return if somehow invoked without a valid path.
-        return;
-      }
-      await openMapFile(mapArtifact.path);
-    })
-  );
-
   // --- Provider-change refresh: re-evaluate readiness when extensions change. ---
   context.subscriptions.push(
     vscode.extensions.onDidChange(() => {
       _intelliSenseService?.scheduleRefresh("provider-change");
     })
-  );
-
-  // --- Build-context selector commands. ---
-  // Each selection also re-normalizes the active preset against the new
-  // build context, via refreshPresetsAndBuildSelection. All selectors
-  // share the same guard and post-selection refresh chain.
-  const registerSelector = (
-    command: string,
-    apply: (id: string, state: ManifestStateLoaded) => Promise<unknown>
-  ): void => {
-    context.subscriptions.push(
-      vscode.commands.registerCommand(command, async (id: string) => {
-        const state = _manifestState;
-        if (!state || state.status !== "loaded") { return; }
-        await apply(id, state);
-        await _presetOptions.refresh(context);
-        refreshStatusBar();
-        _intelliSenseService?.setBuildContext(_buildSelection);
-        refreshArtifactFileWatcher();
-        refreshBuildArtifacts("build-selection-change");
-      })
-    );
-  };
-
-  registerSelector("tbench.selectModel", (id, state) => selectModel(context, id, state));
-  registerSelector("tbench.selectTarget", (id, state) => selectTarget(context, id, state));
-  registerSelector("tbench.selectComponent", (id, state) => selectComponent(context, id, state));
-  // Preset selector: not a contributed command — invoked only
-  // through the Preset selector's tree-item command binding.
-  registerSelector("tbench.selectPreset", (id, state) => selectPreset(context, id, state));
-
-  // --- Workflow commands: Build / Clippy / Check / Clean. ---
-  // Build/Clippy/Check reload preset inputs and recompute before deriving
-  // arguments; Clean is exempt from preset
-  // blocking entirely.
-  const registerWorkflowCommand = (kind: WorkflowKind): vscode.Disposable =>
-    vscode.commands.registerCommand(`tbench.${kind.toLowerCase()}`, async () => {
-      if (kind !== "Clean") {
-        await _presetService?.reload();
-        await _presetOptions.refresh(context);
-      }
-
-      const state = _manifestState;
-      const manifest = loadedManifest(state);
-      const buildSelection = _buildSelection;
-      const wfCtx = manifest && buildSelection ? resolveWorkflowContext(manifest, buildSelection) : undefined;
-      const blockReason = evaluateWorkflowPreconditions({
-        manifestStatus: state?.status ?? "missing",
-        hasWorkflowBlockingIssues: manifest?.hasWorkflowBlockingIssues ?? false,
-        workspaceSupported: isWorkflowWorkspaceSupported(),
-        buildSelectionResolved: !!wfCtx,
-        presetsUnavailable: kind !== "Clean" && _presetOptions.presetsUnavailable,
-        presetsInvalid: kind !== "Clean" && _presetOptions.presetBlocked,
-      });
-
-      if (blockReason !== "no-block") {
-        reportWorkflowBlocked(kind, blockReason);
-        return;
-      }
-
-      if (!wfCtx) {
-        reportWorkflowBlocked(kind, "context-unresolved");
-        return;
-      }
-
-      const task = createWorkflowTask(kind, wfCtx, workspaceFolder, _presetOptions.resolvedOptions, activePresetId(buildSelection!));
-      await executeWorkflowTask(task, kind);
-    });
-
-  context.subscriptions.push(
-    registerWorkflowCommand("Build"),
-    registerWorkflowCommand("Clippy"),
-    registerWorkflowCommand("Check"),
-    registerWorkflowCommand("Clean")
-  );
-
-  // --- Build-option toggle/select commands. ---
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.toggleBuildOption", async (key: string) => {
-      const resolved = _presetOptions.resolvedOptions.find((r) => r.option.key === key);
-      if (!resolved || !resolved.available || resolved.option.kind !== "checkbox") {
-        return;
-      }
-      const newValue = resolved.value !== true;
-      await writeBuildOption(context, key, newValue);
-      refreshResolvedOptionsView();
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "tbench.selectBuildOptionState",
-      async (key: string, stateId: string) => {
-        const resolved = _presetOptions.resolvedOptions.find((r) => r.option.key === key);
-        if (!resolved || !resolved.available || resolved.option.kind !== "multistate") {
-          return;
-        }
-        if (!resolved.option.states?.some((s) => s.id === stateId)) {
-          return;
-        }
-        await writeBuildOption(context, key, stateId);
-        refreshResolvedOptionsView();
-      }
-    )
   );
 
   // --- Task provider. ---
