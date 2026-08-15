@@ -4,9 +4,8 @@ import {
   ConfigurationTreeModel,
   PaneTreeProvider,
   PaneId,
-  PlaceholderItem,
-  WarningItem,
 } from "../../../ui/configuration-tree";
+import { PlaceholderItem, WarningItem } from "../../../ui/pane-items";
 import {
   SelectorChoiceItem,
   SelectorHeaderItem,

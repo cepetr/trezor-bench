@@ -1,9 +1,17 @@
 /**
- * Tree items and formatting helpers for the Build Artifacts pane —
- * one status row per artifact kind plus the shared freshness row.
+ * The Build Artifacts pane — tree items, formatting helpers, and
+ * rendering for one status row per artifact kind plus the shared
+ * freshness row.
  */
 import * as vscode from "vscode";
-import { ArtifactStatus, ExecutableArtifact, ResolvedArtifact } from "../build/artifact-resolution";
+import {
+  ArtifactKind,
+  ArtifactsByKind,
+  ArtifactStatus,
+  ExecutableArtifact,
+  ResolvedArtifact,
+} from "../build/artifact-resolution";
+import { PlaceholderItem } from "./pane-items";
 
 function formatArtifactTooltip(
   artifactPath: string,
@@ -137,4 +145,47 @@ export class ExecutableArtifactItem extends ArtifactStatusItem {
   constructor(artifact: ExecutableArtifact) {
     super("Executable", "executable", artifact.status, artifact.tooltip);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+
+/** Everything the Build Artifacts pane reads: the per-kind artifact states, null until resolved. */
+export type BuildArtifactsViewState = {
+  [K in ArtifactKind]: ArtifactsByKind[K] | null;
+};
+
+/** The root rows of the Build Artifacts pane. */
+export function buildArtifactsRootChildren(view: BuildArtifactsViewState): vscode.TreeItem[] {
+  const compileCommandsArtifact = view["compile-commands"];
+  if (!compileCommandsArtifact) {
+    return [new PlaceholderItem("IntelliSense not yet evaluated")];
+  }
+
+  const newestModifiedAt = newestArtifactModifiedAt(view);
+
+  const items: vscode.TreeItem[] = newestModifiedAt ? [new ArtifactUpdatedItem(newestModifiedAt)] : [];
+  items.push(new CompileCommandsArtifactItem(compileCommandsArtifact));
+  if (view.binary) {
+    items.push(new BinaryArtifactItem(view.binary));
+  }
+  if (view.map) {
+    items.push(new MapArtifactItem(view.map));
+  }
+  if (view.executable) {
+    items.push(new ExecutableArtifactItem(view.executable));
+  }
+  return items;
+}
+
+export function newestArtifactModifiedAt(view: BuildArtifactsViewState): Date | undefined {
+  return Object.values(view)
+    .reduce<Date | undefined>((newest, current) => {
+      const modifiedAt = current?.modifiedAt;
+      if (!modifiedAt || (newest && modifiedAt <= newest)) {
+        return newest;
+      }
+      return modifiedAt;
+    }, undefined);
 }

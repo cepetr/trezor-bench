@@ -1,9 +1,12 @@
 /**
- * Tree items and command identifiers for the Build Options pane —
- * checkbox and multistate option rows, their groups, and state choices.
+ * The Build Options pane — tree items, command identifiers, and
+ * rendering for checkbox and multistate option rows, their groups, and
+ * state choices.
  */
 import * as vscode from "vscode";
-import { INACTIVE_CHOICE_ICON } from "./build-selection-pane";
+import { ManifestState } from "../manifest/manifest-types";
+import { ResolvedOption } from "../build/build-options";
+import { INACTIVE_CHOICE_ICON, PlaceholderItem, WarningItem } from "./pane-items";
 
 // ---------------------------------------------------------------------------
 // Command identifiers for build-option interaction.
@@ -130,4 +133,115 @@ export class BuildOptionStateItem extends vscode.TreeItem {
       };
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+
+/** Everything the Build Options pane reads when rendering its rows. */
+export interface BuildOptionsViewState {
+  readonly manifest: ManifestState | undefined;
+  readonly resolvedOptions: ReadonlyArray<ResolvedOption>;
+  readonly collapsedGroups: ReadonlySet<string>;
+  readonly expandedMultistateKey: string | undefined;
+}
+
+/** The root rows of the Build Options pane. */
+export function buildOptionsRootChildren(view: BuildOptionsViewState): vscode.TreeItem[] {
+  const state = view.manifest;
+
+  if (!state) {
+    return [new PlaceholderItem("Loading…")];
+  }
+
+  if (state.status === "missing") {
+    return [new PlaceholderItem("No manifest — Build Options unavailable")];
+  }
+
+  if (state.status === "invalid") {
+    return [new PlaceholderItem("Manifest is invalid — Build Options unavailable")];
+  }
+
+  if (state.hasWorkflowBlockingIssues) {
+    return [
+      new WarningItem("Build workflow blocked: invalid availability rules"),
+      new PlaceholderItem("Check the Problems view for details"),
+    ];
+  }
+
+  const available = view.resolvedOptions.filter((r) => r.available);
+
+  if (available.length === 0) {
+    if (view.resolvedOptions.length === 0) {
+      return [new PlaceholderItem("No build options defined")];
+    }
+    return [new PlaceholderItem("No options available for the active build context")];
+  }
+
+  // Render in declaration order, grouping items under first-seen group headers.
+  const items: vscode.TreeItem[] = [];
+  const seenGroups = new Set<string>();
+
+  for (const resolved of available) {
+    const { group } = resolved.option;
+    if (group) {
+      if (!seenGroups.has(group)) {
+        seenGroups.add(group);
+        const groupMembers = available.filter((r) => r.option.group === group);
+        const groupChildren = groupMembers.map((r) => buildOptionItem(view, r));
+        const collapsed = view.collapsedGroups.has(group);
+        const hasOverride = groupMembers.some((r) => r.isOverride);
+        items.push(new BuildOptionGroupItem(group, groupChildren, collapsed, hasOverride));
+      }
+      // else: already included under the group header
+    } else {
+      items.push(buildOptionItem(view, resolved));
+    }
+  }
+
+  return items;
+}
+
+function buildOptionItem(
+  view: BuildOptionsViewState,
+  resolved: ResolvedOption
+): BuildOptionCheckboxItem | BuildOptionMultistateHeaderItem {
+  const { option, value, presetState, isOverride } = resolved;
+  const mismatch: BuildOptionMismatchInfo | undefined =
+    presetState === "mismatch" ? { rawValue: resolved.rawValue ?? "" } : undefined;
+
+  if (option.kind === "checkbox") {
+    return new BuildOptionCheckboxItem(
+      option.key,
+      option.label,
+      value === true,
+      isOverride,
+      option.description,
+      mismatch,
+      option.flag
+    );
+  }
+
+  // multistate
+  const activeStateId = typeof value === "string" ? value : "";
+  const activeStateLabel =
+    option.states?.find((s) => s.id === activeStateId)?.label ?? activeStateId;
+  const selectable = presetState !== "unresolved";
+  const stateChildren = (option.states ?? []).map(
+    (s) =>
+      new BuildOptionStateItem(option.key, s.id, s.label, s.id === activeStateId, s.description, selectable, s.flag)
+  );
+  const expanded = view.expandedMultistateKey === option.key;
+  return new BuildOptionMultistateHeaderItem(
+    option.key,
+    option.label,
+    activeStateLabel,
+    stateChildren,
+    expanded,
+    isOverride,
+    option.description,
+    mismatch,
+    option.flag
+  );
 }

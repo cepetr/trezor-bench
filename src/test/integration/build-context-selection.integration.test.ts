@@ -7,10 +7,8 @@
  */
 import * as assert from "assert";
 import * as vscode from "vscode";
-import {
-  ConfigurationTreeModel,
-  WarningItem,
-} from "../../ui/configuration-tree";
+import { ConfigurationTreeModel } from "../../ui/configuration-tree";
+import { WarningItem } from "../../ui/pane-items";
 import {
   SelectorHeaderItem,
   SelectorChoiceItem,
@@ -263,7 +261,7 @@ suite("ConfigurationTreeModel – normalization integration", () => {
 // Suite: IntelliSense artifact state in the Build Artifacts section
 // ---------------------------------------------------------------------------
 
-import { PlaceholderItem } from "../../ui/configuration-tree";
+import { PlaceholderItem } from "../../ui/pane-items";
 import { CompileCommandsArtifactItem } from "../../ui/build-artifacts-pane";
 import { ResolvedArtifact } from "../../build/artifact-resolution";
 
