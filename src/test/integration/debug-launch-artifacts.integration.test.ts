@@ -47,7 +47,7 @@ function makeConfig(modelId: string, targetId = "hw", componentId = "core"): {
   return { modelId, targetId, componentId, persistedAt: "" };
 }
 
-function makeValidArtifact(): import("../../intellisense/intellisense-types").ResolvedArtifact {
+function makeValidCompileCommandsArtifact(): import("../../intellisense/intellisense-types").ResolvedArtifact {
   return {
     contextKey: "T2T1::hw::core",
     path: "/build/model-t/compile_commands_core.cc.json",
@@ -208,7 +208,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
   }
 
   test("Executable row appears immediately after Compile Commands when no Binary/Map rows", () => {
-    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
     treeModel.updateExecutableArtifact(makeExecArtifact());
 
     const children = getBuildArtifacts();
@@ -219,7 +219,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
   });
 
   test("Executable row is always visible regardless of profile resolution state", () => {
-    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
     treeModel.updateExecutableArtifact(makeExecArtifact({
       status: "missing",
       profileResolutionState: "no-match",
@@ -234,7 +234,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
   });
 
   test("clearing Executable artifact removes the row from the tree", () => {
-    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
     treeModel.updateExecutableArtifact(makeExecArtifact());
     treeModel.updateExecutableArtifact(null);
 

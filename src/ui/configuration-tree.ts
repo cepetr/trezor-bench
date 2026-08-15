@@ -383,7 +383,7 @@ export class ConfigurationTreeModel
   private _presetState: PresetState | undefined;
   private _activePresetId: string | undefined;
   private _presetChoices: ReadonlyArray<PresetChoice> = [];
-  private _artifact: ResolvedArtifact | null = null;
+  private _compileCommandsArtifact: ResolvedArtifact | null = null;
   private _binaryArtifact: ResolvedArtifact | null = null;
   private _mapArtifact: ResolvedArtifact | null = null;
   private _executableArtifact: ExecutableArtifact | null = null;
@@ -452,8 +452,8 @@ export class ConfigurationTreeModel
    * Updates the compile-commands artifact state and refreshes
    * the Build Artifacts section of the tree.
    */
-  updateArtifact(artifact: ResolvedArtifact | null): void {
-    this._artifact = artifact;
+  updateCompileCommandsArtifact(artifact: ResolvedArtifact | null): void {
+    this._compileCommandsArtifact = artifact;
     this._onDidChangeTreeData.fire(undefined);
     this.firePanes("build-artifacts");
   }
@@ -856,15 +856,15 @@ export class ConfigurationTreeModel
   // -------------------------------------------------------------------------
 
   private _buildArtifactsChildren(): vscode.TreeItem[] {
-    const artifact = this._artifact;
-    if (!artifact) {
+    const compileCommandsArtifact = this._compileCommandsArtifact;
+    if (!compileCommandsArtifact) {
       return [new PlaceholderItem("IntelliSense not yet evaluated")];
     }
 
     const newestModifiedAt = this._newestArtifactModifiedAt();
 
     const items: vscode.TreeItem[] = newestModifiedAt ? [new ArtifactUpdatedItem(newestModifiedAt)] : [];
-    items.push(new CompileCommandsArtifactItem(artifact));
+    items.push(new CompileCommandsArtifactItem(compileCommandsArtifact));
     if (this._binaryArtifact) {
       items.push(new BinaryArtifactItem(this._binaryArtifact));
     }
@@ -878,7 +878,7 @@ export class ConfigurationTreeModel
   }
 
   private _newestArtifactModifiedAt(): Date | undefined {
-    return [this._artifact, this._binaryArtifact, this._mapArtifact, this._executableArtifact]
+    return [this._compileCommandsArtifact, this._binaryArtifact, this._mapArtifact, this._executableArtifact]
       .reduce<Date | undefined>((newest, current) => {
         const modifiedAt = current?.modifiedAt;
         if (!modifiedAt || (newest && modifiedAt <= newest)) {

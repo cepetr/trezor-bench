@@ -273,7 +273,7 @@ function getBuildArtifactsChildren(
   return treeModel.paneRootChildren("build-artifacts");
 }
 
-function makeMissingArtifact(
+function makeMissingCompileCommandsArtifact(
   overrides: Partial<ResolvedArtifact> = {}
 ): ResolvedArtifact {
   return {
@@ -286,7 +286,7 @@ function makeMissingArtifact(
   };
 }
 
-function makeValidArtifact(
+function makeValidCompileCommandsArtifact(
   overrides: Partial<ResolvedArtifact> = {}
 ): ResolvedArtifact {
   return {
@@ -315,7 +315,7 @@ suite("ConfigurationTreeModel – Build Artifacts section (IntelliSense)", () =>
   });
 
   test("shows CompileCommandsArtifactItem after updateArtifact with valid artifact", () => {
-    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
     const children = getBuildArtifactsChildren(treeModel);
     assert.strictEqual(children.length, 1);
     assert.ok(children[0] instanceof CompileCommandsArtifactItem, "expected CompileCommandsArtifactItem");
@@ -324,7 +324,7 @@ suite("ConfigurationTreeModel – Build Artifacts section (IntelliSense)", () =>
   });
 
   test("shows CompileCommandsArtifactItem with missing status after updateArtifact", () => {
-    treeModel.updateArtifact(makeMissingArtifact());
+    treeModel.updateCompileCommandsArtifact(makeMissingCompileCommandsArtifact());
     const children = getBuildArtifactsChildren(treeModel);
     assert.strictEqual(children.length, 1);
     assert.ok(children[0] instanceof CompileCommandsArtifactItem);
@@ -333,8 +333,8 @@ suite("ConfigurationTreeModel – Build Artifacts section (IntelliSense)", () =>
   });
 
   test("tooltip for valid artifact includes the expected path", () => {
-    const artifact = makeValidArtifact({ path: "/build/model-t/compile_commands_core.cc.json" });
-    treeModel.updateArtifact(artifact);
+    const artifact = makeValidCompileCommandsArtifact({ path: "/build/model-t/compile_commands_core.cc.json" });
+    treeModel.updateCompileCommandsArtifact(artifact);
     const children = getBuildArtifactsChildren(treeModel);
     const item = children[0] as CompileCommandsArtifactItem;
     assert.ok(
@@ -344,8 +344,8 @@ suite("ConfigurationTreeModel – Build Artifacts section (IntelliSense)", () =>
   });
 
   test("tooltip for missing artifact includes the missing reason", () => {
-    const artifact = makeMissingArtifact({ missingReason: "Artifact not found at expected path." });
-    treeModel.updateArtifact(artifact);
+    const artifact = makeMissingCompileCommandsArtifact({ missingReason: "Artifact not found at expected path." });
+    treeModel.updateCompileCommandsArtifact(artifact);
     const children = getBuildArtifactsChildren(treeModel);
     const item = children[0] as CompileCommandsArtifactItem;
     assert.ok(
@@ -359,23 +359,23 @@ suite("ConfigurationTreeModel – Build Artifacts section (IntelliSense)", () =>
       sub.dispose();
       done();
     });
-    treeModel.updateArtifact(makeValidArtifact());
+    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
   });
 
   test("switching from valid to null artifact reverts to placeholder", () => {
-    treeModel.updateArtifact(makeValidArtifact());
-    treeModel.updateArtifact(null);
+    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact());
+    treeModel.updateCompileCommandsArtifact(null);
     const children = getBuildArtifactsChildren(treeModel);
     assert.ok(children[0] instanceof PlaceholderItem, "expected placeholder after null artifact update");
   });
 
   test("compile-commands artifact path uses artifactFolder, not model id", () => {
     // The artifact path should be constructed from artifactFolder, not from the model id.
-    const artifact = makeValidArtifact({
+    const artifact = makeValidCompileCommandsArtifact({
       path: "/artifacts/model-t/compile_commands_core.cc.json",
       contextKey: "T2T1::hw::core",
     });
-    treeModel.updateArtifact(artifact);
+    treeModel.updateCompileCommandsArtifact(artifact);
     const children = getBuildArtifactsChildren(treeModel);
     const item = children[0] as CompileCommandsArtifactItem;
     assert.ok(
@@ -389,11 +389,11 @@ suite("ConfigurationTreeModel – Build Artifacts section (IntelliSense)", () =>
   });
 
   test("artifact suffix is reflected in the compile-commands path", () => {
-    const artifact = makeValidArtifact({
+    const artifact = makeValidCompileCommandsArtifact({
       path: "/artifacts/model-t/compile_commands_core_emu.cc.json",
       contextKey: "T2T1::emu::core",
     });
-    treeModel.updateArtifact(artifact);
+    treeModel.updateCompileCommandsArtifact(artifact);
     const children = getBuildArtifactsChildren(treeModel);
     const item = children[0] as CompileCommandsArtifactItem;
     assert.ok(
@@ -419,8 +419,8 @@ suite("ConfigurationTreeModel – active-context refresh and stale-state clearin
   });
 
   test("switching from valid artifact to null reverts to placeholder (stale-state clearing)", () => {
-    treeModel.updateArtifact(makeValidArtifact({ contextKey: "T2T1::hw::core" }));
-    treeModel.updateArtifact(null);
+    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact({ contextKey: "T2T1::hw::core" }));
+    treeModel.updateCompileCommandsArtifact(null);
     const children = getBuildArtifactsChildren(treeModel);
     assert.ok(
       children[0] instanceof PlaceholderItem,
@@ -430,16 +430,16 @@ suite("ConfigurationTreeModel – active-context refresh and stale-state clearin
 
   test("switching context shows new artifact status without reusing old path", () => {
     // Apply valid artifact for first context
-    treeModel.updateArtifact(
-      makeValidArtifact({
+    treeModel.updateCompileCommandsArtifact(
+      makeValidCompileCommandsArtifact({
         path: "/artifacts/model-t/compile_commands_core.cc.json",
         contextKey: "T2T1::hw::core",
       })
     );
 
     // Context changes to T3W1::hw::core (model switch)
-    treeModel.updateArtifact(
-      makeValidArtifact({
+    treeModel.updateCompileCommandsArtifact(
+      makeValidCompileCommandsArtifact({
         path: "/artifacts/model-t3/compile_commands_core.cc.json",
         contextKey: "T3W1::hw::core",
       })
@@ -459,11 +459,11 @@ suite("ConfigurationTreeModel – active-context refresh and stale-state clearin
   });
 
   test("switching from valid artifact to missing does not retain old valid tooltip", () => {
-    treeModel.updateArtifact(
-      makeValidArtifact({ path: "/artifacts/model-t/compile_commands_core.cc.json" })
+    treeModel.updateCompileCommandsArtifact(
+      makeValidCompileCommandsArtifact({ path: "/artifacts/model-t/compile_commands_core.cc.json" })
     );
-    treeModel.updateArtifact(
-      makeMissingArtifact({ path: "/artifacts/nonexistent/compile_commands_core.cc.json" })
+    treeModel.updateCompileCommandsArtifact(
+      makeMissingCompileCommandsArtifact({ path: "/artifacts/nonexistent/compile_commands_core.cc.json" })
     );
     const children = getBuildArtifactsChildren(treeModel);
     const item = children[0] as CompileCommandsArtifactItem;
@@ -476,16 +476,16 @@ suite("ConfigurationTreeModel – active-context refresh and stale-state clearin
 
   test("target suffix change: _emu suffix shown in tree after context switch to emu target", () => {
     // Start with hw artifact (no suffix)
-    treeModel.updateArtifact(
-      makeValidArtifact({
+    treeModel.updateCompileCommandsArtifact(
+      makeValidCompileCommandsArtifact({
         path: "/artifacts/model-t/compile_commands_core.cc.json",
         contextKey: "T2T1::hw::core",
       })
     );
 
     // Switch to emu target (with _emu suffix)
-    treeModel.updateArtifact(
-      makeValidArtifact({
+    treeModel.updateCompileCommandsArtifact(
+      makeValidCompileCommandsArtifact({
         path: "/artifacts/model-t/compile_commands_core_emu.cc.json",
         contextKey: "T2T1::emu::core",
       })
@@ -505,7 +505,7 @@ suite("ConfigurationTreeModel – active-context refresh and stale-state clearin
 
   test("updateArtifact fires onDidChangeTreeData on context switch", (done) => {
     // Initial state
-    treeModel.updateArtifact(makeValidArtifact({ contextKey: "T2T1::hw::core" }));
+    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact({ contextKey: "T2T1::hw::core" }));
 
     const sub = treeModel.onDidChangeTreeData(() => {
       sub.dispose();
@@ -513,6 +513,6 @@ suite("ConfigurationTreeModel – active-context refresh and stale-state clearin
     });
 
     // Context switch triggers a new updateArtifact
-    treeModel.updateArtifact(makeValidArtifact({ contextKey: "T3W1::hw::core" }));
+    treeModel.updateCompileCommandsArtifact(makeValidCompileCommandsArtifact({ contextKey: "T3W1::hw::core" }));
   });
 });

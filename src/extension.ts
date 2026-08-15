@@ -447,10 +447,10 @@ function updateDebugContext(
     return;
   }
 
-  const artifact = resolveExecutableArtifact(manifest, buildContext, artifactsRoot);
-  const enabled = artifact.status === "valid";
+  const executableArtifact = resolveExecutableArtifact(manifest, buildContext, artifactsRoot);
+  const enabled = executableArtifact.status === "valid";
   vscode.commands.executeCommand("setContext", "tbench.startDebuggingEnabled", enabled);
-  _treeModel?.updateExecutableArtifact(artifact);
+  _treeModel?.updateExecutableArtifact(executableArtifact);
 }
 
 function updateCompileCommandsTreeArtifact(
@@ -460,13 +460,13 @@ function updateCompileCommandsTreeArtifact(
 ): void {
   const manifest = loadedManifest(state);
   if (!manifest || !buildContext) {
-    _treeModel?.updateArtifact(null);
+    _treeModel?.updateCompileCommandsArtifact(null);
     return;
   }
 
   const inputs = buildResolutionInputs(manifest, buildContext, artifactsRoot);
-  const artifact = inputs ? resolveCompileCommandsArtifact(inputs, buildContext) : null;
-  _treeModel?.updateArtifact(artifact);
+  const compileCommandsArtifact = inputs ? resolveCompileCommandsArtifact(inputs, buildContext) : null;
+  _treeModel?.updateCompileCommandsArtifact(compileCommandsArtifact);
 }
 
 function registerUnsupportedWorkspaceCommands(
@@ -720,10 +720,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // Subscribe to IntelliSense refresh results → update tree view artifact row
   context.subscriptions.push(
-    _intelliSenseService.onDidRefresh(([artifact, readiness]) => {
+    _intelliSenseService.onDidRefresh(([compileCommandsArtifact, readiness]) => {
       const state = _manifestState;
       if (state) {
-        _treeModel?.updateArtifact(artifact);
+        _treeModel?.updateCompileCommandsArtifact(compileCommandsArtifact);
       }
       // Show the wrong-provider fix notification once per state entry.
       if (readiness.warningState === "wrong-provider" && readiness.warningState !== _lastShownProviderFixState) {
