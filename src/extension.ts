@@ -79,10 +79,7 @@ import { IntelliSenseService } from "./intellisense/intellisense-service";
 import { RefreshTrigger } from "./intellisense/intellisense-types";
 import { applyProviderSettingFix } from "./intellisense/cpptools-backend";
 import { ArtifactFileWatcher } from "./build/artifact-file-watcher";
-import { ExcludedFilesService } from "./intellisense/excluded-files-service";
-import { ExcludedFilesRefresher } from "./intellisense/excluded-files-refresh";
-import { ExcludedFilesDecorationsProvider } from "./ui/excluded-files-decorations";
-import { ExcludedFilesOverlays } from "./ui/excluded-files-overlays";
+import { registerExcludedFilesVisibility } from "./intellisense/excluded-files-wiring";
 import {
   evaluateArtifactActionPreconditions,
   isArtifactActionApplicable,
@@ -93,11 +90,13 @@ import {
   openMapFile,
   ArtifactActionKind,
 } from "./commands/artifact-actions";
+import { registerUnsupportedWorkspaceCommands } from "./commands/unsupported-workspace-commands";
 import {
-  buildResolutionInputs,
-  resolveArtifact,
-  resolveExecutableArtifact,
-} from "./build/artifact-resolution";
+  updateWorkflowBlockedContext,
+  updateArtifactActionContext,
+  updateDebugContext,
+  updateCompileCommandsTreeArtifact,
+} from "./ui/context-keys";
 import { executeDebugLaunch } from "./commands/debug-launch";
 import { logDebugLaunchFailure } from "./observability/log-channel";
 import { BuildContext } from "./manifest/manifest-types";
@@ -109,18 +108,6 @@ import {
 let _manifestService: ManifestService | undefined;
 let _presetService: PresetService | undefined;
 let _presetState: PresetState | undefined;
-let _presetEffectiveValues: ReadonlyMap<string, PresetEffectiveValue> = new Map();
-/**
- * Backs the `tbench.presetBlocked` context key (an absent shared
- * `presets.toml`, file-level invalidity, or any available-option mismatch).
- */
-let _presetBlocked = false;
-/**
- * True only for the absent shared `presets.toml`. Tracked separately
- * from `_presetBlocked` so the launch path can report the more specific
- * `presets-unavailable` reason; it always implies `_presetBlocked`.
- */
-let _presetsUnavailable = false;
 let _presetStateSubscription: vscode.Disposable | undefined;
 let _treeModel: PaneTreeModel | undefined;
 let _configurationTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
@@ -129,27 +116,12 @@ let _buildOptionsTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _statusBar: StatusBarPresenter | undefined;
 let _manifestState: ManifestState | undefined;
 let _buildSelection: BuildSelection | undefined;
-/**
- * The preset context the last refresh resolved against. Held beside
- * `_buildSelection` — the two are always written together — so a refresh can tell
- * whether the calculated values every stored override was authored against
- * still hold. `undefined` until the first refresh with a loaded
- * manifest, which is what keeps activation from wiping a restored session.
- */
-let _presetContext: PresetContext | undefined;
-let _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
 let _intelliSenseService: IntelliSenseService | undefined;
 let _artifactFileWatcher: ArtifactFileWatcher | undefined;
-let _excludedFilesService: ExcludedFilesService | undefined;
-let _excludedFilesRefresher: ExcludedFilesRefresher | undefined;
-let _excludedFilesDecorations: ExcludedFilesDecorationsProvider | undefined;
-let _excludedFilesOverlays: ExcludedFilesOverlays | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
 let _debugConfigProviderRegistration: vscode.Disposable | undefined;
 /** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
 let _lastShownProviderFixState: string = "none";
-/** The kinds updateArtifactActionContext resolves and publishes context keys for. */
-const ACTION_ARTIFACT_KINDS = ["binary", "map"] as const;
 
 export interface TaskProcessEndLike {
   readonly exitCode?: number;
@@ -254,262 +226,196 @@ function computeResolvedOptions(
 }
 
 /**
- * Recomputes the declared preset list and preset-effective build-option values
- * against the current manifest, active build context, and preset state;
- * normalizes and persists the active preset id when it changed; drops, when
- * the active preset or the preset context changed, exactly those explicit
- * build-option overrides whose calculated value moved with it;
- * and refreshes the `Preset` selector and Build Options.
- * The single entry point for every preset-relevant
- * trigger: activation, preset-state change, manifest-state change, and
- * active model/target/component change.
+ * Owns the preset/build-option recomputation state: the preset-effective
+ * values, the preset context of the last refresh, the preset-blocked flags,
+ * and the resolved build options. Everything here is derived state — the
+ * persisted inputs live in workspaceState and the preset files.
  */
-async function refreshPresetsAndBuildSelection(
-  context: vscode.ExtensionContext
-): Promise<void> {
-  const manifest = loadedManifest(_manifestState);
-  if (!manifest) {
-    _presetEffectiveValues = new Map();
-    _presetBlocked = false;
-    _presetsUnavailable = false;
-    vscode.commands.executeCommand("setContext", "tbench.presetBlocked", false);
-    _treeModel?.updatePresets(_presetState, undefined, []);
-    return;
+class PresetOptionsCoordinator {
+  private _effectiveValues: ReadonlyMap<string, PresetEffectiveValue> = new Map();
+  /**
+   * The preset context the last refresh resolved against. Held beside
+   * `_buildSelection` — the two are always written together — so a refresh can tell
+   * whether the calculated values every stored override was authored against
+   * still hold. `undefined` until the first refresh with a loaded
+   * manifest, which is what keeps activation from wiping a restored session.
+   */
+  private _presetContext: PresetContext | undefined;
+  /**
+   * Backs the `tbench.presetBlocked` context key (an absent shared
+   * `presets.toml`, file-level invalidity, or any available-option mismatch).
+   */
+  private _blocked = false;
+  /**
+   * True only for the absent shared `presets.toml`. Tracked separately
+   * from `_blocked` so the launch path can report the more specific
+   * `presets-unavailable` reason; it always implies `_blocked`.
+   */
+  private _unavailable = false;
+  private _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
+
+  get presetBlocked(): boolean {
+    return this._blocked;
   }
 
-  const savedAxes = normalizeBuildSelection(manifest, readBuildSelection(context));
-  const presetCtx = derivePresetContext(manifest, savedAxes);
-
-  const currentPresetState = _presetState;
-  const presets = currentPresetState?.status === "loaded" ? currentPresetState : undefined;
-
-  // The choice list depends on the two preset files alone: every declared
-  // preset is offered whatever the build context, so `knownIds` only
-  // ever retires an id the files no longer declare.
-  let choices: PresetChoice[] = [];
-  let knownIds: Set<string> | undefined;
-  if (presets) {
-    choices = listPresetChoices(presets.shared, presets.user);
-    knownIds = new Set(choices.map((p) => p.id));
+  get presetsUnavailable(): boolean {
+    return this._unavailable;
   }
 
-  const previousPresetId = _buildSelection ? activePresetId(_buildSelection) : undefined;
-  const previousPresetContext = _presetContext;
-  const normalizedConfig = await restoreBuildSelection(context, manifest, knownIds);
-  const newPresetId = activePresetId(normalizedConfig);
-
-  const presetIdChanged = previousPresetId !== undefined && previousPresetId !== newPresetId;
-  const presetContextChanged =
-    previousPresetContext !== undefined && !samePresetContext(previousPresetContext, presetCtx);
-
-  if (presetIdChanged) {
-    logPresetNormalization(previousPresetId!, newPresetId);
+  get resolvedOptions(): ReadonlyArray<ResolvedOption> {
+    return this._resolvedOptions;
   }
 
-  _presetEffectiveValues = presets
-    ? computePresetEffectiveValues(manifest.buildOptions, presets.shared, presets.user, newPresetId, presetCtx)
-    : new Map();
+  /** Recomputes the resolved options against the current effective values. */
+  recomputeResolvedOptions(
+    state: ManifestState,
+    buildContext: BuildContext | undefined,
+    context: vscode.ExtensionContext
+  ): void {
+    this._resolvedOptions = computeResolvedOptions(state, buildContext, context, this._effectiveValues);
+  }
 
-  if (presets && (presetIdChanged || presetContextChanged)) {
-    // An override is authored against a calculated value, and that value is a
-    // function of the (active preset, preset context) pair: fragments carry
-    // `when = { model, project, emulator }` filters, so both the [[defaults]]
-    // layer and the named-preset layer can calculate differently in a
-    // different context. So a change to either half is where overrides have to
-    // be re-examined — but only per option, and against the same preset files:
-    // recalculate what the previous pair produced, and drop exactly the
-    // overrides whose value moved. Those would otherwise silently shadow the
-    // new calculation, with no way to clear it for a checkbox; the rest still
-    // say what the user asked for and are kept. Both change guards
-    // require a known previous half, which is what keeps activation from
-    // pruning the selections it just restored, and an unloaded preset state
-    // never prunes because it can calculate neither side.
-    const previousEffective = computePresetEffectiveValues(
-      manifest.buildOptions,
-      presets.shared,
-      presets.user,
-      previousPresetId ?? newPresetId,
-      previousPresetContext ?? presetCtx
-    );
-    const shifted = shiftedPresetOptionKeys(previousEffective, _presetEffectiveValues);
-    const dropped = await dropBuildOptionOverrides(context, shifted);
-    const kept = Object.keys(readBuildOptions(context)?.values ?? {});
+  /** Clears the state derived from a loaded manifest (manifest unloaded). */
+  resetForUnloadedManifest(): void {
+    this._presetContext = undefined;
+    this._resolvedOptions = [];
+  }
+
+  /** Clears the resolved options (invalid repository configuration). */
+  clearResolvedOptions(): void {
+    this._resolvedOptions = [];
+  }
+
+  /**
+   * Recomputes the declared preset list and preset-effective build-option values
+   * against the current manifest, active build context, and preset state;
+   * normalizes and persists the active preset id when it changed; drops, when
+   * the active preset or the preset context changed, exactly those explicit
+   * build-option overrides whose calculated value moved with it;
+   * and refreshes the `Preset` selector and Build Options.
+   * The single entry point for every preset-relevant
+   * trigger: activation, preset-state change, manifest-state change, and
+   * active model/target/component change.
+   */
+  async refresh(context: vscode.ExtensionContext): Promise<void> {
+    const manifest = loadedManifest(_manifestState);
+    if (!manifest) {
+      this._effectiveValues = new Map();
+      this._blocked = false;
+      this._unavailable = false;
+      vscode.commands.executeCommand("setContext", "tbench.presetBlocked", false);
+      _treeModel?.updatePresets(_presetState, undefined, []);
+      return;
+    }
+
+    const savedAxes = normalizeBuildSelection(manifest, readBuildSelection(context));
+    const presetCtx = derivePresetContext(manifest, savedAxes);
+
+    const currentPresetState = _presetState;
+    const presets = currentPresetState?.status === "loaded" ? currentPresetState : undefined;
+
+    // The choice list depends on the two preset files alone: every declared
+    // preset is offered whatever the build context, so `knownIds` only
+    // ever retires an id the files no longer declare.
+    let choices: PresetChoice[] = [];
+    let knownIds: Set<string> | undefined;
+    if (presets) {
+      choices = listPresetChoices(presets.shared, presets.user);
+      knownIds = new Set(choices.map((p) => p.id));
+    }
+
+    const previousPresetId = _buildSelection ? activePresetId(_buildSelection) : undefined;
+    const previousPresetContext = this._presetContext;
+    const normalizedConfig = await restoreBuildSelection(context, manifest, knownIds);
+    const newPresetId = activePresetId(normalizedConfig);
+
+    const presetIdChanged = previousPresetId !== undefined && previousPresetId !== newPresetId;
+    const presetContextChanged =
+      previousPresetContext !== undefined && !samePresetContext(previousPresetContext, presetCtx);
+
     if (presetIdChanged) {
-      logOverridesPrunedForPreset(previousPresetId!, newPresetId, dropped, kept);
-    } else {
-      logOverridesPrunedForContext(previousPresetContext!, presetCtx, dropped, kept);
+      logPresetNormalization(previousPresetId!, newPresetId);
     }
-  }
 
-  _buildSelection = normalizedConfig;
-  _presetContext = presetCtx;
-  _resolvedOptions = computeResolvedOptions(manifest, normalizedConfig, context, _presetEffectiveValues);
+    this._effectiveValues = presets
+      ? computePresetEffectiveValues(manifest.buildOptions, presets.shared, presets.user, newPresetId, presetCtx)
+      : new Map();
 
-  _presetsUnavailable = currentPresetState?.status === "unavailable";
-  _presetBlocked =
-    _presetsUnavailable ||
-    currentPresetState?.status === "invalid" ||
-    _resolvedOptions.some((r) => r.available && r.presetState === "mismatch");
-  vscode.commands.executeCommand("setContext", "tbench.presetBlocked", _presetBlocked);
-
-  _treeModel?.update(manifest, normalizedConfig, _resolvedOptions);
-  _treeModel?.updatePresets(currentPresetState, newPresetId, choices);
-}
-
-/**
- * Updates the `tbench.workflowBlocked` VS Code context key so that
- * view/title menu `enablement` clauses reflect the current state.
- */
-function updateWorkflowBlockedContext(state: ManifestState): void {
-  const manifest = loadedManifest(state);
-  const buildSelectionResolved = !!(
-    manifest && _buildSelection && resolveWorkflowContext(manifest, _buildSelection)
-  );
-  const blocked =
-    evaluateWorkflowPreconditions({
-      manifestStatus: state.status,
-      hasWorkflowBlockingIssues: manifest?.hasWorkflowBlockingIssues ?? false,
-      workspaceSupported: isWorkflowWorkspaceSupported(),
-      buildSelectionResolved,
-    }) !== "no-block";
-  vscode.commands.executeCommand("setContext", "tbench.workflowBlocked", blocked);
-}
-
-/**
- * Updates the four Flash/Upload/map VS Code context keys based on the current
- * manifest state, active configuration, and artifact-resolution results.
- */
-function updateArtifactActionContext(
-  state: ManifestState,
-  buildContext: BuildContext | undefined,
-  artifactsRoot: string
-): void {
-  const manifest = loadedManifest(state);
-  if (!manifest || !buildContext) {
-    vscode.commands.executeCommand("setContext", "tbench.flashApplicable", false);
-    vscode.commands.executeCommand("setContext", "tbench.uploadApplicable", false);
-    for (const kind of ACTION_ARTIFACT_KINDS) {
-      _treeModel?.updateArtifact(kind, null);
-      vscode.commands.executeCommand("setContext", `tbench.${kind}Exists`, false);
+    if (presets && (presetIdChanged || presetContextChanged)) {
+      // An override is authored against a calculated value, and that value is a
+      // function of the (active preset, preset context) pair: fragments carry
+      // `when = { model, project, emulator }` filters, so both the [[defaults]]
+      // layer and the named-preset layer can calculate differently in a
+      // different context. So a change to either half is where overrides have to
+      // be re-examined — but only per option, and against the same preset files:
+      // recalculate what the previous pair produced, and drop exactly the
+      // overrides whose value moved. Those would otherwise silently shadow the
+      // new calculation, with no way to clear it for a checkbox; the rest still
+      // say what the user asked for and are kept. Both change guards
+      // require a known previous half, which is what keeps activation from
+      // pruning the selections it just restored, and an unloaded preset state
+      // never prunes because it can calculate neither side.
+      const previousEffective = computePresetEffectiveValues(
+        manifest.buildOptions,
+        presets.shared,
+        presets.user,
+        previousPresetId ?? newPresetId,
+        previousPresetContext ?? presetCtx
+      );
+      const shifted = shiftedPresetOptionKeys(previousEffective, this._effectiveValues);
+      const dropped = await dropBuildOptionOverrides(context, shifted);
+      const kept = Object.keys(readBuildOptions(context)?.values ?? {});
+      if (presetIdChanged) {
+        logOverridesPrunedForPreset(previousPresetId!, newPresetId, dropped, kept);
+      } else {
+        logOverridesPrunedForContext(previousPresetContext!, presetCtx, dropped, kept);
+      }
     }
-    return;
-  }
 
-  const component = manifest.components.find((c) => c.id === buildContext.componentId);
+    _buildSelection = normalizedConfig;
+    this._presetContext = presetCtx;
+    this._resolvedOptions = computeResolvedOptions(manifest, normalizedConfig, context, this._effectiveValues);
 
-  const flashApplicable = component ? isArtifactActionApplicable("flash", component, buildContext) : false;
-  const uploadApplicable = component ? isArtifactActionApplicable("upload", component, buildContext) : false;
-  const showArtifactRows = flashApplicable || uploadApplicable;
+    this._unavailable = currentPresetState?.status === "unavailable";
+    this._blocked =
+      this._unavailable ||
+      currentPresetState?.status === "invalid" ||
+      this._resolvedOptions.some((r) => r.available && r.presetState === "mismatch");
+    vscode.commands.executeCommand("setContext", "tbench.presetBlocked", this._blocked);
 
-  const inputs = buildResolutionInputs(manifest, buildContext, artifactsRoot);
-
-  vscode.commands.executeCommand("setContext", "tbench.flashApplicable", flashApplicable);
-  vscode.commands.executeCommand("setContext", "tbench.uploadApplicable", uploadApplicable);
-  for (const kind of ACTION_ARTIFACT_KINDS) {
-    const artifact = inputs && showArtifactRows ? resolveArtifact(kind, inputs, buildContext) : undefined;
-    _treeModel?.updateArtifact(kind, artifact ?? null);
-    vscode.commands.executeCommand("setContext", `tbench.${kind}Exists`, artifact?.exists ?? false);
+    _treeModel?.update(manifest, normalizedConfig, this._resolvedOptions);
+    _treeModel?.updatePresets(currentPresetState, newPresetId, choices);
   }
 }
 
-/**
- * Updates the `tbench.startDebuggingEnabled` VS Code context key based on the
- * current manifest state, active configuration, and executable artifact status.
- */
-function updateDebugContext(
-  state: ManifestState,
-  buildContext: BuildContext | undefined,
-  artifactsRoot: string
-): void {
-  const manifest = loadedManifest(state);
-  if (!manifest || !buildContext) {
-    vscode.commands.executeCommand("setContext", "tbench.startDebuggingEnabled", false);
-    _treeModel?.updateArtifact("executable", null);
-    return;
-  }
-
-  const executableArtifact = resolveExecutableArtifact(manifest, buildContext, artifactsRoot);
-  const enabled = executableArtifact.status === "present";
-  vscode.commands.executeCommand("setContext", "tbench.startDebuggingEnabled", enabled);
-  _treeModel?.updateArtifact("executable", executableArtifact);
-}
-
-function updateCompileCommandsTreeArtifact(
-  state: ManifestState,
-  buildContext: BuildContext | undefined,
-  artifactsRoot: string
-): void {
-  const manifest = loadedManifest(state);
-  if (!manifest || !buildContext) {
-    _treeModel?.updateArtifact("compile-commands", null);
-    return;
-  }
-
-  const inputs = buildResolutionInputs(manifest, buildContext, artifactsRoot);
-  const compileCommandsArtifact = inputs ? resolveArtifact("compile-commands", inputs, buildContext) : null;
-  _treeModel?.updateArtifact("compile-commands", compileCommandsArtifact);
-}
-
-function registerUnsupportedWorkspaceCommands(
-  context: vscode.ExtensionContext
-): void {
-  const registerNoop = (command: string): vscode.Disposable =>
-    vscode.commands.registerCommand(command, async () => {
-      return;
-    });
-
-  const registerBlockedWorkflow = (kind: WorkflowKind): vscode.Disposable =>
-    vscode.commands.registerCommand(`tbench.${kind.toLowerCase()}`, async () => {
-      reportWorkflowBlocked(kind, "workspace-unsupported");
-    });
-
-  const registerBlockedArtifact = (
-    command: "tbench.flash" | "tbench.upload",
-    kind: "flash" | "upload"
-  ): vscode.Disposable =>
-    vscode.commands.registerCommand(command, async () => {
-      reportArtifactActionBlocked(kind, "workspace-unsupported");
-    });
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.showLogs", () => {
-      revealLogs();
-    }),
-    vscode.commands.registerCommand("tbench.refreshIntelliSense", async () => {
-      return;
-    }),
-    registerBlockedWorkflow("Build"),
-    registerBlockedWorkflow("Clippy"),
-    registerBlockedWorkflow("Check"),
-    registerBlockedWorkflow("Clean"),
-    registerBlockedArtifact("tbench.flash", "flash"),
-    registerBlockedArtifact("tbench.upload", "upload"),
-    registerNoop("tbench.openMapFile"),
-    vscode.commands.registerCommand("tbench.startDebugging", () => {
-      logDebugLaunchFailure("unsupported-workspace", {
-        detail: "workspace is not supported",
-      });
-      revealLogs();
-      notifyError("Cannot start debugging: workspace is not supported.");
-    }),
-    registerNoop("tbench.selectModel"),
-    registerNoop("tbench.selectTarget"),
-    registerNoop("tbench.selectComponent"),
-    registerNoop("tbench.selectPreset"),
-    registerNoop("tbench.toggleBuildOption"),
-    registerNoop("tbench.selectBuildOptionState")
-  );
-}
+let _presetOptions = new PresetOptionsCoordinator();
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   initLogChannel();
+  _presetOptions = new PresetOptionsCoordinator();
 
   // --- Scope guard: verify no unrelated commands are registered. ---
   assertNoUnauthorizedContributions(context);
 
+  // Recomputes the resolved options and refreshes the tree after a
+  // build-option write, shared by the checkbox and toggle/select handlers.
+  const refreshResolvedOptionsView = (): void => {
+    const state = _manifestState;
+    if (state) {
+      _presetOptions.recomputeResolvedOptions(state, _buildSelection, context);
+      _treeModel?.update(state, _buildSelection, _presetOptions.resolvedOptions);
+    }
+  };
+
   // Always register the tree provider so VS Code never shows
   // "no data provider registered" when the activity bar is clicked.
   _treeModel = new PaneTreeModel();
+  context.subscriptions.push({
+    dispose: () => {
+      _treeModel?.dispose();
+      _treeModel = undefined;
+    },
+  });
   _configurationTreeView = vscode.window.createTreeView("tbench.configuration", {
     treeDataProvider: new PaneTreeProvider(_treeModel, "build-selection"),
     showCollapseAll: false,
@@ -565,11 +471,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const newValue = state === vscode.TreeItemCheckboxState.Checked;
         await writeBuildOption(context, element.optionKey, newValue);
       }
-      const manifestState = _manifestState;
-      if (manifestState) {
-        _resolvedOptions = computeResolvedOptions(manifestState, _buildSelection, context, _presetEffectiveValues);
-        _treeModel?.update(manifestState, _buildSelection, _resolvedOptions);
-      }
+      refreshResolvedOptionsView();
     })
   );
 
@@ -605,11 +507,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }
 
     updateArtifactActionContext(
+      _treeModel,
       _manifestState,
       _buildSelection,
       resolveArtifactsPath(workspaceFolder)
     );
     updateDebugContext(
+      _treeModel,
       _manifestState,
       _buildSelection,
       resolveArtifactsPath(workspaceFolder)
@@ -629,6 +533,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const refreshBuildArtifacts = (trigger: RefreshTrigger): void => {
     if (_manifestState) {
       updateCompileCommandsTreeArtifact(
+        _treeModel,
         _manifestState,
         _buildSelection,
         resolveArtifactsPath(workspaceFolder)
@@ -660,43 +565,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   });
 
-  // --- Excluded-file visibility services: explorer badges and editor overlays. ---
-  _excludedFilesService = new ExcludedFilesService();
-  _excludedFilesRefresher = new ExcludedFilesRefresher(
-    _excludedFilesService,
-    workspaceFolder
-  );
-  _excludedFilesDecorations = new ExcludedFilesDecorationsProvider();
-  _excludedFilesOverlays = new ExcludedFilesOverlays();
-  context.subscriptions.push(
-    { dispose: () => { _excludedFilesService?.dispose(); _excludedFilesService = undefined; } },
-    { dispose: () => { _excludedFilesRefresher?.dispose(); _excludedFilesRefresher = undefined; } },
-    { dispose: () => { _excludedFilesDecorations?.dispose(); _excludedFilesDecorations = undefined; } },
-    { dispose: () => { _excludedFilesOverlays?.dispose(); _excludedFilesOverlays = undefined; } },
-    vscode.window.registerFileDecorationProvider(_excludedFilesDecorations)
-  );
-
-  // Connect snapshot updates → decoration provider so Explorer badges refresh.
-  context.subscriptions.push(
-    _excludedFilesService.onDidUpdateSnapshot((snapshot) => {
-      _excludedFilesDecorations?.handleSnapshot(snapshot);
-      _excludedFilesOverlays?.handleSnapshot(snapshot);
-    })
-  );
-
-  // Re-apply overlays whenever new editors become visible.
-  context.subscriptions.push(
-    vscode.window.onDidChangeVisibleTextEditors(() => {
-      _excludedFilesOverlays?.applyToVisibleEditors();
-    })
-  );
-
-  // Connect IntelliSense payload changes → excluded-file recomputation.
-  context.subscriptions.push(
-    _intelliSenseService.onDidRefreshPayload((payload) => {
-      _excludedFilesRefresher?.handlePayload(payload);
-    })
-  );
+  // --- Excluded-file visibility: explorer badges and editor overlays. ---
+  registerExcludedFilesVisibility(context, workspaceFolder, _intelliSenseService);
 
   // Subscribe to IntelliSense refresh results → update tree view artifact row
   context.subscriptions.push(
@@ -762,18 +632,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const onManifestStateChange = async (state: ManifestState): Promise<void> => {
     _manifestState = state;
     if (state.status === "loaded") {
-      await refreshPresetsAndBuildSelection(context);
+      await _presetOptions.refresh(context);
     } else {
       _buildSelection = undefined;
-      _presetContext = undefined;
-      _resolvedOptions = [];
+      _presetOptions.resetForUnloadedManifest();
       _treeModel?.update(state, undefined, []);
       _treeModel?.updatePresets(_presetState, undefined, []);
     }
     refreshStatusBar();
     handleManifestStateDiagnostics(state);
     logManifestState(state);
-    updateWorkflowBlockedContext(state);
+    updateWorkflowBlockedContext(state, _buildSelection);
 
     // Update IntelliSense service with the new manifest state
     const manifest = loadedManifest(state);
@@ -801,7 +670,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     _presetState = state;
     handlePresetStateDiagnostics(state);
     logPresetState(state);
-    await refreshPresetsAndBuildSelection(context);
+    await _presetOptions.refresh(context);
   };
 
   _presetStateSubscription = _presetService.onDidChangeState(onPresetStateChange);
@@ -925,7 +794,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const state = _manifestState;
         if (!state || state.status !== "loaded") { return; }
         await apply(id, state);
-        await refreshPresetsAndBuildSelection(context);
+        await _presetOptions.refresh(context);
         refreshStatusBar();
         _intelliSenseService?.setBuildContext(_buildSelection);
         refreshArtifactFileWatcher();
@@ -949,7 +818,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand(`tbench.${kind.toLowerCase()}`, async () => {
       if (kind !== "Clean") {
         await _presetService?.reload();
-        await refreshPresetsAndBuildSelection(context);
+        await _presetOptions.refresh(context);
       }
 
       const state = _manifestState;
@@ -961,8 +830,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         hasWorkflowBlockingIssues: manifest?.hasWorkflowBlockingIssues ?? false,
         workspaceSupported: isWorkflowWorkspaceSupported(),
         buildSelectionResolved: !!wfCtx,
-        presetsUnavailable: kind !== "Clean" && _presetsUnavailable,
-        presetsInvalid: kind !== "Clean" && _presetBlocked,
+        presetsUnavailable: kind !== "Clean" && _presetOptions.presetsUnavailable,
+        presetsInvalid: kind !== "Clean" && _presetOptions.presetBlocked,
       });
 
       if (blockReason !== "no-block") {
@@ -975,7 +844,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return;
       }
 
-      const task = createWorkflowTask(kind, wfCtx, workspaceFolder, _resolvedOptions, activePresetId(buildSelection!));
+      const task = createWorkflowTask(kind, wfCtx, workspaceFolder, _presetOptions.resolvedOptions, activePresetId(buildSelection!));
       await executeWorkflowTask(task, kind);
     });
 
@@ -989,17 +858,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Build-option toggle/select commands. ---
   context.subscriptions.push(
     vscode.commands.registerCommand("tbench.toggleBuildOption", async (key: string) => {
-      const resolved = _resolvedOptions.find((r) => r.option.key === key);
+      const resolved = _presetOptions.resolvedOptions.find((r) => r.option.key === key);
       if (!resolved || !resolved.available || resolved.option.kind !== "checkbox") {
         return;
       }
       const newValue = resolved.value !== true;
       await writeBuildOption(context, key, newValue);
-      const state = _manifestState;
-      if (state) {
-        _resolvedOptions = computeResolvedOptions(state, _buildSelection, context, _presetEffectiveValues);
-        _treeModel?.update(state, _buildSelection, _resolvedOptions);
-      }
+      refreshResolvedOptionsView();
     })
   );
 
@@ -1007,7 +872,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand(
       "tbench.selectBuildOptionState",
       async (key: string, stateId: string) => {
-        const resolved = _resolvedOptions.find((r) => r.option.key === key);
+        const resolved = _presetOptions.resolvedOptions.find((r) => r.option.key === key);
         if (!resolved || !resolved.available || resolved.option.kind !== "multistate") {
           return;
         }
@@ -1015,11 +880,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           return;
         }
         await writeBuildOption(context, key, stateId);
-        const state = _manifestState;
-        if (state) {
-          _resolvedOptions = computeResolvedOptions(state, _buildSelection, context, _presetEffectiveValues);
-          _treeModel?.update(state, _buildSelection, _resolvedOptions);
-        }
+        refreshResolvedOptionsView();
       }
     )
   );
@@ -1028,7 +889,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const taskProvider = new BuildTaskProvider({
     getManifestState: () => loadedManifest(_manifestState),
     getBuildContext: () => _buildSelection,
-    getResolvedOptions: () => _resolvedOptions,
+    getResolvedOptions: () => _presetOptions.resolvedOptions,
     getActivePresetId: () => activePresetId(_buildSelection),
     getWorkspaceFolder: () => workspaceFolder,
   });
@@ -1071,7 +932,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _manifestState = undefined;
       _presetState = undefined;
       _buildSelection = undefined;
-      _resolvedOptions = [];
+      _presetOptions.clearResolvedOptions();
       _intelliSenseService?.setManifest(undefined);
       _intelliSenseService?.setBuildContext(undefined);
       _intelliSenseService?.setArtifactsRoot("");
@@ -1111,43 +972,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   _intelliSenseService?.scheduleRefresh("activation");
 }
 
+/**
+ * Every service, watcher, view, and subscription registers its disposal on
+ * `context.subscriptions` during activation — VS Code runs those on
+ * deactivation, so only the two module-owned globals remain to tear down.
+ */
 export function deactivate(): void {
-  _manifestStateSubscription?.dispose();
-  _manifestStateSubscription = undefined;
-  _presetStateSubscription?.dispose();
-  _presetStateSubscription = undefined;
-  _debugConfigProviderRegistration?.dispose();
-  _debugConfigProviderRegistration = undefined;
-  _manifestService?.dispose();
-  _manifestService = undefined;
-  _presetService?.dispose();
-  _presetService = undefined;
-  _treeModel?.dispose();
-  _treeModel = undefined;
-  _configurationTreeView?.dispose();
-  _configurationTreeView = undefined;
-  _buildArtifactsTreeView?.dispose();
-  _buildArtifactsTreeView = undefined;
-  _buildOptionsTreeView?.dispose();
-  _buildOptionsTreeView = undefined;
-  _statusBar?.dispose();
-  _statusBar = undefined;
-  _intelliSenseService?.dispose();
-  _intelliSenseService = undefined;
-  _artifactFileWatcher?.dispose();
-  _artifactFileWatcher = undefined;
-  _excludedFilesService?.dispose();
-  _excludedFilesService = undefined;
-  _excludedFilesRefresher?.dispose();
-  _excludedFilesRefresher = undefined;
-  _excludedFilesDecorations?.dispose();
-  _excludedFilesDecorations = undefined;
-  _excludedFilesOverlays?.dispose();
-  _excludedFilesOverlays = undefined;
   _manifestState = undefined;
   _buildSelection = undefined;
-  _presetContext = undefined;
-  _resolvedOptions = [];
   disposeDiagnostics();
   disposeLogChannel();
 }
