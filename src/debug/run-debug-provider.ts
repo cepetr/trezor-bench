@@ -15,13 +15,15 @@
 import * as vscode from "vscode";
 import { ManifestStateLoaded, findManifestEntries } from "../manifest/manifest-types";
 import {
-  resolveMatchingDebugProfiles,
   materializeDebugConfiguration,
-  MatchingDebugProfileSet,
   TBENCH_DEBUG_TYPE,
   labelForDefaultEntry,
   labelForProfileEntry,
 } from "../commands/debug-launch";
+import {
+  resolveMatchingDebugProfiles,
+  MatchingDebugProfileSet,
+} from "../manifest/debug-profiles";
 
 export { TBENCH_DEBUG_TYPE, labelForDefaultEntry, labelForProfileEntry };
 import { makeContextKey, resolveExecutableArtifact } from "../build/artifact-resolution";

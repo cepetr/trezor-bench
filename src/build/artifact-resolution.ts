@@ -8,7 +8,7 @@ import { BuildContext, ManifestStateLoaded, findManifestEntries } from "../manif
 import {
   DebugProfileResolutionState,
   resolveMatchingDebugProfiles,
-} from "../commands/debug-launch";
+} from "../manifest/debug-profiles";
 
 // ---------------------------------------------------------------------------
 // Artifact resolution inputs
