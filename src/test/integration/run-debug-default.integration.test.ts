@@ -2,7 +2,7 @@
  * Integration tests for the default Run and Debug entry and F5 launch path.
  *
  * Covers (User Story 1):
- *  - TbenchDebugConfigurationProvider.provideDebugConfigurations returns a default
+ *  - RunDebugConfigProvider.provideDebugConfigurations returns a default
  *    entry when the active build context has at least one matching profile and a
  *    valid executable artifact.
  *  - The default entry targets the first matching profile in declaration order.
@@ -21,7 +21,7 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import {
-  TbenchDebugConfigurationProvider,
+  RunDebugConfigProvider,
   TBENCH_DEBUG_TYPE,
   generateDebugConfigurations,
   labelForDefaultEntry,
@@ -201,7 +201,7 @@ suite("generateDebugConfigurations – default entry", () => {
 // Suite: provideDebugConfigurations via provider instance
 // ---------------------------------------------------------------------------
 
-suite("TbenchDebugConfigurationProvider – provideDebugConfigurations", () => {
+suite("RunDebugConfigProvider – provideDebugConfigurations", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -224,7 +224,7 @@ suite("TbenchDebugConfigurationProvider – provideDebugConfigurations", () => {
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -242,7 +242,7 @@ suite("TbenchDebugConfigurationProvider – provideDebugConfigurations", () => {
 
   test("returns empty list when manifest is not loaded", () => {
     const folder = makeWorkspaceFolder(tmpDir);
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => undefined,
       () => makeConfig("T2T1"),
       () => tmpDir,
@@ -260,7 +260,7 @@ suite("TbenchDebugConfigurationProvider – provideDebugConfigurations", () => {
     const manifest = makeExeManifest([profile]);
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => undefined,
       () => tmpDir,
@@ -277,7 +277,7 @@ suite("TbenchDebugConfigurationProvider – provideDebugConfigurations", () => {
 // Suite: resolveDebugConfiguration (launch resolution / F5 path)
 // ---------------------------------------------------------------------------
 
-suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration", () => {
+suite("RunDebugConfigProvider – resolveDebugConfiguration", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -302,7 +302,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration", () => {
     const folder = makeWorkspaceFolder(tmpDir);
     const templatesRoot = debugLaunchValidTemplatesRoot();
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -340,7 +340,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration", () => {
     const folder = makeWorkspaceFolder(tmpDir);
     const templatesRoot = debugLaunchValidTemplatesRoot();
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -375,7 +375,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration", () => {
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -400,7 +400,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration", () => {
 
   test("resolving a non-tbench config returns it unchanged", () => {
     const folder = makeWorkspaceFolder(tmpDir);
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => undefined,
       () => undefined,
       () => tmpDir,
@@ -429,7 +429,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration", () => {
     const currentConfig = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => currentConfig, // current context is T2T1
       () => tmpDir,

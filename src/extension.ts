@@ -105,7 +105,7 @@ import { executeDebugLaunch } from "./commands/debug-launch";
 import { logDebugLaunchFailure } from "./observability/log-channel";
 import { EvalContext } from "./manifest/when-expressions";
 import {
-  TbenchDebugConfigurationProvider,
+  RunDebugConfigProvider,
   TBENCH_DEBUG_TYPE,
 } from "./debug/run-debug-provider";
 
@@ -907,7 +907,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   // --- Run and Debug provider (Run and Debug Integration slice) ---
-  const debugConfigProvider = new TbenchDebugConfigurationProvider(
+  const debugConfigProvider = new RunDebugConfigProvider(
     () => loadedManifest(_manifestState),
     () => _activeConfig,
     () => resolveArtifactsPath(workspaceFolder),

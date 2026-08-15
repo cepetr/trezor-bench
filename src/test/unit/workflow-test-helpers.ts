@@ -477,7 +477,7 @@ export function makeRunDebugMultiProfileState(
 }
 
 /**
- * Proxy config shape produced by TbenchDebugConfigurationProvider.
+ * Proxy config shape produced by RunDebugConfigProvider.
  */
 export interface TbenchProxyConfig {
   type: "tbench";

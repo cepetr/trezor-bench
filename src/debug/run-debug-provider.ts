@@ -1,5 +1,5 @@
 /**
- * Tbench Run and Debug Configuration Provider.
+ * Run and Debug configuration provider.
  *
  * Generates dynamic tbench-owned proxy debug configurations for the active
  * build context and resolves them into real debug configurations at launch time.
@@ -140,7 +140,7 @@ export function generateDebugConfigurations(
  * Registered with TriggerKind.Dynamic so Run and Debug shows generated
  * entries for the active build context.
  */
-export class TbenchDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
+export class RunDebugConfigProvider implements vscode.DebugConfigurationProvider {
   private readonly _getManifest: () => ManifestStateLoaded | undefined;
   private readonly _getActiveConfig: () => ActiveConfig | undefined;
   private readonly _getArtifactsRoot: () => string;

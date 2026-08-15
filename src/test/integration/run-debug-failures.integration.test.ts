@@ -20,7 +20,7 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import {
-  TbenchDebugConfigurationProvider,
+  RunDebugConfigProvider,
   TBENCH_DEBUG_TYPE,
   generateDebugConfigurations,
 } from "../../debug/run-debug-provider";
@@ -77,7 +77,7 @@ function makeCancelToken(): vscode.CancellationToken {
 // Suite: provideDebugConfigurations – blocked/empty availability
 // ---------------------------------------------------------------------------
 
-suite("TbenchDebugConfigurationProvider – provideDebugConfigurations blocked", () => {
+suite("RunDebugConfigProvider – provideDebugConfigurations blocked", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -100,7 +100,7 @@ suite("TbenchDebugConfigurationProvider – provideDebugConfigurations blocked",
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -124,7 +124,7 @@ suite("TbenchDebugConfigurationProvider – provideDebugConfigurations blocked",
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -147,7 +147,7 @@ suite("TbenchDebugConfigurationProvider – provideDebugConfigurations blocked",
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -178,7 +178,7 @@ suite("TbenchDebugConfigurationProvider – provideDebugConfigurations blocked",
 // Suite: resolveDebugConfiguration – failure paths
 // ---------------------------------------------------------------------------
 
-suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration failures", () => {
+suite("RunDebugConfigProvider – resolveDebugConfiguration failures", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -201,7 +201,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration failures",
     const currentConfig = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => currentConfig,
       () => tmpDir,
@@ -233,7 +233,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration failures",
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -266,7 +266,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration failures",
     const folder = makeWorkspaceFolder(tmpDir);
     const failuresTemplatesRoot = path.join(debugLaunchFailuresWorkspaceRoot(), "debug-templates");
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -298,7 +298,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration failures",
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -332,7 +332,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration failures",
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifestNoProfiles,
       () => config,
       () => tmpDir,
@@ -356,7 +356,7 @@ suite("TbenchDebugConfigurationProvider – resolveDebugConfiguration failures",
 
   test("passes through non-tbench configs unchanged", () => {
     const folder = makeWorkspaceFolder(tmpDir);
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => undefined,
       () => undefined,
       () => tmpDir,

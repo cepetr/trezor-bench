@@ -18,7 +18,7 @@ import {
 } from "../unit/workflow-test-helpers";
 import { executeDebugLaunch } from "../../commands/debug-launch";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
-import { TbenchDebugConfigurationProvider, TBENCH_DEBUG_TYPE } from "../../debug/run-debug-provider";
+import { RunDebugConfigProvider, TBENCH_DEBUG_TYPE } from "../../debug/run-debug-provider";
 import { makeContextKey } from "../../intellisense/artifact-resolution";
 
 /** Commands that must never be registered in any current slice. */
@@ -274,7 +274,7 @@ suite("Debug Launch – no launch.json persistence", () => {
     const templatesRoot = debugLaunchValidTemplatesRoot();
     const profile = (manifest.components[0].debug ?? [])[0];
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => artifactsRoot,

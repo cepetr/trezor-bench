@@ -20,7 +20,7 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import {
-  TbenchDebugConfigurationProvider,
+  RunDebugConfigProvider,
   TBENCH_DEBUG_TYPE,
   generateDebugConfigurations,
   labelForProfileEntry,
@@ -237,7 +237,7 @@ suite("generateDebugConfigurations – multi-profile entry set", () => {
 // Suite: Provider multi-profile – provideDebugConfigurations
 // ---------------------------------------------------------------------------
 
-suite("TbenchDebugConfigurationProvider – multi-profile provideDebugConfigurations", () => {
+suite("RunDebugConfigProvider – multi-profile provideDebugConfigurations", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -255,7 +255,7 @@ suite("TbenchDebugConfigurationProvider – multi-profile provideDebugConfigurat
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -274,7 +274,7 @@ suite("TbenchDebugConfigurationProvider – multi-profile provideDebugConfigurat
 // Suite: Provider resolveDebugConfiguration – profile-specific launch
 // ---------------------------------------------------------------------------
 
-suite("TbenchDebugConfigurationProvider – profile-specific resolveDebugConfiguration", () => {
+suite("RunDebugConfigProvider – profile-specific resolveDebugConfiguration", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -295,7 +295,7 @@ suite("TbenchDebugConfigurationProvider – profile-specific resolveDebugConfigu
     const folder = makeWorkspaceFolder(tmpDir);
     const templatesRoot = debugLaunchValidTemplatesRoot();
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -327,7 +327,7 @@ suite("TbenchDebugConfigurationProvider – profile-specific resolveDebugConfigu
     const secondProfile = component.debug![1];
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -358,7 +358,7 @@ suite("TbenchDebugConfigurationProvider – profile-specific resolveDebugConfigu
     const secondProfile = component.debug![1];
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
@@ -387,7 +387,7 @@ suite("TbenchDebugConfigurationProvider – profile-specific resolveDebugConfigu
     const config = makeConfig("T2T1");
     const folder = makeWorkspaceFolder(tmpDir);
 
-    const provider = new TbenchDebugConfigurationProvider(
+    const provider = new RunDebugConfigProvider(
       () => manifest,
       () => config,
       () => tmpDir,
