@@ -12,7 +12,6 @@ import { BuildContext, ManifestStateLoaded, findManifestEntries } from "../manif
 import {
   DebugProfileResolutionState,
   resolveMatchingDebugProfiles,
-  deriveExecutableFileName,
 } from "../commands/debug-launch";
 
 // ---------------------------------------------------------------------------
@@ -58,6 +57,7 @@ export function buildResolutionInputs(
     artifactName: component.artifactName,
     targetId: buildContext.targetId,
     artifactSuffix: target.artifactSuffix ?? "",
+    executableExtension: target.executableExtension ?? "",
   };
 }
 
@@ -66,18 +66,32 @@ export function buildResolutionInputs(
 // ---------------------------------------------------------------------------
 
 /**
- * The file artifacts resolved per build context. The executable artifact is
- * deliberately NOT a kind — it has different inputs (debug profiles) and a
- * richer result type (`ExecutableArtifact`).
+ * The file artifacts resolved per build context. The executable shares the
+ * on-disk file traits (path formula, existence, mtime); its debug layer —
+ * profile gating and the extra `ExecutableArtifact` fields — sits on top in
+ * `resolveExecutableArtifact`.
  */
-export type ArtifactKind = "compile-commands" | "binary" | "map";
+export type ArtifactKind = "compile-commands" | "binary" | "map" | "executable";
 
-/** Canonical on-disk extension per artifact kind. */
-const ARTIFACT_EXTENSIONS: Record<ArtifactKind, string> = {
+/** Canonical on-disk extension per fixed-extension artifact kind. */
+const ARTIFACT_EXTENSIONS: Record<Exclude<ArtifactKind, "executable">, string> = {
   "compile-commands": ".cc.json",
   binary: ".bin",
   map: ".map",
 };
+
+/** The executable's extension is target-defined; the others are fixed. */
+function artifactExtension(kind: ArtifactKind, inputs: ArtifactResolutionInputs): string {
+  return kind === "executable" ? inputs.executableExtension ?? "" : ARTIFACT_EXTENSIONS[kind];
+}
+
+/** The artifact record type each kind resolves to. */
+export interface ArtifactsByKind {
+  readonly "compile-commands": ResolvedArtifact;
+  readonly binary: ResolvedArtifact;
+  readonly map: ResolvedArtifact;
+  readonly executable: ExecutableArtifact;
+}
 
 // ---------------------------------------------------------------------------
 // Path derivation
@@ -110,7 +124,7 @@ export function deriveArtifactPath(
   kind: ArtifactKind,
   inputs: ArtifactResolutionInputs
 ): string | undefined {
-  return deriveArtifactPathWithExtension(inputs, ARTIFACT_EXTENSIONS[kind]);
+  return deriveArtifactPathWithExtension(inputs, artifactExtension(kind, inputs));
 }
 
 // ---------------------------------------------------------------------------
@@ -301,19 +315,13 @@ export function resolveExecutableArtifact(
     };
   }
 
-  // Profile resolved — derive executable path
-  const artifactFolder = model.artifactFolder ?? "";
-  const executableFileName = deriveExecutableFileName(
-    component.artifactName ?? "",
-    target.artifactSuffix ?? "",
-    target.executableExtension ?? ""
-  );
-
-  if (!artifactsRoot || !artifactFolder || !executableFileName) {
+  // Profile resolved — the executable-specific missing-field messages stay
+  // here; the on-disk resolution is the shared file-artifact logic.
+  if (!artifactsRoot || !model.artifactFolder || !component.artifactName) {
     let reason: string;
     if (!artifactsRoot) {
       reason = "[paths].build-artifacts is empty in tbench.toml; cannot resolve the executable artifact.";
-    } else if (!artifactFolder) {
+    } else if (!model.artifactFolder) {
       reason = "The active model does not define artifactFolder in the manifest; cannot resolve the executable artifact.";
     } else {
       reason = "The active component does not define artifactName in the manifest; cannot resolve the executable artifact.";
@@ -330,33 +338,25 @@ export function resolveExecutableArtifact(
     };
   }
 
-  const expectedPath = path.join(artifactsRoot, artifactFolder, executableFileName);
-
-  const exists = checkFileExists(expectedPath);
-  if (exists) {
-    return {
-      contextKey,
-      profileResolutionState: "selected",
-      path: expectedPath,
-      exists: true,
-      modifiedAt: readFileModifiedAt(expectedPath),
-      status: "present",
-      tooltip: formatExecutableArtifactTooltip(expectedPath),
-      matchingProfileCount: matchingSet.profiles.length,
-    };
-  }
+  const base = resolveArtifact(
+    "executable",
+    {
+      artifactsRoot,
+      modelId: buildContext.modelId,
+      artifactFolder: model.artifactFolder,
+      componentId: buildContext.componentId,
+      artifactName: component.artifactName,
+      targetId: buildContext.targetId,
+      artifactSuffix: target.artifactSuffix ?? "",
+      executableExtension: target.executableExtension ?? "",
+    },
+    buildContext
+  );
 
   return {
-    contextKey,
+    ...base,
     profileResolutionState: "selected",
-    path: expectedPath,
-    exists: false,
-    status: "missing",
-    missingReason: `Executable artifact not found at the expected path: ${expectedPath}`,
-    tooltip: formatExecutableArtifactTooltip(
-      expectedPath,
-      `Executable artifact not found at the expected path: ${expectedPath}`
-    ),
+    tooltip: formatExecutableArtifactTooltip(base.path, base.missingReason),
     matchingProfileCount: matchingSet.profiles.length,
   };
 }

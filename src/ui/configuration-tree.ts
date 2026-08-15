@@ -7,7 +7,7 @@ import * as path from "path";
 import { BuildContext, ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
 import { ResolvedOption } from "../build/build-options";
 import { ArtifactStatus, ResolvedArtifact } from "../intellisense/intellisense-types";
-import { ArtifactKind, ExecutableArtifact } from "../intellisense/artifact-resolution";
+import { ArtifactKind, ArtifactsByKind, ExecutableArtifact } from "../intellisense/artifact-resolution";
 import { PresetState } from "../presets/preset-types";
 import { PresetChoice } from "../presets/preset-resolution";
 
@@ -383,12 +383,12 @@ export class ConfigurationTreeModel
   private _presetState: PresetState | undefined;
   private _activePresetId: string | undefined;
   private _presetChoices: ReadonlyArray<PresetChoice> = [];
-  private _artifacts: Record<ArtifactKind, ResolvedArtifact | null> = {
+  private _artifacts: { [K in ArtifactKind]: ArtifactsByKind[K] | null } = {
     "compile-commands": null,
     binary: null,
     map: null,
+    executable: null,
   };
-  private _executableArtifact: ExecutableArtifact | null = null;
 
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<
     vscode.TreeItem | undefined
@@ -452,20 +452,11 @@ export class ConfigurationTreeModel
 
   /**
    * Updates the given kind's artifact state and refreshes the Build
-   * Artifacts section of the tree.
+   * Artifacts section of the tree. The Executable row is always rendered
+   * when its artifact is non-null, regardless of status.
    */
-  updateArtifact(kind: ArtifactKind, artifact: ResolvedArtifact | null | undefined): void {
+  updateArtifact<K extends ArtifactKind>(kind: K, artifact: ArtifactsByKind[K] | null | undefined): void {
     this._artifacts[kind] = artifact ?? null;
-    this._onDidChangeTreeData.fire(undefined);
-    this.firePanes("build-artifacts");
-  }
-
-  /**
-   * Updates the executable artifact state and refreshes the Build Artifacts section.
-   * The Executable row is always rendered when this is non-null, regardless of status.
-   */
-  updateExecutableArtifact(artifact: ExecutableArtifact | null | undefined): void {
-    this._executableArtifact = artifact ?? null;
     this._onDidChangeTreeData.fire(undefined);
     this.firePanes("build-artifacts");
   }
@@ -855,14 +846,14 @@ export class ConfigurationTreeModel
     if (this._artifacts.map) {
       items.push(new MapArtifactItem(this._artifacts.map));
     }
-    if (this._executableArtifact) {
-      items.push(new ExecutableArtifactItem(this._executableArtifact));
+    if (this._artifacts.executable) {
+      items.push(new ExecutableArtifactItem(this._artifacts.executable));
     }
     return items;
   }
 
   private _newestArtifactModifiedAt(): Date | undefined {
-    return [...Object.values(this._artifacts), this._executableArtifact]
+    return Object.values(this._artifacts)
       .reduce<Date | undefined>((newest, current) => {
         const modifiedAt = current?.modifiedAt;
         if (!modifiedAt || (newest && modifiedAt <= newest)) {

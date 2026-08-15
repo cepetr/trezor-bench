@@ -209,7 +209,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
 
   test("Executable row appears immediately after Compile Commands when no Binary/Map rows", () => {
     treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
-    treeModel.updateExecutableArtifact(makeExecArtifact());
+    treeModel.updateArtifact("executable", makeExecArtifact());
 
     const children = getBuildArtifacts();
     const ccIdx = children.findIndex((c) => c instanceof CompileCommandsArtifactItem);
@@ -220,7 +220,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
 
   test("Executable row is always visible regardless of profile resolution state", () => {
     treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
-    treeModel.updateExecutableArtifact(makeExecArtifact({
+    treeModel.updateArtifact("executable", makeExecArtifact({
       status: "missing",
       profileResolutionState: "no-match",
       tooltip: "No debug profile matches.",
@@ -235,8 +235,8 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
 
   test("clearing Executable artifact removes the row from the tree", () => {
     treeModel.updateArtifact("compile-commands", makePresentCompileCommandsArtifact());
-    treeModel.updateExecutableArtifact(makeExecArtifact());
-    treeModel.updateExecutableArtifact(null);
+    treeModel.updateArtifact("executable", makeExecArtifact());
+    treeModel.updateArtifact("executable", null);
 
     const children = getBuildArtifacts();
     assert.ok(

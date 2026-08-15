@@ -94,6 +94,9 @@ suite("Artifact file watcher", () => {
         [
           path.join("artifacts", "model-a-out", "component-a-target-a.bin"),
           path.join("artifacts", "model-a-out", "component-a-target-a.cc.json"),
+          // The expected executable path is watched regardless of debug-profile
+          // availability — its appearance triggers a refresh that recomputes state.
+          path.join("artifacts", "model-a-out", "component-a-target-a.elf"),
           path.join("artifacts", "model-a-out", "component-a-target-a.map"),
         ]
       );

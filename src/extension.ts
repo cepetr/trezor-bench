@@ -429,14 +429,14 @@ function updateDebugContext(
   const manifest = loadedManifest(state);
   if (!manifest || !buildContext) {
     vscode.commands.executeCommand("setContext", "tbench.startDebuggingEnabled", false);
-    _treeModel?.updateExecutableArtifact(null);
+    _treeModel?.updateArtifact("executable", null);
     return;
   }
 
   const executableArtifact = resolveExecutableArtifact(manifest, buildContext, artifactsRoot);
   const enabled = executableArtifact.status === "present";
   vscode.commands.executeCommand("setContext", "tbench.startDebuggingEnabled", enabled);
-  _treeModel?.updateExecutableArtifact(executableArtifact);
+  _treeModel?.updateArtifact("executable", executableArtifact);
 }
 
 function updateCompileCommandsTreeArtifact(

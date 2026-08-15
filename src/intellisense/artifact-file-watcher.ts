@@ -11,7 +11,6 @@ import { BuildContext, ManifestStateLoaded } from "../manifest/manifest-types";
 import {
   buildResolutionInputs,
   deriveArtifactPath,
-  resolveExecutableArtifact,
 } from "./artifact-resolution";
 
 export interface ArtifactWatchScope {
@@ -74,18 +73,8 @@ export function resolveArtifactWatchScopes(
     addWatchPath(scopesByFolder, artifactsRoot, deriveArtifactPath("compile-commands", inputs));
     addWatchPath(scopesByFolder, artifactsRoot, deriveArtifactPath("binary", inputs));
     addWatchPath(scopesByFolder, artifactsRoot, deriveArtifactPath("map", inputs));
+    addWatchPath(scopesByFolder, artifactsRoot, deriveArtifactPath("executable", inputs));
   }
-
-  const executableArtifact = resolveExecutableArtifact(
-    manifest,
-    buildContext,
-    artifactsRoot
-  );
-  addWatchPath(
-    scopesByFolder,
-    artifactsRoot,
-    executableArtifact.path || undefined
-  );
 
   return Array.from(scopesByFolder.entries())
     .sort(([left], [right]) => left.localeCompare(right))

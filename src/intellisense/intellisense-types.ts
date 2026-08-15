@@ -25,6 +25,8 @@ export interface ArtifactResolutionInputs {
   readonly targetId: string;
   /** Selected target's optional artifactSuffix manifest field. Defaults to "". */
   readonly artifactSuffix: string;
+  /** Selected target's optional executableExtension manifest field. Defaults to "". */
+  readonly executableExtension?: string;
 }
 
 // ---------------------------------------------------------------------------
