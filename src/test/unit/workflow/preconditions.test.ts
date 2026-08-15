@@ -224,6 +224,11 @@ suite("blockReasonMessage – user-facing failure text", () => {
       msg.toLowerCase().includes("manifest"),
       "message should mention the manifest file"
     );
+    assert.ok(msg.includes("manifest.yaml"), "message should name manifest.yaml");
+    assert.ok(
+      msg.includes("[paths].manifest in tbench.toml"),
+      "message should identify the manifest path setting"
+    );
   });
 
   test("manifest-invalid message mentions validation errors or availability rules", () => {
@@ -246,9 +251,15 @@ suite("blockReasonMessage – user-facing failure text", () => {
     const msg = blockReasonMessage("presets-unavailable");
     assert.ok(msg.includes("presets.toml"), "message should name the missing file");
     assert.ok(
-      msg.toLowerCase().includes("xtask"),
-      "message should explain the cause: the repository's xtask has no preset support"
+      msg.includes("xtask-presets"),
+      "message should identify the configured presets path"
     );
+    assert.ok(
+      msg.includes("core/embed/xtask"),
+      "message should name the default presets directory"
+    );
+    assert.ok(!msg.includes("cargo workspace"), "message should not refer to cargo workspace");
+    assert.ok(!msg.includes("xtask/tf-tools"), "message should not use the manifest subdirectory");
     assert.notStrictEqual(msg, blockReasonMessage("presets-invalid"));
   });
 

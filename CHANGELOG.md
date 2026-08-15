@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+### Fixed
+- Blocked build messages now identify the correct manifest and preset locations to check.
+
 ## 0.4.2 - 2026-08-13
 ### Changed
 - Build-option tooltip descriptions now appear on a new line below the command-line option or multistate value.

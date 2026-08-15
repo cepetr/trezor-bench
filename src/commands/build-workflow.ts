@@ -187,11 +187,11 @@ export function blockReasonMessage(reason: WorkflowBlockReason): string {
     case "workspace-unsupported":
       return "Build Workflow requires exactly one open workspace folder. Multi-root workspaces and empty windows are not supported.";
     case "manifest-missing":
-      return "Build Workflow is blocked: the manifest file (tbench.yaml) was not found. Create or restore it to enable build actions.";
+      return "Build Workflow is blocked: the manifest file (manifest.yaml) was not found. Check [paths].manifest in tbench.toml, then create or restore the file to enable build actions.";
     case "manifest-invalid":
       return "Build Workflow is blocked: the manifest has validation errors or invalid availability rules. Check the Problems view and fix all errors to enable build actions.";
     case "presets-unavailable":
-      return "Build Workflow is blocked: presets.toml is unavailable under the configured cargo workspace. This repository's xtask does not support build presets — open a revision that provides xtask/tf-tools/presets.toml to enable build actions.";
+      return "Build Workflow is blocked: presets.toml is unavailable under the configured xtask-presets directory (default core/embed/xtask). This repository's xtask does not support build presets; open a revision that provides presets.toml to enable build actions.";
     case "presets-invalid":
       return "Build Workflow is blocked: preset data is invalid or a preset value cannot be represented by a build option. Check the Problems view and fix all errors to enable build actions.";
     case "no-block":
