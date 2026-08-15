@@ -5,7 +5,7 @@
  */
 import * as vscode from "vscode";
 import {
-  CompileCommandsArtifact,
+  ResolvedArtifact,
   IntelliSenseProviderReadiness,
   IntelliSenseRuntimeState,
   ProviderPayload,
@@ -35,7 +35,7 @@ import { errorMessage } from "../util/errors";
 
 /** Called after each completed refresh with the latest artifact and UI state. */
 export type IntelliSenseRefreshCallback = (
-  artifact: CompileCommandsArtifact | null,
+  artifact: ResolvedArtifact | null,
   readiness: IntelliSenseProviderReadiness
 ) => void;
 
@@ -66,7 +66,7 @@ export class IntelliSenseService {
     clearedAt: null,
     providerState: "inactive",
   };
-  private _lastArtifact: CompileCommandsArtifact | null = null;
+  private _lastArtifact: ResolvedArtifact | null = null;
   private _lastReadiness: IntelliSenseProviderReadiness | null = null;
   private _lastPayload: ProviderPayload | null = null;
 
@@ -80,12 +80,12 @@ export class IntelliSenseService {
   private _pendingRefresh: Promise<void> | null = null;
 
   private readonly _onDidRefresh = new vscode.EventEmitter<
-    [CompileCommandsArtifact | null, IntelliSenseProviderReadiness]
+    [ResolvedArtifact | null, IntelliSenseProviderReadiness]
   >();
 
   /** Emitted after each refresh completes with the latest artifact and readiness. */
   readonly onDidRefresh: vscode.Event<
-    [CompileCommandsArtifact | null, IntelliSenseProviderReadiness]
+    [ResolvedArtifact | null, IntelliSenseProviderReadiness]
   > = this._onDidRefresh.event;
 
   private readonly _onDidRefreshPayload = new vscode.EventEmitter<ProviderPayload | null>();
@@ -135,7 +135,7 @@ export class IntelliSenseService {
   // Public state accessors
   // ---------------------------------------------------------------------------
 
-  getLastArtifact(): CompileCommandsArtifact | null {
+  getLastArtifact(): ResolvedArtifact | null {
     return this._lastArtifact;
   }
 

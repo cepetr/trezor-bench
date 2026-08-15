@@ -18,7 +18,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { IntelliSenseService } from "../../../intellisense/intellisense-service";
 import {
-  CompileCommandsArtifact,
+  ResolvedArtifact,
   IntelliSenseProviderReadiness,
   ProviderPayload,
 } from "../../../intellisense/intellisense-types";
@@ -122,7 +122,7 @@ function makeConfig(overrides: Partial<BuildSelection> = {}): BuildSelection {
 }
 
 
-async function awaitRefresh(svc: IntelliSenseService): Promise<[CompileCommandsArtifact | null, IntelliSenseProviderReadiness]> {
+async function awaitRefresh(svc: IntelliSenseService): Promise<[ResolvedArtifact | null, IntelliSenseProviderReadiness]> {
   return new Promise((resolve) => {
     const sub = svc.onDidRefresh((args) => {
       sub.dispose();
@@ -401,7 +401,7 @@ suite("IntelliSenseService — latest-refresh-wins serialization", () => {
     svc.setBuildContext(makeConfig());
     svc.setArtifactsRoot("/nonexistent");
 
-    const events: Array<[CompileCommandsArtifact | null, IntelliSenseProviderReadiness]> = [];
+    const events: Array<[ResolvedArtifact | null, IntelliSenseProviderReadiness]> = [];
     const sub = svc.onDidRefresh((args) => events.push(args));
 
     svc.scheduleRefresh("activation");

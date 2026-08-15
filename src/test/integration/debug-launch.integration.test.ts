@@ -109,7 +109,7 @@ suite("Debug Launch – resolveExecutableArtifact filesystem integration", () =>
     assert.strictEqual(result.status, "valid");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
-    assert.ok(result.expectedPath.endsWith("firmware.elf"));
+    assert.ok(result.path.endsWith("firmware.elf"));
   });
 
   test("appends artifactSuffix and executableExtension for suffixed targets", () => {
@@ -127,7 +127,7 @@ suite("Debug Launch – resolveExecutableArtifact filesystem integration", () =>
     assert.strictEqual(result.status, "valid");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
-    assert.ok(result.expectedPath.endsWith("firmware_emu.elf"));
+    assert.ok(result.path.endsWith("firmware_emu.elf"));
   });
 
   test("returns status: missing when executable file does not exist", () => {

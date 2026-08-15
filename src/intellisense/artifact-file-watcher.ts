@@ -86,7 +86,7 @@ export function resolveArtifactWatchScopes(
   addWatchPath(
     scopesByFolder,
     artifactsRoot,
-    executableArtifact.expectedPath || undefined
+    executableArtifact.path || undefined
   );
 
   return Array.from(scopesByFolder.entries())

@@ -98,9 +98,8 @@ import {
   resolveBinaryArtifact,
   resolveMapArtifact,
   resolveExecutableArtifact,
-  BinaryArtifact,
-  MapArtifact,
 } from "./intellisense/artifact-resolution";
+import { ResolvedArtifact } from "./intellisense/intellisense-types";
 import { executeDebugLaunch } from "./commands/debug-launch";
 import { logDebugLaunchFailure } from "./observability/log-channel";
 import { BuildContext } from "./manifest/manifest-types";
@@ -152,8 +151,8 @@ let _debugConfigProviderRegistration: vscode.Disposable | undefined;
 /** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
 let _lastShownProviderFixState: string = "none";
 /** Binary and Map artifact state for Flash/Upload/openMapFile context keys. */
-let _binaryArtifact: BinaryArtifact | undefined;
-let _mapArtifact: MapArtifact | undefined;
+let _binaryArtifact: ResolvedArtifact | undefined;
+let _mapArtifact: ResolvedArtifact | undefined;
 
 export interface TaskProcessEndLike {
   readonly exitCode?: number;

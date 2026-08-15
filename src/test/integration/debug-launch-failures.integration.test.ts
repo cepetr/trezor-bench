@@ -173,7 +173,7 @@ suite("Debug Launch Failures – missing-executable", () => {
     assert.strictEqual(result.status, "missing");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, false);
-    assert.ok(result.expectedPath.endsWith("firmware.elf"));
+    assert.ok(result.path.endsWith("firmware.elf"));
     assert.ok(result.missingReason, "expected missingReason for missing executable");
   });
 

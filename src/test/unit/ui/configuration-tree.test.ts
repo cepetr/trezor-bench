@@ -19,8 +19,8 @@ import {
   WarningItem,
   formatArtifactAge,
 } from "../../../ui/configuration-tree";
-import { CompileCommandsArtifact } from "../../../intellisense/intellisense-types";
-import { BinaryArtifact, MapArtifact, ExecutableArtifact } from "../../../intellisense/artifact-resolution";
+import { ResolvedArtifact } from "../../../intellisense/intellisense-types";
+import { ExecutableArtifact } from "../../../intellisense/artifact-resolution";
 import { ManifestStateLoaded, BuildOption } from "../../../manifest/manifest-types";
 import { BuildSelection } from "../../../build/build-selection";
 import { PresetFile, PresetState } from "../../../presets/preset-types";
@@ -291,7 +291,7 @@ suite("BuildOptionStateItem selectability", () => {
 // CompileCommandsArtifactItem rendering
 // ---------------------------------------------------------------------------
 
-function makeValidArtifact(overrides: Partial<CompileCommandsArtifact> = {}): CompileCommandsArtifact {
+function makeValidArtifact(overrides: Partial<ResolvedArtifact> = {}): ResolvedArtifact {
   return {
     path: "/build/model-t/compile_commands_core.cc.json",
     exists: true,
@@ -301,7 +301,7 @@ function makeValidArtifact(overrides: Partial<CompileCommandsArtifact> = {}): Co
   };
 }
 
-function makeMissingArtifact(overrides: Partial<CompileCommandsArtifact> = {}): CompileCommandsArtifact {
+function makeMissingArtifact(overrides: Partial<ResolvedArtifact> = {}): ResolvedArtifact {
   return {
     path: "/build/model-t/compile_commands_core.cc.json",
     exists: false,
@@ -396,7 +396,7 @@ suite("CompileCommandsArtifactItem – missing artifact", () => {
   });
 
   test("tooltip falls back to a missing-state message with resolved path when missingReason is absent", () => {
-    const artifact: CompileCommandsArtifact = {
+    const artifact: ResolvedArtifact = {
       path: "/build/model-t/compile_commands_core.cc.json",
       exists: false,
       status: "missing",
@@ -414,7 +414,7 @@ suite("CompileCommandsArtifactItem – missing artifact", () => {
 // BinaryArtifactItem rendering
 // ---------------------------------------------------------------------------
 
-function makeValidBinaryArtifact(overrides: Partial<BinaryArtifact> = {}): BinaryArtifact {
+function makeValidBinaryArtifact(overrides: Partial<ResolvedArtifact> = {}): ResolvedArtifact {
   return {
     path: "/build/model-t/firmware_core.bin",
     exists: true,
@@ -424,7 +424,7 @@ function makeValidBinaryArtifact(overrides: Partial<BinaryArtifact> = {}): Binar
   };
 }
 
-function makeMissingBinaryArtifact(overrides: Partial<BinaryArtifact> = {}): BinaryArtifact {
+function makeMissingBinaryArtifact(overrides: Partial<ResolvedArtifact> = {}): ResolvedArtifact {
   return {
     path: "/build/model-t/firmware_core.bin",
     exists: false,
@@ -505,7 +505,7 @@ suite("BinaryArtifactItem – missing artifact", () => {
   });
 
   test("tooltip falls back to a missing-state message with resolved path when missingReason is absent", () => {
-    const artifact: BinaryArtifact = {
+    const artifact: ResolvedArtifact = {
       path: "/build/model-t/firmware_core.bin",
       exists: false,
       status: "missing",
@@ -523,7 +523,7 @@ suite("BinaryArtifactItem – missing artifact", () => {
 // MapArtifactItem rendering
 // ---------------------------------------------------------------------------
 
-function makeValidMapArtifact(overrides: Partial<MapArtifact> = {}): MapArtifact {
+function makeValidMapArtifact(overrides: Partial<ResolvedArtifact> = {}): ResolvedArtifact {
   return {
     path: "/build/model-t/firmware_core.map",
     exists: true,
@@ -533,7 +533,7 @@ function makeValidMapArtifact(overrides: Partial<MapArtifact> = {}): MapArtifact
   };
 }
 
-function makeMissingMapArtifact(overrides: Partial<MapArtifact> = {}): MapArtifact {
+function makeMissingMapArtifact(overrides: Partial<ResolvedArtifact> = {}): ResolvedArtifact {
   return {
     path: "/build/model-t/firmware_core.map",
     exists: false,
@@ -610,7 +610,7 @@ suite("MapArtifactItem – missing artifact", () => {
   });
 
   test("tooltip falls back to a missing-state message with resolved path when missingReason is absent", () => {
-    const artifact: MapArtifact = {
+    const artifact: ResolvedArtifact = {
       path: "/build/model-t/firmware_core.map",
       exists: false,
       status: "missing",
@@ -745,7 +745,7 @@ function makeValidExecutableArtifact(overrides: Partial<ExecutableArtifact> = {}
   return {
     contextKey: "T2T1::hw::core",
     profileResolutionState: "selected",
-    expectedPath: "/build/model-t/firmware.elf",
+    path: "/build/model-t/firmware.elf",
     exists: true,
     status: "valid",
     tooltip: "/build/model-t/firmware.elf",
@@ -758,7 +758,7 @@ function makeMissingExecutableArtifact(overrides: Partial<ExecutableArtifact> = 
   return {
     contextKey: "T2T1::hw::core",
     profileResolutionState: "selected",
-    expectedPath: "/build/model-t/firmware.elf",
+    path: "/build/model-t/firmware.elf",
     exists: false,
     status: "missing",
     missingReason: "Executable artifact not found at the expected path: /build/model-t/firmware.elf",
@@ -833,7 +833,7 @@ suite("ExecutableArtifactItem – missing status rendering", () => {
     const item = new ExecutableArtifactItem(makeMissingExecutableArtifact({
       profileResolutionState: "no-match",
       tooltip: "No debug profile matches the active build context.",
-      expectedPath: "",
+      path: "",
     }));
     assert.ok(String(item.tooltip).length > 0);
   });
@@ -842,7 +842,7 @@ suite("ExecutableArtifactItem – missing status rendering", () => {
     const item = new ExecutableArtifactItem(makeMissingExecutableArtifact({
       profileResolutionState: "manifest-invalid",
       tooltip: "Debug configuration has validation errors.",
-      expectedPath: "",
+      path: "",
     }));
     assert.ok(String(item.tooltip).length > 0);
   });

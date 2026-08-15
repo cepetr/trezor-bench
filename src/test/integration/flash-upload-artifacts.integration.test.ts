@@ -14,16 +14,13 @@ import {
   BinaryArtifactItem,
   MapArtifactItem,
 } from "../../ui/configuration-tree";
-import {
-  BinaryArtifact,
-  MapArtifact,
-} from "../../intellisense/artifact-resolution";
+import { ResolvedArtifact } from "../../intellisense/intellisense-types";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeValidBinaryArtifact(): BinaryArtifact {
+function makeValidBinaryArtifact(): ResolvedArtifact {
   return {
     path: "/build/model-t/firmware_core.bin",
     exists: true,
@@ -32,7 +29,7 @@ function makeValidBinaryArtifact(): BinaryArtifact {
   };
 }
 
-function makeMissingBinaryArtifact(): BinaryArtifact {
+function makeMissingBinaryArtifact(): ResolvedArtifact {
   return {
     path: "/build/model-t/firmware_core.bin",
     exists: false,
@@ -42,7 +39,7 @@ function makeMissingBinaryArtifact(): BinaryArtifact {
   };
 }
 
-function makeValidMapArtifact(): MapArtifact {
+function makeValidMapArtifact(): ResolvedArtifact {
   return {
     path: "/build/model-t/firmware_core.map",
     exists: true,
@@ -51,7 +48,7 @@ function makeValidMapArtifact(): MapArtifact {
   };
 }
 
-function makeMissingMapArtifact(): MapArtifact {
+function makeMissingMapArtifact(): ResolvedArtifact {
   return {
     path: "/build/model-t/firmware_core.map",
     exists: false,

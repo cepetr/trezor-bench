@@ -522,7 +522,7 @@ suite("resolveExecutableArtifact", () => {
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, false);
     assert.ok(result.missingReason);
-    assert.ok(result.expectedPath.endsWith("firmware.elf"), `expectedPath should end with firmware.elf, got: ${result.expectedPath}`);
+    assert.ok(result.path.endsWith("firmware.elf"), `expectedPath should end with firmware.elf, got: ${result.path}`);
   });
 
   test("returns selected + valid when profile resolves and executable file exists", () => {
@@ -545,7 +545,7 @@ suite("resolveExecutableArtifact", () => {
     assert.strictEqual(result.status, "valid");
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
-    assert.strictEqual(result.expectedPath, __filename);
+    assert.strictEqual(result.path, __filename);
     assert.ok(result.modifiedAt instanceof Date);
   });
 
@@ -587,7 +587,7 @@ suite("resolveExecutableArtifact", () => {
     const manifest = makeDebugLoadedState([]);
     const config = makeBuildSelection();
     const result = resolveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
-    assert.strictEqual(result.expectedPath, "");
+    assert.strictEqual(result.path, "");
   });
 
   test("selected profile with missing executable includes expectedPath in result", () => {
@@ -601,6 +601,6 @@ suite("resolveExecutableArtifact", () => {
     });
     const config = makeBuildSelection();
     const result = resolveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
-    assert.ok(result.expectedPath.includes("specific.elf"), `expectedPath should include specific.elf, got: ${result.expectedPath}`);
+    assert.ok(result.path.includes("specific.elf"), `expectedPath should include specific.elf, got: ${result.path}`);
   });
 });

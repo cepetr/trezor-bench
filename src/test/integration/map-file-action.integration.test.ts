@@ -12,7 +12,7 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import { MapArtifactItem } from "../../ui/configuration-tree";
-import { MapArtifact } from "../../intellisense/artifact-resolution";
+import { ResolvedArtifact } from "../../intellisense/intellisense-types";
 import { openMapFile } from "../../commands/artifact-actions";
 
 // ---------------------------------------------------------------------------
@@ -105,11 +105,11 @@ suite("Map File Action – view/item/context registration", () => {
 // ---------------------------------------------------------------------------
 
 suite("Map File Action – MapArtifactItem row scoping", () => {
-  function makeValidMap(): MapArtifact {
+  function makeValidMap(): ResolvedArtifact {
     return { path: "/build/firmware.map", exists: true, status: "valid", contextKey: "T2T1::hw::core" };
   }
 
-  function makeMissingMap(): MapArtifact {
+  function makeMissingMap(): ResolvedArtifact {
     return {
       path: "/build/firmware.map",
       exists: false,

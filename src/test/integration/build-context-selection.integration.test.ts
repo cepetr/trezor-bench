@@ -265,7 +265,7 @@ import {
   CompileCommandsArtifactItem,
   PlaceholderItem,
 } from "../../ui/configuration-tree";
-import { CompileCommandsArtifact } from "../../intellisense/intellisense-types";
+import { ResolvedArtifact } from "../../intellisense/intellisense-types";
 
 function getBuildArtifactsChildren(
   treeModel: ConfigurationTreeModel
@@ -274,8 +274,8 @@ function getBuildArtifactsChildren(
 }
 
 function makeMissingArtifact(
-  overrides: Partial<CompileCommandsArtifact> = {}
-): CompileCommandsArtifact {
+  overrides: Partial<ResolvedArtifact> = {}
+): ResolvedArtifact {
   return {
     path: "/workspace/build/model-t/compile_commands_core.cc.json",
     exists: false,
@@ -287,8 +287,8 @@ function makeMissingArtifact(
 }
 
 function makeValidArtifact(
-  overrides: Partial<CompileCommandsArtifact> = {}
-): CompileCommandsArtifact {
+  overrides: Partial<ResolvedArtifact> = {}
+): ResolvedArtifact {
   return {
     path: "/workspace/build/model-t/compile_commands_core.cc.json",
     exists: true,

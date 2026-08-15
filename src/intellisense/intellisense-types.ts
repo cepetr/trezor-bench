@@ -28,25 +28,29 @@ export interface ArtifactResolutionInputs {
 }
 
 // ---------------------------------------------------------------------------
-// Active compile-commands artifact
+// Resolved on-disk artifact
 // ---------------------------------------------------------------------------
 
-export type CompileCommandsStatus = "valid" | "missing";
+export type ArtifactStatus = "valid" | "missing";
 
-/** The exact compile database that should back IntelliSense for the active config. */
-export interface CompileCommandsArtifact {
-  /** Resolved absolute compile-commands path. */
+/**
+ * A build artifact resolved for a build context — the shared result shape of
+ * the compile-commands, binary, and map resolvers (which artifact a value
+ * describes is carried by the binding, e.g. `_binaryArtifact`).
+ */
+export interface ResolvedArtifact {
+  /** Resolved absolute artifact path (the expected path when missing). */
   readonly path: string;
   /** Whether the file exists on disk. */
   readonly exists: boolean;
   /** File modification time when the artifact exists and metadata can be read. */
   readonly modifiedAt?: Date;
   /** Artifact presence status. */
-  readonly status: CompileCommandsStatus;
+  readonly status: ArtifactStatus;
   /** User-facing explanation when the artifact is absent. */
   readonly missingReason?: string;
   /**
-   * Stable key combining the active model, target, and component that produced
+   * Stable key combining the model, target, and component that produced
    * this artifact record. Used to detect stale state.
    */
   readonly contextKey: string;

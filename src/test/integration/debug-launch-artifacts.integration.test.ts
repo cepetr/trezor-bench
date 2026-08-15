@@ -47,7 +47,7 @@ function makeConfig(modelId: string, targetId = "hw", componentId = "core"): {
   return { modelId, targetId, componentId, persistedAt: "" };
 }
 
-function makeValidArtifact(): import("../../intellisense/intellisense-types").CompileCommandsArtifact {
+function makeValidArtifact(): import("../../intellisense/intellisense-types").ResolvedArtifact {
   return {
     contextKey: "T2T1::hw::core",
     path: "/build/model-t/compile_commands_core.cc.json",
@@ -198,7 +198,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
     return {
       contextKey: "T2T1::hw::core",
       profileResolutionState: "selected",
-      expectedPath: "/build/model-t/firmware.elf",
+      path: "/build/model-t/firmware.elf",
       exists: true,
       status: "valid",
       tooltip: "/build/model-t/firmware.elf",

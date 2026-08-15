@@ -6,8 +6,8 @@ import * as vscode from "vscode";
 import * as path from "path";
 import { BuildContext, ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
 import { ResolvedOption } from "../build/build-options";
-import { CompileCommandsArtifact } from "../intellisense/intellisense-types";
-import { BinaryArtifact, MapArtifact, ExecutableArtifact } from "../intellisense/artifact-resolution";
+import { ArtifactStatus, ResolvedArtifact } from "../intellisense/intellisense-types";
+import { ExecutableArtifact } from "../intellisense/artifact-resolution";
 import { PresetState } from "../presets/preset-types";
 import { PresetChoice } from "../presets/preset-resolution";
 
@@ -40,7 +40,7 @@ export class PlaceholderItem extends vscode.TreeItem {
 
 function formatArtifactTooltip(
   artifactPath: string,
-  status: "valid" | "missing",
+  status: ArtifactStatus,
   missingReason?: string
 ): string {
   if (status === "valid") {
@@ -106,7 +106,7 @@ class ArtifactStatusItem extends vscode.TreeItem {
   constructor(
     label: string,
     kind: string,
-    status: "valid" | "missing",
+    status: ArtifactStatus,
     tooltip: string
   ) {
     super(label, vscode.TreeItemCollapsibleState.None);
@@ -123,7 +123,7 @@ class ArtifactStatusItem extends vscode.TreeItem {
  * Shows `present` or `missing` as description and the expected path as tooltip.
  */
 export class CompileCommandsArtifactItem extends ArtifactStatusItem {
-  constructor(artifact: CompileCommandsArtifact) {
+  constructor(artifact: ResolvedArtifact) {
     super(
       "Compile Commands",
       "compile-commands",
@@ -138,7 +138,7 @@ export class CompileCommandsArtifactItem extends ArtifactStatusItem {
  * contextValue "artifact-binary" enables Flash/Upload row actions via menus.view/item/context.
  */
 export class BinaryArtifactItem extends ArtifactStatusItem {
-  constructor(artifact: BinaryArtifact) {
+  constructor(artifact: ResolvedArtifact) {
     super(
       "Binary",
       "binary",
@@ -153,7 +153,7 @@ export class BinaryArtifactItem extends ArtifactStatusItem {
  * contextValue "artifact-map" enables the openMapFile row action via menus.view/item/context.
  */
 export class MapArtifactItem extends ArtifactStatusItem {
-  constructor(artifact: MapArtifact) {
+  constructor(artifact: ResolvedArtifact) {
     super(
       "Map File",
       "map",
@@ -383,9 +383,9 @@ export class ConfigurationTreeModel
   private _presetState: PresetState | undefined;
   private _activePresetId: string | undefined;
   private _presetChoices: ReadonlyArray<PresetChoice> = [];
-  private _artifact: CompileCommandsArtifact | null = null;
-  private _binaryArtifact: BinaryArtifact | null = null;
-  private _mapArtifact: MapArtifact | null = null;
+  private _artifact: ResolvedArtifact | null = null;
+  private _binaryArtifact: ResolvedArtifact | null = null;
+  private _mapArtifact: ResolvedArtifact | null = null;
   private _executableArtifact: ExecutableArtifact | null = null;
 
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<
@@ -452,7 +452,7 @@ export class ConfigurationTreeModel
    * Updates the compile-commands artifact state and refreshes
    * the Build Artifacts section of the tree.
    */
-  updateArtifact(artifact: CompileCommandsArtifact | null): void {
+  updateArtifact(artifact: ResolvedArtifact | null): void {
     this._artifact = artifact;
     this._onDidChangeTreeData.fire(undefined);
     this.firePanes("build-artifacts");
@@ -461,7 +461,7 @@ export class ConfigurationTreeModel
   /**
    * Updates the binary artifact state and refreshes the Build Artifacts section.
    */
-  updateBinaryArtifact(artifact: BinaryArtifact | null | undefined, _workspaceFolder?: vscode.WorkspaceFolder): void {
+  updateBinaryArtifact(artifact: ResolvedArtifact | null | undefined, _workspaceFolder?: vscode.WorkspaceFolder): void {
     this._binaryArtifact = artifact ?? null;
     this._onDidChangeTreeData.fire(undefined);
     this.firePanes("build-artifacts");
@@ -470,7 +470,7 @@ export class ConfigurationTreeModel
   /**
    * Updates the map artifact state and refreshes the Build Artifacts section.
    */
-  updateMapArtifact(artifact: MapArtifact | null | undefined, _workspaceFolder?: vscode.WorkspaceFolder): void {
+  updateMapArtifact(artifact: ResolvedArtifact | null | undefined, _workspaceFolder?: vscode.WorkspaceFolder): void {
     this._mapArtifact = artifact ?? null;
     this._onDidChangeTreeData.fire(undefined);
     this.firePanes("build-artifacts");

@@ -166,8 +166,8 @@ suite("QS2 – First-match-wins selection among multiple matching profiles", () 
 
     assert.strictEqual(result.profileResolutionState, "selected");
     assert.ok(
-      result.expectedPath.includes("firmware.elf"),
-      `expected firmware.elf in expectedPath, got: ${result.expectedPath}`
+      result.path.includes("firmware.elf"),
+      `expected firmware.elf in expectedPath, got: ${result.path}`
     );
   });
 });

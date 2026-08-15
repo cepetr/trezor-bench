@@ -6,7 +6,7 @@ import * as path from "path";
 import * as fs from "fs";
 import {
   ArtifactResolutionInputs,
-  CompileCommandsArtifact,
+  ResolvedArtifact,
 } from "./intellisense-types";
 import { BuildContext, ManifestStateLoaded, findManifestEntries } from "../manifest/manifest-types";
 import {
@@ -106,27 +106,6 @@ export function deriveMapArtifactPath(inputs: ArtifactResolutionInputs): string 
 // Binary / Map artifact status resolution
 // ---------------------------------------------------------------------------
 
-export type BinaryArtifactStatus = "valid" | "missing";
-export type MapArtifactStatus = "valid" | "missing";
-
-export interface BinaryArtifact {
-  readonly path: string;
-  readonly exists: boolean;
-  readonly modifiedAt?: Date;
-  readonly status: BinaryArtifactStatus;
-  readonly missingReason?: string;
-  readonly contextKey: string;
-}
-
-export interface MapArtifact {
-  readonly path: string;
-  readonly exists: boolean;
-  readonly modifiedAt?: Date;
-  readonly status: MapArtifactStatus;
-  readonly missingReason?: string;
-  readonly contextKey: string;
-}
-
 function checkFileExists(filePath: string): boolean {
   try {
     return fs.existsSync(filePath);
@@ -200,7 +179,7 @@ function resolveFileArtifact(
 export function resolveBinaryArtifact(
   inputs: ArtifactResolutionInputs,
   buildContext: BuildContext
-): BinaryArtifact {
+): ResolvedArtifact {
   return resolveFileArtifact(inputs, buildContext, ".bin", "binary");
 }
 
@@ -211,7 +190,7 @@ export function resolveBinaryArtifact(
 export function resolveMapArtifact(
   inputs: ArtifactResolutionInputs,
   buildContext: BuildContext
-): MapArtifact {
+): ResolvedArtifact {
   return resolveFileArtifact(inputs, buildContext, ".map", "map");
 }
 
@@ -230,7 +209,7 @@ export function resolveMapArtifact(
 export function resolveCompileCommandsArtifact(
   inputs: ArtifactResolutionInputs,
   buildContext: BuildContext
-): CompileCommandsArtifact {
+): ResolvedArtifact {
   return resolveFileArtifact(inputs, buildContext, ".cc.json", "compile-commands");
 }
 
@@ -256,17 +235,9 @@ function buildMissingReason(inputs: ArtifactResolutionInputs, label: string): st
 // Executable artifact state resolution
 // ---------------------------------------------------------------------------
 
-export type ExecutableArtifactStatus = "valid" | "missing";
-
 /** User-visible executable artifact state for the active build context. */
-export interface ExecutableArtifact {
-  readonly contextKey: string;
+export interface ExecutableArtifact extends ResolvedArtifact {
   readonly profileResolutionState: DebugProfileResolutionState | "manifest-invalid";
-  readonly expectedPath: string;
-  readonly exists: boolean;
-  readonly modifiedAt?: Date;
-  readonly status: ExecutableArtifactStatus;
-  readonly missingReason?: string;
   readonly tooltip: string;
   /** Number of profiles in the matching debug profile set for the active build context. */
   readonly matchingProfileCount: number;
@@ -311,7 +282,7 @@ export function resolveExecutableArtifact(
     return {
       contextKey,
       profileResolutionState: "manifest-invalid",
-      expectedPath: "",
+      path: "",
       exists: false,
       status: "missing",
       missingReason: "The manifest has debug blocking issues; cannot resolve an executable.",
@@ -332,7 +303,7 @@ export function resolveExecutableArtifact(
     return {
       contextKey,
       profileResolutionState: "no-match",
-      expectedPath: "",
+      path: "",
       exists: false,
       status: "missing",
       missingReason: reason,
@@ -348,7 +319,7 @@ export function resolveExecutableArtifact(
     return {
       contextKey,
       profileResolutionState: "no-match",
-      expectedPath: "",
+      path: "",
       exists: false,
       status: "missing",
       missingReason: "No debug profile matches the active build context.",
@@ -380,7 +351,7 @@ export function resolveExecutableArtifact(
     return {
       contextKey,
       profileResolutionState: "selected",
-      expectedPath: "",
+      path: "",
       exists: false,
       status: "missing",
       missingReason: reason,
@@ -396,7 +367,7 @@ export function resolveExecutableArtifact(
     return {
       contextKey,
       profileResolutionState: "selected",
-      expectedPath,
+      path: expectedPath,
       exists: true,
       modifiedAt: readFileModifiedAt(expectedPath),
       status: "valid",
@@ -408,7 +379,7 @@ export function resolveExecutableArtifact(
   return {
     contextKey,
     profileResolutionState: "selected",
-    expectedPath,
+    path: expectedPath,
     exists: false,
     status: "missing",
     missingReason: `Executable artifact not found at the expected path: ${expectedPath}`,
