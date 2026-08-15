@@ -4,8 +4,8 @@
  */
 import * as vscode from "vscode";
 import {
-  resolveConfigurationVariablesDeep,
-} from "./configuration-variables";
+  resolveSettingsVariablesDeep,
+} from "./settings-variables";
 import { getRepositoryConfig } from "./repository-config";
 
 /**
@@ -56,7 +56,7 @@ export function readTaskExtraEnv(
     return {};
   }
 
-  const resolved = resolveConfigurationVariablesDeep(
+  const resolved = resolveSettingsVariablesDeep(
     raw as Record<string, unknown>,
     workspaceFolder
   ) as Record<string, unknown>;
@@ -122,11 +122,11 @@ export function readExcludedFilesSettings(
   return {
     grayInTree: cfg.get<boolean>("excludedFiles.grayInTree") ?? true,
     showEditorOverlay: cfg.get<boolean>("excludedFiles.showEditorOverlay") ?? true,
-    fileNamePatterns: resolveConfigurationVariablesDeep(
+    fileNamePatterns: resolveSettingsVariablesDeep(
       cfg.get<string[]>("excludedFiles.fileNamePatterns") ?? ["*.c"],
       workspaceFolder
     ),
-    folderGlobs: resolveConfigurationVariablesDeep(
+    folderGlobs: resolveSettingsVariablesDeep(
       cfg.get<string[]>("excludedFiles.folderGlobs") ?? ["core/embed/**", "core/vendor/**"],
       workspaceFolder
     ),

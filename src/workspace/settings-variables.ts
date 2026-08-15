@@ -1,6 +1,6 @@
 /**
  * Resolves the supported subset of VS Code `${variable}` references in
- * configuration values.
+ * settings values.
  */
 import * as os from "os";
 import * as path from "path";
@@ -10,7 +10,7 @@ import * as vscode from "vscode";
 const VARIABLE_RE = /\$\{([^}:]+)(?::([^}]*))?\}/g;
 
 /**
- * Resolves VS Code variable references in a configuration string.
+ * Resolves VS Code variable references in a settings string.
  *
  * VS Code does not expand variables returned by `WorkspaceConfiguration.get()`.
  * This helper implements the subset used by tbench settings:
@@ -19,7 +19,7 @@ const VARIABLE_RE = /\$\{([^}:]+)(?::([^}]*))?\}/g;
  * Unrecognized or context-dependent variables are left unchanged. Replacement
  * is single-pass; substituted values are not re-expanded.
  */
-export function resolveConfigurationVariables(
+export function resolveSettingsVariables(
   value: string,
   workspaceFolder: vscode.WorkspaceFolder
 ): string {
@@ -32,21 +32,21 @@ export function resolveConfigurationVariables(
 /**
  * Recursively resolves variable references in string fields of arrays and objects.
  */
-export function resolveConfigurationVariablesDeep<T>(
+export function resolveSettingsVariablesDeep<T>(
   value: T,
   workspaceFolder: vscode.WorkspaceFolder
 ): T {
   if (typeof value === "string") {
-    return resolveConfigurationVariables(value, workspaceFolder) as T;
+    return resolveSettingsVariables(value, workspaceFolder) as T;
   }
   if (Array.isArray(value)) {
-    return value.map((item) => resolveConfigurationVariablesDeep(item, workspaceFolder)) as T;
+    return value.map((item) => resolveSettingsVariablesDeep(item, workspaceFolder)) as T;
   }
   if (value !== null && typeof value === "object") {
     const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
     for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
-      const resolvedKey = resolveConfigurationVariables(key, workspaceFolder);
-      result[resolvedKey] = resolveConfigurationVariablesDeep(nested, workspaceFolder);
+      const resolvedKey = resolveSettingsVariables(key, workspaceFolder);
+      result[resolvedKey] = resolveSettingsVariablesDeep(nested, workspaceFolder);
     }
     return result as T;
   }

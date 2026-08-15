@@ -1,9 +1,9 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import {
-  resolveConfigurationVariables,
-  resolveConfigurationVariablesDeep,
-} from "../../../workspace/configuration-variables";
+  resolveSettingsVariables,
+  resolveSettingsVariablesDeep,
+} from "../../../workspace/settings-variables";
 import {
   readTaskExtraEnv,
 } from "../../../workspace/settings";
@@ -14,19 +14,19 @@ const MOCK_WORKSPACE_FOLDER = {
   index: 0,
 } as vscode.WorkspaceFolder;
 
-suite("resolveConfigurationVariables", () => {
+suite("resolveSettingsVariables", () => {
   test("expands workspaceFolder", () => {
-    const value = resolveConfigurationVariables("${workspaceFolder}/core/embed", MOCK_WORKSPACE_FOLDER);
+    const value = resolveSettingsVariables("${workspaceFolder}/core/embed", MOCK_WORKSPACE_FOLDER);
     assert.strictEqual(value, "/workspace/core/embed");
   });
 
   test("expands deprecated workspaceRoot alias", () => {
-    const value = resolveConfigurationVariables("${workspaceRoot}/artifacts", MOCK_WORKSPACE_FOLDER);
+    const value = resolveSettingsVariables("${workspaceRoot}/artifacts", MOCK_WORKSPACE_FOLDER);
     assert.strictEqual(value, "/workspace/artifacts");
   });
 
   test("expands workspaceFolderBasename", () => {
-    const value = resolveConfigurationVariables("${workspaceFolderBasename}-build", MOCK_WORKSPACE_FOLDER);
+    const value = resolveSettingsVariables("${workspaceFolderBasename}-build", MOCK_WORKSPACE_FOLDER);
     assert.strictEqual(value, "workspace-build");
   });
 
@@ -34,7 +34,7 @@ suite("resolveConfigurationVariables", () => {
     const original = process.env.TEST_TF_TOOLS_VAR;
     process.env.TEST_TF_TOOLS_VAR = "from-env";
     try {
-      const value = resolveConfigurationVariables("prefix-${env:TEST_TF_TOOLS_VAR}", MOCK_WORKSPACE_FOLDER);
+      const value = resolveSettingsVariables("prefix-${env:TEST_TF_TOOLS_VAR}", MOCK_WORKSPACE_FOLDER);
       assert.strictEqual(value, "prefix-from-env");
     } finally {
       if (original === undefined) {
@@ -46,18 +46,18 @@ suite("resolveConfigurationVariables", () => {
   });
 
   test("expands userHome", () => {
-    const value = resolveConfigurationVariables("${userHome}/.cache", MOCK_WORKSPACE_FOLDER);
+    const value = resolveSettingsVariables("${userHome}/.cache", MOCK_WORKSPACE_FOLDER);
     assert.ok(value.endsWith("/.cache"));
     assert.notStrictEqual(value, "${userHome}/.cache");
   });
 
   test("leaves unknown variables unchanged", () => {
-    const value = resolveConfigurationVariables("${command:pickFolder}/build", MOCK_WORKSPACE_FOLDER);
+    const value = resolveSettingsVariables("${command:pickFolder}/build", MOCK_WORKSPACE_FOLDER);
     assert.strictEqual(value, "${command:pickFolder}/build");
   });
 
   test("leaves context-dependent and unsupported variables unchanged", () => {
-    const value = resolveConfigurationVariables(
+    const value = resolveSettingsVariables(
       "${file}:${selectedText}:${lineNumber}:${execPath}:${pathSeparator}",
       MOCK_WORKSPACE_FOLDER
     );
@@ -65,15 +65,15 @@ suite("resolveConfigurationVariables", () => {
   });
 
   test("does not re-expand substituted values", () => {
-    const value = resolveConfigurationVariables("${workspaceFolder}", MOCK_WORKSPACE_FOLDER);
+    const value = resolveSettingsVariables("${workspaceFolder}", MOCK_WORKSPACE_FOLDER);
     assert.strictEqual(value, "/workspace");
-    assert.doesNotThrow(() => resolveConfigurationVariables(value, MOCK_WORKSPACE_FOLDER));
+    assert.doesNotThrow(() => resolveSettingsVariables(value, MOCK_WORKSPACE_FOLDER));
   });
 });
 
-suite("resolveConfigurationVariablesDeep", () => {
+suite("resolveSettingsVariablesDeep", () => {
   test("expands strings inside objects and arrays", () => {
-    const value = resolveConfigurationVariablesDeep(
+    const value = resolveSettingsVariablesDeep(
       {
         PATH: "${workspaceFolder}/.venv/bin:${env:PATH}",
         nested: ["${workspaceFolder}/a"],
