@@ -5,6 +5,8 @@ import * as path from "path";
 import { PresetFile, PresetSource, PresetState } from "./preset-types";
 import { parsePresetFile } from "./parse-presets";
 import { isFileNotFound } from "../util/errors";
+import { Debouncer } from "../util/debouncer";
+import { watchFile } from "../util/file-watch";
 
 const DEBOUNCE_MS = 300;
 const POLL_INTERVAL_MS = 1_000;
@@ -50,9 +52,13 @@ async function loadPresetFile(uri: vscode.Uri, source: PresetSource): Promise<Pr
 export class PresetService implements vscode.Disposable {
   private _state: PresetState | undefined;
   private readonly _onDidChangeState = new vscode.EventEmitter<PresetState>();
-  private _sharedWatcher: vscode.FileSystemWatcher | undefined;
-  private _userWatcher: vscode.FileSystemWatcher | undefined;
-  private _debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  private _sharedWatcher: vscode.Disposable | undefined;
+  private _userWatcher: vscode.Disposable | undefined;
+  private readonly _debouncer = new Debouncer(DEBOUNCE_MS, () => {
+    this._load().catch(() => {
+      // errors are captured inside _load and translated to invalid state
+    });
+  });
   private _poller: ReturnType<typeof setInterval> | undefined;
   private _fileStates = new Map<string, string>();
   private readonly _disposables: vscode.Disposable[] = [];
@@ -87,9 +93,7 @@ export class PresetService implements vscode.Disposable {
   }
 
   dispose(): void {
-    if (this._debounceTimer !== undefined) {
-      clearTimeout(this._debounceTimer);
-    }
+    this._debouncer.dispose();
     this._stopPolling();
     this._sharedWatcher?.dispose();
     this._userWatcher?.dispose();
@@ -155,7 +159,7 @@ export class PresetService implements vscode.Disposable {
     if (!changed) {
       return;
     }
-    this._scheduleReload();
+    this._debouncer.schedule();
   }
 
   private _captureFileStates(): Map<string, string> {
@@ -182,7 +186,7 @@ export class PresetService implements vscode.Disposable {
     this._userWatcher = this._watch(this.userUri);
   }
 
-  private _watch(uri: vscode.Uri): vscode.FileSystemWatcher {
+  private _watch(uri: vscode.Uri): vscode.Disposable {
     // Watch the containing directory with a wildcard rather than the exact
     // filename: for a path outside any open workspace folder, VS Code
     // resolves a literal (non-glob) RelativePattern to watching that exact
@@ -195,30 +199,13 @@ export class PresetService implements vscode.Disposable {
     );
     const targetFsPath = uri.fsPath;
 
-    const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+    const watcher = watchFile(pattern, (changedUri) => {
+      if (changedUri.fsPath === targetFsPath) {
+        this._debouncer.schedule();
+      }
+    });
     this._disposables.push(watcher);
 
-    const reload = (changedUri: vscode.Uri) => {
-      if (changedUri.fsPath === targetFsPath) {
-        this._scheduleReload();
-      }
-    };
-    this._disposables.push(watcher.onDidCreate(reload));
-    this._disposables.push(watcher.onDidChange(reload));
-    this._disposables.push(watcher.onDidDelete(reload));
-
     return watcher;
-  }
-
-  private _scheduleReload(): void {
-    if (this._debounceTimer !== undefined) {
-      clearTimeout(this._debounceTimer);
-    }
-    this._debounceTimer = setTimeout(() => {
-      this._debounceTimer = undefined;
-      this._load().catch(() => {
-        // errors are captured inside _load and translated to invalid state
-      });
-    }, DEBOUNCE_MS);
   }
 }

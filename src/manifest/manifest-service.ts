@@ -5,6 +5,8 @@ import { ManifestState, ManifestStatus } from "./manifest-types";
 import { validateManifest } from "./validate-manifest";
 import { notifyWarning, notifyError } from "../observability/log-channel";
 import { isFileNotFound } from "../util/errors";
+import { Debouncer } from "../util/debouncer";
+import { watchFile } from "../util/file-watch";
 
 const DEBOUNCE_MS = 300;
 
@@ -14,8 +16,12 @@ export class ManifestService implements vscode.Disposable {
   private _lastNotifiedFailureStatus: ManifestStatus | undefined;
   private readonly _onDidChangeState =
     new vscode.EventEmitter<ManifestState>();
-  private _watcher: vscode.FileSystemWatcher | undefined;
-  private _debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  private _watcher: vscode.Disposable | undefined;
+  private readonly _debouncer = new Debouncer(DEBOUNCE_MS, () => {
+    this._load().catch(() => {
+      // errors are captured inside _load and translated to invalid state
+    });
+  });
   private readonly _disposables: vscode.Disposable[] = [];
 
   /** Fires whenever the manifest state changes. */
@@ -48,9 +54,7 @@ export class ManifestService implements vscode.Disposable {
   }
 
   dispose(): void {
-    if (this._debounceTimer !== undefined) {
-      clearTimeout(this._debounceTimer);
-    }
+    this._debouncer.dispose();
     this._watcher?.dispose();
     this._onDidChangeState.dispose();
     for (const d of this._disposables) {
@@ -156,24 +160,7 @@ export class ManifestService implements vscode.Disposable {
       path.basename(this.manifestUri.fsPath)
     );
 
-    this._watcher = vscode.workspace.createFileSystemWatcher(pattern);
+    this._watcher = watchFile(pattern, () => this._debouncer.schedule());
     this._disposables.push(this._watcher);
-
-    const reload = () => this._scheduleReload();
-    this._disposables.push(this._watcher.onDidCreate(reload));
-    this._disposables.push(this._watcher.onDidChange(reload));
-    this._disposables.push(this._watcher.onDidDelete(reload));
-  }
-
-  private _scheduleReload(): void {
-    if (this._debounceTimer !== undefined) {
-      clearTimeout(this._debounceTimer);
-    }
-    this._debounceTimer = setTimeout(() => {
-      this._debounceTimer = undefined;
-      this._load().catch(() => {
-        // errors are captured inside _load and translated to invalid state
-      });
-    }, DEBOUNCE_MS);
   }
 }

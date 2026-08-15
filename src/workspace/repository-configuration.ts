@@ -4,6 +4,7 @@ import * as fsNative from "fs";
 import * as path from "path";
 import { parse as parseToml, TomlError } from "smol-toml";
 import { errorMessage, isFileNotFound } from "../util/errors";
+import { Debouncer } from "../util/debouncer";
 
 export const REPOSITORY_CONFIGURATION_FILE = "tbench.toml";
 
@@ -235,7 +236,9 @@ export class RepositoryConfigurationService implements vscode.Disposable {
   private readonly onDidChangeStateEmitter = new vscode.EventEmitter<RepositoryConfigurationState>();
   private readonly watcher: fsNative.FSWatcher;
   private readonly configurationPath: string;
-  private debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  private readonly debouncer = new Debouncer(100, () => {
+    void this.reload();
+  });
   private currentState: RepositoryConfigurationState | undefined;
 
   readonly onDidChangeState = this.onDidChangeStateEmitter.event;
@@ -244,11 +247,11 @@ export class RepositoryConfigurationService implements vscode.Disposable {
     this.configurationPath = path.join(workspaceFolder.uri.fsPath, REPOSITORY_CONFIGURATION_FILE);
     this.watcher = fsNative.watch(workspaceFolder.uri.fsPath, (_event, fileName) => {
       if (fileName?.toString() === REPOSITORY_CONFIGURATION_FILE) {
-        this.scheduleReload();
+        this.debouncer.schedule();
       }
     });
     fsNative.watchFile(this.configurationPath, { interval: 100, persistent: false }, () => {
-      this.scheduleReload();
+      this.debouncer.schedule();
     });
   }
 
@@ -261,23 +264,10 @@ export class RepositoryConfigurationService implements vscode.Disposable {
   }
 
   dispose(): void {
-    if (this.debounceTimer !== undefined) {
-      clearTimeout(this.debounceTimer);
-      this.debounceTimer = undefined;
-    }
+    this.debouncer.dispose();
     this.watcher.close();
     fsNative.unwatchFile(this.configurationPath);
     this.onDidChangeStateEmitter.dispose();
-  }
-
-  private scheduleReload(): void {
-    if (this.debounceTimer !== undefined) {
-      clearTimeout(this.debounceTimer);
-    }
-    this.debounceTimer = setTimeout(() => {
-      this.debounceTimer = undefined;
-      void this.reload();
-    }, 100);
   }
 
   private async reload(): Promise<RepositoryConfigurationState> {
