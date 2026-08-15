@@ -70,60 +70,40 @@ export function buildResolutionInputs(
 // ---------------------------------------------------------------------------
 
 /**
- * Computes the expected compile-commands artifact path from the given inputs.
+ * Computes the expected artifact path for the given extension.
  *
- * Formula: `<artifactsRoot>/<artifactFolder>/<artifactName><artifactSuffix>.cc.json`
+ * Formula: `<artifactsRoot>/<artifactFolder>/<artifactName><artifactSuffix><extension>`
  *
  * Returns `undefined` when any of `artifactsRoot`, `artifactFolder`, or
  * `artifactName` is absent/empty — resolution requires all three.
  */
+function deriveArtifactPathWithExtension(
+  inputs: ArtifactResolutionInputs,
+  extension: string
+): string | undefined {
+  if (!inputs.artifactsRoot || !inputs.artifactFolder || !inputs.artifactName) {
+    return undefined;
+  }
+  return path.join(
+    inputs.artifactsRoot,
+    inputs.artifactFolder,
+    `${inputs.artifactName}${inputs.artifactSuffix}${extension}`
+  );
+}
+
+/** Expected compile-commands artifact path (`.cc.json`), or `undefined` when underivable. */
 export function deriveArtifactPath(inputs: ArtifactResolutionInputs): string | undefined {
-  if (!inputs.artifactsRoot || !inputs.artifactFolder || !inputs.artifactName) {
-    return undefined;
-  }
-  return path.join(
-    inputs.artifactsRoot,
-    inputs.artifactFolder,
-    `${inputs.artifactName}${inputs.artifactSuffix}.cc.json`
-  );
+  return deriveArtifactPathWithExtension(inputs, ".cc.json");
 }
 
-/**
- * Computes the expected binary artifact path from the given inputs.
- *
- * Formula: `<artifactsRoot>/<artifactFolder>/<artifactName><artifactSuffix>.bin`
- *
- * Returns `undefined` when any of `artifactsRoot`, `artifactFolder`, or
- * `artifactName` is absent/empty.
- */
+/** Expected binary artifact path (`.bin`), or `undefined` when underivable. */
 export function deriveBinaryArtifactPath(inputs: ArtifactResolutionInputs): string | undefined {
-  if (!inputs.artifactsRoot || !inputs.artifactFolder || !inputs.artifactName) {
-    return undefined;
-  }
-  return path.join(
-    inputs.artifactsRoot,
-    inputs.artifactFolder,
-    `${inputs.artifactName}${inputs.artifactSuffix}.bin`
-  );
+  return deriveArtifactPathWithExtension(inputs, ".bin");
 }
 
-/**
- * Computes the expected map artifact path from the given inputs.
- *
- * Formula: `<artifactsRoot>/<artifactFolder>/<artifactName><artifactSuffix>.map`
- *
- * Returns `undefined` when any of `artifactsRoot`, `artifactFolder`, or
- * `artifactName` is absent/empty.
- */
+/** Expected map artifact path (`.map`), or `undefined` when underivable. */
 export function deriveMapArtifactPath(inputs: ArtifactResolutionInputs): string | undefined {
-  if (!inputs.artifactsRoot || !inputs.artifactFolder || !inputs.artifactName) {
-    return undefined;
-  }
-  return path.join(
-    inputs.artifactsRoot,
-    inputs.artifactFolder,
-    `${inputs.artifactName}${inputs.artifactSuffix}.map`
-  );
+  return deriveArtifactPathWithExtension(inputs, ".map");
 }
 
 // ---------------------------------------------------------------------------
@@ -168,6 +148,56 @@ function readFileModifiedAt(filePath: string): Date | undefined {
 }
 
 /**
+ * Resolves one on-disk artifact's status for the given inputs and extension.
+ *
+ * - Returns `status: "valid"` only when the exact expected file exists.
+ * - Returns `status: "missing"` in all other cases: when the path cannot be
+ *   derived (missing fields) or when the file does not exist on disk.
+ * - Does not fall back to any other artifact path.
+ *
+ * `label` names the artifact kind in missing-reason messages
+ * (e.g. "binary" -> "Binary artifact not found ...").
+ */
+function resolveFileArtifact(
+  inputs: ArtifactResolutionInputs,
+  config: ActiveConfig,
+  extension: string,
+  label: string
+) {
+  const contextKey = makeContextKey(config);
+  const artifactPath = deriveArtifactPathWithExtension(inputs, extension);
+
+  if (!artifactPath) {
+    return {
+      path: "",
+      exists: false,
+      status: "missing" as const,
+      missingReason: buildMissingReason(inputs, label),
+      contextKey,
+    };
+  }
+
+  if (checkFileExists(artifactPath)) {
+    return {
+      path: artifactPath,
+      exists: true,
+      modifiedAt: readFileModifiedAt(artifactPath),
+      status: "valid" as const,
+      contextKey,
+    };
+  }
+  return {
+    path: artifactPath,
+    exists: false,
+    status: "missing" as const,
+    missingReason:
+      `${label.charAt(0).toUpperCase()}${label.slice(1)} artifact not found ` +
+      `at the expected path: ${artifactPath}`,
+    contextKey,
+  };
+}
+
+/**
  * Resolves the active binary artifact status for the given inputs.
  * Returns `status: "valid"` only when the exact expected `.bin` file exists.
  */
@@ -175,36 +205,7 @@ export function resolveActiveBinaryArtifact(
   inputs: ArtifactResolutionInputs,
   config: ActiveConfig
 ): ActiveBinaryArtifact {
-  const contextKey = makeContextKey(config);
-  const artifactPath = deriveBinaryArtifactPath(inputs);
-
-  if (!artifactPath) {
-    return {
-      path: "",
-      exists: false,
-      status: "missing",
-      missingReason: buildBinaryMissingReason(inputs),
-      contextKey,
-    };
-  }
-
-  const exists = checkFileExists(artifactPath);
-  if (exists) {
-    return {
-      path: artifactPath,
-      exists: true,
-      modifiedAt: readFileModifiedAt(artifactPath),
-      status: "valid",
-      contextKey,
-    };
-  }
-  return {
-    path: artifactPath,
-    exists: false,
-    status: "missing",
-    missingReason: `Binary artifact not found at the expected path: ${artifactPath}`,
-    contextKey,
-  };
+  return resolveFileArtifact(inputs, config, ".bin", "binary");
 }
 
 /**
@@ -215,36 +216,7 @@ export function resolveActiveMapArtifact(
   inputs: ArtifactResolutionInputs,
   config: ActiveConfig
 ): ActiveMapArtifact {
-  const contextKey = makeContextKey(config);
-  const artifactPath = deriveMapArtifactPath(inputs);
-
-  if (!artifactPath) {
-    return {
-      path: "",
-      exists: false,
-      status: "missing",
-      missingReason: buildMapMissingReason(inputs),
-      contextKey,
-    };
-  }
-
-  const exists = checkFileExists(artifactPath);
-  if (exists) {
-    return {
-      path: artifactPath,
-      exists: true,
-      modifiedAt: readFileModifiedAt(artifactPath),
-      status: "valid",
-      contextKey,
-    };
-  }
-  return {
-    path: artifactPath,
-    exists: false,
-    status: "missing",
-    missingReason: `Map artifact not found at the expected path: ${artifactPath}`,
-    contextKey,
-  };
+  return resolveFileArtifact(inputs, config, ".map", "map");
 }
 
 // ---------------------------------------------------------------------------
@@ -263,88 +235,25 @@ export function resolveActiveArtifact(
   inputs: ArtifactResolutionInputs,
   config: ActiveConfig
 ): ActiveCompileCommandsArtifact {
-  const contextKey = makeContextKey(config);
-  const artifactPath = deriveArtifactPath(inputs);
-
-  if (!artifactPath) {
-    return {
-      path: "",
-      exists: false,
-      status: "missing",
-      missingReason: buildMissingReasonForUnresolvablePath(inputs),
-      contextKey,
-    };
-  }
-
-  let exists = false;
-  try {
-    exists = fs.existsSync(artifactPath);
-  } catch {
-    exists = false;
-  }
-
-  if (exists) {
-    return {
-      path: artifactPath,
-      exists: true,
-      modifiedAt: readFileModifiedAt(artifactPath),
-      status: "valid",
-      contextKey,
-    };
-  }
-
-  return {
-    path: artifactPath,
-    exists: false,
-    status: "missing",
-    missingReason: `Compile-commands artifact not found at the expected path: ${artifactPath}`,
-    contextKey,
-  };
+  return resolveFileArtifact(inputs, config, ".cc.json", "compile-commands");
 }
 
 // ---------------------------------------------------------------------------
 // Missing-reason helpers
 // ---------------------------------------------------------------------------
 
-function buildMissingReasonForUnresolvablePath(
-  inputs: ArtifactResolutionInputs
-): string {
+/** Explains why the `label` artifact path could not be derived from `inputs`. */
+function buildMissingReason(inputs: ArtifactResolutionInputs, label: string): string {
   if (!inputs.artifactsRoot) {
-    return "[paths].build-artifacts is empty in tbench.toml; cannot resolve the compile-commands artifact.";
+    return `[paths].build-artifacts is empty in tbench.toml; cannot resolve the ${label} artifact.`;
   }
   if (!inputs.artifactFolder) {
-    return `The active model does not define artifactFolder in the manifest; cannot resolve the compile-commands artifact.`;
+    return `The active model does not define artifactFolder in the manifest; cannot resolve the ${label} artifact.`;
   }
   if (!inputs.artifactName) {
-    return `The active component does not define artifactName in the manifest; cannot resolve the compile-commands artifact.`;
+    return `The active component does not define artifactName in the manifest; cannot resolve the ${label} artifact.`;
   }
-  return "Cannot resolve the compile-commands artifact path.";
-}
-
-function buildBinaryMissingReason(inputs: ArtifactResolutionInputs): string {
-  if (!inputs.artifactsRoot) {
-    return "[paths].build-artifacts is empty in tbench.toml; cannot resolve the binary artifact.";
-  }
-  if (!inputs.artifactFolder) {
-    return "The active model does not define artifactFolder in the manifest; cannot resolve the binary artifact.";
-  }
-  if (!inputs.artifactName) {
-    return "The active component does not define artifactName in the manifest; cannot resolve the binary artifact.";
-  }
-  return "Cannot resolve the binary artifact path.";
-}
-
-function buildMapMissingReason(inputs: ArtifactResolutionInputs): string {
-  if (!inputs.artifactsRoot) {
-    return "[paths].build-artifacts is empty in tbench.toml; cannot resolve the map artifact.";
-  }
-  if (!inputs.artifactFolder) {
-    return "The active model does not define artifactFolder in the manifest; cannot resolve the map artifact.";
-  }
-  if (!inputs.artifactName) {
-    return "The active component does not define artifactName in the manifest; cannot resolve the map artifact.";
-  }
-  return "Cannot resolve the map artifact path.";
+  return `Cannot resolve the ${label} artifact path.`;
 }
 
 // ---------------------------------------------------------------------------
