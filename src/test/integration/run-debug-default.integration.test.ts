@@ -228,8 +228,7 @@ suite("RunDebugConfigProvider – provideDebugConfigurations", () => {
       () => manifest,
       () => config,
       () => tmpDir,
-      () => debugLaunchValidTemplatesRoot(),
-      folder
+      () => debugLaunchValidTemplatesRoot()
     );
 
     const result = provider.provideDebugConfigurations(folder, makeCancelToken());
@@ -246,8 +245,7 @@ suite("RunDebugConfigProvider – provideDebugConfigurations", () => {
       () => undefined,
       () => makeConfig("T2T1"),
       () => tmpDir,
-      () => debugLaunchValidTemplatesRoot(),
-      folder
+      () => debugLaunchValidTemplatesRoot()
     );
 
     const result = provider.provideDebugConfigurations(folder, makeCancelToken());
@@ -264,8 +262,7 @@ suite("RunDebugConfigProvider – provideDebugConfigurations", () => {
       () => manifest,
       () => undefined,
       () => tmpDir,
-      () => debugLaunchValidTemplatesRoot(),
-      folder
+      () => debugLaunchValidTemplatesRoot()
     );
 
     const result = provider.provideDebugConfigurations(folder, makeCancelToken());
@@ -306,8 +303,7 @@ suite("RunDebugConfigProvider – resolveDebugConfiguration", () => {
       () => manifest,
       () => config,
       () => tmpDir,
-      () => templatesRoot,
-      folder
+      () => templatesRoot
     );
 
     const proxyConfig: vscode.DebugConfiguration = {
@@ -344,8 +340,7 @@ suite("RunDebugConfigProvider – resolveDebugConfiguration", () => {
       () => manifest,
       () => config,
       () => tmpDir,
-      () => templatesRoot,
-      folder
+      () => templatesRoot
     );
 
     const proxyConfig: vscode.DebugConfiguration = {
@@ -379,8 +374,7 @@ suite("RunDebugConfigProvider – resolveDebugConfiguration", () => {
       () => manifest,
       () => config,
       () => tmpDir,
-      () => debugLaunchValidTemplatesRoot(),
-      folder
+      () => debugLaunchValidTemplatesRoot()
     );
 
     const oldProxyConfig: vscode.DebugConfiguration = {
@@ -404,8 +398,7 @@ suite("RunDebugConfigProvider – resolveDebugConfiguration", () => {
       () => undefined,
       () => undefined,
       () => tmpDir,
-      () => debugLaunchValidTemplatesRoot(),
-      folder
+      () => debugLaunchValidTemplatesRoot()
     );
 
     const nonProxy: vscode.DebugConfiguration = {
@@ -433,8 +426,7 @@ suite("RunDebugConfigProvider – resolveDebugConfiguration", () => {
       () => manifest,
       () => currentConfig, // current context is T2T1
       () => tmpDir,
-      () => debugLaunchValidTemplatesRoot(),
-      folder
+      () => debugLaunchValidTemplatesRoot()
     );
 
     const staleProxy: vscode.DebugConfiguration = {

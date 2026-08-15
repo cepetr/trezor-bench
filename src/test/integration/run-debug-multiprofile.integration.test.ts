@@ -259,8 +259,7 @@ suite("RunDebugConfigProvider – multi-profile provideDebugConfigurations", () 
       () => manifest,
       () => config,
       () => tmpDir,
-      () => debugLaunchValidTemplatesRoot(),
-      folder
+      () => debugLaunchValidTemplatesRoot()
     );
 
     const result = provider.provideDebugConfigurations(folder, makeCancelToken());
@@ -299,8 +298,7 @@ suite("RunDebugConfigProvider – profile-specific resolveDebugConfiguration", (
       () => manifest,
       () => config,
       () => tmpDir,
-      () => templatesRoot,
-      folder
+      () => templatesRoot
     );
 
     const profileProxy: vscode.DebugConfiguration = {
@@ -331,8 +329,7 @@ suite("RunDebugConfigProvider – profile-specific resolveDebugConfiguration", (
       () => manifest,
       () => config,
       () => tmpDir,
-      () => debugLaunchValidTemplatesRoot(),
-      folder
+      () => debugLaunchValidTemplatesRoot()
     );
 
     const profileProxy: vscode.DebugConfiguration = {
@@ -362,8 +359,7 @@ suite("RunDebugConfigProvider – profile-specific resolveDebugConfiguration", (
       () => manifest,
       () => config,
       () => tmpDir,
-      () => debugLaunchValidTemplatesRoot(),
-      folder
+      () => debugLaunchValidTemplatesRoot()
     );
 
     const oldProfileProxy: vscode.DebugConfiguration = {
@@ -391,8 +387,7 @@ suite("RunDebugConfigProvider – profile-specific resolveDebugConfiguration", (
       () => manifest,
       () => config,
       () => tmpDir,
-      () => debugLaunchValidTemplatesRoot(),
-      folder
+      () => debugLaunchValidTemplatesRoot()
     );
 
     const profileProxy: vscode.DebugConfiguration = {

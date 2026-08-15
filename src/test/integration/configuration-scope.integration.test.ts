@@ -278,8 +278,7 @@ suite("Debug Launch – no launch.json persistence", () => {
       () => manifest,
       () => config,
       () => artifactsRoot,
-      () => templatesRoot,
-      workspaceFolder
+      () => templatesRoot
     );
 
     const proxyConfig: vscode.DebugConfiguration = {

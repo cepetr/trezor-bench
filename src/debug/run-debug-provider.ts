@@ -141,20 +141,17 @@ export class RunDebugConfigProvider implements vscode.DebugConfigurationProvider
   private readonly _getBuildContext: () => BuildContext | undefined;
   private readonly _getArtifactsRoot: () => string;
   private readonly _getTemplatesRoot: () => string;
-  private readonly _workspaceFolder: vscode.WorkspaceFolder;
 
   constructor(
     getManifest: () => ManifestStateLoaded | undefined,
     getBuildContext: () => BuildContext | undefined,
     getArtifactsRoot: () => string,
-    getTemplatesRoot: () => string,
-    workspaceFolder: vscode.WorkspaceFolder
+    getTemplatesRoot: () => string
   ) {
     this._getManifest = getManifest;
     this._getBuildContext = getBuildContext;
     this._getArtifactsRoot = getArtifactsRoot;
     this._getTemplatesRoot = getTemplatesRoot;
-    this._workspaceFolder = workspaceFolder;
   }
 
   /**
@@ -240,7 +237,6 @@ export class RunDebugConfigProvider implements vscode.DebugConfigurationProvider
 
     // Materialize the real debug configuration
     const result = materializeDebugConfiguration(
-      this._workspaceFolder,
       manifest,
       buildContext,
       this._getArtifactsRoot(),

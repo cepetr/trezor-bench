@@ -7,7 +7,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { PresetFile, PresetSource, PresetState } from "./preset-types";
 import { parsePresetFile } from "./parse-presets";
-import { isFileNotFound } from "../util/errors";
+import { errorMessage, isFileNotFound } from "../util/errors";
 import { Debouncer } from "../util/debouncer";
 import { watchFile } from "../util/file-watch";
 import { FilePoller } from "../util/file-poller";
@@ -34,7 +34,7 @@ async function loadPresetFile(uri: vscode.Uri, source: PresetSource): Promise<Pr
       // into the `unavailable` state instead.
       return { source, uri, present: false, names: [], fragments: [], issues: [] };
     }
-    const message = err instanceof Error ? err.message : "Could not read preset file";
+    const message = errorMessage(err);
     return {
       source,
       uri,

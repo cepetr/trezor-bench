@@ -76,17 +76,6 @@ export function isArtifactActionApplicable(
 }
 
 /**
- * Returns whether the Binary and Map File rows should be visible for the
- * active build context.
- */
-export function shouldShowArtifactRows(
-  flashApplicable: boolean,
-  uploadApplicable: boolean
-): boolean {
-  return flashApplicable || uploadApplicable;
-}
-
-/**
  * Resolves the `ArtifactActionContext` from a loaded manifest state and active
  * configuration. Returns `undefined` when any required id cannot be resolved.
  */

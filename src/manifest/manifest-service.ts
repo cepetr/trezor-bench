@@ -8,7 +8,7 @@ import * as path from "path";
 import { ManifestState, ManifestStatus } from "./manifest-types";
 import { validateManifest } from "./validate-manifest";
 import { notifyWarning, notifyError } from "../observability/log-channel";
-import { isFileNotFound } from "../util/errors";
+import { errorMessage, isFileNotFound } from "../util/errors";
 import { Debouncer } from "../util/debouncer";
 import { watchFile } from "../util/file-watch";
 
@@ -81,8 +81,7 @@ export class ManifestService implements vscode.Disposable {
         newState = { status: "missing", manifestUri: this.manifestUri };
       } else {
         // Unreadable file — treat as invalid so diagnostics fire
-        const message =
-          err instanceof Error ? err.message : "Could not read manifest file";
+        const message = errorMessage(err);
         newState = {
           status: "invalid",
           manifestUri: this.manifestUri,

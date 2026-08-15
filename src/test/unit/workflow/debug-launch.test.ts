@@ -19,7 +19,6 @@ import * as assert from "assert";
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
-import * as vscode from "vscode";
 import { resolveMatchingDebugProfiles } from "../../../manifest/debug-profiles";
 import {
   deriveExecutableFileName,
@@ -639,12 +638,6 @@ suite("materializeDebugConfiguration – failure paths", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  const workspaceFolder = {
-    uri: { fsPath: "/tmp/test", scheme: "file" },
-    name: "test",
-    index: 0,
-  } as unknown as vscode.WorkspaceFolder;
-
   const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
 
   function makeManifestForMat() {
@@ -672,7 +665,6 @@ suite("materializeDebugConfiguration – failure paths", () => {
     // Don't create the exe file
 
     const result = materializeDebugConfiguration(
-      workspaceFolder,
       manifest,
       config,
       tmpDir,
@@ -692,7 +684,6 @@ suite("materializeDebugConfiguration – failure paths", () => {
     fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
 
     const result = materializeDebugConfiguration(
-      workspaceFolder,
       manifest,
       config,
       tmpDir,
@@ -712,7 +703,6 @@ suite("materializeDebugConfiguration – failure paths", () => {
     fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
 
     const result = materializeDebugConfiguration(
-      workspaceFolder,
       manifest,
       config,
       tmpDir,
@@ -735,7 +725,6 @@ suite("materializeDebugConfiguration – failure paths", () => {
       fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
 
       const result = materializeDebugConfiguration(
-        workspaceFolder,
         manifest,
         config,
         tmpDir,
@@ -759,7 +748,6 @@ suite("materializeDebugConfiguration – failure paths", () => {
     const profile = makeComponentDebugProfile({ name: "GDB", template: "gdb-remote.json" });
 
     const result = materializeDebugConfiguration(
-      workspaceFolder,
       brokenManifest,
       config,
       tmpDir,
@@ -779,7 +767,6 @@ suite("materializeDebugConfiguration – failure paths", () => {
     fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
 
     const result = materializeDebugConfiguration(
-      workspaceFolder,
       manifest,
       config,
       tmpDir,

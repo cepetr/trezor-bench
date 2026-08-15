@@ -416,7 +416,6 @@ export type DebugMaterializationResult =
  * Does NOT resolve the profile — the caller must provide the selected profile.
  */
 export function materializeDebugConfiguration(
-  _workspaceFolder: vscode.WorkspaceFolder,
   manifest: ManifestStateLoaded,
   buildContext: BuildContext,
   artifactsRoot: string,

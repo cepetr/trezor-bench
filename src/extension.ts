@@ -86,7 +86,6 @@ import { ExcludedFilesOverlays } from "./ui/excluded-files-overlays";
 import {
   evaluateArtifactActionPreconditions,
   isArtifactActionApplicable,
-  shouldShowArtifactRows,
   resolveArtifactActionContext,
   createArtifactTask,
   executeArtifactTask,
@@ -400,7 +399,7 @@ function updateArtifactActionContext(
 
   const flashApplicable = component ? isArtifactActionApplicable("flash", component, buildContext) : false;
   const uploadApplicable = component ? isArtifactActionApplicable("upload", component, buildContext) : false;
-  const showArtifactRows = shouldShowArtifactRows(flashApplicable, uploadApplicable);
+  const showArtifactRows = flashApplicable || uploadApplicable;
 
   const inputs = buildResolutionInputs(manifest, buildContext, artifactsRoot);
 
@@ -883,8 +882,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     () => loadedManifest(_manifestState),
     () => _buildSelection,
     () => resolveArtifactsPath(workspaceFolder),
-    () => resolveDebugTemplatesPath(workspaceFolder),
-    workspaceFolder
+    () => resolveDebugTemplatesPath(workspaceFolder)
   );
   _debugConfigProviderRegistration?.dispose();
   _debugConfigProviderRegistration = vscode.debug.registerDebugConfigurationProvider(

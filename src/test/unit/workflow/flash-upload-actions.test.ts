@@ -15,7 +15,6 @@
 import * as assert from "assert";
 import {
   isArtifactActionApplicable,
-  shouldShowArtifactRows,
   formatArtifactTaskLabel,
   evaluateArtifactActionPreconditions,
   resolveArtifactActionContext,
@@ -101,28 +100,6 @@ suite("isUploadApplicable", () => {
   test("returns false when the active model is not in the any() expression", () => {
     const component = makeFlashComponent(undefined, UPLOAD_WHEN_ANY);
     assert.strictEqual(isArtifactActionApplicable("upload", component, makeEvalCtx("T3T1")), false);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// shouldShowArtifactRows
-// ---------------------------------------------------------------------------
-
-suite("shouldShowArtifactRows", () => {
-  test("returns true when flash is applicable", () => {
-    assert.strictEqual(shouldShowArtifactRows(true, false), true);
-  });
-
-  test("returns true when upload is applicable", () => {
-    assert.strictEqual(shouldShowArtifactRows(false, true), true);
-  });
-
-  test("returns true when both actions are applicable", () => {
-    assert.strictEqual(shouldShowArtifactRows(true, true), true);
-  });
-
-  test("returns false when neither action is applicable", () => {
-    assert.strictEqual(shouldShowArtifactRows(false, false), false);
   });
 });
 
