@@ -7,8 +7,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { FilePoller } from "../util/file-poller";
 import { watchFile } from "../util/file-watch";
-import { ActiveBuildContext } from "../configuration/active-build-context";
-import { ManifestStateLoaded } from "../manifest/manifest-types";
+import { BuildContext, ManifestStateLoaded } from "../manifest/manifest-types";
 import {
   buildResolutionInputs,
   deriveArtifactPath,
@@ -64,15 +63,15 @@ function addWatchPath(
 
 export function resolveArtifactWatchScopes(
   manifest: ManifestStateLoaded | undefined,
-  config: ActiveBuildContext | undefined,
+  buildContext: BuildContext | undefined,
   artifactsRoot: string
 ): ArtifactWatchScope[] {
-  if (!manifest || !config) {
+  if (!manifest || !buildContext) {
     return [];
   }
 
   const scopesByFolder = new Map<string, Set<string>>();
-  const inputs = buildResolutionInputs(manifest, config, artifactsRoot);
+  const inputs = buildResolutionInputs(manifest, buildContext, artifactsRoot);
   if (inputs) {
     addWatchPath(scopesByFolder, artifactsRoot, deriveArtifactPath(inputs));
     addWatchPath(scopesByFolder, artifactsRoot, deriveBinaryArtifactPath(inputs));
@@ -81,7 +80,7 @@ export function resolveArtifactWatchScopes(
 
   const executableArtifact = resolveActiveExecutableArtifact(
     manifest,
-    config,
+    buildContext,
     artifactsRoot
   );
   addWatchPath(
@@ -123,14 +122,14 @@ export class ActiveArtifactFileWatcher implements vscode.Disposable {
 
   update(
     manifest: ManifestStateLoaded | undefined,
-    config: ActiveBuildContext | undefined,
+    buildContext: BuildContext | undefined,
     artifactsRoot: string
   ): void {
     if (this._disposed) {
       return;
     }
 
-    const scopes = resolveArtifactWatchScopes(manifest, config, artifactsRoot);
+    const scopes = resolveArtifactWatchScopes(manifest, buildContext, artifactsRoot);
     const nextSignature = buildScopeSignature(scopes);
     if (nextSignature === this._scopeSignature) {
       return;

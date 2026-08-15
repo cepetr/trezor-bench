@@ -8,8 +8,7 @@ import {
   ArtifactResolutionInputs,
   ActiveCompileCommandsArtifact,
 } from "./intellisense-types";
-import { ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
-import { ActiveBuildContext } from "../configuration/active-build-context";
+import { BuildContext, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
 import {
   DebugProfileResolutionState,
   resolveMatchingDebugProfiles,
@@ -24,8 +23,8 @@ import {
  * Produces a stable string key for the given active configuration.
  * Used to detect when stale IntelliSense state must be cleared.
  */
-export function makeContextKey(config: ActiveBuildContext): string {
-  return `${config.modelId}::${config.targetId}::${config.componentId}`;
+export function makeContextKey(buildContext: BuildContext): string {
+  return `${buildContext.modelId}::${buildContext.targetId}::${buildContext.componentId}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -42,10 +41,10 @@ export function makeContextKey(config: ActiveBuildContext): string {
  */
 export function buildResolutionInputs(
   manifest: ManifestStateLoaded,
-  config: ActiveBuildContext,
+  buildContext: BuildContext,
   artifactsRoot: string
 ): ArtifactResolutionInputs | undefined {
-  const entries = activeManifestEntries(manifest, config);
+  const entries = activeManifestEntries(manifest, buildContext);
   if (!entries) {
     return undefined;
   }
@@ -53,11 +52,11 @@ export function buildResolutionInputs(
 
   return {
     artifactsRoot,
-    modelId: config.modelId,
+    modelId: buildContext.modelId,
     artifactFolder: model.artifactFolder,
-    componentId: config.componentId,
+    componentId: buildContext.componentId,
     artifactName: component.artifactName,
-    targetId: config.targetId,
+    targetId: buildContext.targetId,
     artifactSuffix: target.artifactSuffix ?? "",
   };
 }
@@ -157,11 +156,11 @@ function readFileModifiedAt(filePath: string): Date | undefined {
  */
 function resolveFileArtifact(
   inputs: ArtifactResolutionInputs,
-  config: ActiveBuildContext,
+  buildContext: BuildContext,
   extension: string,
   label: string
 ) {
-  const contextKey = makeContextKey(config);
+  const contextKey = makeContextKey(buildContext);
   const artifactPath = deriveArtifactPathWithExtension(inputs, extension);
 
   if (!artifactPath) {
@@ -200,9 +199,9 @@ function resolveFileArtifact(
  */
 export function resolveActiveBinaryArtifact(
   inputs: ArtifactResolutionInputs,
-  config: ActiveBuildContext
+  buildContext: BuildContext
 ): ActiveBinaryArtifact {
-  return resolveFileArtifact(inputs, config, ".bin", "binary");
+  return resolveFileArtifact(inputs, buildContext, ".bin", "binary");
 }
 
 /**
@@ -211,9 +210,9 @@ export function resolveActiveBinaryArtifact(
  */
 export function resolveActiveMapArtifact(
   inputs: ArtifactResolutionInputs,
-  config: ActiveBuildContext
+  buildContext: BuildContext
 ): ActiveMapArtifact {
-  return resolveFileArtifact(inputs, config, ".map", "map");
+  return resolveFileArtifact(inputs, buildContext, ".map", "map");
 }
 
 // ---------------------------------------------------------------------------
@@ -230,9 +229,9 @@ export function resolveActiveMapArtifact(
  */
 export function resolveActiveArtifact(
   inputs: ArtifactResolutionInputs,
-  config: ActiveBuildContext
+  buildContext: BuildContext
 ): ActiveCompileCommandsArtifact {
-  return resolveFileArtifact(inputs, config, ".cc.json", "compile-commands");
+  return resolveFileArtifact(inputs, buildContext, ".cc.json", "compile-commands");
 }
 
 // ---------------------------------------------------------------------------
@@ -293,7 +292,7 @@ function formatExecutableArtifactTooltip(expectedPath: string, missingReason?: s
 }
 
 /**
- * Resolves the active executable artifact state for the given manifest, config,
+ * Resolves the active executable artifact state for the given manifest, buildContext,
  * and artifacts root.
  *
  * - Returns `status: "valid"` only when the first matching component debug profile
@@ -303,10 +302,10 @@ function formatExecutableArtifactTooltip(expectedPath: string, missingReason?: s
  */
 export function resolveActiveExecutableArtifact(
   manifest: ManifestStateLoaded,
-  config: ActiveBuildContext,
+  buildContext: BuildContext,
   artifactsRoot: string
 ): ActiveExecutableArtifact {
-  const contextKey = makeContextKey(config);
+  const contextKey = makeContextKey(buildContext);
 
   if (manifest.hasDebugBlockingIssues) {
     return {
@@ -324,9 +323,9 @@ export function resolveActiveExecutableArtifact(
     };
   }
 
-  const component = manifest.components.find((c) => c.id === config.componentId);
-  const target = manifest.targets.find((t) => t.id === config.targetId);
-  const model = manifest.models.find((m) => m.id === config.modelId);
+  const component = manifest.components.find((c) => c.id === buildContext.componentId);
+  const target = manifest.targets.find((t) => t.id === buildContext.targetId);
+  const model = manifest.models.find((m) => m.id === buildContext.modelId);
 
   if (!component || !target || !model) {
     const reason = "Active configuration references an unknown component, target, or model.";
@@ -342,7 +341,6 @@ export function resolveActiveExecutableArtifact(
     };
   }
 
-  const buildContext = { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId };
   const profiles = component.debug ?? [];
   const matchingSet = resolveMatchingDebugProfiles(profiles, buildContext);
 

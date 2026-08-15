@@ -245,16 +245,16 @@ function assertNoUnauthorizedContributions(
  */
 function computeResolvedOptions(
   state: ManifestState,
-  activeBuildContext: ActiveBuildContext | undefined,
+  buildContext: BuildContext | undefined,
   context: vscode.ExtensionContext,
   presetEffectiveValues: ReadonlyMap<string, PresetEffectiveValue> = new Map()
 ): ResolvedOption[] {
   const manifest = loadedManifest(state);
-  if (!manifest || !activeBuildContext) {
+  if (!manifest || !buildContext) {
     return [];
   }
   const saved = readBuildOptions(context);
-  return normalizeBuildOptions(manifest.buildOptions, saved, activeBuildContext, presetEffectiveValues);
+  return normalizeBuildOptions(manifest.buildOptions, saved, buildContext, presetEffectiveValues);
 }
 
 /**
@@ -385,12 +385,12 @@ function updateWorkflowBlockedContext(state: ManifestState): void {
  */
 function updateArtifactActionContext(
   state: ManifestState,
-  config: ActiveBuildContext | undefined,
+  buildContext: BuildContext | undefined,
   artifactsRoot: string,
   workspaceFolder: vscode.WorkspaceFolder
 ): void {
   const manifest = loadedManifest(state);
-  if (!manifest || !config) {
+  if (!manifest || !buildContext) {
     _binaryArtifact = undefined;
     _mapArtifact = undefined;
     vscode.commands.executeCommand("setContext", "tbench.flashApplicable", false);
@@ -400,24 +400,19 @@ function updateArtifactActionContext(
     return;
   }
 
-  const component = manifest.components.find((c) => c.id === config.componentId);
-  const buildContext: BuildContext = {
-    modelId: config.modelId,
-    targetId: config.targetId,
-    componentId: config.componentId,
-  };
+  const component = manifest.components.find((c) => c.id === buildContext.componentId);
 
   const flashApplicable = component ? isArtifactActionApplicable("flash", component, buildContext) : false;
   const uploadApplicable = component ? isArtifactActionApplicable("upload", component, buildContext) : false;
   const showArtifactRows = shouldShowArtifactRows(flashApplicable, uploadApplicable);
 
-  const inputs = buildResolutionInputs(manifest, config, artifactsRoot);
+  const inputs = buildResolutionInputs(manifest, buildContext, artifactsRoot);
   let binaryExists = false;
   let mapExists = false;
 
   if (inputs && showArtifactRows) {
-    const binary = resolveActiveBinaryArtifact(inputs, config);
-    const map = resolveActiveMapArtifact(inputs, config);
+    const binary = resolveActiveBinaryArtifact(inputs, buildContext);
+    const map = resolveActiveMapArtifact(inputs, buildContext);
     _binaryArtifact = binary;
     _mapArtifact = map;
     binaryExists = binary.exists;
@@ -443,17 +438,17 @@ function updateArtifactActionContext(
  */
 function updateDebugContext(
   state: ManifestState,
-  config: ActiveBuildContext | undefined,
+  buildContext: BuildContext | undefined,
   artifactsRoot: string
 ): void {
   const manifest = loadedManifest(state);
-  if (!manifest || !config) {
+  if (!manifest || !buildContext) {
     vscode.commands.executeCommand("setContext", "tbench.startDebuggingEnabled", false);
     _treeModel?.updateExecutableArtifact(null);
     return;
   }
 
-  const artifact = resolveActiveExecutableArtifact(manifest, config, artifactsRoot);
+  const artifact = resolveActiveExecutableArtifact(manifest, buildContext, artifactsRoot);
   const enabled = artifact.status === "valid";
   vscode.commands.executeCommand("setContext", "tbench.startDebuggingEnabled", enabled);
   _treeModel?.updateExecutableArtifact(artifact);
@@ -461,17 +456,17 @@ function updateDebugContext(
 
 function updateCompileCommandsTreeArtifact(
   state: ManifestState,
-  config: ActiveBuildContext | undefined,
+  buildContext: BuildContext | undefined,
   artifactsRoot: string
 ): void {
   const manifest = loadedManifest(state);
-  if (!manifest || !config) {
+  if (!manifest || !buildContext) {
     _treeModel?.updateArtifact(null);
     return;
   }
 
-  const inputs = buildResolutionInputs(manifest, config, artifactsRoot);
-  const artifact = inputs ? resolveActiveArtifact(inputs, config) : null;
+  const inputs = buildResolutionInputs(manifest, buildContext, artifactsRoot);
+  const artifact = inputs ? resolveActiveArtifact(inputs, buildContext) : null;
   _treeModel?.updateArtifact(artifact);
 }
 
@@ -804,7 +799,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Update IntelliSense service with the new manifest state
     const manifest = loadedManifest(state);
     _intelliSenseService?.setManifest(manifest);
-    _intelliSenseService?.setActiveBuildContext(_activeBuildContext);
+    _intelliSenseService?.setBuildContext(_activeBuildContext);
     refreshArtifactFileWatcher();
     refreshBuildArtifacts("manifest-change");
   };
@@ -849,13 +844,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Flash and Upload commands. Identical except for the action kind. ---
   const runArtifactAction = async (kind: ArtifactActionKind): Promise<void> => {
     const state = _manifestState;
-    const config = _activeBuildContext;
+    const buildContext = _activeBuildContext;
     const manifest = loadedManifest(state);
-    const actionCtx = manifest && config ? resolveArtifactActionContext(manifest, config) : undefined;
-    const component = manifest?.components.find((c) => c.id === config?.componentId);
-    const buildContext: BuildContext | undefined = config
-      ? { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId }
-      : undefined;
+    const actionCtx = manifest && buildContext ? resolveArtifactActionContext(manifest, buildContext) : undefined;
+    const component = manifest?.components.find((c) => c.id === buildContext?.componentId);
 
     const blockReason = evaluateArtifactActionPreconditions({
       workspaceSupported: isWorkflowWorkspaceSupported(),
@@ -957,7 +949,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         await apply(id, state);
         await refreshPresetsAndActiveBuildContext(context);
         refreshStatusBar();
-        _intelliSenseService?.setActiveBuildContext(_activeBuildContext);
+        _intelliSenseService?.setBuildContext(_activeBuildContext);
         refreshArtifactFileWatcher();
         refreshBuildArtifacts("active-build-context-change");
       })
@@ -1057,7 +1049,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Task provider. ---
   const taskProvider = new BuildTaskProvider({
     getManifestState: () => loadedManifest(_manifestState),
-    getActiveBuildContext: () => _activeBuildContext,
+    getBuildContext: () => _activeBuildContext,
     getResolvedOptions: () => _resolvedOptions,
     getActivePresetId: () => activePresetId(_activeBuildContext),
     getWorkspaceFolder: () => workspaceFolder,
@@ -1103,7 +1095,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _activeBuildContext = undefined;
       _resolvedOptions = [];
       _intelliSenseService?.setManifest(undefined);
-      _intelliSenseService?.setActiveBuildContext(undefined);
+      _intelliSenseService?.setBuildContext(undefined);
       _intelliSenseService?.setArtifactsRoot("");
       void vscode.commands.executeCommand("setContext", "tbench.workflowBlocked", true);
       if (!repositoryConfigWasInvalid) {

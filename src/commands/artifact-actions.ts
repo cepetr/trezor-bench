@@ -16,7 +16,6 @@ import {
   ManifestState,
   ManifestStateLoaded,
 } from "../manifest/manifest-types";
-import { ActiveBuildContext } from "../configuration/active-build-context";
 import { BuildContext } from "../manifest/manifest-types";
 import { evaluateWhenExpression } from "../manifest/when-expressions";
 import { createCargoTaskExecution } from "../tasks/xtask-execution";
@@ -93,22 +92,22 @@ export function shouldShowArtifactRows(
  */
 export function resolveArtifactActionContext(
   state: ManifestStateLoaded,
-  config: ActiveBuildContext
+  buildContext: BuildContext
 ): ArtifactActionContext | undefined {
-  const model = state.models.find((m) => m.id === config.modelId);
-  const target = state.targets.find((t) => t.id === config.targetId);
-  const component = state.components.find((c) => c.id === config.componentId);
+  const model = state.models.find((m) => m.id === buildContext.modelId);
+  const target = state.targets.find((t) => t.id === buildContext.targetId);
+  const component = state.components.find((c) => c.id === buildContext.componentId);
 
   if (!model || !target || !component) {
     return undefined;
   }
 
   return {
-    modelId: config.modelId,
+    modelId: buildContext.modelId,
     modelName: model.name,
-    targetId: config.targetId,
+    targetId: buildContext.targetId,
     targetDisplay: target.shortName ?? target.name,
-    componentId: config.componentId,
+    componentId: buildContext.componentId,
     componentName: component.name,
   };
 }

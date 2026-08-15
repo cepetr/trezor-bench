@@ -126,7 +126,7 @@ suite("IntelliSenseService – manual refresh trigger", () => {
   test("manual refresh after config change produces consistent readiness", async () => {
     const svc = new IntelliSenseService();
     svc.setManifest(makeManifest());
-    svc.setActiveBuildContext({ modelId: "model-t2t1", targetId: "hw", componentId: "component-core", persistedAt: new Date().toISOString() });
+    svc.setBuildContext({ modelId: "model-t2t1", targetId: "hw", componentId: "component-core" });
     svc.setArtifactsRoot(path.join(__dirname, "../../../../test-fixtures/workspaces/intellisense-missing-artifact"));
 
     svc.scheduleRefresh("active-build-context-change");
@@ -146,7 +146,7 @@ suite("IntelliSenseService – manual refresh trigger", () => {
   test("manual refresh after artifacts path cleared shows null artifact", async () => {
     const svc = new IntelliSenseService();
     svc.setManifest(makeManifest());
-    svc.setActiveBuildContext({ modelId: "model-t2t1", targetId: "hw", componentId: "component-core", persistedAt: new Date().toISOString() });
+    svc.setBuildContext({ modelId: "model-t2t1", targetId: "hw", componentId: "component-core" });
     svc.setArtifactsRoot(""); // Cleared path
 
     svc.scheduleRefresh("manual-refresh");

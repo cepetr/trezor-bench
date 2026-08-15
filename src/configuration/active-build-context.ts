@@ -24,8 +24,8 @@ export interface ActiveBuildContext extends BuildContext {
 }
 
 /** Reads the active preset id, defaulting to `DEFAULT_PRESET_ID` when absent. */
-export function activePresetId(config: ActiveBuildContext | undefined): string {
-  return config?.presetId ?? DEFAULT_PRESET_ID;
+export function activePresetId(activeBuildContext: ActiveBuildContext | undefined): string {
+  return activeBuildContext?.presetId ?? DEFAULT_PRESET_ID;
 }
 
 /**

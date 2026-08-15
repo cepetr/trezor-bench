@@ -4,8 +4,7 @@
  */
 import * as vscode from "vscode";
 import * as path from "path";
-import { ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
-import { ActiveBuildContext } from "../configuration/active-build-context";
+import { BuildContext, ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
 import { ResolvedOption } from "../configuration/build-options";
 import { ActiveCompileCommandsArtifact } from "../intellisense/intellisense-types";
 import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../intellisense/artifact-resolution";
@@ -376,7 +375,7 @@ export class ConfigurationTreeModel
   implements vscode.TreeDataProvider<vscode.TreeItem>
 {
   private _state: ManifestState | undefined;
-  private _activeBuildContext: ActiveBuildContext | undefined;
+  private _buildContext: BuildContext | undefined;
   private _expandedSelector: SelectorKind | undefined;
   private _expandedMultistateKey: string | undefined;
   private _collapsedGroups = new Set<string>();
@@ -418,11 +417,11 @@ export class ConfigurationTreeModel
   /** Updates the displayed manifest state and refreshes the view. */
   update(
     state: ManifestState,
-    activeBuildContext?: ActiveBuildContext,
+    buildContext?: BuildContext,
     resolvedOptions?: ReadonlyArray<ResolvedOption>
   ): void {
     this._state = state;
-    this._activeBuildContext = activeBuildContext;
+    this._buildContext = buildContext;
     this._resolvedOptions = resolvedOptions ?? [];
     if (state.status !== "loaded") {
       this._expandedSelector = undefined;
@@ -667,12 +666,12 @@ export class ConfigurationTreeModel
       return [];
     }
     const manifest = this._state;
-    const activeId = this._activeBuildContext
+    const activeId = this._buildContext
       ? kind === "model"
-        ? this._activeBuildContext.modelId
+        ? this._buildContext.modelId
         : kind === "target"
-        ? this._activeBuildContext.targetId
-        : this._activeBuildContext.componentId
+        ? this._buildContext.targetId
+        : this._buildContext.componentId
       : undefined;
 
     const entries =
@@ -729,20 +728,20 @@ export class ConfigurationTreeModel
     state: ManifestStateLoaded,
     kind: SelectorKind
   ): string | undefined {
-    if (!this._activeBuildContext) {
+    if (!this._buildContext) {
       return undefined;
     }
 
     if (kind === "model") {
-      return state.models.find((entry) => entry.id === this._activeBuildContext?.modelId)?.name;
+      return state.models.find((entry) => entry.id === this._buildContext?.modelId)?.name;
     }
 
     if (kind === "target") {
-      const target = state.targets.find((entry) => entry.id === this._activeBuildContext?.targetId);
+      const target = state.targets.find((entry) => entry.id === this._buildContext?.targetId);
       return target ? (target.shortName ?? target.name) : undefined;
     }
 
-    return state.components.find((entry) => entry.id === this._activeBuildContext?.componentId)?.name;
+    return state.components.find((entry) => entry.id === this._buildContext?.componentId)?.name;
   }
 
   // -------------------------------------------------------------------------

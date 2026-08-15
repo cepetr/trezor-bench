@@ -19,8 +19,7 @@ import {
   formatTaskLabel,
 } from "../commands/build-workflow";
 import { ResolvedOption } from "../configuration/build-options";
-import { ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
-import { ActiveBuildContext } from "../configuration/active-build-context";
+import { BuildContext, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
 import { DEFAULT_PRESET_ID } from "../presets/preset-types";
 import { createCargoTaskExecution } from "./xtask-execution";
 
@@ -58,21 +57,21 @@ export function buildTaskLabel(kind: WorkflowKind, ctx: WorkflowContext): string
  */
 export function resolveWorkflowContext(
   state: ManifestStateLoaded,
-  activeBuildContext: ActiveBuildContext
+  buildContext: BuildContext
 ): WorkflowContext | undefined {
-  const entries = activeManifestEntries(state, activeBuildContext);
+  const entries = activeManifestEntries(state, buildContext);
   if (!entries) {
     return undefined;
   }
   const { model, target, component } = entries;
 
   return {
-    modelId: activeBuildContext.modelId,
+    modelId: buildContext.modelId,
     modelName: model.name,
-    targetId: activeBuildContext.targetId,
+    targetId: buildContext.targetId,
     targetDisplay: target.shortName ?? target.name,
     targetFlag: target.flag ?? null,
-    componentId: activeBuildContext.componentId,
+    componentId: buildContext.componentId,
     componentName: component.name,
   };
 }
@@ -136,7 +135,7 @@ export function createWorkflowTask(
 
 export interface BuildTaskProviderDependencies {
   getManifestState: () => ManifestStateLoaded | undefined;
-  getActiveBuildContext: () => ActiveBuildContext | undefined;
+  getBuildContext: () => BuildContext | undefined;
   getResolvedOptions: () => ReadonlyArray<ResolvedOption>;
   getActivePresetId: () => string;
   getWorkspaceFolder: () => vscode.WorkspaceFolder | undefined;
@@ -155,14 +154,14 @@ export class BuildTaskProvider implements vscode.TaskProvider {
 
   provideTasks(): vscode.Task[] | undefined {
     const state = this._deps.getManifestState();
-    const activeBuildContext = this._deps.getActiveBuildContext();
+    const buildContext = this._deps.getBuildContext();
     const workspaceFolder = this._deps.getWorkspaceFolder();
 
-    if (!state || !activeBuildContext || !workspaceFolder) {
+    if (!state || !buildContext || !workspaceFolder) {
       return [];
     }
 
-    const wfCtx = resolveWorkflowContext(state, activeBuildContext);
+    const wfCtx = resolveWorkflowContext(state, buildContext);
     if (!wfCtx) {
       return [];
     }

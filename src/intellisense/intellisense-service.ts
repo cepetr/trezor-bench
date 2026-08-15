@@ -20,8 +20,7 @@ import { checkProviderReadiness, resolveIntelliSenseBackend } from "./intellisen
 import { CpptoolsBackend } from "./cpptools-backend";
 import { ClangdBackend } from "./clangd-backend";
 import { parseCompileCommandsFile } from "./compile-commands-parser";
-import { ManifestStateLoaded } from "../manifest/manifest-types";
-import { ActiveBuildContext } from "../configuration/active-build-context";
+import { BuildContext, ManifestStateLoaded } from "../manifest/manifest-types";
 import {
   logIntelliSense,
   logMissingArtifact,
@@ -57,7 +56,7 @@ export type IntelliSenseRefreshCallback = (
  */
 export class IntelliSenseService {
   private _manifest: ManifestStateLoaded | undefined;
-  private _activeBuildContext: ActiveBuildContext | undefined;
+  private _buildContext: BuildContext | undefined;
   private _artifactsRoot: string = "";
   private _workspaceFolder: vscode.WorkspaceFolder | undefined;
 
@@ -120,8 +119,8 @@ export class IntelliSenseService {
     this._manifest = manifest;
   }
 
-  setActiveBuildContext(config: ActiveBuildContext | undefined): void {
-    this._activeBuildContext = config;
+  setBuildContext(buildContext: BuildContext | undefined): void {
+    this._buildContext = buildContext;
   }
 
   setArtifactsRoot(root: string): void {
@@ -204,9 +203,9 @@ export class IntelliSenseService {
     }
 
     const manifest = this._manifest;
-    const config = this._activeBuildContext;
+    const buildContext = this._buildContext;
 
-    if (!manifest || !config) {
+    if (!manifest || !buildContext) {
       // No active context — clear any previously applied state.
       await this._clearProviderState();
       this._lastArtifact = null;
@@ -216,15 +215,15 @@ export class IntelliSenseService {
       return;
     }
 
-    const inputs = buildResolutionInputs(manifest, config, this._artifactsRoot);
+    const inputs = buildResolutionInputs(manifest, buildContext, this._artifactsRoot);
     const artifact = inputs
-      ? resolveActiveArtifact(inputs, config)
+      ? resolveActiveArtifact(inputs, buildContext)
       : {
           path: "",
           exists: false,
           status: "missing" as const,
           missingReason: buildMissingReasonNoInputs(this._artifactsRoot),
-          contextKey: makeContextKey(config),
+          contextKey: makeContextKey(buildContext),
         };
 
     this._lastArtifact = artifact;

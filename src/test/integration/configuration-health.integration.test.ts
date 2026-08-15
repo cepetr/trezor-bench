@@ -513,7 +513,7 @@ suite("IntelliSenseService – artifacts-path change regression", () => {
   test("changing artifactsRoot changes lastArtifact path after refresh", async () => {
     const svc = new IntelliSenseService();
     svc.setManifest(makeManifest());
-    svc.setActiveBuildContext({ modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: new Date().toISOString() });
+    svc.setBuildContext({ modelId: "T2T1", targetId: "hw", componentId: "core" });
 
     // First root: directory that does not contain artifact
     svc.setArtifactsRoot("/old-root");
@@ -544,12 +544,12 @@ suite("IntelliSenseService – artifacts-path change regression", () => {
     svc.setManifest(makeManifest());
     svc.setArtifactsRoot("/artifacts");
 
-    svc.setActiveBuildContext({ modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: new Date().toISOString() });
+    svc.setBuildContext({ modelId: "T2T1", targetId: "hw", componentId: "core" });
     svc.scheduleRefresh("active-build-context-change");
     await drainRefresh();
     const hwArtifact = svc.getLastArtifact();
 
-    svc.setActiveBuildContext({ modelId: "T2T1", targetId: "emu", componentId: "core", persistedAt: new Date().toISOString() });
+    svc.setBuildContext({ modelId: "T2T1", targetId: "emu", componentId: "core" });
     svc.scheduleRefresh("active-build-context-change");
     await drainRefresh();
     const emuArtifact = svc.getLastArtifact();
@@ -564,7 +564,7 @@ suite("IntelliSenseService – artifacts-path change regression", () => {
     const svc = new IntelliSenseService();
     svc.setManifest(makeManifest());
     svc.setArtifactsRoot("/artifacts");
-    svc.setActiveBuildContext({ modelId: "T2T1", targetId: "emu", componentId: "core", persistedAt: new Date().toISOString() });
+    svc.setBuildContext({ modelId: "T2T1", targetId: "emu", componentId: "core" });
     svc.scheduleRefresh("active-build-context-change");
     await drainRefresh();
     const artifact = svc.getLastArtifact();
@@ -579,7 +579,7 @@ suite("IntelliSenseService – artifacts-path change regression", () => {
     const svc = new IntelliSenseService();
     svc.setManifest(makeManifest());
     svc.setArtifactsRoot("/artifacts");
-    svc.setActiveBuildContext({ modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: new Date().toISOString() });
+    svc.setBuildContext({ modelId: "T2T1", targetId: "hw", componentId: "core" });
     svc.scheduleRefresh("active-build-context-change");
     await drainRefresh();
     const artifact = svc.getLastArtifact();

@@ -12,7 +12,6 @@ import * as vscode from "vscode";
 import { ManifestComponentDebugProfile, ManifestStateLoaded, activeManifestEntries } from "../manifest/manifest-types";
 import { BuildContext } from "../manifest/manifest-types";
 import { evaluateWhenExpression } from "../manifest/when-expressions";
-import { ActiveBuildContext } from "../configuration/active-build-context";
 import { logDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
 import { makeContextKey } from "../intellisense/artifact-resolution";
 import { isFileNotFound } from "../util/errors";
@@ -480,12 +479,12 @@ export type DebugMaterializationResult =
 export function materializeDebugConfiguration(
   _workspaceFolder: vscode.WorkspaceFolder,
   manifest: ManifestStateLoaded,
-  config: ActiveBuildContext,
+  buildContext: BuildContext,
   artifactsRoot: string,
   templatesRoot: string,
   profile: ManifestComponentDebugProfile
 ): DebugMaterializationResult {
-  const entries = activeManifestEntries(manifest, config);
+  const entries = activeManifestEntries(manifest, buildContext);
   if (!entries) {
     return {
       ok: false,
@@ -548,11 +547,11 @@ export function materializeDebugConfiguration(
 
   // Build tbench variable map
   const varMap = buildDebugVariableMap(
-    config.modelId,
+    buildContext.modelId,
     model.name,
-    config.targetId,
+    buildContext.targetId,
     target.name,
-    config.componentId,
+    buildContext.componentId,
     component.name,
     artifactPath,
     executableFileName,
@@ -607,7 +606,7 @@ async function pickDebugProfile(
 }
 
 function buildTbenchProxyDebugConfiguration(
-  config: ActiveBuildContext,
+  buildContext: BuildContext,
   profile: ManifestComponentDebugProfile,
   mode: "default" | "profile"
 ): TbenchProxyDebugConfiguration {
@@ -617,20 +616,20 @@ function buildTbenchProxyDebugConfiguration(
     name: mode === "default" ? labelForDefaultEntry() : labelForProfileEntry(profile.name),
     tbenchMode: mode,
     tbenchProfileId: profile.id,
-    tbenchContextKey: makeContextKey(config),
+    tbenchContextKey: makeContextKey(buildContext),
   };
 }
 
 function reportDebugLaunchFailure(
   reason: Parameters<typeof logDebugLaunchFailure>[0],
-  config: ActiveBuildContext,
+  buildContext: BuildContext,
   message: string,
   detail?: string
 ): void {
   logDebugLaunchFailure(reason, {
-    modelId: config.modelId,
-    targetId: config.targetId,
-    componentId: config.componentId,
+    modelId: buildContext.modelId,
+    targetId: buildContext.targetId,
+    componentId: buildContext.componentId,
     ...(detail === undefined ? {} : { detail }),
   });
   revealLogs();
@@ -659,13 +658,13 @@ function reportDebugLaunchFailure(
 export async function executeDebugLaunch(
   workspaceFolder: vscode.WorkspaceFolder,
   manifest: ManifestStateLoaded,
-  config: ActiveBuildContext
+  buildContext: BuildContext
 ): Promise<void> {
   // 1. Validate manifest debug state
   if (manifest.hasDebugBlockingIssues) {
     reportDebugLaunchFailure(
       "manifest-invalid",
-      config,
+      buildContext,
       "Cannot start debugging: the manifest has debug profile validation errors.",
       "manifest has debug profile validation errors"
     );
@@ -673,11 +672,11 @@ export async function executeDebugLaunch(
   }
 
   // 2. Find selected component and target
-  const entries = activeManifestEntries(manifest, config);
+  const entries = activeManifestEntries(manifest, buildContext);
   if (!entries) {
     reportDebugLaunchFailure(
       "unknown-active-build-context",
-      config,
+      buildContext,
       "Cannot start debugging: active configuration references an unknown component, target, or model.",
       "active configuration references an unknown component, target, or model"
     );
@@ -686,18 +685,13 @@ export async function executeDebugLaunch(
   const { component } = entries;
 
   // 3. Resolve component debug profile (first-match declaration order = default profile)
-  const buildContext: BuildContext = {
-    modelId: config.modelId,
-    targetId: config.targetId,
-    componentId: config.componentId,
-  };
   const profiles = component.debug ?? [];
   const matchingSet = resolveMatchingDebugProfiles(profiles, buildContext);
 
   if (!matchingSet.defaultProfile) {
     reportDebugLaunchFailure(
       "no-match",
-      config,
+      buildContext,
       "Cannot start debugging: no debug profile matches the active build context."
     );
     return;
@@ -717,7 +711,7 @@ export async function executeDebugLaunch(
   const launchMode: "default" | "profile" =
     matchingSet.defaultProfile.id === selectedProfile.id ? "default" : "profile";
   const proxyConfiguration = buildTbenchProxyDebugConfiguration(
-    config,
+    buildContext,
     selectedProfile,
     launchMode
   );
@@ -731,7 +725,7 @@ export async function executeDebugLaunch(
   if (!launched) {
     reportDebugLaunchFailure(
       "start-failed",
-      config,
+      buildContext,
       "Debugging failed to start."
     );
     return;
