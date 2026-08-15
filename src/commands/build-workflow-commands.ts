@@ -24,7 +24,7 @@ import { isWorkflowWorkspaceSupported } from "../workspace/workspace-guard";
  * inputs and recompute before deriving arguments; Clean is exempt from
  * preset blocking entirely.
  */
-export function registerWorkflowCommands(
+export function registerBuildWorkflowCommands(
   context: vscode.ExtensionContext,
   deps: CommandDeps
 ): void {

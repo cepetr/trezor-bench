@@ -68,11 +68,12 @@ import { RefreshTrigger } from "./intellisense/intellisense-types";
 import { applyProviderSettingFix } from "./intellisense/cpptools-backend";
 import { ArtifactFileWatcher } from "./build/artifact-file-watcher";
 import { registerExcludedFilesVisibility } from "./intellisense/excluded-files-wiring";
-import { registerArtifactActionCommands } from "./commands/artifact-actions";
+import { registerArtifactActionCommands } from "./commands/artifact-actions-commands";
 import { registerUnsupportedWorkspaceCommands } from "./commands/unsupported-workspace-commands";
-import { registerDebugLaunchCommand } from "./commands/debug-launch";
-import { registerSelectionCommands } from "./commands/selection-commands";
-import { registerWorkflowCommands } from "./commands/workflow-commands";
+import { registerDebugLaunchCommand } from "./commands/debug-launch-commands";
+import { registerBuildSelectionCommands } from "./commands/build-selection-commands";
+import { registerBuildOptionCommands } from "./commands/build-options-commands";
+import { registerBuildWorkflowCommands } from "./commands/build-workflow-commands";
 import { CommandDeps } from "./commands/command-deps";
 import { CONTRIBUTED_COMMAND_IDS } from "./commands/command-ids";
 import {
@@ -592,8 +593,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Per-slice command registrations. ---
   registerArtifactActionCommands(context, commandDeps);
   registerDebugLaunchCommand(context, commandDeps);
-  registerSelectionCommands(context, commandDeps);
-  registerWorkflowCommands(context, commandDeps);
+  registerBuildSelectionCommands(context, commandDeps);
+  registerBuildOptionCommands(context, commandDeps);
+  registerBuildWorkflowCommands(context, commandDeps);
 
   // --- Run and Debug provider (Run and Debug Integration slice) ---
   const debugConfigProvider = new RunDebugConfigProvider(

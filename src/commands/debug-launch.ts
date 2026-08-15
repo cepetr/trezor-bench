@@ -6,7 +6,7 @@
  */
 
 import * as vscode from "vscode";
-import { ManifestComponentDebugProfile, ManifestStateLoaded, findManifestEntries, loadedManifest } from "../manifest/manifest-types";
+import { ManifestComponentDebugProfile, ManifestStateLoaded, findManifestEntries } from "../manifest/manifest-types";
 import { BuildContext } from "../manifest/manifest-types";
 import {
   MatchingDebugProfileSet,
@@ -14,7 +14,6 @@ import {
 } from "../manifest/debug-profiles";
 import { logDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
 import { makeContextKey } from "../build/artifact-resolution";
-import { CommandDeps } from "./command-deps";
 
 // ---------------------------------------------------------------------------
 // Proxy debug configuration identity
@@ -202,29 +201,4 @@ export async function executeDebugLaunch(
   }
 
   await vscode.commands.executeCommand("workbench.view.debug");
-}
-
-/**
- * Registers the tbench.startDebugging command (Debug Launch slice).
- */
-export function registerDebugLaunchCommand(
-  context: vscode.ExtensionContext,
-  deps: CommandDeps
-): void {
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.startDebugging", async () => {
-      const state = deps.getManifestState();
-      const config = deps.getBuildSelection();
-      const manifest = loadedManifest(state);
-      if (!manifest || !config) {
-        logDebugLaunchFailure("unsupported-workspace", {
-          detail: "manifest not loaded or no active configuration",
-        });
-        revealLogs();
-        notifyError("Cannot start debugging: manifest not loaded.");
-        return;
-      }
-      await executeDebugLaunch(deps.workspaceFolder, manifest, config);
-    })
-  );
 }
