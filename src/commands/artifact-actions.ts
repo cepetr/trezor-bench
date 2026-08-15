@@ -59,31 +59,20 @@ export interface ArtifactActionContext {
 // ---------------------------------------------------------------------------
 
 /**
- * Evaluates whether Flash is applicable for the given component and active
- * build context. Returns `false` when the component has no `flashWhen` rule.
+ * Evaluates whether the given artifact action is applicable for the component
+ * and active build context. Returns `false` when the component has no
+ * `flashWhen`/`uploadWhen` rule for that action.
  */
-export function isFlashApplicable(
+export function isArtifactActionApplicable(
+  kind: ArtifactActionKind,
   component: ManifestComponent,
   evalCtx: EvalContext
 ): boolean {
-  if (!component.flashWhen) {
+  const when = kind === "flash" ? component.flashWhen : component.uploadWhen;
+  if (!when) {
     return false;
   }
-  return evaluateWhenExpression(component.flashWhen, evalCtx);
-}
-
-/**
- * Evaluates whether Upload is applicable for the given component and active
- * build context. Returns `false` when the component has no `uploadWhen` rule.
- */
-export function isUploadApplicable(
-  component: ManifestComponent,
-  evalCtx: EvalContext
-): boolean {
-  if (!component.uploadWhen) {
-    return false;
-  }
-  return evaluateWhenExpression(component.uploadWhen, evalCtx);
+  return evaluateWhenExpression(when, evalCtx);
 }
 
 /**
@@ -231,44 +220,20 @@ export function reportArtifactActionBlocked(
 
 
 /**
- * Creates an on-demand VS Code Task for the Flash action.
+ * Creates an on-demand VS Code Task for a Flash or Upload action.
  *
- * Command line: `cargo xtask flash <component-id> -m <model-id>`
+ * Command line: `cargo xtask <kind> <component-id> -m <model-id>`
  */
-export function createFlashTask(
+export function createArtifactTask(
+  kind: ArtifactActionKind,
   ctx: ArtifactActionContext,
   workspaceFolder: vscode.WorkspaceFolder
 ): vscode.Task {
-  const label = formatArtifactTaskLabel("flash", ctx);
+  const label = formatArtifactTaskLabel(kind, ctx);
   const args = [ctx.componentId, "-m", ctx.modelId];
 
   const definition: vscode.TaskDefinition = { type: TASK_TYPE };
-  const execution = createCargoTaskExecution("flash", args, workspaceFolder);
-  const task = new vscode.Task(
-    definition,
-    workspaceFolder,
-    label,
-    TASK_SOURCE,
-    execution
-  );
-  task.group = undefined; // not a standard build-task entry point
-  return task;
-}
-
-/**
- * Creates an on-demand VS Code Task for the Upload action.
- *
- * Command line: `cargo xtask upload <component-id> -m <model-id>`
- */
-export function createUploadTask(
-  ctx: ArtifactActionContext,
-  workspaceFolder: vscode.WorkspaceFolder
-): vscode.Task {
-  const label = formatArtifactTaskLabel("upload", ctx);
-  const args = [ctx.componentId, "-m", ctx.modelId];
-
-  const definition: vscode.TaskDefinition = { type: TASK_TYPE };
-  const execution = createCargoTaskExecution("upload", args, workspaceFolder);
+  const execution = createCargoTaskExecution(kind, args, workspaceFolder);
   const task = new vscode.Task(
     definition,
     workspaceFolder,

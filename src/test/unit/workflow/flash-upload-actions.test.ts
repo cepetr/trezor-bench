@@ -3,27 +3,23 @@
  * precondition evaluation, and no-auto-refresh rule.
  *
  * Covers:
- *  - isFlashApplicable: returns false when flashWhen is absent
- *  - isFlashApplicable: evaluates parsed flashWhen expression correctly
- *  - isUploadApplicable: returns false when uploadWhen is absent
- *  - isUploadApplicable: evaluates parsed uploadWhen expression correctly
+ *  - isArtifactActionApplicable: returns false when flashWhen/uploadWhen is absent
+ *  - isArtifactActionApplicable: evaluates the parsed when expression correctly
  *  - formatArtifactTaskLabel: produces correct dynamic label for Flash
  *  - formatArtifactTaskLabel: produces correct dynamic label for Upload
  *  - evaluateArtifactActionPreconditions: blocks on each reason in priority order
  *  - resolveArtifactActionContext: resolves correctly / returns undefined for unknown ids
- *  - createFlashTask / createUploadTask: correct task label and shell command
+ *  - createArtifactTask: correct task label and shell command for both kinds
  */
 
 import * as assert from "assert";
 import {
-  isFlashApplicable,
-  isUploadApplicable,
+  isArtifactActionApplicable,
   shouldShowArtifactRows,
   formatArtifactTaskLabel,
   evaluateArtifactActionPreconditions,
   resolveArtifactActionContext,
-  createFlashTask,
-  createUploadTask,
+  createArtifactTask,
   ArtifactActionContext,
   ArtifactActionPreconditionInputs,
 } from "../../../commands/artifact-actions";
@@ -72,17 +68,17 @@ const MOCK_WORKSPACE_FOLDER = {
 suite("isFlashApplicable", () => {
   test("returns false when flashWhen is absent", () => {
     const component = makeFlashComponent(undefined);
-    assert.strictEqual(isFlashApplicable(component, makeEvalCtx()), false);
+    assert.strictEqual(isArtifactActionApplicable("flash", component, makeEvalCtx()), false);
   });
 
   test("returns true when flashWhen matches the active model", () => {
     const component = makeFlashComponent(FLASH_WHEN_T2T1);
-    assert.strictEqual(isFlashApplicable(component, makeEvalCtx("T2T1")), true);
+    assert.strictEqual(isArtifactActionApplicable("flash", component, makeEvalCtx("T2T1")), true);
   });
 
   test("returns false when flashWhen does not match the active model", () => {
     const component = makeFlashComponent(FLASH_WHEN_T2T1);
-    assert.strictEqual(isFlashApplicable(component, makeEvalCtx("T3W1")), false);
+    assert.strictEqual(isArtifactActionApplicable("flash", component, makeEvalCtx("T3W1")), false);
   });
 });
 
@@ -93,18 +89,18 @@ suite("isFlashApplicable", () => {
 suite("isUploadApplicable", () => {
   test("returns false when uploadWhen is absent", () => {
     const component = makeFlashComponent(undefined, undefined);
-    assert.strictEqual(isUploadApplicable(component, makeEvalCtx()), false);
+    assert.strictEqual(isArtifactActionApplicable("upload", component, makeEvalCtx()), false);
   });
 
   test("returns true for any matching model in an any() expression", () => {
     const component = makeFlashComponent(undefined, UPLOAD_WHEN_ANY);
-    assert.strictEqual(isUploadApplicable(component, makeEvalCtx("T2T1")), true);
-    assert.strictEqual(isUploadApplicable(component, makeEvalCtx("T3W1")), true);
+    assert.strictEqual(isArtifactActionApplicable("upload", component, makeEvalCtx("T2T1")), true);
+    assert.strictEqual(isArtifactActionApplicable("upload", component, makeEvalCtx("T3W1")), true);
   });
 
   test("returns false when the active model is not in the any() expression", () => {
     const component = makeFlashComponent(undefined, UPLOAD_WHEN_ANY);
-    assert.strictEqual(isUploadApplicable(component, makeEvalCtx("T3T1")), false);
+    assert.strictEqual(isArtifactActionApplicable("upload", component, makeEvalCtx("T3T1")), false);
   });
 });
 
@@ -314,19 +310,19 @@ suite("createFlashTask", () => {
   };
 
   test("task name matches dynamic label", () => {
-    const task = createFlashTask(ctx, MOCK_WORKSPACE_FOLDER);
+    const task = createArtifactTask("flash", ctx, MOCK_WORKSPACE_FOLDER);
     assert.strictEqual(task.name, "Flash to Device Trezor Model T (v1) | HW | Core");
   });
 
   test("task process execution includes xtask flash with component-id and model-id", () => {
-    const task = createFlashTask(ctx, MOCK_WORKSPACE_FOLDER);
+    const task = createArtifactTask("flash", ctx, MOCK_WORKSPACE_FOLDER);
     const exec = task.execution as import("vscode").ProcessExecution;
     assert.strictEqual(exec.process, "cargo");
     assert.deepStrictEqual(exec.args, ["xtask", "flash", "core", "-m", "T2T1"]);
   });
 
   test("flash task has no group (not a standard build-task entry)", () => {
-    const task = createFlashTask(ctx, MOCK_WORKSPACE_FOLDER);
+    const task = createArtifactTask("flash", ctx, MOCK_WORKSPACE_FOLDER);
     assert.strictEqual(task.group, undefined);
   });
 });
@@ -342,19 +338,19 @@ suite("createUploadTask", () => {
   };
 
   test("task name matches dynamic label", () => {
-    const task = createUploadTask(ctx, MOCK_WORKSPACE_FOLDER);
+    const task = createArtifactTask("upload", ctx, MOCK_WORKSPACE_FOLDER);
     assert.strictEqual(task.name, "Upload to Device Trezor Model T (v1) | HW | Core");
   });
 
   test("task process execution includes xtask upload with component-id and model-id", () => {
-    const task = createUploadTask(ctx, MOCK_WORKSPACE_FOLDER);
+    const task = createArtifactTask("upload", ctx, MOCK_WORKSPACE_FOLDER);
     const exec = task.execution as import("vscode").ProcessExecution;
     assert.strictEqual(exec.process, "cargo");
     assert.deepStrictEqual(exec.args, ["xtask", "upload", "core", "-m", "T2T1"]);
   });
 
   test("upload task has no group (not a standard build-task entry)", () => {
-    const task = createUploadTask(ctx, MOCK_WORKSPACE_FOLDER);
+    const task = createArtifactTask("upload", ctx, MOCK_WORKSPACE_FOLDER);
     assert.strictEqual(task.group, undefined);
   });
 });

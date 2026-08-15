@@ -78,15 +78,14 @@ import { ExcludedFileDecorationsProvider } from "./ui/excluded-file-decorations"
 import { ExcludedFileOverlaysManager } from "./ui/excluded-file-overlays";
 import {
   evaluateArtifactActionPreconditions,
-  isFlashApplicable,
-  isUploadApplicable,
+  isArtifactActionApplicable,
   shouldShowArtifactRows,
   resolveArtifactActionContext,
-  createFlashTask,
-  createUploadTask,
+  createArtifactTask,
   executeArtifactTask,
   reportArtifactActionBlocked,
   openMapFile,
+  ArtifactActionKind,
 } from "./commands/artifact-actions";
 import {
   buildResolutionInputs,
@@ -404,8 +403,8 @@ function updateArtifactActionContext(
     componentId: config.componentId,
   };
 
-  const flashApplicable = component ? isFlashApplicable(component, evalCtx) : false;
-  const uploadApplicable = component ? isUploadApplicable(component, evalCtx) : false;
+  const flashApplicable = component ? isArtifactActionApplicable("flash", component, evalCtx) : false;
+  const uploadApplicable = component ? isArtifactActionApplicable("upload", component, evalCtx) : false;
   const showArtifactRows = shouldShowArtifactRows(flashApplicable, uploadApplicable);
 
   const inputs = buildResolutionInputs(loaded, config, artifactsRoot);
@@ -846,76 +845,46 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  // --- Flash command. ---
+  // --- Flash and Upload commands. Identical except for the action kind. ---
+  const runArtifactAction = async (kind: ArtifactActionKind): Promise<void> => {
+    const state = _manifestState;
+    const config = _activeConfig;
+    const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
+    const actionCtx = loaded && config ? resolveArtifactActionContext(loaded, config) : undefined;
+    const component = loaded?.components.find((c) => c.id === config?.componentId);
+    const evalCtx: EvalContext | undefined = config
+      ? { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId }
+      : undefined;
+
+    const blockReason = evaluateArtifactActionPreconditions({
+      workspaceSupported: isWorkflowWorkspaceSupported(),
+      manifestStatus: state?.status ?? "missing",
+      hasWorkflowBlockingIssues: loaded?.hasWorkflowBlockingIssues ?? false,
+      activeConfigResolved: !!actionCtx,
+      actionApplicable: !!(component && evalCtx && isArtifactActionApplicable(kind, component, evalCtx)),
+      binaryExists: _binaryArtifact?.exists ?? false,
+    });
+
+    if (blockReason !== "no-block") {
+      reportArtifactActionBlocked(kind, blockReason);
+      return;
+    }
+
+    if (!actionCtx) {
+      reportArtifactActionBlocked(kind, "context-unresolved");
+      return;
+    }
+
+    const task = createArtifactTask(kind, actionCtx, workspaceFolder);
+    await executeArtifactTask(task, kind);
+  };
+
   context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.flash", async () => {
-      const state = _manifestState;
-      const config = _activeConfig;
-      const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
-      const actionCtx = loaded && config ? resolveArtifactActionContext(loaded, config) : undefined;
-      const component = loaded?.components.find((c) => c.id === config?.componentId);
-      const evalCtx: EvalContext | undefined = config
-        ? { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId }
-        : undefined;
-
-      const blockReason = evaluateArtifactActionPreconditions({
-        workspaceSupported: isWorkflowWorkspaceSupported(),
-        manifestStatus: state?.status ?? "missing",
-        hasWorkflowBlockingIssues: loaded?.hasWorkflowBlockingIssues ?? false,
-        activeConfigResolved: !!actionCtx,
-        actionApplicable: !!(component && evalCtx && isFlashApplicable(component, evalCtx)),
-        binaryExists: _binaryArtifact?.exists ?? false,
-      });
-
-      if (blockReason !== "no-block") {
-        reportArtifactActionBlocked("flash", blockReason);
-        return;
-      }
-
-      if (!actionCtx) {
-        reportArtifactActionBlocked("flash", "context-unresolved");
-        return;
-      }
-
-      const task = createFlashTask(actionCtx, workspaceFolder);
-      await executeArtifactTask(task, "flash");
-    })
+    vscode.commands.registerCommand("tbench.flash", () => runArtifactAction("flash"))
   );
 
-  // --- Upload command. ---
   context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.upload", async () => {
-      const state = _manifestState;
-      const config = _activeConfig;
-      const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
-      const actionCtx = loaded && config ? resolveArtifactActionContext(loaded, config) : undefined;
-      const component = loaded?.components.find((c) => c.id === config?.componentId);
-      const evalCtx: EvalContext | undefined = config
-        ? { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId }
-        : undefined;
-
-      const blockReason = evaluateArtifactActionPreconditions({
-        workspaceSupported: isWorkflowWorkspaceSupported(),
-        manifestStatus: state?.status ?? "missing",
-        hasWorkflowBlockingIssues: loaded?.hasWorkflowBlockingIssues ?? false,
-        activeConfigResolved: !!actionCtx,
-        actionApplicable: !!(component && evalCtx && isUploadApplicable(component, evalCtx)),
-        binaryExists: _binaryArtifact?.exists ?? false,
-      });
-
-      if (blockReason !== "no-block") {
-        reportArtifactActionBlocked("upload", blockReason);
-        return;
-      }
-
-      if (!actionCtx) {
-        reportArtifactActionBlocked("upload", "context-unresolved");
-        return;
-      }
-
-      const task = createUploadTask(actionCtx, workspaceFolder);
-      await executeArtifactTask(task, "upload");
-    })
+    vscode.commands.registerCommand("tbench.upload", () => runArtifactAction("upload"))
   );
 
   // --- startDebugging command (Debug Launch slice) ---
