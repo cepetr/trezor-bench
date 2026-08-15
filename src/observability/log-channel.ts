@@ -73,11 +73,13 @@ export function revealLogs(): void {
 }
 
 /**
- * Disposes the output channel. Call on extension deactivation.
+ * Disposes the output channel and resets module logging state.
+ * Call on extension deactivation.
  */
 export function disposeLogChannel(): void {
   _channel?.dispose();
   _channel = undefined;
+  _loggedUnknownPresetKeys.clear();
 }
 
 // ---------------------------------------------------------------------------
