@@ -204,8 +204,8 @@ Build Artifacts
 ```
 
 - **Compile Commands**: Represents the compile commands artifact for the active build context and supports editor assistance aligned with that context.
-- **Binary**: Represents the binary artifact produced for the active build context and is used by `Flash to Device` and `Upload to Device` when those actions are applicable.
-- **Map File**: Represents the map file artifact associated with the active build context and exposes a row-level open action when the map file exists.
+- **Binary**: Represents the device binary artifact produced for the active build context and is used by `Flash to Device` and `Upload to Device` when those actions are applicable. The Binary row appears only when Flash or Upload is applicable for the active build context.
+- **Map File**: Represents the map file artifact associated with an active device build context and exposes a row-level open action when the map file exists. The Map File row appears only when Flash or Upload is applicable for the active build context; emulator builds do not produce a map file.
 - **Executable**: Represents the executable artifact for the active build context and is used by `Start Debugging` when debugging is available.
 
 When at least one artifact exists, an `Updated` row appears before the artifact rows. Its description shows the relative age of the newest artifact modification time across Compile Commands, Binary, Map File, and Executable. The age shows `just now` under one minute and otherwise uses minutes, hours, or days; it refreshes once per minute while at least one timestamped artifact is present. The `Updated` row uses the `clock` icon, and its tooltip shows the newest modification timestamp in UTC.
@@ -222,11 +222,12 @@ Build-artifact state is refreshed when the active build context changes, when re
 
 Some artifact rows expose actions directly in the tree view rather than acting as general command surfaces.
 
+- The `Binary` and `Map File` rows appear only when Flash or Upload is applicable for the active build context.
 - The `Binary` row can expose `Flash to Device` and `Upload to Device` when those actions are applicable.
 - The `Map File` row can expose an open action when the active map file artifact exists.
 - The `Executable` row can expose `Start Debugging` when debugging is available.
 
-These row actions follow the same artifact and applicability state shown in the tree view. When the related artifact is missing, the row remains visible but its action is disabled.
+These row actions follow the same artifact and applicability state shown in the tree view. In an active context where the Binary or Map File row applies, the row remains visible when its related artifact is missing but its action is disabled.
 
 #### Map File Open Action
 
