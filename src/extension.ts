@@ -68,6 +68,9 @@ let _manifestStateSubscription: vscode.Disposable | undefined;
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   initLogChannel();
 
+  // --- Scope guard: verify no unrelated commands are contributed. ---
+  assertNoUnauthorizedContributions(context);
+
   // Workspace-independent: reveals the log channel in both activation paths.
   context.subscriptions.push(
     vscode.commands.registerCommand("tbench.showLogs", () => {
@@ -91,9 +94,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _treeModel?.updatePresets(state, activeId, choices);
     },
   });
-
-  // --- Scope guard: verify no unrelated commands are registered. ---
-  assertNoUnauthorizedContributions(context);
 
   // Recomputes the resolved options and refreshes the tree after a
   // build-option write, shared by the checkbox and toggle/select handlers.
