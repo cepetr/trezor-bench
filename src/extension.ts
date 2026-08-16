@@ -31,11 +31,7 @@ import {
 import { activePresetId, BuildSelection } from "./build/build-selection";
 import { writeBuildOption } from "./build/build-options";
 import { ManifestState, loadedManifest } from "./manifest/manifest-types";
-import {
-  BuildTaskProvider,
-  isSuccessfulArtifactRefreshTaskProcess,
-  TASK_TYPE,
-} from "./tasks/build-task-provider";
+import { registerBuildTaskWiring } from "./tasks/build-task-wiring";
 import { IntelliSenseService } from "./intellisense/intellisense-service";
 import { RefreshTrigger } from "./intellisense/intellisense-types";
 import { ArtifactFileWatcher } from "./build/artifact-file-watcher";
@@ -329,22 +325,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
 
   // --- Task provider. ---
-  const taskProvider = new BuildTaskProvider({
+  registerBuildTaskWiring(context, {
     getManifestState: () => loadedManifest(_manifestState),
     getBuildContext: () => _buildSelection,
     getResolvedOptions: () => presetOptions.resolvedOptions,
     getActivePresetId: () => activePresetId(_buildSelection),
     getWorkspaceFolder: () => workspaceFolder,
+    refreshBuildArtifacts: () => refreshBuildArtifacts("workflow-task-complete"),
   });
-  context.subscriptions.push(vscode.tasks.registerTaskProvider(TASK_TYPE, taskProvider));
-
-  context.subscriptions.push(
-    vscode.tasks.onDidEndTaskProcess((event) => {
-      if (isSuccessfulArtifactRefreshTaskProcess(event)) {
-        refreshBuildArtifacts("workflow-task-complete");
-      }
-    })
-  );
 
   // --- Repository-config lifecycle: teardown/rebuild of the manifest and
   // preset services on each tbench.toml state change. ---
