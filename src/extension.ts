@@ -10,16 +10,7 @@ import { RepositoryConfigService, loadRepositoryConfig, setRepositoryConfig, res
 import { ManifestService } from "./manifest/manifest-service";
 import { PresetService } from "./presets/preset-service";
 import { PresetState } from "./presets/preset-types";
-import {
-  derivePresetContext,
-  samePresetContext,
-  shiftedPresetOptionKeys,
-  listPresetChoices,
-  computePresetEffectiveValues,
-  PresetChoice,
-  PresetContext,
-  PresetEffectiveValue,
-} from "./presets/preset-resolution";
+import { PresetOptionsCoordinator } from "./presets/preset-options-coordinator";
 import { PaneTreeModel } from "./ui/pane-tree";
 import { registerPaneTreeViews } from "./ui/pane-tree-wiring";
 import { StatusBarPresenter } from "./ui/status-bar";
@@ -30,9 +21,6 @@ import {
   revealLogs,
   logManifestState,
   logPresetState,
-  logPresetNormalization,
-  logOverridesPrunedForPreset,
-  logOverridesPrunedForContext,
   logRepositoryConfigState,
   notifyWarning,
   notifyError,
@@ -43,20 +31,8 @@ import {
   handlePresetStateDiagnostics,
   handleRepositoryConfigDiagnostics,
 } from "./observability/diagnostics";
-import {
-  restoreBuildSelection,
-  readBuildSelection,
-  activePresetId,
-  BuildSelection,
-} from "./build/build-selection";
-import { normalizeBuildSelection } from "./build/normalize-selection";
-import {
-  readBuildOptions,
-  writeBuildOption,
-  dropBuildOptionOverrides,
-  normalizeBuildOptions,
-  ResolvedOption,
-} from "./build/build-options";
+import { activePresetId, BuildSelection } from "./build/build-selection";
+import { writeBuildOption } from "./build/build-options";
 import { ManifestState, loadedManifest } from "./manifest/manifest-types";
 import {
   BuildTaskProvider,
@@ -82,7 +58,6 @@ import {
   updateDebugContext,
   updateCompileCommandsTreeArtifact,
 } from "./ui/context-keys";
-import { BuildContext } from "./manifest/manifest-types";
 import {
   RunDebugConfigProvider,
   TBENCH_DEBUG_TYPE,
@@ -136,194 +111,25 @@ function assertNoUnauthorizedContributions(
   }
 }
 
-/**
- * Computes the resolved build options for the given manifest state, active
- * configuration, current persisted selections, and preset-effective values.
- * Returns an empty array when the manifest is not loaded or no active
- * configuration is available.
- */
-function computeResolvedOptions(
-  state: ManifestState,
-  buildContext: BuildContext | undefined,
-  context: vscode.ExtensionContext,
-  presetEffectiveValues: ReadonlyMap<string, PresetEffectiveValue> = new Map()
-): ResolvedOption[] {
-  const manifest = loadedManifest(state);
-  if (!manifest || !buildContext) {
-    return [];
-  }
-  const saved = readBuildOptions(context);
-  return normalizeBuildOptions(manifest.buildOptions, saved, buildContext, presetEffectiveValues);
-}
-
-/**
- * Owns the preset/build-option recomputation state: the preset-effective
- * values, the preset context of the last refresh, the preset-blocked flags,
- * and the resolved build options. Everything here is derived state — the
- * persisted inputs live in workspaceState and the preset files.
- */
-class PresetOptionsCoordinator {
-  private _effectiveValues: ReadonlyMap<string, PresetEffectiveValue> = new Map();
-  /**
-   * The preset context the last refresh resolved against. Held beside
-   * `_buildSelection` — the two are always written together — so a refresh can tell
-   * whether the calculated values every stored override was authored against
-   * still hold. `undefined` until the first refresh with a loaded
-   * manifest, which is what keeps activation from wiping a restored session.
-   */
-  private _presetContext: PresetContext | undefined;
-  /**
-   * Backs the `tbench.presetBlocked` context key (an absent shared
-   * `presets.toml`, file-level invalidity, or any available-option mismatch).
-   */
-  private _blocked = false;
-  /**
-   * True only for the absent shared `presets.toml`. Tracked separately
-   * from `_blocked` so the launch path can report the more specific
-   * `presets-unavailable` reason; it always implies `_blocked`.
-   */
-  private _unavailable = false;
-  private _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
-
-  get presetBlocked(): boolean {
-    return this._blocked;
-  }
-
-  get presetsUnavailable(): boolean {
-    return this._unavailable;
-  }
-
-  get resolvedOptions(): ReadonlyArray<ResolvedOption> {
-    return this._resolvedOptions;
-  }
-
-  /** Recomputes the resolved options against the current effective values. */
-  recomputeResolvedOptions(
-    state: ManifestState,
-    buildContext: BuildContext | undefined,
-    context: vscode.ExtensionContext
-  ): void {
-    this._resolvedOptions = computeResolvedOptions(state, buildContext, context, this._effectiveValues);
-  }
-
-  /** Clears the state derived from a loaded manifest (manifest unloaded). */
-  resetForUnloadedManifest(): void {
-    this._presetContext = undefined;
-    this._resolvedOptions = [];
-  }
-
-  /** Clears the resolved options (invalid repository configuration). */
-  clearResolvedOptions(): void {
-    this._resolvedOptions = [];
-  }
-
-  /**
-   * Recomputes the declared preset list and preset-effective build-option values
-   * against the current manifest, active build context, and preset state;
-   * normalizes and persists the active preset id when it changed; drops, when
-   * the active preset or the preset context changed, exactly those explicit
-   * build-option overrides whose calculated value moved with it;
-   * and refreshes the `Preset` selector and Build Options.
-   * The single entry point for every preset-relevant
-   * trigger: activation, preset-state change, manifest-state change, and
-   * active model/target/component change.
-   */
-  async refresh(context: vscode.ExtensionContext): Promise<void> {
-    const manifest = loadedManifest(_manifestState);
-    if (!manifest) {
-      this._effectiveValues = new Map();
-      this._blocked = false;
-      this._unavailable = false;
-      vscode.commands.executeCommand("setContext", "tbench.presetBlocked", false);
-      _treeModel?.updatePresets(_presetState, undefined, []);
-      return;
-    }
-
-    const savedAxes = normalizeBuildSelection(manifest, readBuildSelection(context));
-    const presetCtx = derivePresetContext(manifest, savedAxes);
-
-    const currentPresetState = _presetState;
-    const presets = currentPresetState?.status === "loaded" ? currentPresetState : undefined;
-
-    // The choice list depends on the two preset files alone: every declared
-    // preset is offered whatever the build context, so `knownIds` only
-    // ever retires an id the files no longer declare.
-    let choices: PresetChoice[] = [];
-    let knownIds: Set<string> | undefined;
-    if (presets) {
-      choices = listPresetChoices(presets.shared, presets.user);
-      knownIds = new Set(choices.map((p) => p.id));
-    }
-
-    const previousPresetId = _buildSelection ? activePresetId(_buildSelection) : undefined;
-    const previousPresetContext = this._presetContext;
-    const normalizedConfig = await restoreBuildSelection(context, manifest, knownIds);
-    const newPresetId = activePresetId(normalizedConfig);
-
-    const presetIdChanged = previousPresetId !== undefined && previousPresetId !== newPresetId;
-    const presetContextChanged =
-      previousPresetContext !== undefined && !samePresetContext(previousPresetContext, presetCtx);
-
-    if (presetIdChanged) {
-      logPresetNormalization(previousPresetId!, newPresetId);
-    }
-
-    this._effectiveValues = presets
-      ? computePresetEffectiveValues(manifest.buildOptions, presets.shared, presets.user, newPresetId, presetCtx)
-      : new Map();
-
-    if (presets && (presetIdChanged || presetContextChanged)) {
-      // An override is authored against a calculated value, and that value is a
-      // function of the (active preset, preset context) pair: fragments carry
-      // `when = { model, project, emulator }` filters, so both the [[defaults]]
-      // layer and the named-preset layer can calculate differently in a
-      // different context. So a change to either half is where overrides have to
-      // be re-examined — but only per option, and against the same preset files:
-      // recalculate what the previous pair produced, and drop exactly the
-      // overrides whose value moved. Those would otherwise silently shadow the
-      // new calculation, with no way to clear it for a checkbox; the rest still
-      // say what the user asked for and are kept. Both change guards
-      // require a known previous half, which is what keeps activation from
-      // pruning the selections it just restored, and an unloaded preset state
-      // never prunes because it can calculate neither side.
-      const previousEffective = computePresetEffectiveValues(
-        manifest.buildOptions,
-        presets.shared,
-        presets.user,
-        previousPresetId ?? newPresetId,
-        previousPresetContext ?? presetCtx
-      );
-      const shifted = shiftedPresetOptionKeys(previousEffective, this._effectiveValues);
-      const dropped = await dropBuildOptionOverrides(context, shifted);
-      const kept = Object.keys(readBuildOptions(context)?.values ?? {});
-      if (presetIdChanged) {
-        logOverridesPrunedForPreset(previousPresetId!, newPresetId, dropped, kept);
-      } else {
-        logOverridesPrunedForContext(previousPresetContext!, presetCtx, dropped, kept);
-      }
-    }
-
-    _buildSelection = normalizedConfig;
-    this._presetContext = presetCtx;
-    this._resolvedOptions = computeResolvedOptions(manifest, normalizedConfig, context, this._effectiveValues);
-
-    this._unavailable = currentPresetState?.status === "unavailable";
-    this._blocked =
-      this._unavailable ||
-      currentPresetState?.status === "invalid" ||
-      this._resolvedOptions.some((r) => r.available && r.presetState === "mismatch");
-    vscode.commands.executeCommand("setContext", "tbench.presetBlocked", this._blocked);
-
-    _treeModel?.update(manifest, normalizedConfig, this._resolvedOptions);
-    _treeModel?.updatePresets(currentPresetState, newPresetId, choices);
-  }
-}
-
-let _presetOptions = new PresetOptionsCoordinator();
-
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   initLogChannel();
-  _presetOptions = new PresetOptionsCoordinator();
+
+  // Preset/build-option recomputation state, wired to the module-owned
+  // service state through explicit getters and setters.
+  const presetOptions = new PresetOptionsCoordinator({
+    getManifestState: () => _manifestState,
+    getPresetState: () => _presetState,
+    getBuildSelection: () => _buildSelection,
+    setBuildSelection: (selection) => {
+      _buildSelection = selection;
+    },
+    updateTree: (state, buildContext, resolvedOptions) => {
+      _treeModel?.update(state, buildContext, resolvedOptions);
+    },
+    updatePresets: (state, activeId, choices) => {
+      _treeModel?.updatePresets(state, activeId, choices);
+    },
+  });
 
   // --- Scope guard: verify no unrelated commands are registered. ---
   assertNoUnauthorizedContributions(context);
@@ -333,8 +139,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const refreshResolvedOptionsView = (): void => {
     const state = _manifestState;
     if (state) {
-      _presetOptions.recomputeResolvedOptions(state, _buildSelection, context);
-      _treeModel?.update(state, _buildSelection, _presetOptions.resolvedOptions);
+      presetOptions.recomputeResolvedOptions(state, _buildSelection, context);
+      _treeModel?.update(state, _buildSelection, presetOptions.resolvedOptions);
     }
   };
 
@@ -427,14 +233,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     workspaceFolder,
     getManifestState: () => _manifestState,
     getBuildSelection: () => _buildSelection,
-    getResolvedOptions: () => _presetOptions.resolvedOptions,
-    getPresetBlocked: () => _presetOptions.presetBlocked,
-    getPresetsUnavailable: () => _presetOptions.presetsUnavailable,
+    getResolvedOptions: () => presetOptions.resolvedOptions,
+    getPresetBlocked: () => presetOptions.presetBlocked,
+    getPresetsUnavailable: () => presetOptions.presetsUnavailable,
     getFileArtifact: (kind) => _treeModel?.getArtifact(kind) ?? null,
     reloadPresets: async () => {
       await _presetService?.reload();
     },
-    refreshPresetOptions: () => _presetOptions.refresh(context),
+    refreshPresetOptions: () => presetOptions.refresh(context),
     refreshResolvedOptionsView,
     refreshStatusBar,
     refreshArtifactFileWatcher,
@@ -533,10 +339,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const onManifestStateChange = async (state: ManifestState): Promise<void> => {
     _manifestState = state;
     if (state.status === "loaded") {
-      await _presetOptions.refresh(context);
+      await presetOptions.refresh(context);
     } else {
       _buildSelection = undefined;
-      _presetOptions.resetForUnloadedManifest();
+      presetOptions.resetForUnloadedManifest();
       _treeModel?.update(state, undefined, []);
       _treeModel?.updatePresets(_presetState, undefined, []);
     }
@@ -571,7 +377,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     _presetState = state;
     handlePresetStateDiagnostics(state);
     logPresetState(state);
-    await _presetOptions.refresh(context);
+    await presetOptions.refresh(context);
   };
 
   _presetStateSubscription = _presetService.onDidChangeState(onPresetStateChange);
@@ -623,7 +429,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const taskProvider = new BuildTaskProvider({
     getManifestState: () => loadedManifest(_manifestState),
     getBuildContext: () => _buildSelection,
-    getResolvedOptions: () => _presetOptions.resolvedOptions,
+    getResolvedOptions: () => presetOptions.resolvedOptions,
     getActivePresetId: () => activePresetId(_buildSelection),
     getWorkspaceFolder: () => workspaceFolder,
   });
@@ -666,7 +472,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _manifestState = undefined;
       _presetState = undefined;
       _buildSelection = undefined;
-      _presetOptions.clearResolvedOptions();
+      presetOptions.clearResolvedOptions();
       _intelliSenseService?.setManifest(undefined);
       _intelliSenseService?.setBuildContext(undefined);
       _intelliSenseService?.setArtifactsRoot("");
