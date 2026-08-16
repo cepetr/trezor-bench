@@ -78,6 +78,7 @@ const window = {
   }),
   showWarningMessage: () => Promise.resolve(undefined),
   showErrorMessage: () => Promise.resolve(undefined),
+  showQuickPick: () => Promise.resolve(undefined),
   registerTreeDataProvider: () => ({ dispose: () => {} }),
   createTreeView: () => ({
     onDidExpandElement: () => ({ dispose: () => {} }),

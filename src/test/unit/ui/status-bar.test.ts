@@ -1,6 +1,6 @@
 import * as assert from "assert";
-import { formatStatusBarText } from "../../../ui/status-bar";
-import { ManifestStateLoaded } from "../../../manifest/manifest-types";
+import { formatStatusBarText, StatusBarPresenter } from "../../../ui/status-bar";
+import { ManifestStateLoaded, ManifestStateMissing } from "../../../manifest/manifest-types";
 import { BuildSelection } from "../../../build/build-selection";
 import * as vscode from "vscode";
 
@@ -100,5 +100,120 @@ suite("formatStatusBarText – unresolvable ids", () => {
   test("returns undefined when componentId does not resolve", () => {
     const text = formatStatusBarText(makeLoadedState(), config("T2T1", "hw", "MISSING"));
     assert.strictEqual(text, undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite: StatusBarPresenter
+// ---------------------------------------------------------------------------
+
+/** Status-bar item stub that records show/hide/dispose calls. */
+interface StatusBarItemStub {
+  text: string;
+  command: string | undefined;
+  visible: boolean;
+  disposed: boolean;
+  show(): void;
+  hide(): void;
+  dispose(): void;
+}
+
+function makeItemStub(): StatusBarItemStub {
+  return {
+    text: "",
+    command: undefined,
+    visible: false,
+    disposed: false,
+    show() {
+      this.visible = true;
+    },
+    hide() {
+      this.visible = false;
+    },
+    dispose() {
+      this.disposed = true;
+    },
+  };
+}
+
+// The vscode-mock exposes `window.createStatusBarItem` as a replaceable
+// function; we swap it per suite to capture the item the presenter creates.
+const windowMock = (vscode as unknown as {
+  window: { createStatusBarItem: (alignment?: number, priority?: number) => unknown };
+}).window;
+
+suite("StatusBarPresenter", () => {
+  let originalCreate: typeof windowMock.createStatusBarItem;
+  let item: StatusBarItemStub;
+
+  setup(() => {
+    originalCreate = windowMock.createStatusBarItem;
+    item = makeItemStub();
+    windowMock.createStatusBarItem = () => item;
+  });
+
+  teardown(() => {
+    windowMock.createStatusBarItem = originalCreate;
+  });
+
+  function makeMissingState(): ManifestStateMissing {
+    return { status: "missing", manifestUri: vscode.Uri.file("/workspace/tbench.yaml") };
+  }
+
+  test("wires the configuration-focus command on construction", () => {
+    const presenter = new StatusBarPresenter();
+    assert.strictEqual(item.command, "tbench.configuration.focus");
+    presenter.dispose();
+  });
+
+  test("shows the formatted text for a resolvable configuration", () => {
+    const presenter = new StatusBarPresenter();
+    presenter.update(makeLoadedState(), config("T2T1", "hw", "core"), true);
+
+    assert.strictEqual(item.visible, true);
+    assert.strictEqual(item.text, "$(symbol-field) Trezor Model T | HW | Core");
+    presenter.dispose();
+  });
+
+  test("hides the item when the manifest is not loaded", () => {
+    const presenter = new StatusBarPresenter();
+    presenter.update(makeLoadedState(), config("T2T1", "hw", "core"), true);
+    presenter.update(makeMissingState(), config("T2T1", "hw", "core"), true);
+
+    assert.strictEqual(item.visible, false);
+    presenter.dispose();
+  });
+
+  test("hides the item when there is no active configuration", () => {
+    const presenter = new StatusBarPresenter();
+    presenter.update(makeLoadedState(), config("T2T1", "hw", "core"), true);
+    presenter.update(makeLoadedState(), undefined, true);
+
+    assert.strictEqual(item.visible, false);
+    presenter.dispose();
+  });
+
+  test("hides the item when the setting is disabled", () => {
+    const presenter = new StatusBarPresenter();
+    presenter.update(makeLoadedState(), config("T2T1", "hw", "core"), false);
+
+    assert.strictEqual(item.visible, false);
+    presenter.dispose();
+  });
+
+  test("hides the item when the configuration ids do not resolve", () => {
+    const presenter = new StatusBarPresenter();
+    presenter.update(makeLoadedState(), config("T2T1", "hw", "core"), true);
+    presenter.update(makeLoadedState(), config("MISSING", "hw", "core"), true);
+
+    assert.strictEqual(item.visible, false);
+    presenter.dispose();
+  });
+
+  test("dispose() disposes the underlying status-bar item", () => {
+    const presenter = new StatusBarPresenter();
+    presenter.dispose();
+
+    assert.strictEqual(item.disposed, true);
   });
 });
