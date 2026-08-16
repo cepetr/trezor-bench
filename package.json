@@ -6,7 +6,7 @@
   "publisher": "cepetr",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cepetr/vscode-tf-tools.git"
+    "url": "https://github.com/cepetr/trezor-bench.git"
   },
   "engines": {
     "vscode": "^1.105.0"
