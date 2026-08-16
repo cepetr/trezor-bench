@@ -76,6 +76,13 @@ let _debugConfigProviderRegistration: vscode.Disposable | undefined;
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   initLogChannel();
 
+  // Workspace-independent: reveals the log channel in both activation paths.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tbench.showLogs", () => {
+      revealLogs();
+    })
+  );
+
   // Preset/build-option recomputation state, wired to the module-owned
   // service state through explicit getters and setters.
   const presetOptions = new PresetOptionsCoordinator({
@@ -309,20 +316,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   };
 
   _presetStateSubscription = _presetService.onDidChangeState(onPresetStateChange);
-
-  // --- Commands ---
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.showLogs", () => {
-      revealLogs();
-    })
-  );
-
-  // --- Refresh IntelliSense command. ---
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.refreshIntelliSense", () => {
-      _intelliSenseService?.scheduleRefresh("manual-refresh");
-    })
-  );
 
   // --- Per-slice command registrations. ---
   registerArtifactActionCommands(context, commandDeps);

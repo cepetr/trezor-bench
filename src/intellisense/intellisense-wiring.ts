@@ -1,8 +1,8 @@
 /**
  * Wires the IntelliSense event surface: refresh results feeding the tree
  * artifact row and the wrong-provider Fix notification, the user-local
- * setting watchers, and the extension- and workspace-change triggers that
- * re-schedule refreshes.
+ * setting watchers, the manual-refresh command, and the extension- and
+ * workspace-change triggers that re-schedule refreshes.
  */
 import * as vscode from "vscode";
 import { IntelliSenseService } from "./intellisense-service";
@@ -69,6 +69,11 @@ export function registerIntelliSenseWiring(
       ) {
         service.scheduleRefresh("excluded-files-setting-change");
       }
+    }),
+
+    // Manual refresh requested via the command palette or a view action.
+    vscode.commands.registerCommand("tbench.refreshIntelliSense", () => {
+      service.scheduleRefresh("manual-refresh");
     }),
 
     // Provider-change refresh: re-evaluate readiness when extensions change.

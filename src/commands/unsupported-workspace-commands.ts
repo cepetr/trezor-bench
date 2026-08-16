@@ -31,9 +31,6 @@ export function registerUnsupportedWorkspaceCommands(
     });
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("tbench.showLogs", () => {
-      revealLogs();
-    }),
     vscode.commands.registerCommand("tbench.refreshIntelliSense", async () => {
       return;
     }),
