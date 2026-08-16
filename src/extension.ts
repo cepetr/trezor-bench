@@ -6,7 +6,7 @@
 import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder } from "./workspace/workspace-guard";
 import { isStatusBarEnabled } from "./workspace/settings";
-import { RepositoryConfigService, loadRepositoryConfig, setRepositoryConfig, resolveManifestUri, resolveArtifactsPath, resolveDebugTemplatesPath, resolvePresetUris } from "./workspace/repository-config";
+import { RepositoryConfigService, resolveArtifactsPath, resolveDebugTemplatesPath } from "./workspace/repository-config";
 import { registerRepositoryConfigWiring } from "./workspace/repository-config-wiring";
 import { ManifestService } from "./manifest/manifest-service";
 import { PresetService } from "./presets/preset-service";
@@ -133,11 +133,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   const workspaceFolder = requireWorkspaceFolder();
-  const repositoryConfigState = await loadRepositoryConfig(workspaceFolder);
-  if (repositoryConfigState.status !== "invalid") {
-    setRepositoryConfig(workspaceFolder, repositoryConfigState.config);
-  }
-  const manifestUri = resolveManifestUri(workspaceFolder);
   const refreshArtifactFileWatcher = (): void => {
     const manifest = loadedManifest(_manifestState);
 
@@ -251,8 +246,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   _intelliSenseService.setWorkspaceFolder(workspaceFolder);
   _intelliSenseService.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
 
-  // --- Manifest service ---
-  _manifestService = new ManifestService(manifestUri);
+  // --- Manifest service slot: the repository-config wiring creates and
+  // starts the service; dispose whatever occupies the slot at deactivation. ---
   context.subscriptions.push({
     dispose: () => {
       _manifestStateSubscription?.dispose();
@@ -260,9 +255,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   });
 
-  // Connect manifest state changes to the tree model, diagnostics, and logs.
-  // On each state change, restore and normalize the active config and the
-  // active preset together.
+  // Manifest state-change handler, subscribed by the repository-config wiring
+  // onto each rebuilt manifest service: feeds the tree model, diagnostics, and
+  // logs, and restores and normalizes the active config and the active preset
+  // together.
   const onManifestStateChange = async (state: ManifestState): Promise<void> => {
     _manifestState = state;
     if (state.status === "loaded") {
@@ -286,11 +282,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     refreshBuildArtifacts("manifest-change");
   };
 
-  _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
-
-  // --- Preset service ---
-  const presetUris = resolvePresetUris(workspaceFolder);
-  _presetService = new PresetService(presetUris.shared, presetUris.user);
+  // --- Preset service slot: the repository-config wiring creates and
+  // starts the service; dispose whatever occupies the slot at deactivation. ---
   context.subscriptions.push({
     dispose: () => {
       _presetStateSubscription?.dispose();
@@ -298,7 +291,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   });
 
-  // Connect preset state changes to diagnostics, logs, and preset-list
+  // Preset state-change handler, subscribed by the repository-config wiring
+  // onto each rebuilt preset service: feeds diagnostics, logs, and preset-list
   // recomputation/normalization.
   const onPresetStateChange = async (state: PresetState): Promise<void> => {
     _presetState = state;
@@ -306,8 +300,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     logPresetState(state);
     await presetOptions.refresh(context);
   };
-
-  _presetStateSubscription = _presetService.onDidChangeState(onPresetStateChange);
 
   // --- Per-slice command registrations. ---
   registerArtifactActionCommands(context, commandDeps);
