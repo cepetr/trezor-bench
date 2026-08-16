@@ -55,10 +55,7 @@ import {
   updateDebugContext,
   updateCompileCommandsTreeArtifact,
 } from "./ui/context-keys";
-import {
-  RunDebugConfigProvider,
-  TBENCH_DEBUG_TYPE,
-} from "./debug/run-debug-provider";
+import { registerRunDebugProvider } from "./debug/run-debug-wiring";
 
 let _manifestService: ManifestService | undefined;
 let _presetService: PresetService | undefined;
@@ -71,7 +68,6 @@ let _buildSelection: BuildSelection | undefined;
 let _intelliSenseService: IntelliSenseService | undefined;
 let _artifactFileWatcher: ArtifactFileWatcher | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
-let _debugConfigProviderRegistration: vscode.Disposable | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   initLogChannel();
@@ -325,19 +321,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   registerBuildWorkflowCommands(context, commandDeps);
 
   // --- Run and Debug provider (Run and Debug Integration slice) ---
-  const debugConfigProvider = new RunDebugConfigProvider(
-    () => loadedManifest(_manifestState),
-    () => _buildSelection,
-    () => resolveArtifactsPath(workspaceFolder),
-    () => resolveDebugTemplatesPath(workspaceFolder)
-  );
-  _debugConfigProviderRegistration?.dispose();
-  _debugConfigProviderRegistration = vscode.debug.registerDebugConfigurationProvider(
-    TBENCH_DEBUG_TYPE,
-    debugConfigProvider,
-    vscode.DebugConfigurationProviderTriggerKind.Dynamic
-  );
-  context.subscriptions.push(_debugConfigProviderRegistration);
+  registerRunDebugProvider(context, {
+    getManifest: () => loadedManifest(_manifestState),
+    getBuildContext: () => _buildSelection,
+    getArtifactsRoot: () => resolveArtifactsPath(workspaceFolder),
+    getTemplatesRoot: () => resolveDebugTemplatesPath(workspaceFolder),
+  });
 
   // --- Task provider. ---
   const taskProvider = new BuildTaskProvider({
