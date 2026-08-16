@@ -111,7 +111,7 @@ A preset group literally named `default` is reserved: it is excluded from the ch
 
 Any listed preset can be selected; when none of a preset's fragments apply to the active build context, it contributes no fragment values — the preset-file defaults alone calculate the option values — and it is still sent to the launched command.
 
-The active preset id is persisted in the same workspace-scoped active-configuration record as the selected model, target, and component (see `Persistence And Defaults`), but it is never shown in the shared build-context display, status bar, task labels, or command names — it affects only preset-relative build-option values and the arguments described under `Build` and `Clippy And Check`.
+The active preset id is persisted in the same workspace-scoped build selection record as the selected model, target, and component (see `Persistence And Defaults`), but it is never shown in the shared build-context display, status bar, task labels, or command names — it affects only preset-relative build-option values and the arguments described under `Build` and `Clippy And Check`.
 
 When preset data is still loading, the `Preset` selector shows a loading placeholder. When either preset input is invalid, the selector's choices are replaced by a warning row naming the failing file, together with a prompt to check the Problems view for details. When the shared `presets.toml` does not exist at all, the choices are replaced instead by a row reporting that `presets.toml` is unavailable, together with the cause: the open repository's `xtask` does not support build presets. The collapsed `Preset` selector's description then shows `Unavailable` instead of a preset name. In both cases no preset choice is offered — not even `Default` — and the preset-blocking condition described in `Availability And Blocking Model` applies.
 
@@ -305,7 +305,7 @@ If any of these conditions stops being true, the status bar item is hidden rathe
 
 ### Interaction
 
-Selecting the status bar entry opens the `Trezor Bench` container, expands `Build Selection` if it is collapsed, and focuses it, so the user can move directly from the compact summary to the full build-selection and build-option surface.
+Selecting the status bar entry opens the `Trezor Bench` container, expands `Build Selection` if it is collapsed, and focuses it, so the user can move directly from the compact summary to the full `Build Selection` and `Build Options` surface.
 
 ### Refresh Behavior
 
@@ -463,7 +463,7 @@ If at least one workspace folder is open, the extension loads workspace state fr
 - Starts the preset service and begins watching both preset inputs at `<presets path>/presets.toml` and `<presets path>/user-presets.toml`.
 - Initializes the status-bar presenter, IntelliSense service, and excluded-file visibility services.
 - Restores the persisted active build context when possible and normalizes it against the loaded manifest if previously saved values are no longer valid.
-- Recomputes the declared preset list and restores or normalizes the persisted active preset id as described in `Active Build Context Persistence`.
+- Recomputes the declared preset list and restores or normalizes the persisted active preset id as described in `Build Selection Persistence`.
 - Restores persisted build-option selections and resolves them against the active build context and the active preset's calculated effective values.
 - Updates the tree view, status bar, diagnostics, log output, workflow blocking state, preset blocking state, artifact rows, and action enablement from the loaded state.
 - Schedules an initial IntelliSense refresh.
@@ -478,7 +478,7 @@ When the manifest changes:
 - Diagnostics and log output are refreshed to reflect the new manifest state.
 - The active build context is restored and normalized again so stale model, target, or component ids are replaced with valid selections.
 - Build options are re-resolved against the updated manifest and the current active build context.
-- The tree view is refreshed, including build selection, build options, warning states, and artifact rows.
+- The tree view is refreshed, including `Build Selection`, `Build Options`, warning states, and artifact rows.
 - Workflow blocked state, artifact-action applicability, and debugging availability are recomputed.
 - IntelliSense is updated with the new manifest state and refreshed so compile-commands and excluded-file state follow the new configuration.
 
@@ -492,7 +492,7 @@ When either preset input changes:
 
 - Both preset inputs are re-read and re-validated.
 - Diagnostics and log output are refreshed to reflect the new preset state, attributed to whichever file produced an issue.
-- The declared preset list is recomputed, and the active preset id is restored or normalized as described in `Active Build Context Persistence`.
+- The declared preset list is recomputed, and the active preset id is restored or normalized as described in `Build Selection Persistence`.
 - Preset-effective build-option values are recalculated, and Build Options are refreshed to show the new values, emphasis, and mismatch states.
 - The `Preset` selector, its choices, and workflow blocking state are refreshed.
 
@@ -520,7 +520,7 @@ When the user changes the active model, target, component, or preset from the tr
 - Preset-effective build-option values are recalculated for the (possibly new) active preset.
 - Build options are re-resolved for the new context, so context-specific options may appear, disappear, or change availability.
 - The tree view is refreshed to show the new active selection, updated option state, and updated artifact rows.
-- The status bar is refreshed to show the new active configuration when enabled.
+- The status bar is refreshed to show the new active build context when enabled.
 - IntelliSense is refreshed so compile-commands, excluded-file evaluation, and related editor assistance follow the new context.
 - Flash, upload, map-file, and debugging availability are recomputed from the new context and current artifact state.
 
@@ -534,15 +534,15 @@ When the user changes the active model, target, component, or preset from the tr
 
 The extension remembers the active build context and build-option selections in workspace-scoped persistent state so they can be restored across sessions for the same workspace.
 
-### Active Build Context Persistence
+### Build Selection Persistence
 
-The extension persists the selected model, target, component, and active preset id together in the same workspace-scoped active-configuration record.
+The extension persists the selected model, target, component, and active preset id together in the same workspace-scoped build selection record.
 
 When the workspace is opened again and the manifest loads successfully, the extension restores that saved build context if the saved ids still resolve to manifest entries.
 
 If a saved model, target, or component id no longer exists after a manifest change, the extension normalizes that part of the saved build context to a valid entry from the current manifest. The extension uses the first available entry of that kind when a saved value is missing or stale.
 
-The active-configuration record's preset id follows the same save, restore, and normalization lifecycle: a saved preset id is restored whenever the preset inputs still declare that preset — whatever the active model, target, and component — and is otherwise normalized to the synthetic `Default` choice. Records persisted before preset support was added have no preset id; they are read as the `Default` choice and are not rewritten merely for that reason. While either preset input is invalid, the saved preset id is preserved without being resolved or replaced, and is only restored or normalized once valid preset data returns.
+The build selection record's preset id follows the same save, restore, and normalization lifecycle: a saved preset id is restored whenever the preset inputs still declare that preset — whatever the active model, target, and component — and is otherwise normalized to the synthetic `Default` choice. Records persisted before preset support was added have no preset id; they are read as the `Default` choice and are not rewritten merely for that reason. While either preset input is invalid, the saved preset id is preserved without being resolved or replaced, and is only restored or normalized once valid preset data returns.
 
 This normalization behavior is also part of the refresh flow described in the `Startup And Refresh Behavior` section.
 
