@@ -41,9 +41,9 @@ import {
 } from "./tasks/build-task-provider";
 import { IntelliSenseService } from "./intellisense/intellisense-service";
 import { RefreshTrigger } from "./intellisense/intellisense-types";
-import { applyProviderSettingFix } from "./intellisense/cpptools-backend";
 import { ArtifactFileWatcher } from "./build/artifact-file-watcher";
 import { registerExcludedFilesVisibility } from "./intellisense/excluded-files-wiring";
+import { registerIntelliSenseWiring } from "./intellisense/intellisense-wiring";
 import { registerArtifactActionCommands } from "./commands/artifact-actions-commands";
 import { registerUnsupportedWorkspaceCommands } from "./commands/unsupported-workspace-commands";
 import { registerDebugLaunchCommand } from "./commands/debug-launch-commands";
@@ -75,8 +75,6 @@ let _intelliSenseService: IntelliSenseService | undefined;
 let _artifactFileWatcher: ArtifactFileWatcher | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
 let _debugConfigProviderRegistration: vscode.Disposable | undefined;
-/** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
-let _lastShownProviderFixState: string = "none";
 
 // ---------------------------------------------------------------------------
 // Scope guard for the supported command surface: this extension contributes
@@ -275,54 +273,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Excluded-file visibility: explorer badges and editor overlays. ---
   registerExcludedFilesVisibility(context, workspaceFolder, _intelliSenseService);
 
-  // Subscribe to IntelliSense refresh results → update tree view artifact row
-  context.subscriptions.push(
-    _intelliSenseService.onDidRefresh(([compileCommandsArtifact, readiness]) => {
-      const state = _manifestState;
-      if (state) {
-        _treeModel?.updateArtifact("compile-commands", compileCommandsArtifact);
+  // --- IntelliSense event wiring: refresh results, setting watchers, and
+  // extension-/workspace-change refresh triggers. ---
+  registerIntelliSenseWiring(context, workspaceFolder, _intelliSenseService, {
+    updateTreeArtifact: (artifact) => {
+      if (_manifestState) {
+        _treeModel?.updateArtifact("compile-commands", artifact);
       }
-      // Show the wrong-provider fix notification once per state entry.
-      if (readiness.warningState === "wrong-provider" && readiness.warningState !== _lastShownProviderFixState) {
-        _lastShownProviderFixState = "wrong-provider";
-        notifyWarning(
-          readiness.lastWarningMessage ??
-            "Another C/C++ configuration provider is active. Switch to Trezor Bench?",
-          "Fix"
-        ).then((selection) => {
-          if (selection === "Fix") {
-            applyProviderSettingFix(workspaceFolder, () => {
-              _lastShownProviderFixState = "none";
-              _intelliSenseService?.scheduleRefresh("build-selection-change");
-            });
-          }
-        });
-      } else if (readiness.warningState !== "wrong-provider") {
-        _lastShownProviderFixState = "none";
-      }
-    })
-  );
+    },
+    refreshStatusBar,
+  });
 
   // Initialize artifactsRoot from current settings
   _intelliSenseService.setWorkspaceFolder(workspaceFolder);
   _intelliSenseService.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
-
-  // Watch remaining VS Code settings that still control user-local behavior.
-  context.subscriptions.push(
-    vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration("tbench.showConfigurationInStatusBar", workspaceFolder.uri)) {
-        refreshStatusBar();
-      }
-      if (
-        e.affectsConfiguration("tbench.excludedFiles.grayInTree", workspaceFolder.uri) ||
-        e.affectsConfiguration("tbench.excludedFiles.showEditorOverlay", workspaceFolder.uri) ||
-        e.affectsConfiguration("tbench.excludedFiles.fileNamePatterns", workspaceFolder.uri) ||
-        e.affectsConfiguration("tbench.excludedFiles.folderGlobs", workspaceFolder.uri)
-      ) {
-        _intelliSenseService?.scheduleRefresh("excluded-files-setting-change");
-      }
-    })
-  );
 
   // --- Manifest service ---
   _manifestService = new ManifestService(manifestUri);
@@ -418,13 +382,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
   context.subscriptions.push(_debugConfigProviderRegistration);
 
-  // --- Provider-change refresh: re-evaluate readiness when extensions change. ---
-  context.subscriptions.push(
-    vscode.extensions.onDidChange(() => {
-      _intelliSenseService?.scheduleRefresh("provider-change");
-    })
-  );
-
   // --- Task provider. ---
   const taskProvider = new BuildTaskProvider({
     getManifestState: () => loadedManifest(_manifestState),
@@ -440,14 +397,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (isSuccessfulArtifactRefreshTaskProcess(event)) {
         refreshBuildArtifacts("workflow-task-complete");
       }
-    })
-  );
-
-  // Trigger IntelliSense refresh when workspace folders change so excluded-file
-  // candidate paths are re-evaluated against the updated workspace root.
-  context.subscriptions.push(
-    vscode.workspace.onDidChangeWorkspaceFolders(() => {
-      _intelliSenseService?.scheduleRefresh("workspace-change");
     })
   );
 
