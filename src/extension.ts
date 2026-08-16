@@ -7,6 +7,7 @@ import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder } from "./workspace/workspace-guard";
 import { isStatusBarEnabled } from "./workspace/settings";
 import { RepositoryConfigService, loadRepositoryConfig, setRepositoryConfig, resolveManifestUri, resolveArtifactsPath, resolveDebugTemplatesPath, resolvePresetUris } from "./workspace/repository-config";
+import { registerRepositoryConfigWiring } from "./workspace/repository-config-wiring";
 import { ManifestService } from "./manifest/manifest-service";
 import { PresetService } from "./presets/preset-service";
 import { PresetState } from "./presets/preset-types";
@@ -21,15 +22,11 @@ import {
   revealLogs,
   logManifestState,
   logPresetState,
-  logRepositoryConfigState,
-  notifyWarning,
-  notifyError,
 } from "./observability/log-channel";
 import {
   disposeDiagnostics,
   handleManifestStateDiagnostics,
   handlePresetStateDiagnostics,
-  handleRepositoryConfigDiagnostics,
 } from "./observability/diagnostics";
 import { activePresetId, BuildSelection } from "./build/build-selection";
 import { writeBuildOption } from "./build/build-options";
@@ -51,7 +48,7 @@ import { registerBuildSelectionCommands } from "./commands/build-selection-comma
 import { registerBuildOptionCommands } from "./commands/build-options-commands";
 import { registerBuildWorkflowCommands } from "./commands/build-workflow-commands";
 import { CommandDeps } from "./commands/command-deps";
-import { CONTRIBUTED_COMMAND_IDS } from "./commands/command-ids";
+import { assertNoUnauthorizedContributions } from "./commands/contribution-guard";
 import {
   updateWorkflowBlockedContext,
   updateArtifactActionContext,
@@ -75,39 +72,6 @@ let _intelliSenseService: IntelliSenseService | undefined;
 let _artifactFileWatcher: ArtifactFileWatcher | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
 let _debugConfigProviderRegistration: vscode.Disposable | undefined;
-
-// ---------------------------------------------------------------------------
-// Scope guard for the supported command surface: this extension contributes
-// ONLY the commands declared in commands/command-ids.ts. Any attempt to
-// contribute others is a scope violation.
-// ---------------------------------------------------------------------------
-
-const ALLOWED_CONTRIBUTION_COMMANDS = new Set<string>(CONTRIBUTED_COMMAND_IDS);
-
-/**
- * Development-time guard: verifies that no unauthorized tbench commands are
- * contributed during activation. Throws in development mode if a violation is
- * detected; logs a warning in production.
- */
-function assertNoUnauthorizedContributions(
-  context: vscode.ExtensionContext
-): void {
-  const contributed: string[] =
-    context.extension.packageJSON?.contributes?.commands?.map(
-      (c: { command: string }) => c.command
-    ) ?? [];
-
-  const unauthorized = contributed
-    .filter((cmd: string) => cmd.startsWith("tbench."))
-    .filter((cmd: string) => !ALLOWED_CONTRIBUTION_COMMANDS.has(cmd));
-
-  if (unauthorized.length > 0) {
-    const msg =
-      `Scope violation: ` +
-      `unauthorized commands found in package.json: ${unauthorized.join(", ")}`;
-    notifyWarning(msg);
-  }
-}
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   initLogChannel();
@@ -400,58 +364,52 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
+  // --- Repository-config lifecycle: teardown/rebuild of the manifest and
+  // preset services on each tbench.toml state change. ---
   const repositoryConfigService = new RepositoryConfigService(workspaceFolder);
   context.subscriptions.push(repositoryConfigService);
-  let repositoryConfigWasInvalid = false;
-  const applyRepositoryConfigState = async (): Promise<void> => {
-    const state = repositoryConfigService.state;
-    if (!state) {
-      return;
-    }
-    handleRepositoryConfigDiagnostics(state);
-    logRepositoryConfigState(state);
-    if (state.status === "invalid") {
-      setRepositoryConfig(workspaceFolder, undefined);
-      _manifestStateSubscription?.dispose();
-      _presetStateSubscription?.dispose();
-      _manifestService?.dispose();
-      _presetService?.dispose();
-      _manifestService = undefined;
-      _presetService = undefined;
+  registerRepositoryConfigWiring(context, workspaceFolder, repositoryConfigService, {
+    manifestService: {
+      get: () => _manifestService,
+      set: (service) => {
+        _manifestService = service;
+      },
+    },
+    presetService: {
+      get: () => _presetService,
+      set: (service) => {
+        _presetService = service;
+      },
+    },
+    manifestStateSubscription: {
+      get: () => _manifestStateSubscription,
+      set: (subscription) => {
+        _manifestStateSubscription = subscription;
+      },
+    },
+    presetStateSubscription: {
+      get: () => _presetStateSubscription,
+      set: (subscription) => {
+        _presetStateSubscription = subscription;
+      },
+    },
+    onManifestStateChange,
+    onPresetStateChange,
+    clearBuildState: () => {
       _manifestState = undefined;
       _presetState = undefined;
       _buildSelection = undefined;
       presetOptions.clearResolvedOptions();
+    },
+    resetIntelliSenseInputs: () => {
       _intelliSenseService?.setManifest(undefined);
       _intelliSenseService?.setBuildContext(undefined);
       _intelliSenseService?.setArtifactsRoot("");
-      void vscode.commands.executeCommand("setContext", "tbench.workflowBlocked", true);
-      if (!repositoryConfigWasInvalid) {
-        repositoryConfigWasInvalid = true;
-        notifyError("tbench.toml is invalid. Check the Problems view.");
-      }
-      return;
-    }
-
-    repositoryConfigWasInvalid = false;
-    setRepositoryConfig(workspaceFolder, state.config);
-    _intelliSenseService?.setArtifactsRoot(state.config.artifactsPath);
-    _manifestStateSubscription?.dispose();
-    _presetStateSubscription?.dispose();
-    _manifestService?.dispose();
-    _presetService?.dispose();
-    _manifestService = new ManifestService(state.config.manifestUri);
-    _presetService = new PresetService(state.config.presetUris.shared, state.config.presetUris.user);
-    _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
-    _presetStateSubscription = _presetService.onDidChangeState(onPresetStateChange);
-    await _manifestService.start();
-    await _presetService.start();
-  };
-  context.subscriptions.push(
-    repositoryConfigService.onDidChangeState(() => {
-      void applyRepositoryConfigState();
-    })
-  );
+    },
+    setIntelliSenseArtifactsRoot: (artifactsRoot) => {
+      _intelliSenseService?.setArtifactsRoot(artifactsRoot);
+    },
+  });
 
   // --- Start root configuration and its dependent services. ---
   await repositoryConfigService.start();
