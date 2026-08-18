@@ -2,7 +2,7 @@
   "name": "tbench",
   "displayName": "Trezor Bench",
   "description": "Manage build configurations, artifacts, IntelliSense, and debugging in trezor-firmware.",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "publisher": "cepetr",
   "repository": {
     "type": "git",
