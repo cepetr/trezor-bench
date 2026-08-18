@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.4.3 - 2026-08-18
+This update focuses primarily on internal code maintenance and structural refactoring, alongside resolutions for a few minor bugs.
+
 ### Changed
 - All notification popups now start with a unified `Trezor Bench:`
 - Command-palette entries and Run and Debug entry labels now use the `Trezor Bench` prefix instead of `Trezor`; the redundant `(Trezor)` marker was removed from setting descriptions.
