@@ -41,12 +41,10 @@ The extension does not require these VS Code settings, but they are recommended 
     "terminal.integrated.env.linux": {
         "VIRTUAL_ENV": "${workspaceFolder}/.venv",
         "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}",
-        "CARGO_TERM_COLOR": "always"
     },
     "terminal.integrated.env.osx": {
         "VIRTUAL_ENV": "${workspaceFolder}/.venv",
         "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}",
-        "CARGO_TERM_COLOR": "always"
     },
     "rust-analyzer.linkedProjects": [
         "${workspaceFolder}/core/embed/Cargo.toml",
