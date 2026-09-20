@@ -9,6 +9,10 @@ export function startRustAnalyzerConfiguration(service: RustAnalyzerConfigServic
   void service.refresh();
 }
 
+export async function stopRustAnalyzerConfiguration(service: RustAnalyzerConfigService): Promise<void> {
+  await service.dispose();
+}
+
 export function deriveRustAnalyzerInputs(
   manifest: ManifestStateLoaded | undefined,
   selection: BuildSelection | undefined,
