@@ -131,7 +131,7 @@
 
 **Purpose**: Verify the complete feature against the consolidated product behavior and repository quality gates.
 
-- [ ] T034 Review Rust Analyzer command labels, persistence, refresh ordering, replacement, conflict, failure, and cleanup behavior against `specs/product-spec.md` and `specs/glossary.md`
+- [X] T034 Review Rust Analyzer command labels, persistence, refresh ordering, replacement, conflict, failure, and cleanup behavior against `specs/product-spec.md` and `specs/glossary.md`
 - [ ] T035 Execute the documented automated and manual validation scenarios in `specs/012-rust-analyzer-config/quickstart.md`
 - [ ] T036 Run compile, unit/integration tests, and lint for the completed feature using `package.json`
 
