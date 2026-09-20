@@ -198,4 +198,21 @@ suite("RustAnalyzerConfigService", () => {
       ],
     }]);
   });
+
+  test("clears the managed configuration when disposed", async () => {
+    const registrations: Array<Readonly<Record<string, unknown>>> = [];
+    const service = new RustAnalyzerConfigService({
+      workspaceState: { get: <T>() => "all-features" as T, update: async () => {} },
+      runner,
+      getExtension: () => createExtension({
+        addConfiguration: async (_id, configuration) => { registrations.push(configuration); },
+      }),
+    });
+
+    service.restoreMode();
+    await service.refresh();
+    await service.dispose();
+
+    assert.deepStrictEqual(registrations, [{ "cargo.features": "all" }, {}]);
+  });
 });
