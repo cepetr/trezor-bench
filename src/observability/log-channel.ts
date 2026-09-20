@@ -7,6 +7,7 @@ import { ManifestState } from "../manifest/manifest-types";
 import { PresetState } from "../presets/preset-types";
 import { PresetContext } from "../presets/preset-resolution";
 import { RepositoryConfigState } from "../workspace/repository-config";
+import { RustAnalyzerConflict } from "../rust-analyzer/config-types";
 
 const CHANNEL_NAME = "Trezor Bench";
 let _channel: vscode.OutputChannel | undefined;
@@ -65,6 +66,18 @@ export function notifyError<T extends string>(
 export function logWarning(message: string): void {
   log(`[WARN] ${message}`);
   notifyWarning(message);
+}
+
+export function logRustAnalyzerConflicts(conflicts: readonly RustAnalyzerConflict[]): void {
+  if (conflicts.length === 0) {
+    return;
+  }
+  logWarning(`Rust Analyzer settings conflict with Trezor Bench: ${conflicts.map((item) => item.key).join(", ")}`);
+  for (const conflict of conflicts) {
+    for (const entry of conflict.values) {
+      log(`Rust Analyzer conflict ${conflict.key} at ${entry.scope}: ${JSON.stringify(entry.value)}`);
+    }
+  }
 }
 
 /** Logs repository configuration transitions, including persistent invalid-state details. */

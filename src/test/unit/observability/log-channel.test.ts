@@ -3,6 +3,7 @@ import {
   initLogChannel,
   log,
   logArtifactActionBlocked,
+  logRustAnalyzerConflicts,
   logManifestState,
   logWorkflowFailure,
   disposeLogChannel,
@@ -39,6 +40,15 @@ suite("log-channel", () => {
         ],
         loadedAt: new Date(),
       });
+    });
+  });
+
+  test("reports Rust Analyzer setting conflicts without throwing", () => {
+    assert.doesNotThrow(() => {
+      logRustAnalyzerConflicts([{
+        key: "cargo.features",
+        values: [{ scope: "workspace", value: ["authored"] }],
+      }]);
     });
   });
 });
