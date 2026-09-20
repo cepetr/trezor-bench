@@ -28,6 +28,7 @@ export interface RustAnalyzerConfigServiceDeps {
     readonly workspaceFolderValue?: unknown;
   } | undefined;
   readonly onModeChange?: (mode: RustAnalyzerMode) => void;
+  readonly onFailure?: (failure: RustAnalyzerRefreshFailure) => void;
 }
 
 export interface RustAnalyzerInputs {
@@ -37,6 +38,13 @@ export interface RustAnalyzerInputs {
   readonly targetFlag?: string;
   readonly presetId: string;
   readonly effectiveFlags: readonly string[];
+}
+
+export interface RustAnalyzerRefreshFailure {
+  readonly stage: "context" | "tool" | "generation" | "validation" | "registration";
+  readonly message: string;
+  readonly inputs?: RustAnalyzerInputs;
+  readonly stderr?: string;
 }
 
 function isMode(value: unknown): value is RustAnalyzerMode {
@@ -54,6 +62,7 @@ export class RustAnalyzerConfigService {
   private sequence = 0;
   private activeRun: RustAnalyzerRun | undefined;
   private currentConflicts: readonly RustAnalyzerConflict[] = [];
+  private inputsKnown = false;
   private disposed = false;
 
   constructor(private readonly deps: RustAnalyzerConfigServiceDeps) {}
@@ -84,6 +93,7 @@ export class RustAnalyzerConfigService {
   }
 
   setInputs(inputs: RustAnalyzerInputs | undefined): boolean {
+    this.inputsKnown = true;
     if (sameInputs(this.inputs, inputs)) {
       return false;
     }
@@ -102,12 +112,23 @@ export class RustAnalyzerConfigService {
     if (this.selectedMode === "all-features") {
       this.activeRun?.cancel();
       this.activeRun = undefined;
-      await this.applyConfiguration({ "cargo.features": "all" }, sequence, this.inputs);
+      const api = await this.resolveApi(sequence, this.inputs);
+      if (api) {
+        await this.applyConfiguration({ "cargo.features": "all" }, sequence, this.inputs, api);
+      }
       return;
     }
 
     const inputs = this.inputs;
     if (!inputs) {
+      if (this.inputsKnown) {
+        this.reportFailure("context", "Active model and target are unavailable.");
+      }
+      return;
+    }
+
+    const api = await this.resolveApi(sequence, inputs);
+    if (!api) {
       return;
     }
 
@@ -121,21 +142,32 @@ export class RustAnalyzerConfigService {
     args.push(...inputs.effectiveFlags);
 
     this.activeRun?.cancel();
-    const run = this.deps.runner.run(args);
+    let run: RustAnalyzerRun;
+    try {
+      run = this.deps.runner.run(args);
+    } catch (error) {
+      this.reportCurrentFailure(sequence, inputs, "generation", errorMessage(error));
+      return;
+    }
     this.activeRun = run;
     const result = await run.result;
-    if (result.cancelled || result.exitCode !== 0 || !this.isCurrent(sequence, inputs)) {
+    if (result.cancelled || !this.isCurrent(sequence, inputs)) {
+      return;
+    }
+    if (result.exitCode !== 0) {
+      this.reportFailure("generation", "Rust Analyzer configuration generation failed.", inputs, result.stderr);
       return;
     }
 
     let configuration: RustAnalyzerConfig;
     try {
       configuration = parseRustAnalyzerConfig(result.stdout, inputs.emulator);
-    } catch {
+    } catch (error) {
+      this.reportFailure("validation", errorMessage(error), inputs, result.stderr);
       return;
     }
 
-    await this.applyConfiguration(configuration, sequence, inputs);
+    await this.applyConfiguration(configuration, sequence, inputs, api);
   }
 
   async dispose(): Promise<void> {
@@ -164,7 +196,8 @@ export class RustAnalyzerConfigService {
   private async applyConfiguration(
     configuration: RustAnalyzerConfig,
     sequence: number,
-    inputs: RustAnalyzerInputs | undefined
+    inputs: RustAnalyzerInputs | undefined,
+    api: RustAnalyzerApi
   ): Promise<void> {
     if (!this.isCurrent(sequence, inputs)) {
       return;
@@ -172,24 +205,65 @@ export class RustAnalyzerConfigService {
 
     this.currentConflicts = this.collectConflicts(configuration);
     logRustAnalyzerConflicts(this.currentConflicts);
-    const extension = this.deps.getExtension();
-    if (!extension) {
-      return;
-    }
-
-    const exports = extension.isActive ? extension.exports : await extension.activate();
-    if (!isRustAnalyzerApi(exports) || !this.isCurrent(sequence, inputs)) {
+    if (!this.isCurrent(sequence, inputs)) {
       return;
     }
 
     try {
-      await exports.addConfiguration(CONTRIBUTOR_ID, configuration);
+      await api.addConfiguration(CONTRIBUTOR_ID, configuration);
       if (this.isCurrent(sequence, inputs)) {
         this.lastApplied = configuration;
       }
-    } catch {
-      // Refresh failures deliberately preserve the selected mode and last successful object.
+    } catch (error) {
+      this.reportCurrentFailure(sequence, inputs, "registration", errorMessage(error));
     }
+  }
+
+  private async resolveApi(
+    sequence: number,
+    inputs: RustAnalyzerInputs | undefined
+  ): Promise<RustAnalyzerApi | undefined> {
+    const extension = this.deps.getExtension();
+    if (!extension) {
+      this.reportCurrentFailure(sequence, inputs, "tool", "Rust Analyzer extension is not installed.");
+      return undefined;
+    }
+    try {
+      const exports = extension.isActive ? extension.exports : await extension.activate();
+      if (isRustAnalyzerApi(exports)) {
+        return this.isCurrent(sequence, inputs) ? exports : undefined;
+      }
+      this.reportCurrentFailure(sequence, inputs, "tool", "Rust Analyzer extension does not expose a supported API.");
+    } catch (error) {
+      this.reportCurrentFailure(sequence, inputs, "tool", errorMessage(error));
+    }
+    return undefined;
+  }
+
+  private reportCurrentFailure(
+    sequence: number,
+    inputs: RustAnalyzerInputs | undefined,
+    stage: RustAnalyzerRefreshFailure["stage"],
+    message: string,
+    stderr?: string
+  ): void {
+    if (this.isCurrent(sequence, inputs)) {
+      this.reportFailure(stage, message, inputs, stderr);
+    }
+  }
+
+  private reportFailure(
+    stage: RustAnalyzerRefreshFailure["stage"],
+    message: string,
+    inputs?: RustAnalyzerInputs,
+    stderr?: string
+  ): void {
+    this.deps.onFailure?.({
+      stage,
+      message,
+      ...(inputs ? { inputs } : {}),
+      ...(stderr === undefined ? {} : { stderr }),
+    });
   }
 
   private collectConflicts(configuration: RustAnalyzerConfig): readonly RustAnalyzerConflict[] {
@@ -220,4 +294,8 @@ function sameInputs(a: RustAnalyzerInputs | undefined, b: RustAnalyzerInputs | u
     a.presetId === b.presetId &&
     a.effectiveFlags.length === b.effectiveFlags.length &&
     a.effectiveFlags.every((flag, index) => flag === b.effectiveFlags[index]));
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
