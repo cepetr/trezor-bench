@@ -48,7 +48,7 @@ Only `[cargo]` and `[check]` are accepted. Only these entries are accepted:
 | `cargo.allTargets` | boolean | `cargo.allTargets` |
 | `check.extraArgs` | array of strings | `check.extraArgs` |
 
-Unknown tables/keys, nested objects, unsupported values, empty output, parse errors, or wrong types reject the whole document. Hardware output must contain `cargo.target` and `check.extraArgs`; emulator output must omit both.
+Unknown tables/keys, nested objects, unsupported values, empty output, parse errors, or wrong types reject the whole document. Hardware output must contain `cargo.target` and `check.extraArgs`; emulator output must omit both. The firmware generator owns the semantic contents of `check.extraArgs`; the extension validates its presence and string-array type for hardware output but does not interpret individual arguments.
 
 ## Rust Analyzer Extension API
 

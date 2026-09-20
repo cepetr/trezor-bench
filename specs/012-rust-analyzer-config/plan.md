@@ -30,7 +30,7 @@ Affected product-spec areas: `Configuration View`, `Rust Analyzer Configuration`
 
 **Constraints**: Exactly one supported workspace folder; asynchronous and cancellable generation; atomic whole-object replacement; strict four-key TOML schema; explicit settings retain VS Code precedence; no `.vscode/settings.json` writes; last-good configuration survives failures; cleanup registers an empty object
 
-**Scale/Scope**: Two commands, one persisted mode, four supported managed keys, one generator process at a time, and integration with the existing model/target/preset/effective-option refresh lifecycle
+**Scale/Scope**: Two commands, one persisted mode, four supported managed keys, one current generation request eligible to apply, and integration with the existing model/target/preset/effective-option refresh lifecycle; obsolete processes are cancelled when practical but may overlap briefly until termination
 
 ## Constitution Check
 
@@ -107,12 +107,12 @@ Invoke `cargo xtask generate-rust-analyzer-config` directly in the resolved Carg
 
 ### Startup And Cleanup
 
-Create the service after the existing state coordinators but schedule its first refresh only after repository configuration has started and model, target, preset, and effective options are restored. Selection commands and preset/option recomputation notify the service with newly derived snapshots; equality suppresses component-only and no-op refreshes. On repository invalidation, unsupported workspace transition, disposal, or deactivation, invalidate pending work and register `{}` as the complete contributor object. Cleanup failure is logged without masking deactivation.
+Create the service after the existing state coordinators but schedule its first refresh only after repository configuration has started and model, target, preset, and effective options are restored. Selection commands and preset/option recomputation notify the service with newly derived snapshots; equality suppresses component changes that leave effective flags unchanged and all other no-op refreshes. On repository invalidation, unsupported workspace transition, disposal, or deactivation, invalidate pending work and register `{}` as the complete contributor object. Cleanup failure is logged without masking deactivation.
 
 ### Verification Strategy
 
 - Pure parser tests cover empty/malformed TOML, unknown tables/keys, wrong and nested values, and exact flattening.
-- Pure argument/snapshot tests cover hardware/emulator, default/named preset, effective flags, component-only changes, and all-features suppression.
+- Pure argument/snapshot tests cover hardware/emulator, default/named preset, effective flags, component changes with both unchanged and changed effective flags, and all-features suppression.
 - Injected service tests cover persistence, immediate checked-state updates, missing extension, process and registration failures, conflict reporting, last-good retention, cancellation, and out-of-order completion.
 - Extension-host tests cover workspace-state restore, menu context state, setting-scope inspection, activation ordering, unsupported-workspace cleanup, and runtime API activation/registration with a controllable adapter.
 

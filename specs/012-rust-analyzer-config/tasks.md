@@ -4,6 +4,10 @@
 
 **Prerequisites**: [plan.md](plan.md), [spec.md](spec.md), [research.md](research.md), [data-model.md](data-model.md), [contracts/rust-analyzer-configuration.md](contracts/rust-analyzer-configuration.md), and [quickstart.md](quickstart.md)
 
+**Affected Product Areas**: `Configuration View`, `Rust Analyzer Configuration`, `Startup And Refresh Behavior`, and `Persistence And Defaults`.
+
+**Required Glossary Terms**: `active build context`, `active preset`, `preset-effective value`, `build-option override`, `xtask`, `workflow task environment`, `Configuration view`, `Rust Analyzer configuration`, `Rust Analyzer mode`, `model-specific mode`, `all-features mode`, `managed Rust configuration`, and `Rust Analyzer conflict`.
+
 **Tests**: Automated unit and extension-host integration tests are required by the feature specification and constitution. Write each story's tests before its implementation tasks and confirm they fail for the intended missing behavior first.
 
 **Organization**: Tasks are grouped by user story so each completed phase is independently demonstrable.
@@ -23,7 +27,7 @@
 
 **CRITICAL**: Complete this phase before starting any user story.
 
-- [ ] T003 [P] Add failing TOML schema and flattening tests for supported keys, unknown content, empty output, nested values, and wrong types in `src/test/unit/rust-analyzer/config-parser.test.ts`
+- [ ] T003 [P] Add failing TOML schema and flattening tests for supported keys, hardware/emulator required-key presence, opaque string-list `check.extraArgs`, unknown content, empty output, nested values, and wrong types in `src/test/unit/rust-analyzer/config-parser.test.ts`
 - [ ] T004 Implement Rust Analyzer mode, configuration snapshot, managed-object, conflict, runner, and extension-API interfaces in `src/rust-analyzer/config-types.ts`
 - [ ] T005 Implement atomic TOML parsing and supported-key validation in `src/rust-analyzer/config-parser.ts`
 - [ ] T006 [P] Add failing direct-process runner tests for resolved cwd, merged task environment, stdout/stderr capture, exit status, and cancellation in `src/test/unit/rust-analyzer/config-runner.test.ts`
@@ -62,18 +66,18 @@
 
 **Goal**: In model-specific mode, generate and apply complete hardware/emulator configuration for the latest relevant firmware inputs only.
 
-**Independent Test**: Enable model-specific mode, change model, target kind, preset, and effective options, and resolve generator calls out of order; only the final valid configuration becomes active, hardware-only keys disappear for emulator, component-only changes do not generate, and all-features mode does not invoke the generator.
+**Independent Test**: Enable model-specific mode, change model, target kind, preset, and effective options, and resolve generator calls out of order; only the final valid configuration becomes active, hardware-only keys disappear for emulator, component changes with unchanged effective flags do not generate, and all-features mode does not invoke the generator.
 
 ### Tests for User Story 2
 
-- [ ] T017 [P] [US2] Add failing snapshot and service tests for effective flags, hardware/emulator arguments, component-only suppression, all-features suppression, cancellation, and latest-result application in `src/test/unit/rust-analyzer/config-service.test.ts`
+- [ ] T017 [P] [US2] Add failing snapshot and service tests for effective flags, hardware/emulator arguments, suppression when component changes leave effective flags unchanged, refresh when they change effective flags, all-features suppression, cancellation, and latest-result application in `src/test/unit/rust-analyzer/config-service.test.ts`
 - [ ] T018 [P] [US2] Add failing extension-host refresh tests for model, target, preset, and build-option triggers plus whole-object hardware-to-emulator replacement in `src/test/integration/rust-analyzer-config.integration.test.ts`
 
 ### Implementation for User Story 2
 
 - [ ] T019 [US2] Derive snapshot identity and generator arguments from manifest target emulator state, active preset, and `deriveOptionFlags` effective values in `src/rust-analyzer/config-service.ts`
 - [ ] T020 [US2] Implement model-specific generator execution, validated whole-object registration, sequence checks, snapshot equality checks, and best-effort obsolete-process cancellation in `src/rust-analyzer/config-service.ts`
-- [ ] T021 [US2] Notify the service only when model, target, preset, or effective build-option flags change, suppressing component-only and unchanged snapshots in `src/rust-analyzer/config-wiring.ts`
+- [ ] T021 [US2] Notify the service only when model, target, preset, or effective build-option flags change, suppressing component changes that leave effective flags unchanged and all other unchanged snapshots in `src/rust-analyzer/config-wiring.ts`
 - [ ] T022 [US2] Connect selection, preset, manifest, and resolved-option refresh completion to Rust Analyzer snapshot updates in `src/extension.ts`
 
 **Checkpoint**: Model-specific mode follows valid firmware selection changes asynchronously, and only the newest complete result can replace the managed object.

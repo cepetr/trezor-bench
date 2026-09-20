@@ -43,7 +43,7 @@ A firmware developer using model-specific mode receives Rust Analyzer settings t
 1. **Given** model-specific mode and a valid model and hardware target, **When** configuration is generated successfully, **Then** the complete result includes the resolved Rust target and hardware-only check exclusions and becomes active in the current Rust session.
 2. **Given** model-specific mode and a valid model and emulator target, **When** configuration is generated successfully, **Then** settings that do not apply to emulation, including the Rust target and check exclusions, are absent from the complete result and are cleared from the previously managed configuration.
 3. **Given** model-specific mode, **When** the active model, target emulator state, preset, or effective build-option flags change, **Then** a refresh starts with the new inputs.
-4. **Given** model-specific mode, **When** only the active component changes, **Then** no model-specific configuration refresh is started.
+4. **Given** model-specific mode, **When** only the active component changes and the resulting effective build-option flags remain unchanged, **Then** no model-specific configuration refresh is started.
 5. **Given** all-features mode, **When** any build selection or build option changes, **Then** no model-specific generation command is run and the all-features configuration remains active.
 6. **Given** two refreshes overlap, **When** the older refresh finishes after the newer inputs have become current, **Then** its result is discarded and cannot replace the newer applicable configuration.
 
@@ -108,12 +108,12 @@ A firmware developer keeps the last working Rust Analyzer configuration when pre
 - **FR-009**: The extension MUST accept model-specific output only when it is non-empty and structurally valid, with no tables other than `cargo` and `check` and no keys other than `cargo.features`, `cargo.target`, `cargo.allTargets`, and `check.extraArgs`.
 - **FR-010**: The extension MUST flatten accepted grouped settings into complete dotted Rust Analyzer setting names without a `rust-analyzer.` prefix.
 - **FR-011**: The extension MUST require `cargo.features` and `check.extraArgs`, when present, to be lists of strings; `cargo.target` to be a string; and `cargo.allTargets` to be a boolean. It MUST reject the entire result when any part is malformed, unexpected, or uses another value type, and MUST never partially apply such a result.
-- **FR-012**: Hardware results MUST include their resolved Rust target and required check exclusions; emulator results MUST omit settings that do not apply, including the Rust target and check exclusions.
+- **FR-012**: Hardware results MUST include `cargo.target` and `check.extraArgs`; emulator results MUST omit both settings. The firmware generator owns the semantic contents of `check.extraArgs`; the extension MUST validate its presence and string-list type for hardware results but MUST NOT interpret individual arguments.
 - **FR-013**: The extension MUST register the complete selected configuration with the active Rust Analyzer session under Trezor Bench's identity and MUST NOT write these managed values to authored workspace settings.
 - **FR-014**: Each successful registration MUST replace the prior Trezor Bench configuration as a whole so omitted keys are cleared; when managed overrides must be removed, the extension MUST register an empty configuration.
 - **FR-015**: The active Rust Analyzer session MUST receive successful configuration changes without requiring manual settings edits or a user-initiated session restart.
 - **FR-016**: The extension MUST refresh after activation restores the build context, after a mode change, and after the active model, target emulator state, active preset, or effective build-option flags change.
-- **FR-017**: Changing only the active component MUST NOT trigger model-specific generation.
+- **FR-017**: Changing the active component MUST NOT directly trigger model-specific generation; generation MUST occur if that change produces different effective build-option flags.
 - **FR-018**: The extension MUST NOT run model-specific generation while all-features mode is selected.
 - **FR-019**: Refresh work MUST remain asynchronous so the Configuration view stays responsive.
 - **FR-020**: The extension MUST cancel obsolete generation when practical and MUST reject every result that no longer matches the current mode and inputs, so only the newest applicable result can be applied.
@@ -147,7 +147,7 @@ A firmware developer keeps the last working Rust Analyzer configuration when pre
 - **SC-005**: In 100% of tested conflicts across user, workspace, and workspace-folder scopes, the explicit value remains effective, all conflicting keys are identified to the user, and removing the explicit value reveals the registered managed value without another refresh.
 - **SC-006**: Mode selection and relevant build-context interactions remain responsive while model-specific configuration is being generated, with command initiation returning control to the user within one second under normal workspace conditions.
 - **SC-007**: Every tested persistent generation, validation, missing-tool, and registration failure produces one concise user warning and enough log context to identify the active model, target, preset, effective build-option flags, and available diagnostics.
-- **SC-008**: Changing only the active component or changing any build input while all-features mode is selected causes zero model-specific generation requests.
+- **SC-008**: Changing only the active component while effective build-option flags remain unchanged, or changing any build input while all-features mode is selected, causes zero model-specific generation requests.
 
 ## Assumptions
 
