@@ -121,7 +121,7 @@
 - [X] T030 [US4] Add missing-tool detection, startup-wait versus persistent-context classification, and no-partial-application failure handling in `src/rust-analyzer/config-service.ts`
 - [X] T031 [US4] Log generator stderr and model, target, preset, and effective-flag context and show concise warnings for current failures in `src/observability/log-channel.ts`
 - [X] T032 [US4] Invalidate pending work and request empty-object registration on service disposal or unsupported workspace state in `src/rust-analyzer/config-wiring.ts`
-- [ ] T033 [US4] Integrate lifecycle cleanup with workspace guard, repository-state reset, and extension deactivation without masking cleanup errors in `src/extension.ts`
+- [X] T033 [US4] Integrate lifecycle cleanup with workspace guard, repository-state reset, and extension deactivation without masking cleanup errors in `src/extension.ts`
 
 **Checkpoint**: Every failure leaves the selected mode and last good configuration intact, retries only on the next relevant trigger, and cleans up managed overrides only when lifecycle ownership ends.
 

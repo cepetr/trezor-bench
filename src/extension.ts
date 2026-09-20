@@ -54,7 +54,12 @@ import {
 import { registerRunDebugProvider } from "./debug/run-debug-wiring";
 import { createRustAnalyzerRunner } from "./rust-analyzer/config-runner";
 import { RustAnalyzerConfigService } from "./rust-analyzer/config-service";
-import { deriveRustAnalyzerInputs, refreshRustAnalyzerConfiguration, startRustAnalyzerConfiguration } from "./rust-analyzer/config-wiring";
+import {
+  deriveRustAnalyzerInputs,
+  refreshRustAnalyzerConfiguration,
+  startRustAnalyzerConfiguration,
+  stopRustAnalyzerConfiguration,
+} from "./rust-analyzer/config-wiring";
 import { updateRustAnalyzerModeContext } from "./ui/context-keys";
 import { registerRustAnalyzerCommands } from "./commands/rust-analyzer-commands";
 
@@ -428,6 +433,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       };
     },
     onModeChange: updateRustAnalyzerModeContext,
+  });
+  context.subscriptions.push({
+    dispose: () => {
+      const service = _rustAnalyzerService;
+      _rustAnalyzerService = undefined;
+      if (service) {
+        void stopRustAnalyzerConfiguration(service);
+      }
+    },
   });
   registerRustAnalyzerCommands(context, _rustAnalyzerService);
   _rustAnalyzerService.setInputs(
