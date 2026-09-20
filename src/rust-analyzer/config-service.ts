@@ -102,7 +102,7 @@ export class RustAnalyzerConfigService {
     if (this.selectedMode === "all-features") {
       this.activeRun?.cancel();
       this.activeRun = undefined;
-      await this.applyConfiguration({ "cargo.features": "all" }, sequence, undefined);
+      await this.applyConfiguration({ "cargo.features": "all" }, sequence, this.inputs);
       return;
     }
 
