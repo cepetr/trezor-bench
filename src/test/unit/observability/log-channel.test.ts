@@ -4,6 +4,7 @@ import {
   log,
   logArtifactActionBlocked,
   logRustAnalyzerConflicts,
+  logRustAnalyzerFailure,
   logManifestState,
   logWorkflowFailure,
   disposeLogChannel,
@@ -49,6 +50,23 @@ suite("log-channel", () => {
         key: "cargo.features",
         values: [{ scope: "workspace", value: ["authored"] }],
       }]);
+    });
+  });
+
+  test("reports Rust Analyzer refresh failures with context without throwing", () => {
+    assert.doesNotThrow(() => {
+      logRustAnalyzerFailure({
+        stage: "generation",
+        message: "generator failed",
+        inputs: {
+          modelId: "T2T1",
+          targetId: "hardware",
+          emulator: false,
+          presetId: "release",
+          effectiveFlags: ["--usb"],
+        },
+        stderr: "cargo failed",
+      });
     });
   });
 });
