@@ -46,7 +46,7 @@
 ### Tests for User Story 1
 
 - [X] T008 [P] [US1] Add failing mode persistence, all-features registration, and checked-state-after-failure tests in `src/test/unit/rust-analyzer/config-service.test.ts`
-- [ ] T009 [P] [US1] Add failing extension-host tests for overflow command visibility, exclusive checked state, workspace restore, and C/C++-independent availability in `src/test/integration/rust-analyzer-config.integration.test.ts`
+- [X] T009 [P] [US1] Add failing extension-host tests for overflow command visibility, exclusive checked state, workspace restore, and C/C++-independent availability in `src/test/integration/rust-analyzer-config.integration.test.ts`
 
 ### Implementation for User Story 1
 
