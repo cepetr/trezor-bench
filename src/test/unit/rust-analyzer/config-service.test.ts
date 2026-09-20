@@ -115,8 +115,10 @@ suite("RustAnalyzerConfigService", () => {
     service.restoreMode();
     service.setInputs(inputs("first"));
     const first = service.refresh();
+    await Promise.resolve();
     service.setInputs(inputs("second"));
     const second = service.refresh();
+    await Promise.resolve();
     const stdout = "[cargo]\nfeatures = [\"model-t\"]\ntarget = \"thumb\"\n[check]\nextraArgs = [\"--target\", \"thumb\"]\n";
     runs[1].resolve({ stdout, stderr: "", exitCode: 0, cancelled: false });
     runs[0].resolve({ stdout, stderr: "", exitCode: 0, cancelled: false });
