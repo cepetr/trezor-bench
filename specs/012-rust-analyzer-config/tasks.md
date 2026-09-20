@@ -71,7 +71,7 @@
 ### Tests for User Story 2
 
 - [X] T017 [P] [US2] Add failing snapshot and service tests for effective flags, hardware/emulator arguments, suppression when component changes leave effective flags unchanged, refresh when they change effective flags, all-features suppression, cancellation, and latest-result application in `src/test/unit/rust-analyzer/config-service.test.ts`
-- [ ] T018 [P] [US2] Add failing extension-host refresh tests for model, target, preset, and build-option triggers plus whole-object hardware-to-emulator replacement in `src/test/integration/rust-analyzer-config.integration.test.ts`
+- [X] T018 [P] [US2] Add failing extension-host refresh tests for model, target, preset, and build-option triggers plus whole-object hardware-to-emulator replacement in `src/test/integration/rust-analyzer-config.integration.test.ts`
 
 ### Implementation for User Story 2
 

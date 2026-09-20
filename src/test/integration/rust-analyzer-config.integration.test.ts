@@ -2,6 +2,7 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import { RustAnalyzerConfigService } from "../../rust-analyzer/config-service";
 import { RustAnalyzerExtension } from "../../rust-analyzer/config-types";
+import { refreshRustAnalyzerConfiguration } from "../../rust-analyzer/config-wiring";
 
 interface CommandContribution {
   readonly command: string;
@@ -54,6 +55,49 @@ suite("Rust Analyzer mode contributions", () => {
 });
 
 suite("Rust Analyzer configuration replacement", () => {
+  test("schedules refreshes for model, target, preset, and effective build-option changes", () => {
+    const snapshots: unknown[] = [];
+    let refreshes = 0;
+    const service = {
+      setInputs: (inputs: unknown) => {
+        snapshots.push(inputs);
+        return true;
+      },
+      refresh: async () => { refreshes += 1; },
+    };
+    const manifest = {
+      status: "loaded",
+      models: [],
+      targets: [
+        { kind: "target", id: "hardware", name: "Hardware" },
+        { kind: "target", id: "emulator", name: "Emulator", flag: "--emulator" },
+      ],
+      components: [],
+      buildOptions: [],
+    } as never;
+    const selection = (modelId: string, targetId: string, presetId: string) => ({
+      modelId,
+      targetId,
+      componentId: "core",
+      presetId,
+      persistedAt: "2026-09-20T00:00:00.000Z",
+    });
+
+    refreshRustAnalyzerConfiguration(service as never, manifest, selection("T2T1", "hardware", "default"), []);
+    refreshRustAnalyzerConfiguration(service as never, manifest, selection("T3T1", "hardware", "default"), []);
+    refreshRustAnalyzerConfiguration(service as never, manifest, selection("T3T1", "emulator", "release"), []);
+    refreshRustAnalyzerConfiguration(service as never, manifest, selection("T3T1", "emulator", "release"), [{
+      option: { key: "usb", label: "USB", flag: "--usb", kind: "checkbox" },
+      available: true,
+      value: true,
+      presetState: "resolved",
+      isOverride: false,
+    }]);
+
+    assert.strictEqual(snapshots.length, 4);
+    assert.strictEqual(refreshes, 4);
+  });
+
   test("submits the complete managed object despite an authored setting conflict", async () => {
     const registrations: Array<Readonly<Record<string, unknown>>> = [];
     const extension: RustAnalyzerExtension = {
