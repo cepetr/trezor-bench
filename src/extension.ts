@@ -19,6 +19,7 @@ import {
   disposeLogChannel,
   initLogChannel,
   logWarning,
+  logRustAnalyzerFailure,
   revealLogs,
   logManifestState,
   logPresetState,
@@ -432,7 +433,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         activate: async () => extension.activate(),
       };
     },
+    inspectSetting: (key) => vscode.workspace
+      .getConfiguration("rust-analyzer", workspaceFolder.uri)
+      .inspect(key),
     onModeChange: updateRustAnalyzerModeContext,
+    onFailure: logRustAnalyzerFailure,
   });
   context.subscriptions.push({
     dispose: () => {
