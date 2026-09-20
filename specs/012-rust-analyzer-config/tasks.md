@@ -114,7 +114,7 @@
 ### Tests for User Story 4
 
 - [X] T028 [P] [US4] Add failing service tests for startup waiting, persistent invalid context, missing API, generation/validation/registration failures, last-good retention, retry, and cleanup registration in `src/test/unit/rust-analyzer/config-service.test.ts`
-- [ ] T029 [P] [US4] Add failing extension-host tests for startup ordering, contextual failure logging, unsupported-workspace transition, and deactivation cleanup in `src/test/integration/rust-analyzer-config.integration.test.ts`
+- [X] T029 [P] [US4] Add failing extension-host tests for startup ordering, contextual failure logging, unsupported-workspace transition, and deactivation cleanup in `src/test/integration/rust-analyzer-config.integration.test.ts`
 
 ### Implementation for User Story 4
 

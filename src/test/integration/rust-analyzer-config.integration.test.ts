@@ -2,7 +2,11 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import { RustAnalyzerConfigService } from "../../rust-analyzer/config-service";
 import { RustAnalyzerExtension } from "../../rust-analyzer/config-types";
-import { refreshRustAnalyzerConfiguration } from "../../rust-analyzer/config-wiring";
+import {
+  refreshRustAnalyzerConfiguration,
+  startRustAnalyzerConfiguration,
+  stopRustAnalyzerConfiguration,
+} from "../../rust-analyzer/config-wiring";
 
 interface CommandContribution {
   readonly command: string;
@@ -55,6 +59,40 @@ suite("Rust Analyzer mode contributions", () => {
 });
 
 suite("Rust Analyzer configuration replacement", () => {
+  test("restores before refreshing and clears managed configuration when ownership ends", async () => {
+    const calls: string[] = [];
+    const service = {
+      restoreMode: () => { calls.push("restore"); },
+      refresh: async () => { calls.push("refresh"); },
+      dispose: async () => { calls.push("dispose"); },
+    };
+
+    startRustAnalyzerConfiguration(service as never);
+    await stopRustAnalyzerConfiguration(service as never);
+
+    assert.deepStrictEqual(calls, ["restore", "refresh", "dispose"]);
+  });
+
+  test("reports the current missing Rust Analyzer failure with build context", async () => {
+    const failures: unknown[] = [];
+    const service = new RustAnalyzerConfigService({
+      workspaceState: { get: <T>() => "model-specific" as T, update: async () => {} },
+      runner: { run: () => { throw new Error("missing Rust Analyzer must stop before generation"); } },
+      getExtension: () => undefined,
+      onFailure: (failure) => { failures.push(failure); },
+    });
+
+    service.restoreMode();
+    service.setInputs({ modelId: "T2T1", targetId: "hardware", emulator: false, presetId: "release", effectiveFlags: ["--usb"] });
+    await service.refresh();
+
+    assert.deepStrictEqual(failures, [{
+      stage: "tool",
+      message: "Rust Analyzer extension is not installed.",
+      inputs: { modelId: "T2T1", targetId: "hardware", emulator: false, presetId: "release", effectiveFlags: ["--usb"] },
+    }]);
+  });
+
   test("schedules refreshes for model, target, preset, and effective build-option changes", () => {
     const snapshots: unknown[] = [];
     let refreshes = 0;
