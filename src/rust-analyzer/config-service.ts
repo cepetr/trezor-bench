@@ -92,8 +92,8 @@ export class RustAnalyzerConfigService {
     this.deps.onModeChange?.(mode);
   }
 
-  setInputs(inputs: RustAnalyzerInputs | undefined): boolean {
-    this.inputsKnown = true;
+  setInputs(inputs: RustAnalyzerInputs | undefined, startup = false): boolean {
+    this.inputsKnown = !startup || inputs !== undefined;
     if (sameInputs(this.inputs, inputs)) {
       return false;
     }

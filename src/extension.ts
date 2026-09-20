@@ -450,7 +450,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
   registerRustAnalyzerCommands(context, _rustAnalyzerService);
   _rustAnalyzerService.setInputs(
-    deriveRustAnalyzerInputs(loadedManifest(_manifestState), _buildSelection, presetOptions.resolvedOptions)
+    deriveRustAnalyzerInputs(loadedManifest(_manifestState), _buildSelection, presetOptions.resolvedOptions),
+    true
   );
   startRustAnalyzerConfiguration(_rustAnalyzerService);
 

@@ -184,6 +184,28 @@ suite("RustAnalyzerConfigService", () => {
     assert.strictEqual(createService("unknown").restoreMode(), "all-features");
   });
 
+  test("waits for startup inputs before reporting an unavailable model-specific context", async () => {
+    const failures: unknown[] = [];
+    const service = new RustAnalyzerConfigService({
+      workspaceState: { get: <T>() => "model-specific" as T, update: async () => {} },
+      runner,
+      getExtension: () => createExtension({ addConfiguration: async () => {} }),
+      onFailure: (failure) => { failures.push(failure); },
+    });
+
+    service.restoreMode();
+    service.setInputs(undefined, true);
+    await service.refresh();
+    assert.deepStrictEqual(failures, []);
+
+    service.setInputs(undefined);
+    await service.refresh();
+    assert.deepStrictEqual(failures, [{
+      stage: "context",
+      message: "Active model and target are unavailable.",
+    }]);
+  });
+
   test("keeps the selected mode and prior successful configuration when registration fails", async () => {
     let fail = false;
     const registrations: Array<Readonly<Record<string, unknown>>> = [];
