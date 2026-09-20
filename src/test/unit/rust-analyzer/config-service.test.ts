@@ -175,4 +175,27 @@ suite("RustAnalyzerConfigService", () => {
     assert.deepStrictEqual(registrations, [{ "cargo.features": "all" }]);
     assert.deepStrictEqual(modes, ["all-features"]);
   });
+
+  test("retains all explicit authored scopes for submitted managed keys", async () => {
+    const service = new RustAnalyzerConfigService({
+      workspaceState: { get: <T>() => "all-features" as T, update: async () => {} },
+      runner,
+      getExtension: () => createExtension({ addConfiguration: async () => {} }),
+      inspectSetting: (key: string) => key === "cargo.features"
+        ? { globalValue: ["user"], workspaceValue: ["workspace"], workspaceFolderValue: ["folder"] }
+        : undefined,
+    });
+
+    service.restoreMode();
+    await service.refresh();
+
+    assert.deepStrictEqual(service.conflicts, [{
+      key: "cargo.features",
+      values: [
+        { scope: "user", value: ["user"] },
+        { scope: "workspace", value: ["workspace"] },
+        { scope: "workspace-folder", value: ["folder"] },
+      ],
+    }]);
+  });
 });

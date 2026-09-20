@@ -92,7 +92,7 @@
 
 ### Tests for User Story 3
 
-- [ ] T023 [P] [US3] Add failing conflict-inspection tests for all managed keys and user, workspace, and workspace-folder values in `src/test/unit/rust-analyzer/config-service.test.ts`
+- [X] T023 [P] [US3] Add failing conflict-inspection tests for all managed keys and user, workspace, and workspace-folder values in `src/test/unit/rust-analyzer/config-service.test.ts`
 - [ ] T024 [P] [US3] Add failing extension-host tests for multi-scope conflict warnings, complete submission, precedence, and fallback after removal in `src/test/integration/rust-analyzer-config.integration.test.ts`
 
 ### Implementation for User Story 3
