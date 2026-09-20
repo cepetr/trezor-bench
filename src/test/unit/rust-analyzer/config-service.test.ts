@@ -73,6 +73,42 @@ suite("RustAnalyzerConfigService", () => {
     assert.strictEqual(calls, 0);
   });
 
+  test("cancels obsolete generation and applies only the latest inputs", async () => {
+    const runs: Array<{ resolve: (value: { stdout: string; stderr: string; exitCode: number; cancelled: boolean }) => void; cancelled: boolean }> = [];
+    const registrations: Array<Readonly<Record<string, unknown>>> = [];
+    const service = new RustAnalyzerConfigService({
+      workspaceState: { get: <T>() => "model-specific" as T, update: async () => {} },
+      runner: {
+        run: () => {
+          let resolve!: (value: { stdout: string; stderr: string; exitCode: number; cancelled: boolean }) => void;
+          const run = { resolve, cancelled: false };
+          const result = new Promise<{ stdout: string; stderr: string; exitCode: number; cancelled: boolean }>((next) => {
+            run.resolve = next;
+          });
+          runs.push(run);
+          return { result, cancel: () => { run.cancelled = true; } };
+        },
+      },
+      getExtension: () => createExtension({
+        addConfiguration: async (_id, configuration) => { registrations.push(configuration); },
+      }),
+    });
+    const inputs = (modelId: string) => ({ modelId, targetId: "hardware", emulator: false, presetId: "default", effectiveFlags: [] });
+
+    service.restoreMode();
+    service.setInputs(inputs("first"));
+    const first = service.refresh();
+    service.setInputs(inputs("second"));
+    const second = service.refresh();
+    const stdout = "[cargo]\nfeatures = [\"model-t\"]\ntarget = \"thumb\"\n[check]\nextraArgs = [\"--target\", \"thumb\"]\n";
+    runs[1].resolve({ stdout, stderr: "", exitCode: 0, cancelled: false });
+    runs[0].resolve({ stdout, stderr: "", exitCode: 0, cancelled: false });
+    await Promise.all([first, second]);
+
+    assert.strictEqual(runs[0].cancelled, true);
+    assert.strictEqual(registrations.length, 1);
+  });
+
   test("defaults to all features, persists mode changes, and registers the complete configuration", async () => {
     const stored: Record<string, unknown> = {};
     const registrations: Array<Readonly<Record<string, unknown>>> = [];
