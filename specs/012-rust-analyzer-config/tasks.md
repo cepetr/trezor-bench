@@ -99,7 +99,7 @@
 
 - [X] T025 [US3] Inspect explicit Rust Analyzer settings for every submitted managed key and retain keyed scope/value conflict records in `src/rust-analyzer/config-service.ts`
 - [X] T026 [US3] Add concise conflict warnings and detailed scope/value logging helpers in `src/observability/log-channel.ts`
-- [ ] T027 [US3] Submit complete conflicting objects unchanged and invoke conflict reporting without changing persisted mode or context keys in `src/rust-analyzer/config-service.ts`
+- [X] T027 [US3] Submit complete conflicting objects unchanged and invoke conflict reporting without changing persisted mode or context keys in `src/rust-analyzer/config-service.ts`
 
 **Checkpoint**: Explicit editor settings remain effective while the complete Trezor Bench object stays registered and becomes effective immediately when authored settings are removed.
 

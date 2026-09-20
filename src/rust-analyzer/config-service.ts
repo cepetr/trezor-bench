@@ -8,6 +8,7 @@ import {
   RustAnalyzerRunner,
 } from "./config-types";
 import { parseRustAnalyzerConfig } from "./config-parser";
+import { logRustAnalyzerConflicts } from "../observability/log-channel";
 
 const MODE_STATE_KEY = "rustAnalyzer.mode";
 const CONTRIBUTOR_ID = "cepetr.tbench";
@@ -147,6 +148,7 @@ export class RustAnalyzerConfigService {
     }
 
     this.currentConflicts = this.collectConflicts(configuration);
+    logRustAnalyzerConflicts(this.currentConflicts);
     const extension = this.deps.getExtension();
     if (!extension) {
       return;
