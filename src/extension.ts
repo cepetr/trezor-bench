@@ -54,7 +54,7 @@ import {
 import { registerRunDebugProvider } from "./debug/run-debug-wiring";
 import { createRustAnalyzerRunner } from "./rust-analyzer/config-runner";
 import { RustAnalyzerConfigService } from "./rust-analyzer/config-service";
-import { deriveRustAnalyzerInputs, startRustAnalyzerConfiguration } from "./rust-analyzer/config-wiring";
+import { deriveRustAnalyzerInputs, refreshRustAnalyzerConfiguration, startRustAnalyzerConfiguration } from "./rust-analyzer/config-wiring";
 import { updateRustAnalyzerModeContext } from "./ui/context-keys";
 import { registerRustAnalyzerCommands } from "./commands/rust-analyzer-commands";
 
@@ -108,6 +108,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (state) {
       presetOptions.recomputeResolvedOptions(state, _buildSelection, context);
       _treeModel?.update(state, _buildSelection, presetOptions.resolvedOptions);
+      if (_rustAnalyzerService) {
+        refreshRustAnalyzerConfiguration(
+          _rustAnalyzerService,
+          loadedManifest(state),
+          _buildSelection,
+          presetOptions.resolvedOptions
+        );
+      }
     }
   };
 
@@ -207,6 +215,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     refreshStatusBar,
     refreshArtifactFileWatcher,
     refreshBuildArtifacts,
+    refreshRustAnalyzer: () => {
+      if (_rustAnalyzerService) {
+        refreshRustAnalyzerConfiguration(
+          _rustAnalyzerService,
+          loadedManifest(_manifestState),
+          _buildSelection,
+          presetOptions.resolvedOptions
+        );
+      }
+    },
     setIntelliSenseBuildContext: () => {
       _intelliSenseService?.setBuildContext(_buildSelection);
     },
@@ -286,6 +304,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     _intelliSenseService?.setBuildContext(_buildSelection);
     refreshArtifactFileWatcher();
     refreshBuildArtifacts("manifest-change");
+    if (_rustAnalyzerService) {
+      refreshRustAnalyzerConfiguration(
+        _rustAnalyzerService,
+        manifest,
+        _buildSelection,
+        presetOptions.resolvedOptions
+      );
+    }
   };
 
   // --- Preset service slot: the repository-config wiring creates and
@@ -305,6 +331,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     handlePresetStateDiagnostics(state);
     logPresetState(state);
     await presetOptions.refresh(context);
+    if (_rustAnalyzerService) {
+      refreshRustAnalyzerConfiguration(
+        _rustAnalyzerService,
+        loadedManifest(_manifestState),
+        _buildSelection,
+        presetOptions.resolvedOptions
+      );
+    }
   };
 
   // --- Per-slice command registrations. ---
