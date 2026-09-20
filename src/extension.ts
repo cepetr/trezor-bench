@@ -52,6 +52,11 @@ import {
   updateCompileCommandsTreeArtifact,
 } from "./ui/context-keys";
 import { registerRunDebugProvider } from "./debug/run-debug-wiring";
+import { createRustAnalyzerRunner } from "./rust-analyzer/config-runner";
+import { RustAnalyzerConfigService } from "./rust-analyzer/config-service";
+import { deriveRustAnalyzerInputs, startRustAnalyzerConfiguration } from "./rust-analyzer/config-wiring";
+import { updateRustAnalyzerModeContext } from "./ui/context-keys";
+import { registerRustAnalyzerCommands } from "./commands/rust-analyzer-commands";
 
 let _manifestService: ManifestService | undefined;
 let _presetService: PresetService | undefined;
@@ -64,6 +69,7 @@ let _buildSelection: BuildSelection | undefined;
 let _intelliSenseService: IntelliSenseService | undefined;
 let _artifactFileWatcher: ArtifactFileWatcher | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
+let _rustAnalyzerService: RustAnalyzerConfigService | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   initLogChannel();
@@ -375,6 +381,25 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- Start root configuration and its dependent services. ---
   await repositoryConfigService.start();
+
+  _rustAnalyzerService = new RustAnalyzerConfigService({
+    workspaceState: context.workspaceState,
+    runner: createRustAnalyzerRunner(workspaceFolder),
+    getExtension: () => {
+      const extension = vscode.extensions.getExtension("rust-lang.rust-analyzer");
+      return extension && {
+        isActive: extension.isActive,
+        exports: extension.exports,
+        activate: async () => extension.activate(),
+      };
+    },
+    onModeChange: updateRustAnalyzerModeContext,
+  });
+  registerRustAnalyzerCommands(context, _rustAnalyzerService);
+  _rustAnalyzerService.setInputs(
+    deriveRustAnalyzerInputs(loadedManifest(_manifestState), _buildSelection, presetOptions.resolvedOptions)
+  );
+  startRustAnalyzerConfiguration(_rustAnalyzerService);
 
   // Schedule IntelliSense refresh on activation.
   refreshArtifactFileWatcher();

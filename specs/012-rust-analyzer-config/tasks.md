@@ -56,7 +56,7 @@
 - [X] T013 [US1] Register mode commands that persist selection, update checkmarks before refresh, and return without awaiting work in `src/commands/rust-analyzer-commands.ts`
 - [X] T014 [US1] Contribute both independent toggled overflow commands in a dedicated Rust Analyzer menu group in `package.json`
 - [X] T015 [US1] Create startup wiring that restores mode before scheduling its initial refresh in `src/rust-analyzer/config-wiring.ts`
-- [ ] T016 [US1] Instantiate and wire the Rust Analyzer service after restored build, preset, and effective-option state in `src/extension.ts`
+- [X] T016 [US1] Instantiate and wire the Rust Analyzer service after restored build, preset, and effective-option state in `src/extension.ts`
 
 **Checkpoint**: Mode selection is independently usable and survives reload; all-features mode supplies only `cargo.features: "all"` without depending on C/C++ IntelliSense.
 
