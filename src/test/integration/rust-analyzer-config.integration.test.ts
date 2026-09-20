@@ -1,5 +1,7 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
+import { RustAnalyzerConfigService } from "../../rust-analyzer/config-service";
+import { RustAnalyzerExtension } from "../../rust-analyzer/config-types";
 
 interface CommandContribution {
   readonly command: string;
@@ -47,6 +49,42 @@ suite("Rust Analyzer mode contributions", () => {
     assert.deepStrictEqual(menuEntries.map((entry) => entry.toggled), [
       "tbench.rustAnalyzerModelSpecific",
       "tbench.rustAnalyzerAllFeatures",
+    ]);
+  });
+});
+
+suite("Rust Analyzer configuration replacement", () => {
+  test("replaces hardware-only keys when the target changes to emulator", async () => {
+    const registrations: Array<Readonly<Record<string, unknown>>> = [];
+    const outputs = [
+      "[cargo]\nfeatures = [\"hardware\"]\ntarget = \"thumb\"\n[check]\nextraArgs = [\"--target\", \"thumb\"]\n",
+      "[cargo]\nfeatures = [\"emulator\"]\n",
+    ];
+    const extension: RustAnalyzerExtension = {
+      isActive: true,
+      exports: { addConfiguration: async (_id: string, configuration: Readonly<Record<string, unknown>>) => { registrations.push(configuration); } },
+      activate: async () => extension.exports,
+    };
+    const service = new RustAnalyzerConfigService({
+      workspaceState: { get: <T>() => "model-specific" as T, update: async () => {} },
+      runner: {
+        run: () => ({
+          result: Promise.resolve({ stdout: outputs.shift() ?? "", stderr: "", exitCode: 0, cancelled: false }),
+          cancel: () => {},
+        }),
+      },
+      getExtension: () => extension,
+    });
+
+    service.restoreMode();
+    service.setInputs({ modelId: "T2T1", targetId: "hw", emulator: false, presetId: "default", effectiveFlags: [] });
+    await service.refresh();
+    service.setInputs({ modelId: "T2T1", targetId: "emu", emulator: true, targetFlag: "--emulator", presetId: "default", effectiveFlags: [] });
+    await service.refresh();
+
+    assert.deepStrictEqual(registrations, [
+      { "cargo.features": ["hardware"], "cargo.target": "thumb", "check.extraArgs": ["--target", "thumb"] },
+      { "cargo.features": ["emulator"] },
     ]);
   });
 });
