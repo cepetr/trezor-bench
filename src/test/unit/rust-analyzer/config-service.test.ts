@@ -90,6 +90,24 @@ suite("RustAnalyzerConfigService", () => {
     assert.deepStrictEqual(registrations, [{ "cargo.features": "all" }]);
   });
 
+  test("does not refresh all-features configuration when build inputs change", async () => {
+    const registrations: Array<Readonly<Record<string, unknown>>> = [];
+    const service = new RustAnalyzerConfigService({
+      workspaceState: { get: <T>() => "all-features" as T, update: async () => {} },
+      runner,
+      getExtension: () => createExtension({
+        addConfiguration: async (_id, configuration) => { registrations.push(configuration); },
+      }),
+    });
+
+    service.restoreMode();
+    await service.refresh();
+    assert.strictEqual(service.setInputs({ modelId: "T2T1", targetId: "hardware", emulator: false, presetId: "default", effectiveFlags: [] }), false);
+    assert.strictEqual(service.setInputs({ modelId: "T3T1", targetId: "emu", emulator: true, targetFlag: "--emulator", presetId: "release", effectiveFlags: ["--features", "ui"] }), false);
+
+    assert.deepStrictEqual(registrations, [{ "cargo.features": "all" }]);
+  });
+
   test("cancels obsolete generation and applies only the latest inputs", async () => {
     const runs: Array<{ resolve: (value: { stdout: string; stderr: string; exitCode: number; cancelled: boolean }) => void; cancelled: boolean }> = [];
     const registrations: Array<Readonly<Record<string, unknown>>> = [];

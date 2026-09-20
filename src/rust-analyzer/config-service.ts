@@ -98,6 +98,9 @@ export class RustAnalyzerConfigService {
       return false;
     }
     this.inputs = inputs && { ...inputs, effectiveFlags: [...inputs.effectiveFlags] };
+    if (this.selectedMode === "all-features") {
+      return false;
+    }
     this.sequence += 1;
     this.activeRun?.cancel();
     this.activeRun = undefined;
@@ -112,9 +115,9 @@ export class RustAnalyzerConfigService {
     if (this.selectedMode === "all-features") {
       this.activeRun?.cancel();
       this.activeRun = undefined;
-      const api = await this.resolveApi(sequence, this.inputs);
+      const api = await this.resolveApi(sequence, undefined);
       if (api) {
-        await this.applyConfiguration({ "cargo.features": "all" }, sequence, this.inputs, api);
+        await this.applyConfiguration({ "cargo.features": "all" }, sequence, undefined, api);
       }
       return;
     }
@@ -190,7 +193,13 @@ export class RustAnalyzerConfigService {
   }
 
   private isCurrent(sequence: number, inputs: RustAnalyzerInputs | undefined): boolean {
-    return sequence === this.sequence && sameInputs(this.inputs, inputs);
+    if (sequence !== this.sequence) {
+      return false;
+    }
+    if (!inputs) {
+      return this.selectedMode === "all-features";
+    }
+    return this.selectedMode === "model-specific" && sameInputs(this.inputs, inputs);
   }
 
   private async applyConfiguration(
