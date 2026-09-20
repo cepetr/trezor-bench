@@ -29,7 +29,7 @@
 
 - [X] T003 [P] Add failing TOML schema and flattening tests for supported keys, hardware/emulator required-key presence, opaque string-list `check.extraArgs`, unknown content, empty output, nested values, and wrong types in `src/test/unit/rust-analyzer/config-parser.test.ts`
 - [X] T004 Implement Rust Analyzer mode, configuration snapshot, managed-object, conflict, runner, and extension-API interfaces in `src/rust-analyzer/config-types.ts`
-- [ ] T005 Implement atomic TOML parsing and supported-key validation in `src/rust-analyzer/config-parser.ts`
+- [X] T005 Implement atomic TOML parsing and supported-key validation in `src/rust-analyzer/config-parser.ts`
 - [ ] T006 [P] Add failing direct-process runner tests for resolved cwd, merged task environment, stdout/stderr capture, exit status, and cancellation in `src/test/unit/rust-analyzer/config-runner.test.ts`
 - [ ] T007 Implement cancellable `cargo xtask generate-rust-analyzer-config` spawning with existing repository workspace and task-environment resolution in `src/rust-analyzer/config-runner.ts`
 
