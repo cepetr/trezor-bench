@@ -54,6 +54,27 @@ suite("Rust Analyzer mode contributions", () => {
 });
 
 suite("Rust Analyzer configuration replacement", () => {
+  test("submits the complete managed object despite an authored setting conflict", async () => {
+    const registrations: Array<Readonly<Record<string, unknown>>> = [];
+    const extension: RustAnalyzerExtension = {
+      isActive: true,
+      exports: { addConfiguration: async (_id: string, configuration: Readonly<Record<string, unknown>>) => { registrations.push(configuration); } },
+      activate: async () => extension.exports,
+    };
+    const service = new RustAnalyzerConfigService({
+      workspaceState: { get: <T>() => "all-features" as T, update: async () => {} },
+      runner: { run: () => { throw new Error("all-features mode must not invoke the generator"); } },
+      getExtension: () => extension,
+      inspectSetting: () => ({ workspaceValue: ["authored"] }),
+    });
+
+    service.restoreMode();
+    await service.refresh();
+
+    assert.deepStrictEqual(registrations, [{ "cargo.features": "all" }]);
+    assert.deepStrictEqual(service.conflicts[0]?.values, [{ scope: "workspace", value: ["authored"] }]);
+  });
+
   test("replaces hardware-only keys when the target changes to emulator", async () => {
     const registrations: Array<Readonly<Record<string, unknown>>> = [];
     const outputs = [
