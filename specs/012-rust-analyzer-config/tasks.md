@@ -17,7 +17,7 @@
 **Purpose**: Prepare test doubles and contribution surfaces needed by the new capability.
 
 - [X] T001 [P] Extend Rust Analyzer API, extension-activation, context-key, and setting-inspection stubs in `src/test/unit/vscode-mock.ts`
-- [ ] T002 [P] Add controllable Cargo generator output fixtures for hardware, emulator, malformed, and failing executions in `test-fixtures/rust-analyzer/`
+- [X] T002 [P] Add controllable Cargo generator output fixtures for hardware, emulator, malformed, and failing executions in `test-fixtures/rust-analyzer/`
 
 ---
 

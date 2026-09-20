@@ -1,0 +1,7 @@
+[cargo]
+features = ["model-t", "ui"]
+target = "thumbv7em-none-eabihf"
+allTargets = false
+
+[check]
+extraArgs = ["--target", "thumbv7em-none-eabihf"]

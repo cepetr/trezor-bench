@@ -1,0 +1,3 @@
+[cargo]
+features = ["model-t", "ui"]
+allTargets = true
