@@ -54,6 +54,7 @@ export class RustAnalyzerConfigService {
   private sequence = 0;
   private activeRun: RustAnalyzerRun | undefined;
   private currentConflicts: readonly RustAnalyzerConflict[] = [];
+  private disposed = false;
 
   constructor(private readonly deps: RustAnalyzerConfigServiceDeps) {}
 
@@ -94,6 +95,9 @@ export class RustAnalyzerConfigService {
   }
 
   async refresh(): Promise<void> {
+    if (this.disposed) {
+      return;
+    }
     const sequence = ++this.sequence;
     if (this.selectedMode === "all-features") {
       this.activeRun?.cancel();
@@ -132,6 +136,25 @@ export class RustAnalyzerConfigService {
     }
 
     await this.applyConfiguration(configuration, sequence, inputs);
+  }
+
+  async dispose(): Promise<void> {
+    this.disposed = true;
+    this.sequence += 1;
+    this.activeRun?.cancel();
+    this.activeRun = undefined;
+    const extension = this.deps.getExtension();
+    if (!extension) {
+      return;
+    }
+    try {
+      const exports = extension.isActive ? extension.exports : await extension.activate();
+      if (isRustAnalyzerApi(exports)) {
+        await exports.addConfiguration(CONTRIBUTOR_ID, {});
+      }
+    } catch {
+      // Cleanup is best effort and must not mask extension shutdown.
+    }
   }
 
   private isCurrent(sequence: number, inputs: RustAnalyzerInputs | undefined): boolean {
