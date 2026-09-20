@@ -50,7 +50,7 @@
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Implement workspace-state mode restore/default, mode selection, all-features registration, and successful-registration tracking in `src/rust-analyzer/config-service.ts`
+- [X] T010 [US1] Implement workspace-state mode restore/default, mode selection, all-features registration, and successful-registration tracking in `src/rust-analyzer/config-service.ts`
 - [ ] T011 [US1] Add mutually exclusive Rust Analyzer mode context-key updates in `src/ui/context-keys.ts`
 - [ ] T012 [US1] Define Rust Analyzer mode command identifiers in `src/commands/command-ids.ts`
 - [ ] T013 [US1] Register mode commands that persist selection, update checkmarks before refresh, and return without awaiting work in `src/commands/rust-analyzer-commands.ts`
