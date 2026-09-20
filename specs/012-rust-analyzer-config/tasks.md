@@ -133,7 +133,7 @@
 
 - [X] T034 Review Rust Analyzer command labels, persistence, refresh ordering, replacement, conflict, failure, and cleanup behavior against `specs/product-spec.md` and `specs/glossary.md`
 - [X] T035 Execute the documented automated and manual validation scenarios in `specs/012-rust-analyzer-config/quickstart.md`
-- [ ] T036 Run compile, unit/integration tests, and lint for the completed feature using `package.json`
+- [X] T036 Run compile, unit/integration tests, and lint for the completed feature using `package.json`
 
 ---
 
