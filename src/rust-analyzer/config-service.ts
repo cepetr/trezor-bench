@@ -1,6 +1,7 @@
 import {
   RustAnalyzerApi,
   RustAnalyzerConfig,
+  RustAnalyzerConflict,
   RustAnalyzerExtension,
   RustAnalyzerMode,
   RustAnalyzerRun,
@@ -20,6 +21,11 @@ export interface RustAnalyzerConfigServiceDeps {
   readonly workspaceState: RustAnalyzerWorkspaceState;
   readonly runner: RustAnalyzerRunner;
   readonly getExtension: () => RustAnalyzerExtension | undefined;
+  readonly inspectSetting?: (key: string) => {
+    readonly globalValue?: unknown;
+    readonly workspaceValue?: unknown;
+    readonly workspaceFolderValue?: unknown;
+  } | undefined;
   readonly onModeChange?: (mode: RustAnalyzerMode) => void;
 }
 
@@ -46,6 +52,7 @@ export class RustAnalyzerConfigService {
   private inputs: RustAnalyzerInputs | undefined;
   private sequence = 0;
   private activeRun: RustAnalyzerRun | undefined;
+  private currentConflicts: readonly RustAnalyzerConflict[] = [];
 
   constructor(private readonly deps: RustAnalyzerConfigServiceDeps) {}
 
@@ -55,6 +62,10 @@ export class RustAnalyzerConfigService {
 
   get lastAppliedConfiguration(): RustAnalyzerConfig | undefined {
     return this.lastApplied;
+  }
+
+  get conflicts(): readonly RustAnalyzerConflict[] {
+    return this.currentConflicts;
   }
 
   restoreMode(): RustAnalyzerMode {
@@ -135,6 +146,7 @@ export class RustAnalyzerConfigService {
       return;
     }
 
+    this.currentConflicts = this.collectConflicts(configuration);
     const extension = this.deps.getExtension();
     if (!extension) {
       return;
@@ -153,6 +165,24 @@ export class RustAnalyzerConfigService {
     } catch {
       // Refresh failures deliberately preserve the selected mode and last successful object.
     }
+  }
+
+  private collectConflicts(configuration: RustAnalyzerConfig): readonly RustAnalyzerConflict[] {
+    if (!this.deps.inspectSetting) {
+      return [];
+    }
+    return Object.keys(configuration).flatMap((key) => {
+      const setting = this.deps.inspectSetting?.(key);
+      const values = [
+        ["user", setting?.globalValue],
+        ["workspace", setting?.workspaceValue],
+        ["workspace-folder", setting?.workspaceFolderValue],
+      ].flatMap(([scope, value]) => value === undefined ? [] : [{
+        scope: scope as "user" | "workspace" | "workspace-folder",
+        value,
+      }]);
+      return values.length === 0 ? [] : [{ key, values }];
+    });
   }
 }
 
