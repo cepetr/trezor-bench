@@ -75,7 +75,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Derive snapshot identity and generator arguments from manifest target emulator state, active preset, and `deriveOptionFlags` effective values in `src/rust-analyzer/config-service.ts`
+- [X] T019 [US2] Derive snapshot identity and generator arguments from manifest target emulator state, active preset, and `deriveOptionFlags` effective values in `src/rust-analyzer/config-service.ts`
 - [ ] T020 [US2] Implement model-specific generator execution, validated whole-object registration, sequence checks, snapshot equality checks, and best-effort obsolete-process cancellation in `src/rust-analyzer/config-service.ts`
 - [X] T021 [US2] Notify the service only when model, target, preset, or effective build-option flags change, suppressing component changes that leave effective flags unchanged and all other unchanged snapshots in `src/rust-analyzer/config-wiring.ts`
 - [X] T022 [US2] Connect selection, preset, manifest, and resolved-option refresh completion to Rust Analyzer snapshot updates in `src/extension.ts`
