@@ -26,7 +26,7 @@ export function createRustAnalyzerRunner(
 
   return {
     run(args: readonly string[]): RustAnalyzerRun {
-      const child = spawnProcess("cargo", ["xtask", "generate-rust-analyzer-config", ...args], { cwd, env });
+      const child = spawnProcess("cargo", ["xtask", "ra-config", ...args], { cwd, env });
       let cancelled = false;
       let stdout = "";
       let stderr = "";

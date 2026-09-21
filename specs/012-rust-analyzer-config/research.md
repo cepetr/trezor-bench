@@ -20,7 +20,7 @@
 
 ## Generator Argument Contract
 
-- **Decision**: Invoke `cargo xtask generate-rust-analyzer-config -m <model-id>`, append the active target's manifest-defined emulator flag only for emulator targets, append `-p <preset-id>` only for a non-default preset, then append all ordered effective flags from `deriveOptionFlags`.
+- **Decision**: Invoke `cargo xtask ra-config -m <model-id>`, append the active target's manifest-defined emulator flag only for emulator targets, append `-p <preset-id>` only for a non-default preset, then append all ordered effective flags from `deriveOptionFlags`.
 - **Rationale**: This matches existing xtask model, target, preset, and option conventions while intentionally using effective flags rather than override-only build flags. Emulator identity remains derived from the target flag, never inferred from the target id.
 - **Alternatives considered**: Passing component was rejected because generation covers all embedded projects. Passing only persisted overrides was rejected because the generator requires the effective configuration after preset resolution.
 

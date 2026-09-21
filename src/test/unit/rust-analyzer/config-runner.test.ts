@@ -63,7 +63,7 @@ suite("createRustAnalyzerRunner", () => {
       exitCode: 0,
       cancelled: false,
     });
-    assert.deepStrictEqual(calls[0].args, ["xtask", "generate-rust-analyzer-config", "-m", "T2T1"]);
+    assert.deepStrictEqual(calls[0].args, ["xtask", "ra-config", "-m", "T2T1"]);
     assert.strictEqual(calls[0].command, "cargo");
     assert.strictEqual(calls[0].cwd, "/workspace/core/embed");
     assert.strictEqual(calls[0].env?.EXTRA, "enabled");

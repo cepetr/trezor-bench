@@ -4,7 +4,7 @@
 
 - VS Code 1.105 or newer with `rust-lang.rust-analyzer` installed.
 - A single-folder firmware workspace with valid `tbench.toml`, manifest, and preset inputs.
-- The firmware workspace provides `cargo xtask generate-rust-analyzer-config` as defined in [contracts/rust-analyzer-configuration.md](contracts/rust-analyzer-configuration.md).
+- The firmware workspace provides `cargo xtask ra-config` as defined in [contracts/rust-analyzer-configuration.md](contracts/rust-analyzer-configuration.md).
 - Install extension dependencies with `npm ci`.
 
 ## Automated Validation

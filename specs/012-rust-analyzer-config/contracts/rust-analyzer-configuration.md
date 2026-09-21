@@ -16,7 +16,7 @@ Both commands remain visible independently of C/C++ IntelliSense. Their menu con
 ### Invocation
 
 ```text
-cargo xtask generate-rust-analyzer-config -m <model-id> [<emulator-target-flag>] [-p <preset-id>] [<effective-option-flag> ...]
+cargo xtask ra-config -m <model-id> [<emulator-target-flag>] [-p <preset-id>] [<effective-option-flag> ...]
 ```
 
 - Working directory: repository-configured Cargo workspace.

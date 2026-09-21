@@ -103,7 +103,7 @@ package.json
 
 ### Generator Arguments
 
-Invoke `cargo xtask generate-rust-analyzer-config` directly in the resolved Cargo workspace. Append `-m <model-id>`, the active target's emulator flag when emulator mode is true, `-p <preset-id>` only for a non-default preset, and the ordered flags from `deriveOptionFlags(resolvedOptions)`. Use `process.env` overlaid by resolved `tbench.taskExtraEnv`, capture stdout/stderr, and terminate obsolete children.
+Invoke `cargo xtask ra-config` directly in the resolved Cargo workspace. Append `-m <model-id>`, the active target's emulator flag when emulator mode is true, `-p <preset-id>` only for a non-default preset, and the ordered flags from `deriveOptionFlags(resolvedOptions)`. Use `process.env` overlaid by resolved `tbench.taskExtraEnv`, capture stdout/stderr, and terminate obsolete children.
 
 ### Startup And Cleanup
 
