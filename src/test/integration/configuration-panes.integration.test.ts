@@ -235,8 +235,8 @@ suite("Configuration panes – no Collapse All on any view", () => {
 // ---------------------------------------------------------------------------
 
 suite("Configuration panes – view/title toolbar targets only Build Selection", () => {
-  test("declares exactly ten view/title entries", () => {
-    assert.strictEqual(getMenuEntries("view/title").length, 10);
+  test("declares exactly twelve view/title entries", () => {
+    assert.strictEqual(getMenuEntries("view/title").length, 12);
   });
 
   test("every view/title entry targets the inherited view id", () => {
@@ -273,6 +273,7 @@ suite("Configuration panes – view/title toolbar targets only Build Selection",
       { command: "tbench.upload", group: "overflow@6", enablement: "tbench.binaryExists" },
       { command: "tbench.startDebugging", group: "overflow@7", enablement: "tbench.startDebuggingEnabled" },
       { command: "tbench.refreshIntelliSense", group: "overflow@8" },
+      { command: "tbench.rustAnalyzer.selectConfiguration", group: "rust-analyzer@1" },
     ];
     const actual = getMenuEntries("view/title").map((e) =>
       e.enablement === undefined

@@ -21,6 +21,7 @@ export function registerBuildOptionCommands(
       const newValue = resolved.value !== true;
       await writeBuildOption(context, key, newValue);
       deps.refreshResolvedOptionsView();
+      deps.refreshRustAnalyzer();
     })
   );
 
@@ -37,6 +38,7 @@ export function registerBuildOptionCommands(
         }
         await writeBuildOption(context, key, stateId);
         deps.refreshResolvedOptionsView();
+        deps.refreshRustAnalyzer();
       }
     )
   );

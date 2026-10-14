@@ -99,6 +99,7 @@ const workspace = {
   getConfiguration: () => ({
     get: () => undefined,
     update: () => Promise.resolve(),
+    inspect: () => undefined,
   }),
   createFileSystemWatcher: () => ({
     onDidCreate: () => ({ dispose: () => {} }),
@@ -112,6 +113,7 @@ const workspace = {
 const commands = {
   registerCommand: (_id: string, _handler: () => void) => ({ dispose: () => {} }),
   executeCommand: () => Promise.resolve(undefined),
+  setContext: () => Promise.resolve(),
 };
 
 // ---------------------------------------------------------------------------
@@ -233,7 +235,9 @@ class FileDecoration {
 // ---------------------------------------------------------------------------
 
 const extensions = {
-  getExtension: (_extensionId: string) => undefined as unknown | undefined,
+  getExtension: (_extensionId: string) => undefined as
+    | { isActive: boolean; activate: () => Promise<unknown>; exports: unknown }
+    | undefined,
   all: [] as unknown[],
   onDidChange: () => ({ dispose: () => {} }),
 };

@@ -28,6 +28,7 @@ export interface CommandDeps {
   refreshStatusBar(): void;
   refreshArtifactFileWatcher(): void;
   refreshBuildArtifacts(trigger: RefreshTrigger): void;
+  refreshRustAnalyzer(): void;
   /** Pushes the current build selection into the IntelliSense service. */
   setIntelliSenseBuildContext(): void;
 }

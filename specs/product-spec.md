@@ -188,6 +188,8 @@ Workflow actions are exposed from artifact rows and from the Configuration view 
 
 Some workflow actions are available only when the manifest file defines them as applicable for the active build context — see `Flash And Upload` for the `flashWhen` and `uploadWhen` applicability rules.
 
+The Configuration view overflow menu also contains a dedicated Rust Analyzer mode group. Its two checkable commands are configuration controls rather than workflow actions and remain available independently of C/C++ IntelliSense.
+
 ### Build Artifacts
 
 Build workflow actions create build artifacts for the active build context. These artifacts are shown in the `Build Artifacts` part of the tree view and can be used by other actions such as `Flash to Device`, `Upload to Device`, or `Start Debugging`.
@@ -388,6 +390,36 @@ When IntelliSense prerequisites are not satisfied, the extension reports that st
 
 When excluded-file input data becomes unavailable, excluded-file badges and overlays are also cleared so stale excluded-file state does not remain visible after the active context changes.
 
+## Rust Analyzer Configuration
+
+Rust Analyzer configuration is a separate capability from C/C++ IntelliSense. The Configuration view overflow menu exposes **Rust Analyzer: Select Configuration…** in a dedicated group; the command is also available from the Command Palette. It opens a Quick Pick listing the two modes, **All Features** and **Model Specific**, with the selected mode listed first and marked `Active`. Picking a mode selects it; dismissing the Quick Pick changes nothing.
+
+The selected Rust Analyzer mode is persisted per workspace, defaults to all-features mode, and continues to be shown as active when a refresh fails. The command remains available regardless of C/C++ IntelliSense backend readiness.
+
+All-features mode registers this complete configuration and never runs model-specific generation:
+
+```json
+{
+	"cargo.features": "all"
+}
+```
+
+Model-specific mode asynchronously runs `cargo xtask ra-config` from the configured cargo workspace using the same direct-process, workspace-path, configuration-variable, and task-environment conventions as Build and Clippy. It passes the active model, target-derived emulator state, active preset, and effective build-option flags. The generator resolves every supported embedded project, so changing the active component does not directly refresh Rust Analyzer configuration; a refresh occurs only if that change produces different effective build-option flags.
+
+A successful generator invocation exits with status zero and writes one complete TOML configuration to standard output; diagnostics are read from standard error. Only the `[cargo]` and `[check]` tables are accepted. Their complete supported key set and value types are `cargo.features` as an array of strings, `cargo.target` as a string, `cargo.allTargets` as a boolean, and `check.extraArgs` as an array of strings. Empty or malformed TOML, any other table or key, or a mismatched value type invalidates the entire result. Accepted table entries are flattened to dotted Rust Analyzer setting names without the `rust-analyzer.` prefix. No part of an invalid result is applied.
+
+Hardware output includes `cargo.target` and `check.extraArgs`. Emulator output omits settings that do not apply, including those two keys. The firmware generator owns the semantic contents of `check.extraArgs`; Trezor Bench validates that hardware output contains a string array but does not interpret individual arguments. The complete validated object is applied through the `rust-lang.rust-analyzer` extension's exported `addConfiguration` API using `cepetr.tbench` as the contributing extension identifier. Trezor Bench never writes managed Rust Analyzer values to `.vscode/settings.json` or through the VS Code configuration-update API. Each registration replaces the previous Trezor Bench object, so keys omitted by a later complete result are cleared. An empty object clears all Trezor Bench Rust Analyzer overrides when cleanup is required.
+
+The active Rust Analyzer session receives each successful registration without manual settings edits. Refresh runs after activation has restored build state, after a mode change, and whenever the active model, hardware/emulator target, active preset, or effective build-option flags change. Refresh remains asynchronous. Obsolete generation is cancelled when practical, and every result is checked against its initiating mode and inputs before application; only the newest applicable result may be registered.
+
+If model-specific mode has no valid model or target while startup restoration is still resolving build context, the selected mode and last applied configuration are retained without a warning. Configuration refreshes automatically when the context becomes valid. A context that remains invalid after restoration is reported through the normal warning and log surfaces.
+
+Before registration, the extension checks every managed key for explicit values at user, workspace, and workspace-folder scopes. It always submits the complete managed object, including conflicting keys, while normal VS Code setting precedence preserves explicit values. A concise warning names conflicting keys, and log output records their scopes and values. Removing an explicit value exposes the already registered Trezor Bench value without another refresh. Conflicts never change the selected mode.
+
+If Rust Analyzer is missing, the extension warns consistently with the missing C/C++ tooling behavior. Generation failure, invalid output, or `addConfiguration` failure retains the selected mode and last successfully applied configuration. The extension shows a concise warning and records standard error plus the relevant model, target, preset, and effective build-option context in the `Trezor Bench` output channel. It retries after the next relevant selection change or mode toggle.
+
+No-folder and multi-root windows follow the extension's existing unsupported-workspace behavior. When the workspace can no longer be managed safely or the capability is disposed, Trezor Bench clears its managed Rust Analyzer overrides with an empty configuration object.
+
 ## Extension Configuration
 
 Repository-dependent paths are committed in an optional root-level `tbench.toml`; VS Code settings under the `tbench` namespace remain only for user- or workspace-local task environment and UI behavior. This binds repository layout to the checked-in repository state rather than to each contributor's editor configuration.
@@ -448,7 +480,7 @@ These settings are intended to be adjusted at the workspace level so the extensi
 
 ## Startup And Refresh Behavior
 
-The extension keeps the tree view, status bar, IntelliSense integration, artifact state, and workflow availability aligned with the current workspace state. This behavior starts at activation and continues whenever the manifest, relevant settings, or the active build context change.
+The extension keeps the tree view, status bar, IntelliSense integration, Rust Analyzer configuration, artifact state, and workflow availability aligned with the current workspace state. This behavior starts at activation and continues whenever the manifest, relevant settings, or the active build context change.
 
 ### Activation
 
@@ -461,12 +493,13 @@ If at least one workspace folder is open, the extension loads workspace state fr
 - Resolves repository paths from root-level `tbench.toml` or the built-in defaults, and begins watching `tbench.toml`.
 - Starts the manifest service and begins watching the resolved manifest file.
 - Starts the preset service and begins watching both preset inputs at `<presets path>/presets.toml` and `<presets path>/user-presets.toml`.
-- Initializes the status-bar presenter, IntelliSense service, and excluded-file visibility services.
+- Initializes the status-bar presenter, IntelliSense service, Rust Analyzer configuration service, and excluded-file visibility services.
 - Restores the persisted active build context when possible and normalizes it against the loaded manifest if previously saved values are no longer valid.
 - Recomputes the declared preset list and restores or normalizes the persisted active preset id as described in `Build Selection Persistence`.
 - Restores persisted build-option selections and resolves them against the active build context and the active preset's calculated effective values.
 - Updates the tree view, status bar, diagnostics, log output, workflow blocking state, preset blocking state, artifact rows, and action enablement from the loaded state.
 - Schedules an initial IntelliSense refresh.
+- Restores the persisted Rust Analyzer mode and schedules its initial refresh after build context, preset, and effective build options have been restored.
 
 ### Manifest Change
 
@@ -522,6 +555,7 @@ When the user changes the active model, target, component, or preset from the tr
 - The tree view is refreshed to show the new active selection, updated option state, and updated artifact rows.
 - The status bar is refreshed to show the new active build context when enabled.
 - IntelliSense is refreshed so compile-commands, excluded-file evaluation, and related editor assistance follow the new context.
+- Rust Analyzer configuration is refreshed when the model, target, preset, or resulting effective build-option flags change; changing the component does not directly trigger this refresh, but a resulting effective-flag change does.
 - Flash, upload, map-file, and debugging availability are recomputed from the new context and current artifact state.
 
 ### Other Refresh Triggers
@@ -532,7 +566,11 @@ When the user changes the active model, target, component, or preset from the tr
 
 ## Persistence And Defaults
 
-The extension remembers the active build context and build-option selections in workspace-scoped persistent state so they can be restored across sessions for the same workspace.
+The extension remembers the active build context, build-option selections, and Rust Analyzer mode in workspace-scoped persistent state so they can be restored across sessions for the same workspace.
+
+### Rust Analyzer Mode Persistence
+
+The extension persists exactly one Rust Analyzer mode per workspace. A workspace with no saved mode uses all-features mode. Changing the mode is persisted before its refresh starts; refresh success or failure does not alter the persisted selection.
 
 ### Build Selection Persistence
 

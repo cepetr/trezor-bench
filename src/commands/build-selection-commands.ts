@@ -37,6 +37,7 @@ export function registerBuildSelectionCommands(
         deps.setIntelliSenseBuildContext();
         deps.refreshArtifactFileWatcher();
         deps.refreshBuildArtifacts("build-selection-change");
+        deps.refreshRustAnalyzer();
       })
     );
   };

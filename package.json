@@ -126,6 +126,11 @@
         "title": "Start Debugging",
         "category": "Trezor Bench",
         "icon": "$(debug-alt)"
+      },
+      {
+        "command": "tbench.rustAnalyzer.selectConfiguration",
+        "title": "Rust Analyzer: Select Configuration…",
+        "category": "Trezor Bench"
       }
     ],
     "menus": {
@@ -232,6 +237,11 @@
           "command": "tbench.refreshIntelliSense",
           "when": "view == tbench.configuration",
           "group": "overflow@8"
+        },
+        {
+          "command": "tbench.rustAnalyzer.selectConfiguration",
+          "when": "view == tbench.configuration",
+          "group": "rust-analyzer@1"
         }
       ]
     },
