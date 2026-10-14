@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+### Added
+- Rust Analyzer is now configured automatically. Use `Rust Analyzer: Select Configuration…` in the `Build Selection` menu to choose `All Features` (the default) or `Model Specific`, which matches Rust Analyzer to your selected model, target, preset, and build options.
+
 ## 0.4.3 - 2026-08-18
 This update focuses primarily on internal code maintenance and structural refactoring, alongside resolutions for a few minor bugs.
 
