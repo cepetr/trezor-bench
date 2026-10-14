@@ -18,15 +18,15 @@ A firmware developer chooses whether Rust Analyzer should inspect all Cargo feat
 
 **Why this priority**: Selecting and preserving one authoritative mode is the entry point for every other behavior in this feature.
 
-**Independent Test**: In a workspace with Rust Analyzer available, switch between both mode commands, reload the workspace, and verify that exactly one mode remains selected and the corresponding complete configuration is active.
+**Independent Test**: In a workspace with Rust Analyzer available, switch between both modes with `Rust Analyzer: Select Configuration…`, reload the workspace, and verify that exactly one mode remains selected and the corresponding complete configuration is active.
 
 **Acceptance Scenarios**:
 
-1. **Given** a workspace with no saved Rust Analyzer mode, **When** the extension restores workspace state, **Then** `Rust Analyzer: All Features` is selected and the complete managed configuration contains `cargo.features` set to `all`.
-2. **Given** either mode is selected, **When** the user selects the other mode, **Then** the new mode is persisted for that workspace, exactly one mode is checked, and its refresh begins without blocking the Configuration view.
+1. **Given** a workspace with no saved Rust Analyzer mode, **When** the extension restores workspace state, **Then** all-features mode is selected and the complete managed configuration contains `cargo.features` set to `all`.
+2. **Given** either mode is selected, **When** the user selects the other mode from `Rust Analyzer: Select Configuration…`, **Then** the new mode is persisted for that workspace, the picker shows it as the active mode, and its refresh begins without blocking the Configuration view.
 3. **Given** a saved mode, **When** the workspace is reopened, **Then** the saved mode is restored before its configuration is refreshed.
-4. **Given** C/C++ IntelliSense is unavailable or misconfigured, **When** the user opens the Configuration view overflow menu, **Then** both Rust Analyzer mode commands remain available.
-5. **Given** the latest refresh fails, **When** the user views the mode commands, **Then** the persisted selected mode remains checked and the previously applied configuration remains active.
+4. **Given** C/C++ IntelliSense is unavailable or misconfigured, **When** the user opens the Configuration view overflow menu, **Then** `Rust Analyzer: Select Configuration…` remains available.
+5. **Given** the latest refresh fails, **When** the user opens `Rust Analyzer: Select Configuration…`, **Then** the persisted selected mode is still shown as active and the previously applied configuration remains active.
 
 ---
 
@@ -97,10 +97,10 @@ A firmware developer keeps the last working Rust Analyzer configuration when pre
 
 ### Functional Requirements
 
-- **FR-001**: The Configuration view overflow menu MUST contain a dedicated group with `Rust Analyzer: Model Specific` and `Rust Analyzer: All Features` commands.
-- **FR-002**: The two mode commands MUST be mutually exclusive and checkable, with exactly one checked at all times after workspace state is initialized.
+- **FR-001**: The Configuration view overflow menu MUST contain a dedicated group with a single `Rust Analyzer: Select Configuration…` command, which MUST also be available from the Command Palette.
+- **FR-002**: The command MUST open a Quick Pick listing both modes, with the selected mode listed first and marked as active. Picking a mode selects it; dismissing the Quick Pick MUST change nothing.
 - **FR-003**: The extension MUST persist the selected Rust Analyzer mode per workspace and MUST default to all-features mode when no selection has been saved.
-- **FR-004**: Command checked state MUST represent the selected mode independently of refresh success and independently of C/C++ IntelliSense availability.
+- **FR-004**: The active mode shown in the Quick Pick MUST represent the selected mode independently of refresh success and independently of C/C++ IntelliSense availability.
 - **FR-005**: All-features mode MUST register a complete managed configuration containing only `cargo.features` with the value `all`.
 - **FR-006**: Model-specific mode MUST request configuration from the firmware repository using the same workspace and task-environment conventions as existing firmware workflows.
 - **FR-007**: A model-specific request MUST represent the active model, target emulator state, active preset, and effective build-option flags; it MUST NOT depend on the active component.

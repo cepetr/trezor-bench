@@ -16,15 +16,9 @@ import { isArtifactActionApplicable } from "../commands/artifact-actions";
 import { resolveWorkflowContext } from "../tasks/build-task-provider";
 import { isWorkflowWorkspaceSupported } from "../workspace/workspace-guard";
 import { PaneTreeModel } from "./pane-tree";
-import { RustAnalyzerMode } from "../rust-analyzer/config-types";
 
 /** The kinds updateArtifactActionContext resolves and publishes context keys for. */
 const ACTION_ARTIFACT_KINDS = ["binary", "map"] as const;
-
-export function updateRustAnalyzerModeContext(mode: RustAnalyzerMode): void {
-  void vscode.commands.executeCommand("setContext", "tbench.rustAnalyzerModelSpecific", mode === "model-specific");
-  void vscode.commands.executeCommand("setContext", "tbench.rustAnalyzerAllFeatures", mode === "all-features");
-}
 
 /**
  * Updates the `tbench.workflowBlocked` VS Code context key so that

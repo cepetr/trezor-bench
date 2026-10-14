@@ -20,8 +20,7 @@ export const CONTRIBUTED_COMMAND_IDS = [
   "tbench.upload", // launch Upload task (Flash/Upload slice)
   "tbench.openMapFile", // open resolved map file (Flash/Upload slice)
   "tbench.startDebugging", // launch debug session (Debug Launch slice)
-  "tbench.rustAnalyzer.modelSpecific", // select model-specific Rust Analyzer configuration
-  "tbench.rustAnalyzer.allFeatures", // select all-features Rust Analyzer configuration
+  "tbench.rustAnalyzer.selectConfiguration", // pick the Rust Analyzer mode
 ] as const;
 
 export const INTERNAL_COMMAND_IDS = [

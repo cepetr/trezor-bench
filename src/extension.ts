@@ -61,7 +61,6 @@ import {
   startRustAnalyzerConfiguration,
   stopRustAnalyzerConfiguration,
 } from "./rust-analyzer/config-wiring";
-import { updateRustAnalyzerModeContext } from "./ui/context-keys";
 import { registerRustAnalyzerCommands } from "./commands/rust-analyzer-commands";
 
 let _manifestService: ManifestService | undefined;
@@ -436,7 +435,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     inspectSetting: (key) => vscode.workspace
       .getConfiguration("rust-analyzer", workspaceFolder.uri)
       .inspect(key),
-    onModeChange: updateRustAnalyzerModeContext,
     onFailure: logRustAnalyzerFailure,
   });
   context.subscriptions.push({

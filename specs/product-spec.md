@@ -392,12 +392,9 @@ When excluded-file input data becomes unavailable, excluded-file badges and over
 
 ## Rust Analyzer Configuration
 
-Rust Analyzer configuration is a separate capability from C/C++ IntelliSense. The Configuration view overflow menu exposes two mutually exclusive, checkable commands in a dedicated group:
+Rust Analyzer configuration is a separate capability from C/C++ IntelliSense. The Configuration view overflow menu exposes **Rust Analyzer: Select Configuration…** in a dedicated group; the command is also available from the Command Palette. It opens a Quick Pick listing the two modes, **All Features** and **Model Specific**, with the selected mode listed first and marked `Active`. Picking a mode selects it; dismissing the Quick Pick changes nothing.
 
-- **Rust Analyzer: Model Specific**
-- **Rust Analyzer: All Features**
-
-Exactly one command is checked. The selected Rust Analyzer mode is persisted per workspace, defaults to all-features mode, and continues to determine checked state when a refresh fails. The commands remain available regardless of C/C++ IntelliSense backend readiness.
+The selected Rust Analyzer mode is persisted per workspace, defaults to all-features mode, and continues to be shown as active when a refresh fails. The command remains available regardless of C/C++ IntelliSense backend readiness.
 
 All-features mode registers this complete configuration and never runs model-specific generation:
 
@@ -573,7 +570,7 @@ The extension remembers the active build context, build-option selections, and R
 
 ### Rust Analyzer Mode Persistence
 
-The extension persists exactly one Rust Analyzer mode per workspace. A workspace with no saved mode uses `Rust Analyzer: All Features`. Restoring or changing the mode updates the two Configuration view command checkmarks immediately; refresh success or failure does not alter the persisted selection.
+The extension persists exactly one Rust Analyzer mode per workspace. A workspace with no saved mode uses all-features mode. Changing the mode is persisted before its refresh starts; refresh success or failure does not alter the persisted selection.
 
 ### Build Selection Persistence
 

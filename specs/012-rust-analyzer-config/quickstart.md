@@ -19,12 +19,12 @@ Expected: parser, runner, service, command, persistence, conflict, latest-wins, 
 ## Default And Persistence
 
 1. Open a supported workspace with no saved Rust Analyzer mode.
-2. Open the Configuration view overflow menu.
-3. Confirm `Rust Analyzer: All Features` is checked and Model Specific is unchecked.
+2. From the Configuration view overflow menu, run `Rust Analyzer: Select Configuration…`.
+3. Confirm `All Features` is listed first and marked `Active`, then dismiss the picker.
 4. Confirm the active Rust Analyzer configuration contains only `cargo.features = "all"` from Trezor Bench.
-5. Select Model Specific, reload the window, and reopen the menu.
+5. Select Model Specific, reload the window, and reopen the picker.
 
-Expected: Model Specific remains checked after reload and refresh starts only after build context, preset, and effective options are restored.
+Expected: Model Specific is listed first and marked `Active` after reload and refresh starts only after build context, preset, and effective options are restored.
 
 ## Hardware And Emulator Replacement
 

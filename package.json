@@ -128,13 +128,8 @@
         "icon": "$(debug-alt)"
       },
       {
-        "command": "tbench.rustAnalyzer.modelSpecific",
-        "title": "Rust Analyzer: Model Specific",
-        "category": "Trezor Bench"
-      },
-      {
-        "command": "tbench.rustAnalyzer.allFeatures",
-        "title": "Rust Analyzer: All Features",
+        "command": "tbench.rustAnalyzer.selectConfiguration",
+        "title": "Rust Analyzer: Select Configuration…",
         "category": "Trezor Bench"
       }
     ],
@@ -244,16 +239,9 @@
           "group": "overflow@8"
         },
         {
-          "command": "tbench.rustAnalyzer.modelSpecific",
+          "command": "tbench.rustAnalyzer.selectConfiguration",
           "when": "view == tbench.configuration",
-          "group": "rust-analyzer@1",
-          "toggled": "tbench.rustAnalyzerModelSpecific"
-        },
-        {
-          "command": "tbench.rustAnalyzer.allFeatures",
-          "when": "view == tbench.configuration",
-          "group": "rust-analyzer@1",
-          "toggled": "tbench.rustAnalyzerAllFeatures"
+          "group": "rust-analyzer@1"
         }
       ]
     },

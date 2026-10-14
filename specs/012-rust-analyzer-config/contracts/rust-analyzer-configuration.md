@@ -4,12 +4,11 @@
 
 The Configuration view title overflow contributes a dedicated group after existing workflow controls:
 
-| Command id | Label | Selected context |
+| Command id | Label | Menu group |
 | --- | --- | --- |
-| `tbench.rustAnalyzer.modelSpecific` | `Rust Analyzer: Model Specific` | `tbench.rustAnalyzerModelSpecific` |
-| `tbench.rustAnalyzer.allFeatures` | `Rust Analyzer: All Features` | `tbench.rustAnalyzerAllFeatures` |
+| `tbench.rustAnalyzer.selectConfiguration` | `Rust Analyzer: Select Configuration…` | `rust-analyzer@1` |
 
-Both commands remain visible independently of C/C++ IntelliSense. Their menu contributions use `toggled` context expressions, and the extension maintains exactly one true selected context after mode initialization. Invoking a command persists its mode and updates checkmarks before starting asynchronous refresh.
+The command is also available from the Command Palette and remains visible independently of C/C++ IntelliSense. It opens a Quick Pick with one item per mode, `All Features` and `Model Specific`; the selected mode is listed first with the description `Active`. Picking an item persists its mode and then starts asynchronous refresh without awaiting it. Dismissing the Quick Pick changes nothing.
 
 ## Firmware Generator
 

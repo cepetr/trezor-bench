@@ -137,6 +137,18 @@
 
 ---
 
+## Phase 8: Single Rust Analyzer Configuration Picker
+
+**Purpose**: Replace the two checkable mode commands, whose check marks the overflow menu does not render, with one `Rust Analyzer: Select Configuration…` command that opens a Quick Pick showing the active mode first.
+
+- [X] T037 Update the command surface and mode-selection requirements in `specs/012-rust-analyzer-config/spec.md`, `specs/012-rust-analyzer-config/contracts/rust-analyzer-configuration.md`, `specs/012-rust-analyzer-config/quickstart.md`, `specs/product-spec.md`, and `specs/glossary.md`
+- [X] T038 Replace the mode-command tests with Quick Pick tests (active mode first and marked, selection persists and refreshes, dismissal changes nothing) in `src/test/unit/rust-analyzer/rust-analyzer-commands.test.ts`, and update contribution expectations in `src/test/integration/rust-analyzer-config.integration.test.ts` and `src/test/integration/configuration-panes.integration.test.ts`
+- [X] T039 Implement `tbench.rustAnalyzer.selectConfiguration` with the Quick Pick in `src/commands/rust-analyzer-commands.ts` and replace the two command ids in `src/commands/command-ids.ts`
+- [X] T040 Replace the two command and menu contributions with the single command in the same overflow group in `package.json`; remove the now-unused selected-mode context keys from `src/ui/context-keys.ts`, `src/extension.ts`, and `src/test/unit/ui/rust-analyzer-context-keys.test.ts`
+- [X] T041 Run compile, unit tests, and lint using `package.json`
+
+---
+
 ## Dependencies And Execution Order
 
 ```mermaid
