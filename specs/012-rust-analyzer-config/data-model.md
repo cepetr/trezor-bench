@@ -40,7 +40,7 @@ Complete object registered under contributor id `cepetr.tbench`.
 | `cargo.features` | `string[]` or literal `"all"` | Required in all-features mode; optional in generated output. |
 | `cargo.target` | string | Hardware generated output; omitted for emulator. |
 | `cargo.allTargets` | boolean | Optional generated value. |
-| `check.extraArgs` | string[] | Hardware generated output; omitted for emulator. |
+| `check.extraArgs` | string[] | Optional generated value for hardware and emulator. |
 
 Validation is atomic. Empty generated output, unknown tables or keys, nested values, non-string array entries, or mismatched scalar types invalidate the entire generated object. Registration replaces the previous complete contributor object; `{}` clears it.
 

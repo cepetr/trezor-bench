@@ -40,8 +40,8 @@ A firmware developer using model-specific mode receives Rust Analyzer settings t
 
 **Acceptance Scenarios**:
 
-1. **Given** model-specific mode and a valid model and hardware target, **When** configuration is generated successfully, **Then** the complete result includes the resolved Rust target and hardware-only check exclusions and becomes active in the current Rust session.
-2. **Given** model-specific mode and a valid model and emulator target, **When** configuration is generated successfully, **Then** settings that do not apply to emulation, including the Rust target and check exclusions, are absent from the complete result and are cleared from the previously managed configuration.
+1. **Given** model-specific mode and a valid model and hardware target, **When** configuration is generated successfully, **Then** the complete result includes the resolved Rust target and any generated check arguments and becomes active in the current Rust session.
+2. **Given** model-specific mode and a valid model and emulator target, **When** configuration is generated successfully, **Then** the Rust target is absent from the complete result, and it and any check arguments the generator did not emit are cleared from the previously managed configuration.
 3. **Given** model-specific mode, **When** the active model, target emulator state, preset, or effective build-option flags change, **Then** a refresh starts with the new inputs.
 4. **Given** model-specific mode, **When** only the active component changes and the resulting effective build-option flags remain unchanged, **Then** no model-specific configuration refresh is started.
 5. **Given** all-features mode, **When** any build selection or build option changes, **Then** no model-specific generation command is run and the all-features configuration remains active.
@@ -108,7 +108,7 @@ A firmware developer keeps the last working Rust Analyzer configuration when pre
 - **FR-009**: The extension MUST accept model-specific output only when it is non-empty and structurally valid, with no tables other than `cargo` and `check` and no keys other than `cargo.features`, `cargo.target`, `cargo.allTargets`, and `check.extraArgs`.
 - **FR-010**: The extension MUST flatten accepted grouped settings into complete dotted Rust Analyzer setting names without a `rust-analyzer.` prefix.
 - **FR-011**: The extension MUST require `cargo.features` and `check.extraArgs`, when present, to be lists of strings; `cargo.target` to be a string; and `cargo.allTargets` to be a boolean. It MUST reject the entire result when any part is malformed, unexpected, or uses another value type, and MUST never partially apply such a result.
-- **FR-012**: Hardware results MUST include `cargo.target` and `check.extraArgs`; emulator results MUST omit both settings. The firmware generator owns the semantic contents of `check.extraArgs`; the extension MUST validate its presence and string-list type for hardware results but MUST NOT interpret individual arguments.
+- **FR-012**: Hardware results MUST include `cargo.target`; emulator results MUST omit it. `check.extraArgs` is optional for both target kinds. The firmware generator owns the presence and semantic contents of `check.extraArgs`; the extension MUST validate its string-list type when present but MUST NOT interpret individual arguments.
 - **FR-013**: The extension MUST register the complete selected configuration with the active Rust Analyzer session under Trezor Bench's identity and MUST NOT write these managed values to authored workspace settings.
 - **FR-014**: Each successful registration MUST replace the prior Trezor Bench configuration as a whole so omitted keys are cleared; when managed overrides must be removed, the extension MUST register an empty configuration.
 - **FR-015**: The active Rust Analyzer session MUST receive successful configuration changes without requiring manual settings edits or a user-initiated session restart.

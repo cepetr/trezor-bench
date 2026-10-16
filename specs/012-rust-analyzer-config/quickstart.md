@@ -29,10 +29,10 @@ Expected: Model Specific is listed first and marked `Active` after reload and re
 ## Hardware And Emulator Replacement
 
 1. Select Model Specific with a valid hardware target and wait for refresh.
-2. Confirm the registered object includes the generated `cargo.target` and `check.extraArgs`.
+2. Confirm the registered object includes the generated `cargo.target` and any generated `check.extraArgs`.
 3. Select an emulator target and wait for refresh.
 
-Expected: the newly registered complete object omits both hardware-only keys, proving that whole-object replacement clears stale managed values. Changing only component starts no generation unless it changes effective option flags; all-features mode starts no generator for any build-context change.
+Expected: the newly registered complete object omits `cargo.target`, and `check.extraArgs` matches only what the generator emitted for the emulator (for example, a secmon exclusion for models without secmon), proving that whole-object replacement clears stale managed values. Changing only component starts no generation unless it changes effective option flags; all-features mode starts no generator for any build-context change.
 
 ## Latest-Wins Behavior
 

@@ -34,12 +34,29 @@ allTargets = true
     });
   });
 
-  test("rejects absent hardware-only keys for hardware", () => {
+  test("rejects absent cargo.target for hardware", () => {
     assert.throws(() => parseRustAnalyzerConfig(emulator, false), /cargo\.target/);
   });
 
-  test("rejects hardware-only keys for emulator", () => {
+  test("rejects cargo.target for emulator", () => {
     assert.throws(() => parseRustAnalyzerConfig(hardware, true), /cargo\.target/);
+  });
+
+  test("accepts check.extraArgs for emulator", () => {
+    const source = `${emulator}\n[check]\nextraArgs = ["--exclude", "secmon"]\n`;
+    assert.deepStrictEqual(parseRustAnalyzerConfig(source, true), {
+      "cargo.features": ["model-t"],
+      "cargo.allTargets": true,
+      "check.extraArgs": ["--exclude", "secmon"],
+    });
+  });
+
+  test("accepts absent check.extraArgs for hardware", () => {
+    const source = `[cargo]\nfeatures = ["model-t"]\ntarget = "thumbv7em-none-eabihf"\n`;
+    assert.deepStrictEqual(parseRustAnalyzerConfig(source, false), {
+      "cargo.features": ["model-t"],
+      "cargo.target": "thumbv7em-none-eabihf",
+    });
   });
 
   test("rejects empty, unknown, nested, and malformed content", () => {

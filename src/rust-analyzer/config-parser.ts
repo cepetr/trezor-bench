@@ -79,12 +79,11 @@ export function parseRustAnalyzerConfig(source: string, emulator: boolean): Rust
   }
 
   const hasTarget = "cargo.target" in config;
-  const hasExtraArgs = "check.extraArgs" in config;
-  if (emulator ? hasTarget || hasExtraArgs : !hasTarget || !hasExtraArgs) {
+  if (emulator === hasTarget) {
     throw new Error(
       emulator
-        ? "cargo.target and check.extraArgs are not valid for emulator output"
-        : "cargo.target and check.extraArgs are required for hardware output"
+        ? "cargo.target is not valid for emulator output"
+        : "cargo.target is required for hardware output"
     );
   }
 

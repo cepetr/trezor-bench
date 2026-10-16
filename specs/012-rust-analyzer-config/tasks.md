@@ -149,6 +149,17 @@
 
 ---
 
+## Phase 9: Generator-Owned Check Arguments
+
+**Purpose**: The generator now emits `check.extraArgs` as package exclusions that depend on the model as well as the target kind (emulator output for models without secmon carries `--exclude` entries), so the extension must stop tying the presence of `check.extraArgs` to hardware output. `cargo.target` stays required for hardware and rejected for emulator.
+
+- [X] T042 Make `check.extraArgs` optional for both hardware and emulator output in `specs/012-rust-analyzer-config/spec.md`, `specs/012-rust-analyzer-config/data-model.md`, `specs/012-rust-analyzer-config/contracts/rust-analyzer-configuration.md`, and `specs/012-rust-analyzer-config/quickstart.md`
+- [X] T043 Add failing tests accepting `check.extraArgs` for emulator output and its absence for hardware output, keeping the `cargo.target` presence rules, in `src/test/unit/rust-analyzer/config-parser.test.ts`
+- [X] T044 Restrict the hardware/emulator presence check to `cargo.target` in `src/rust-analyzer/config-parser.ts`
+- [X] T045 Run compile, unit tests, and lint using `package.json`
+
+---
+
 ## Dependencies And Execution Order
 
 ```mermaid

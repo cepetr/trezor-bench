@@ -35,7 +35,7 @@ target = "thumbv7em-none-eabihf"
 allTargets = false
 
 [check]
-extraArgs = ["--target", "thumbv7em-none-eabihf"]
+extraArgs = ["--exclude", "xtask", "--exclude", "xbuild"]
 ```
 
 Only `[cargo]` and `[check]` are accepted. Only these entries are accepted:
@@ -47,7 +47,7 @@ Only `[cargo]` and `[check]` are accepted. Only these entries are accepted:
 | `cargo.allTargets` | boolean | `cargo.allTargets` |
 | `check.extraArgs` | array of strings | `check.extraArgs` |
 
-Unknown tables/keys, nested objects, unsupported values, empty output, parse errors, or wrong types reject the whole document. Hardware output must contain `cargo.target` and `check.extraArgs`; emulator output must omit both. The firmware generator owns the semantic contents of `check.extraArgs`; the extension validates its presence and string-array type for hardware output but does not interpret individual arguments.
+Unknown tables/keys, nested objects, unsupported values, empty output, parse errors, or wrong types reject the whole document. Hardware output must contain `cargo.target`; emulator output must omit it. `check.extraArgs` is optional for both. The firmware generator owns the presence and semantic contents of `check.extraArgs`; the extension validates its string-array type when present but does not interpret individual arguments.
 
 ## Rust Analyzer Extension API
 
