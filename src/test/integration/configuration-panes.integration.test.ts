@@ -235,8 +235,8 @@ suite("Configuration panes – no Collapse All on any view", () => {
 // ---------------------------------------------------------------------------
 
 suite("Configuration panes – view/title toolbar targets only Build Selection", () => {
-  test("declares exactly twelve view/title entries", () => {
-    assert.strictEqual(getMenuEntries("view/title").length, 12);
+  test("declares exactly eleven view/title entries", () => {
+    assert.strictEqual(getMenuEntries("view/title").length, 11);
   });
 
   test("every view/title entry targets the inherited view id", () => {
