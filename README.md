@@ -7,7 +7,7 @@ Choose the active build context — model, target, component, preset — in a de
 - **xtask integration** — build options and workflows in the UI instead of on the command line
   - run `build`, `clippy`, `check`, and `clean` as VS Code tasks
   - flash or upload the resulting artifacts to a device
-- **IntelliSense** — C/C++ IntelliSense (cpptools or clangd) driven by the compile database of the active context
+- **IntelliSense** — C/C++ IntelliSense (cpptools or clangd) driven by the compile database of the active context, plus automatic Rust Analyzer configuration for the selected build configuration
 - **Debugging** — start a debug session for the active context without writing a `launch.json`
 
 The extension is intended for use with the new cargo-based build system. It does not support the legacy SCons-based firmware build scripts used in older repository layouts.
@@ -29,7 +29,7 @@ Before starting VS Code, enter the `trezor-firmware` development shell from the 
 - run `nix-shell` for the standard development environment
 - run `nix-shell --arg devTools true` if you also want tools such as `openocd` for ST-Link debugging
 
-The extension does not require these VS Code settings, but they are recommended for a smoother experience with the new build system. The repository does not include a shared `.vscode/settings.json`, so it is worth creating one locally and adapting it to your environment. The following example is a good starting point:
+The extension doesn't require most of these VS Code settings, but they are recommended for a smoother experience with the new build system. The repository does not include a shared `.vscode/settings.json`, so it is worth creating one locally and adapting it to your environment. The following example is a good starting point:
 
 ```json
 {
@@ -51,17 +51,14 @@ The extension does not require these VS Code settings, but they are recommended 
     ],
     "rust-analyzer.cargo.targetDir": true,
     "rust-analyzer.checkOnSave": true,
-    "rust-analyzer.cargo.features": "all",
     "rust-analyzer.cargo.extraEnv": {
         "IS_RUST_ANALYZER": "true",
         "VIRTUAL_ENV": "${workspaceFolder}/.venv",
-        "PYTHONPATH": "${workspaceFolder}/.venv/lib/python3.13/site-packages",
+        "PYTHONPATH": "${workspaceFolder}/.venv/lib/python3.14/site-packages",
         "SCM_REVISION": "0000000000000000000000000000000000000000",
     },
     "C_Cpp.default.configurationProvider": "cepetr.tbench",
     
-    // The rest is not required, it is just an optimization
-
     "rust-analyzer.cachePriming.enable": false,
     "rust-analyzer.lru.capacity": 64,
     "editor.inlayHints.enabled": "off",
@@ -77,7 +74,18 @@ The extension does not require these VS Code settings, but they are recommended 
 }
 ```
 
-NOTE: `IS_RUST_ANALYZER` is not required by the extension. It is recommended because it minimizes the work done by `build.rs` scripts so Rust Analyzer can run quickly and avoid failures when all features are enabled, without compiling the C code.
+`IS_RUST_ANALYZER` instructs `build.rs` scripts to minimize their work, including skipping C code compilation, so Rust Analyzer can run quickly and avoid failures when all features are enabled.
+
+`SCM_REVISION` is set by `xtask` during regular builds, but Rust Analyzer runs without `xtask`, so it does not receive this value automatically. The example above supplies a placeholder revision through `rust-analyzer.cargo.extraEnv` for analysis.
+
+Do not specify the following settings in `settings.json`. Trezor Bench automatically passes them to Rust Analyzer based on the selected build configuration:
+
+- `rust-analyzer.cargo.features`
+- `rust-analyzer.cargo.target`
+- `rust-analyzer.cargo.allTargets`
+- `rust-analyzer.check.extraArgs`
+
+Values explicitly defined in `settings.json` take precedence over those supplied by the extension, preventing automatic configuration from working as intended.
 
 ## How To Use
 
@@ -101,5 +109,3 @@ The extension relies on repository-specific manifest data, paths, and generated 
 ## Development
 
 This extension was developed entirely with AI assistance — GitHub Copilot and Claude — following a spec-driven workflow based on [spec-kit](https://github.com/github/spec-kit). Every feature starts as a specification and plan under [specs/](specs/), which is then turned into tasks and implemented.
-
-
