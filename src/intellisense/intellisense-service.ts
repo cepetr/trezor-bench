@@ -69,6 +69,9 @@ export class IntelliSenseService {
   /** Pending refresh promise for serialization (latest-refresh-wins). */
   private _pendingRefresh: Promise<void> | null = null;
 
+  /** Set once the workspace folder was released; refreshes are no-ops afterwards. */
+  private _released = false;
+
   private readonly _onDidRefresh = new vscode.EventEmitter<
     [ResolvedArtifact | null, IntelliSenseProviderReadiness]
   >();
@@ -157,20 +160,26 @@ export class IntelliSenseService {
   * configuration, with latest-refresh-wins behavior.
    */
   scheduleRefresh(trigger: RefreshTrigger): void {
+    if (this._released) {
+      return;
+    }
     this._pendingRefresh = (this._pendingRefresh ?? Promise.resolve()).then(
       () => this._doRefresh(trigger)
     );
   }
 
   private async _doRefresh(trigger: RefreshTrigger): Promise<void> {
+    if (this._released) {
+      return;
+    }
     logIntelliSense(`Refresh triggered by: ${trigger}`);
 
     // Ensure cpptools registration is attempted when that backend is active.
-    if (resolveIntelliSenseBackend() === "cpptools") {
+    if (resolveIntelliSenseBackend(this._workspaceFolder) === "cpptools") {
       void this._cpptoolsBackend.activate();
     }
 
-    const readiness = checkProviderReadiness();
+    const readiness = checkProviderReadiness(this._workspaceFolder);
     this._lastReadiness = readiness;
 
     // Emit warning once per state transition; log recovery when returning to ready.
@@ -251,7 +260,7 @@ export class IntelliSenseService {
       return;
     }
 
-    const backend = resolveIntelliSenseBackend();
+    const backend = resolveIntelliSenseBackend(this._workspaceFolder);
     if (backend === "clangd") {
       const workspaceFolder = this._workspaceFolder;
       if (!workspaceFolder) {
@@ -322,6 +331,25 @@ export class IntelliSenseService {
       providerState: "cleared",
     };
     logIntelliSense("Cleared stale compile-commands configuration.");
+  }
+
+  /**
+   * Stops serving the workspace folder: clears the cpptools payload, publishes
+   * a null payload so excluded-file badges and overlays clear, and turns every
+   * later refresh into a no-op. Managed files on disk are left untouched.
+   */
+  release(): void {
+    this._released = true;
+    this._cpptoolsBackend.clearPayload();
+    this._lastArtifact = null;
+    this._lastPayload = null;
+    this._lastRuntimeState = {
+      appliedArtifactPath: null,
+      appliedContextKey: null,
+      clearedAt: new Date(),
+      providerState: "cleared",
+    };
+    this._onDidRefreshPayload.fire(null);
   }
 
   dispose(): void {

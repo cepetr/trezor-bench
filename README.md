@@ -102,7 +102,7 @@ The extension can also show the current build context in the status bar and make
 
 ## Workspace Requirements
 
-The extension is designed for the `trezor-firmware` repository opened as a single-root VS Code workspace.
+The extension is designed for the `trezor-firmware` repository opened as a VS Code workspace folder. Multi-root windows are supported: Trezor Bench selects one folder — the first with a `tbench.toml`, else the first with the default manifest, else the first folder — and ignores the others. Changing which folder qualifies (for example by removing the selected folder) requires reloading the window.
 
 The extension relies on repository-specific manifest data, paths, and generated artifacts that are already present in the workspace. For more information, see the [product specification](specs/product-spec.md).
 

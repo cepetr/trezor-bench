@@ -516,3 +516,60 @@ suite("IntelliSenseService — clangd backend", () => {
     }
   });
 });
+
+suite("IntelliSenseService — release", () => {
+  test("clears the payload, publishes a null payload, and ignores later refreshes", async () => {
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
+    svc.setManifest(makeIntelliSenseLoadedState());
+    svc.setBuildContext(makeConfig());
+    svc.setArtifactsRoot(intellisenseValidArtifactsRoot());
+
+    backend.applyPayload({
+      artifactPath: "/old/compile_commands.cc.json",
+      contextKey: "T2T1::hw::core",
+      entriesByFile: new Map(),
+      browseSnapshot: { browsePaths: [], compilerPath: undefined, compilerArgs: [] },
+    });
+    const clearsBeforeRelease = backend.clearCount;
+
+    const payloads: Array<ProviderPayload | null> = [];
+    svc.onDidRefreshPayload((payload) => payloads.push(payload));
+    let refreshes = 0;
+    svc.onDidRefresh(() => refreshes++);
+
+    svc.release();
+
+    assert.strictEqual(backend.clearCount, clearsBeforeRelease + 1);
+    assert.strictEqual(backend.getLastPayload(), undefined);
+    assert.deepStrictEqual(payloads, [null]);
+    assert.strictEqual(svc.getLastPayload(), null);
+    assert.strictEqual(svc.getRuntimeState().providerState, "cleared");
+
+    svc.scheduleRefresh("manual-refresh");
+    svc.scheduleRefresh("workspace-change");
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.strictEqual(refreshes, 0, "no refresh may run after release");
+    assert.deepStrictEqual(payloads, [null], "no further payload may be published");
+    assert.strictEqual(backend.payloadsApplied.length, 1, "no payload may be applied after release");
+    svc.dispose();
+  });
+
+  test("a refresh that was already queued does nothing once released", async () => {
+    const backend = new StubCpptoolsBackend();
+    const svc = new IntelliSenseService(backend);
+    svc.setManifest(makeIntelliSenseLoadedState());
+    svc.setBuildContext(makeConfig());
+    svc.setArtifactsRoot("/nonexistent/path");
+    let refreshes = 0;
+    svc.onDidRefresh(() => refreshes++);
+
+    svc.scheduleRefresh("activation");
+    svc.release();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.strictEqual(refreshes, 0);
+    svc.dispose();
+  });
+});

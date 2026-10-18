@@ -12,6 +12,8 @@ import { RefreshTrigger } from "../intellisense/intellisense-types";
 
 export interface CommandDeps {
   readonly workspaceFolder: vscode.WorkspaceFolder;
+  /** True once the selected folder was released and a window reload is pending. */
+  isReloadRequired(): boolean;
   getManifestState(): ManifestState | undefined;
   getBuildSelection(): BuildSelection | undefined;
   getResolvedOptions(): ReadonlyArray<ResolvedOption>;

@@ -54,6 +54,7 @@ suite("Build Workflow – evaluateWorkflowPreconditions", () => {
       manifestStatus: "loaded",
       hasWorkflowBlockingIssues: false,
       workspaceSupported: true,
+      reloadRequired: false,
     });
     assert.strictEqual(result, "no-block");
   });
@@ -63,6 +64,7 @@ suite("Build Workflow – evaluateWorkflowPreconditions", () => {
       manifestStatus: "missing",
       hasWorkflowBlockingIssues: false,
       workspaceSupported: true,
+      reloadRequired: false,
     });
     assert.strictEqual(result, "manifest-missing");
   });
@@ -72,6 +74,7 @@ suite("Build Workflow – evaluateWorkflowPreconditions", () => {
       manifestStatus: "invalid",
       hasWorkflowBlockingIssues: false,
       workspaceSupported: true,
+      reloadRequired: false,
     });
     assert.strictEqual(result, "manifest-invalid");
   });
@@ -81,6 +84,7 @@ suite("Build Workflow – evaluateWorkflowPreconditions", () => {
       manifestStatus: "loaded",
       hasWorkflowBlockingIssues: true,
       workspaceSupported: true,
+      reloadRequired: false,
     });
     assert.strictEqual(result, "manifest-invalid");
   });
@@ -90,6 +94,7 @@ suite("Build Workflow – evaluateWorkflowPreconditions", () => {
       manifestStatus: "loaded",
       hasWorkflowBlockingIssues: false,
       workspaceSupported: false,
+      reloadRequired: false,
     });
     assert.strictEqual(result, "workspace-unsupported");
   });
@@ -99,6 +104,7 @@ suite("Build Workflow – evaluateWorkflowPreconditions", () => {
       manifestStatus: "missing",
       hasWorkflowBlockingIssues: false,
       workspaceSupported: false,
+      reloadRequired: false,
     });
     assert.strictEqual(result, "workspace-unsupported");
   });
@@ -167,6 +173,7 @@ suite("Build Workflow – blocked manifest", () => {
       manifestStatus: "loaded",
       hasWorkflowBlockingIssues: true,
       workspaceSupported: true,
+      reloadRequired: false,
     });
     assert.strictEqual(result, "manifest-invalid");
   });

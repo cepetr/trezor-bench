@@ -7,6 +7,7 @@ import { ManifestState } from "../manifest/manifest-types";
 import { PresetState } from "../presets/preset-types";
 import { PresetContext } from "../presets/preset-resolution";
 import { RepositoryConfigState } from "../workspace/repository-config";
+import { FolderSelection, describeFolderSelectionReason } from "../workspace/folder-selection";
 import { RustAnalyzerConflict } from "../rust-analyzer/config-types";
 import type { RustAnalyzerRefreshFailure } from "../rust-analyzer/config-service";
 
@@ -123,6 +124,35 @@ export function revealLogs(): void {
 export function disposeLogChannel(): void {
   _channel?.dispose();
   _channel = undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Workspace folder selection logging
+// ---------------------------------------------------------------------------
+
+/**
+ * Logs which workspace folder the extension selected and why.
+ */
+export function logFolderSelection(selection: FolderSelection): void {
+  log(
+    `Selected workspace folder: ${selection.folder.uri.fsPath} — ${describeFolderSelectionReason(selection.reason)}`
+  );
+}
+
+/**
+ * Logs that a folder-list change selects a different folder (or none), which
+ * only takes effect after a window reload.
+ */
+export function logFolderSelectionChange(
+  previous: vscode.WorkspaceFolder,
+  next: FolderSelection | undefined
+): void {
+  const target = next
+    ? `${next.folder.uri.fsPath} — ${describeFolderSelectionReason(next.reason)}`
+    : "none";
+  log(
+    `Workspace folder selection changed: ${previous.uri.fsPath} → ${target}; reload the window to continue.`
+  );
 }
 
 // ---------------------------------------------------------------------------

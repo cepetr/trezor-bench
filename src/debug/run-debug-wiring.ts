@@ -17,6 +17,8 @@ export interface RunDebugWiringDeps {
   getArtifactsRoot: () => string;
   /** Resolves the debug-templates root from the repository configuration. */
   getTemplatesRoot: () => string;
+  /** Returns the selected workspace folder, or undefined once it was released. */
+  getWorkspaceFolder: () => vscode.WorkspaceFolder | undefined;
 }
 
 /**
@@ -31,7 +33,8 @@ export function registerRunDebugProvider(
     deps.getManifest,
     deps.getBuildContext,
     deps.getArtifactsRoot,
-    deps.getTemplatesRoot
+    deps.getTemplatesRoot,
+    deps.getWorkspaceFolder
   );
   context.subscriptions.push(
     vscode.debug.registerDebugConfigurationProvider(

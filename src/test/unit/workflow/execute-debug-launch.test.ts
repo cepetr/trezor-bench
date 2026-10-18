@@ -181,6 +181,24 @@ suite("executeDebugLaunch", () => {
     assert.deepStrictEqual(executedCommands, ["workbench.view.debug"]);
   });
 
+  test("starts the session scoped to the passed-in folder, not the first one", async () => {
+    const secondFolder = {
+      uri: vscode.Uri.file("/ws/trezor-firmware"),
+      name: "trezor-firmware",
+      index: 1,
+    } as vscode.WorkspaceFolder;
+    const folders: unknown[] = [];
+    debugMock.startDebugging = (folder, config) => {
+      folders.push(folder);
+      startedConfigs.push(config as Record<string, unknown>);
+      return Promise.resolve(true);
+    };
+
+    await executeDebugLaunch(secondFolder, makeDebugLoadedState([gdbProfile()]), BUILD_CONTEXT);
+
+    assert.deepStrictEqual(folders, [secondFolder]);
+  });
+
   test("opens a QuickPick for multiple matches and launches the chosen profile", async () => {
     const secondary = openocdProfile();
     const state = makeDebugLoadedState([gdbProfile(), secondary]);

@@ -17,6 +17,16 @@ export function registerDebugLaunchCommand(
 ): void {
   context.subscriptions.push(
     vscode.commands.registerCommand("tbench.startDebugging", async () => {
+      if (deps.isReloadRequired()) {
+        logDebugLaunchFailure("reload-required", {
+          detail: "the selected workspace folder changed; reload the window",
+        });
+        revealLogs();
+        notifyError(
+          "Cannot start debugging: the workspace folder Trezor Bench was using has changed. Reload the window to continue."
+        );
+        return;
+      }
       const state = deps.getManifestState();
       const config = deps.getBuildSelection();
       const manifest = loadedManifest(state);

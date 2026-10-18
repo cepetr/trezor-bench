@@ -28,6 +28,7 @@ function inputs(
     manifestStatus,
     hasWorkflowBlockingIssues,
     workspaceSupported,
+    reloadRequired: false,
     buildSelectionResolved: true,
     presetsInvalid,
     presetsUnavailable,
@@ -46,10 +47,17 @@ suite("evaluateWorkflowPreconditions – blocking logic", () => {
     );
   });
 
-  test("workspace-unsupported blocks when workspace has multiple/no folders", () => {
+  test("workspace-unsupported blocks only when no folder is open", () => {
     assert.strictEqual(
       evaluateWorkflowPreconditions(inputs("loaded", false, false)),
       "workspace-unsupported"
+    );
+  });
+
+  test("an open workspace folder proceeds to the manifest checks", () => {
+    assert.strictEqual(
+      evaluateWorkflowPreconditions(inputs("missing", false, true)),
+      "manifest-missing"
     );
   });
 
@@ -199,12 +207,46 @@ suite("evaluateWorkflowPreconditions – blocking logic", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Suite: reload-required
+// ---------------------------------------------------------------------------
+
+suite("evaluateWorkflowPreconditions – reload-required", () => {
+  const released = (
+    manifestStatus: "loaded" | "missing" | "invalid",
+    workspaceSupported: boolean
+  ): PreconditionInputs => ({ ...inputs(manifestStatus, false, workspaceSupported), reloadRequired: true });
+
+  test("blocks with reload-required when the workspace is supported", () => {
+    assert.strictEqual(evaluateWorkflowPreconditions(released("loaded", true)), "reload-required");
+  });
+
+  test("workspace-unsupported still wins when no folder is open", () => {
+    assert.strictEqual(
+      evaluateWorkflowPreconditions(released("loaded", false)),
+      "workspace-unsupported"
+    );
+  });
+
+  test("reload-required precedes manifest-missing", () => {
+    assert.strictEqual(evaluateWorkflowPreconditions(released("missing", true)), "reload-required");
+  });
+
+  test("message names the changed folder and the reload", () => {
+    assert.strictEqual(
+      blockReasonMessage("reload-required"),
+      "Build Workflow is blocked: the workspace folder Trezor Bench was using has changed. Reload the window to continue."
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Suite: blockReasonMessage
 // ---------------------------------------------------------------------------
 
 suite("blockReasonMessage – user-facing failure text", () => {
   const REASONS: WorkflowBlockReason[] = [
     "workspace-unsupported",
+    "reload-required",
     "manifest-missing",
     "manifest-invalid",
     "context-unresolved",
@@ -219,12 +261,10 @@ suite("blockReasonMessage – user-facing failure text", () => {
     });
   }
 
-  test("workspace-unsupported message mentions single folder requirement", () => {
+  test("workspace-unsupported message asks for an open folder without multi-root wording", () => {
     const msg = blockReasonMessage("workspace-unsupported");
-    assert.ok(
-      msg.toLowerCase().includes("folder"),
-      "message should mention workspace folder requirement"
-    );
+    assert.strictEqual(msg, "Build Workflow requires an open workspace folder.");
+    assert.ok(!msg.toLowerCase().includes("multi-root"));
   });
 
   test("manifest-missing message mentions the manifest file", () => {

@@ -27,6 +27,7 @@ import {
 } from "../manifest/debug-profiles";
 import { makeContextKey, resolveExecutableArtifact } from "../build/artifact-resolution";
 import { BuildContext } from "../manifest/manifest-types";
+import { isSameFolder } from "../workspace/folder-selection";
 import { logProviderDebugLaunchFailure, notifyError, revealLogs } from "../observability/log-channel";
 
 export { TBENCH_DEBUG_TYPE, labelForDefaultEntry, labelForProfileEntry };
@@ -127,27 +128,40 @@ export class RunDebugConfigProvider implements vscode.DebugConfigurationProvider
   private readonly _getBuildContext: () => BuildContext | undefined;
   private readonly _getArtifactsRoot: () => string;
   private readonly _getTemplatesRoot: () => string;
+  private readonly _getWorkspaceFolder: () => vscode.WorkspaceFolder | undefined;
 
+  /**
+   * `getWorkspaceFolder` returns the selected workspace folder, or undefined
+   * once it was released and a window reload is pending.
+   */
   constructor(
     getManifest: () => ManifestStateLoaded | undefined,
     getBuildContext: () => BuildContext | undefined,
     getArtifactsRoot: () => string,
-    getTemplatesRoot: () => string
+    getTemplatesRoot: () => string,
+    getWorkspaceFolder: () => vscode.WorkspaceFolder | undefined
   ) {
     this._getManifest = getManifest;
     this._getBuildContext = getBuildContext;
     this._getArtifactsRoot = getArtifactsRoot;
     this._getTemplatesRoot = getTemplatesRoot;
+    this._getWorkspaceFolder = getWorkspaceFolder;
   }
 
   /**
    * Provides tbench-generated debug configurations for Run and Debug.
-   * Called when VS Code populates the Run and Debug picker.
+   * Called when VS Code populates the Run and Debug picker; entries are
+   * offered only under the selected workspace folder.
    */
   provideDebugConfigurations(
-    _folder: vscode.WorkspaceFolder | undefined,
+    folder: vscode.WorkspaceFolder | undefined,
     _token: vscode.CancellationToken
   ): vscode.ProviderResult<vscode.DebugConfiguration[]> {
+    const selected = this._getWorkspaceFolder();
+    if (!selected || !folder || !isSameFolder(folder, selected)) {
+      return [];
+    }
+
     const manifest = this._getManifest();
     const buildContext = this._getBuildContext();
 
@@ -167,12 +181,29 @@ export class RunDebugConfigProvider implements vscode.DebugConfigurationProvider
    * left intact for VS Code to process.
    */
   resolveDebugConfiguration(
-    _folder: vscode.WorkspaceFolder | undefined,
+    folder: vscode.WorkspaceFolder | undefined,
     debugConfiguration: vscode.DebugConfiguration,
     _token: vscode.CancellationToken
   ): vscode.ProviderResult<vscode.DebugConfiguration> {
     if (debugConfiguration.type !== TBENCH_DEBUG_TYPE) {
       return debugConfiguration;
+    }
+
+    const selected = this._getWorkspaceFolder();
+    if (!selected) {
+      const msg =
+        "Cannot start debugging: the workspace folder Trezor Bench was using has changed. Reload the window to continue.";
+      logProviderDebugLaunchFailure("reload-required", { detail: msg });
+      revealLogs();
+      notifyError(msg);
+      return undefined;
+    }
+    if (folder && !isSameFolder(folder, selected)) {
+      const msg = `Cannot start debugging: Trezor Bench works against the folder ${selected.name}, not ${folder.name}.`;
+      logProviderDebugLaunchFailure("wrong-folder", { detail: msg });
+      revealLogs();
+      notifyError(msg);
+      return undefined;
     }
 
     const manifest = this._getManifest();

@@ -264,6 +264,7 @@ suite("Flash/Upload Actions – precondition evaluation", () => {
   test("returns workspace-unsupported when workspace is not supported", () => {
     const result = evaluateArtifactActionPreconditions({
       workspaceSupported: false,
+      reloadRequired: false,
       manifestStatus: "loaded",
       actionApplicable: true,
       binaryExists: true,
@@ -274,6 +275,7 @@ suite("Flash/Upload Actions – precondition evaluation", () => {
   test("returns manifest-missing when manifest is missing", () => {
     const result = evaluateArtifactActionPreconditions({
       workspaceSupported: true,
+      reloadRequired: false,
       manifestStatus: "missing",
       actionApplicable: true,
       binaryExists: true,
@@ -284,6 +286,7 @@ suite("Flash/Upload Actions – precondition evaluation", () => {
   test("returns action-inapplicable when action is not applicable", () => {
     const result = evaluateArtifactActionPreconditions({
       workspaceSupported: true,
+      reloadRequired: false,
       manifestStatus: "loaded",
       actionApplicable: false,
       binaryExists: true,
@@ -294,6 +297,7 @@ suite("Flash/Upload Actions – precondition evaluation", () => {
   test("returns binary-missing when binary artifact does not exist", () => {
     const result = evaluateArtifactActionPreconditions({
       workspaceSupported: true,
+      reloadRequired: false,
       manifestStatus: "loaded",
       actionApplicable: true,
       binaryExists: false,
@@ -304,6 +308,7 @@ suite("Flash/Upload Actions – precondition evaluation", () => {
   test("returns no-block when all conditions are met", () => {
     const result = evaluateArtifactActionPreconditions({
       workspaceSupported: true,
+      reloadRequired: false,
       manifestStatus: "loaded",
       actionApplicable: true,
       binaryExists: true,

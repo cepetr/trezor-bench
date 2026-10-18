@@ -17,7 +17,7 @@ import { CommandDeps } from "./command-deps";
 import { resolveWorkflowContext, createWorkflowTask } from "../tasks/build-task-provider";
 import { activePresetId } from "../build/build-selection";
 import { loadedManifest } from "../manifest/manifest-types";
-import { isWorkflowWorkspaceSupported } from "../workspace/workspace-guard";
+import { hasSupportedWorkspace } from "../workspace/workspace-guard";
 
 /**
  * Registers the four workflow commands. Build/Clippy/Check reload preset
@@ -42,7 +42,8 @@ export function registerBuildWorkflowCommands(
       const blockReason = evaluateWorkflowPreconditions({
         manifestStatus: state?.status ?? "missing",
         hasWorkflowBlockingIssues: manifest?.hasWorkflowBlockingIssues ?? false,
-        workspaceSupported: isWorkflowWorkspaceSupported(),
+        workspaceSupported: hasSupportedWorkspace(),
+        reloadRequired: deps.isReloadRequired(),
         buildSelectionResolved: !!wfCtx,
         presetsUnavailable: kind !== "Clean" && deps.getPresetsUnavailable(),
         presetsInvalid: kind !== "Clean" && deps.getPresetBlocked(),

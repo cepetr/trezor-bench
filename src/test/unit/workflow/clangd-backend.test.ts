@@ -35,6 +35,29 @@ suite("clangd compile-database helpers", () => {
   });
 });
 
+suite("clangd managed paths in a multi-root window", () => {
+  test("managed link and .clangd paths follow the folder they are computed for", () => {
+    const secondFolder = {
+      uri: vscodeMock.Uri.file("/ws/trezor-firmware"),
+      name: "trezor-firmware",
+      index: 1,
+    } as vscode.WorkspaceFolder;
+
+    assert.strictEqual(
+      getClangdCompileCommandsLinkPath(secondFolder),
+      path.join(
+        "/ws/trezor-firmware",
+        CLANGD_COMPILE_COMMANDS_DIR_NAME,
+        CLANGD_COMPILE_COMMANDS_LINK_NAME
+      )
+    );
+    assert.strictEqual(
+      getWorkspaceClangdConfigPath(secondFolder),
+      path.join("/ws/trezor-firmware", ".clangd")
+    );
+  });
+});
+
 suite("ClangdBackend", () => {
   let tmpRoot: string;
   let workspaceFolder: vscode.WorkspaceFolder;

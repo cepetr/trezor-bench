@@ -18,6 +18,7 @@ import {
   formatArtifactTaskLabel,
   evaluateArtifactActionPreconditions,
   resolveArtifactActionContext,
+  reportArtifactActionBlocked,
   createArtifactTask,
   ArtifactActionContext,
   ArtifactActionPreconditionInputs,
@@ -152,6 +153,7 @@ suite("evaluateArtifactActionPreconditions", () => {
       manifestStatus: "loaded",
       hasWorkflowBlockingIssues: false,
       workspaceSupported: true,
+      reloadRequired: false,
       buildSelectionResolved: true,
       actionApplicable: true,
       binaryExists: true,
@@ -161,6 +163,15 @@ suite("evaluateArtifactActionPreconditions", () => {
 
   test("returns no-block when all conditions are satisfied", () => {
     assert.strictEqual(evaluateArtifactActionPreconditions(makeInputs()), "no-block");
+  });
+
+  test("an open workspace folder proceeds to the artifact checks", () => {
+    assert.strictEqual(
+      evaluateArtifactActionPreconditions(
+        makeInputs({ workspaceSupported: true, binaryExists: false })
+      ),
+      "binary-missing"
+    );
   });
 
   test("blocks with workspace-unsupported first", () => {
@@ -222,6 +233,64 @@ suite("evaluateArtifactActionPreconditions", () => {
 // ---------------------------------------------------------------------------
 // resolveArtifactActionContext
 // ---------------------------------------------------------------------------
+
+suite("evaluateArtifactActionPreconditions – reload-required", () => {
+  const released = (
+    overrides: Partial<ArtifactActionPreconditionInputs> = {}
+  ): ArtifactActionPreconditionInputs => ({
+    manifestStatus: "loaded",
+    hasWorkflowBlockingIssues: false,
+    workspaceSupported: true,
+    reloadRequired: true,
+    buildSelectionResolved: true,
+    actionApplicable: true,
+    binaryExists: true,
+    ...overrides,
+  });
+
+  test("blocks with reload-required when the workspace is supported", () => {
+    assert.strictEqual(evaluateArtifactActionPreconditions(released()), "reload-required");
+  });
+
+  test("workspace-unsupported still wins when no folder is open", () => {
+    assert.strictEqual(
+      evaluateArtifactActionPreconditions(released({ workspaceSupported: false })),
+      "workspace-unsupported"
+    );
+  });
+
+  test("reload-required precedes manifest-missing", () => {
+    assert.strictEqual(
+      evaluateArtifactActionPreconditions(released({ manifestStatus: "missing" })),
+      "reload-required"
+    );
+  });
+
+  test("the blocked report names the changed folder and the reload", () => {
+    const windowMock = vscode.window as unknown as {
+      showErrorMessage: (message: string) => Promise<undefined>;
+    };
+    const original = windowMock.showErrorMessage;
+    const shown: string[] = [];
+    windowMock.showErrorMessage = (message) => {
+      shown.push(message);
+      return Promise.resolve(undefined);
+    };
+    try {
+      reportArtifactActionBlocked("flash", "reload-required");
+    } finally {
+      windowMock.showErrorMessage = original;
+    }
+
+    assert.strictEqual(shown.length, 1);
+    assert.ok(
+      shown[0].includes(
+        "The workspace folder Trezor Bench was using has changed. Reload the window to continue."
+      ),
+      shown[0]
+    );
+  });
+});
 
 suite("resolveArtifactActionContext", () => {
   function makeConfig(overrides: Partial<BuildSelection> = {}): BuildSelection {

@@ -22,6 +22,7 @@ export type WorkflowKind = "Build" | "Clippy" | "Check" | "Clean";
 export type WorkflowBlockReason =
   | "no-block"
   | "workspace-unsupported"
+  | "reload-required"
   | "manifest-missing"
   | "manifest-invalid"
   | "context-unresolved"
@@ -45,6 +46,8 @@ export interface PreconditionInputs {
   readonly manifestStatus: ManifestState["status"];
   readonly hasWorkflowBlockingIssues: boolean;
   readonly workspaceSupported: boolean;
+  /** True when the selected workspace folder was released and a window reload is pending. */
+  readonly reloadRequired: boolean;
   /** True when the active configuration resolves to manifest entries. */
   readonly buildSelectionResolved?: boolean;
   /**
@@ -159,7 +162,7 @@ export function deriveCleanArguments(_ctx: {
  * Evaluates whether the workflow action can start.
  * Returns the first blocking reason found, or "no-block" if all clear.
  *
- * Priority order: workspace-unsupported > manifest-missing > manifest-invalid >
+ * Priority order: workspace-unsupported > reload-required > manifest-missing > manifest-invalid >
  * context-unresolved > presets-unavailable > presets-invalid
  */
 export function evaluateWorkflowPreconditions(
@@ -167,6 +170,9 @@ export function evaluateWorkflowPreconditions(
 ): WorkflowBlockReason {
   if (!inputs.workspaceSupported) {
     return "workspace-unsupported";
+  }
+  if (inputs.reloadRequired) {
+    return "reload-required";
   }
   if (inputs.manifestStatus === "missing") {
     return "manifest-missing";
@@ -189,7 +195,9 @@ export function evaluateWorkflowPreconditions(
 const BLOCK_REASON_MESSAGES: Record<WorkflowBlockReason, string> = {
   "no-block": "",
   "workspace-unsupported":
-    "Build Workflow requires exactly one open workspace folder. Multi-root workspaces and empty windows are not supported.",
+    "Build Workflow requires an open workspace folder.",
+  "reload-required":
+    "Build Workflow is blocked: the workspace folder Trezor Bench was using has changed. Reload the window to continue.",
   "manifest-missing":
     "Build Workflow is blocked: the manifest file (manifest.yaml) was not found. Check [paths].manifest in tbench.toml, then create or restore the file to enable build actions.",
   "manifest-invalid":

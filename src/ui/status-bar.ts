@@ -46,12 +46,14 @@ export class StatusBarPresenter implements vscode.Disposable {
    *
    * The item is visible only when the manifest is loaded, an active
    * configuration is set, and the setting `tbench.showConfigurationInStatusBar`
-   * is `true`.
+   * is `true`. When `selectedFolderName` is given (several folders are open),
+   * the tooltip names the selected folder; otherwise the tooltip is cleared.
    */
   update(
     state: ManifestState,
     buildContext: BuildContext | undefined,
-    isEnabled: boolean
+    isEnabled: boolean,
+    selectedFolderName?: string
   ): void {
     if (state.status !== "loaded" || !buildContext || !isEnabled) {
       this._item.hide();
@@ -65,6 +67,9 @@ export class StatusBarPresenter implements vscode.Disposable {
     }
 
     this._item.text = `$(symbol-field) ${text}`;
+    this._item.tooltip = selectedFolderName
+      ? `Selected folder: ${selectedFolderName}`
+      : undefined;
     this._item.show();
   }
 

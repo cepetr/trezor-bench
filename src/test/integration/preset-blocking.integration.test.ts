@@ -108,6 +108,7 @@ function evaluateFor(kind: WorkflowKind, presetsInvalid: boolean, presetsUnavail
     manifestStatus: "loaded",
     hasWorkflowBlockingIssues: false,
     workspaceSupported: true,
+    reloadRequired: false,
     // Clean is exempt from preset blocking.
     presetsUnavailable: kind !== "Clean" && presetsUnavailable,
     presetsInvalid: kind !== "Clean" && presetsInvalid,

@@ -38,6 +38,7 @@ export type ArtifactActionKind = "flash" | "upload";
 export type ArtifactActionBlockReason =
   | "no-block"
   | "workspace-unsupported"
+  | "reload-required"
   | "manifest-missing"
   | "manifest-invalid"
   | "context-unresolved"
@@ -129,6 +130,8 @@ export interface ArtifactActionPreconditionInputs {
   /** True when manifest availability-rule validation blocks workflow actions. */
   readonly hasWorkflowBlockingIssues?: boolean;
   readonly workspaceSupported: boolean;
+  /** True when the selected workspace folder was released and a window reload is pending. */
+  readonly reloadRequired: boolean;
   /** True when the active configuration resolves to manifest entries. */
   readonly buildSelectionResolved?: boolean;
   readonly actionApplicable: boolean;
@@ -144,6 +147,9 @@ export function evaluateArtifactActionPreconditions(
 ): ArtifactActionBlockReason {
   if (!inputs.workspaceSupported) {
     return "workspace-unsupported";
+  }
+  if (inputs.reloadRequired) {
+    return "reload-required";
   }
   if (inputs.manifestStatus === "missing") {
     return "manifest-missing";
@@ -178,6 +184,8 @@ const BLOCK_REASON_MESSAGES: Record<
 > = {
   "workspace-unsupported":
     "Trezor Bench requires an open workspace folder.",
+  "reload-required":
+    "The workspace folder Trezor Bench was using has changed. Reload the window to continue.",
   "manifest-missing":
     "Cannot start: the manifest file is missing. Check [paths].manifest in tbench.toml.",
   "manifest-invalid":

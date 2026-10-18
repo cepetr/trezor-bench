@@ -12,6 +12,7 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import { RunDebugConfigProvider } from "../../../debug/run-debug-provider";
+import { disposeLogChannel } from "../../../observability/log-channel";
 import { buildTbenchProxyDebugConfiguration } from "../../../commands/debug-launch";
 import { BuildContext, ManifestStateLoaded } from "../../../manifest/manifest-types";
 import {
@@ -59,16 +60,32 @@ function makeManifest(
   });
 }
 
+const SELECTED_FOLDER = {
+  uri: vscode.Uri.file("/ws/trezor-firmware"),
+  name: "trezor-firmware",
+  index: 1,
+} as vscode.WorkspaceFolder;
+
+const OTHER_FOLDER = {
+  uri: vscode.Uri.file("/ws/notes"),
+  name: "notes",
+  index: 0,
+} as vscode.WorkspaceFolder;
+
 function makeProvider(options: {
   manifest?: ManifestStateLoaded;
   buildContext?: BuildContext;
   artifactsRoot: string;
+  /** Defaults to the selected folder; pass `null` for the released state. */
+  folder?: vscode.WorkspaceFolder | null;
 }): RunDebugConfigProvider {
+  const folder = options.folder === undefined ? SELECTED_FOLDER : options.folder ?? undefined;
   return new RunDebugConfigProvider(
     () => options.manifest,
     () => options.buildContext,
     () => options.artifactsRoot,
-    () => debugLaunchValidTemplatesRoot()
+    () => debugLaunchValidTemplatesRoot(),
+    () => folder
   );
 }
 
@@ -109,7 +126,7 @@ suite("RunDebugConfigProvider", () => {
   test("provides no entries when the manifest is unavailable", () => {
     const provider = makeProvider({ buildContext: BUILD_CONTEXT, artifactsRoot: tmpDir });
     assert.deepStrictEqual(
-      provider.provideDebugConfigurations(undefined, CANCELLATION_TOKEN),
+      provider.provideDebugConfigurations(SELECTED_FOLDER, CANCELLATION_TOKEN),
       []
     );
   });
@@ -117,7 +134,7 @@ suite("RunDebugConfigProvider", () => {
   test("provides no entries when no configuration is active", () => {
     const provider = makeProvider({ manifest: makeManifest(), artifactsRoot: tmpDir });
     assert.deepStrictEqual(
-      provider.provideDebugConfigurations(undefined, CANCELLATION_TOKEN),
+      provider.provideDebugConfigurations(SELECTED_FOLDER, CANCELLATION_TOKEN),
       []
     );
   });
@@ -129,7 +146,7 @@ suite("RunDebugConfigProvider", () => {
       artifactsRoot: tmpDir,
     });
 
-    const configs = provider.provideDebugConfigurations(undefined, CANCELLATION_TOKEN);
+    const configs = provider.provideDebugConfigurations(SELECTED_FOLDER, CANCELLATION_TOKEN);
     assert.deepStrictEqual(configs, [proxyConfig()]);
   });
 
@@ -140,7 +157,7 @@ suite("RunDebugConfigProvider", () => {
       artifactsRoot: tmpDir,
     });
     assert.deepStrictEqual(
-      provider.provideDebugConfigurations(undefined, CANCELLATION_TOKEN),
+      provider.provideDebugConfigurations(SELECTED_FOLDER, CANCELLATION_TOKEN),
       []
     );
   });
@@ -152,7 +169,7 @@ suite("RunDebugConfigProvider", () => {
       artifactsRoot: tmpDir,
     });
     assert.deepStrictEqual(
-      provider.provideDebugConfigurations(undefined, CANCELLATION_TOKEN),
+      provider.provideDebugConfigurations(SELECTED_FOLDER, CANCELLATION_TOKEN),
       []
     );
   });
@@ -164,7 +181,7 @@ suite("RunDebugConfigProvider", () => {
       artifactsRoot: tmpDir,
     });
     assert.deepStrictEqual(
-      provider.provideDebugConfigurations(undefined, CANCELLATION_TOKEN),
+      provider.provideDebugConfigurations(SELECTED_FOLDER, CANCELLATION_TOKEN),
       []
     );
   });
@@ -176,7 +193,7 @@ suite("RunDebugConfigProvider", () => {
       artifactsRoot: tmpDir,
     });
     assert.deepStrictEqual(
-      provider.provideDebugConfigurations(undefined, CANCELLATION_TOKEN),
+      provider.provideDebugConfigurations(SELECTED_FOLDER, CANCELLATION_TOKEN),
       []
     );
   });
@@ -189,7 +206,7 @@ suite("RunDebugConfigProvider", () => {
       artifactsRoot: tmpDir,
     });
     assert.deepStrictEqual(
-      provider.provideDebugConfigurations(undefined, CANCELLATION_TOKEN),
+      provider.provideDebugConfigurations(SELECTED_FOLDER, CANCELLATION_TOKEN),
       []
     );
   });
@@ -322,5 +339,104 @@ suite("RunDebugConfigProvider", () => {
 
     assert.ok(resolved, "expected a resolved configuration");
     assert.strictEqual(resolved.name, "Trezor Bench: GDB");
+  });
+});
+
+suite("RunDebugConfigProvider — selected folder scope", () => {
+  let tmpDir: string;
+  let errorMessages: string[];
+  let logLines: string[];
+  const windowMock = vscode.window as unknown as {
+    showErrorMessage: (message: string) => Promise<unknown>;
+    createOutputChannel: (name: string) => unknown;
+  };
+  let originalErrorMessage: typeof windowMock.showErrorMessage;
+  let originalCreateChannel: typeof windowMock.createOutputChannel;
+
+  setup(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tbench-rdp-folder-"));
+    fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+
+    errorMessages = [];
+    logLines = [];
+    originalErrorMessage = windowMock.showErrorMessage;
+    originalCreateChannel = windowMock.createOutputChannel;
+    windowMock.showErrorMessage = (message: string) => {
+      errorMessages.push(message);
+      return Promise.resolve(undefined);
+    };
+    disposeLogChannel();
+    windowMock.createOutputChannel = () => ({
+      appendLine: (line: string) => logLines.push(line),
+      show: () => {},
+      dispose: () => {},
+    });
+  });
+
+  teardown(() => {
+    disposeLogChannel();
+    windowMock.createOutputChannel = originalCreateChannel;
+    windowMock.showErrorMessage = originalErrorMessage;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  const proxy = () => buildTbenchProxyDebugConfiguration(BUILD_CONTEXT, GDB_PROFILE, "default");
+
+  function provider(folder?: vscode.WorkspaceFolder | null): RunDebugConfigProvider {
+    return makeProvider({
+      manifest: makeManifest(),
+      buildContext: BUILD_CONTEXT,
+      artifactsRoot: tmpDir,
+      folder,
+    });
+  }
+
+  test("provides entries only for the selected folder", () => {
+    const p = provider();
+    assert.deepStrictEqual(p.provideDebugConfigurations(SELECTED_FOLDER, CANCELLATION_TOKEN), [proxy()]);
+    assert.deepStrictEqual(p.provideDebugConfigurations(OTHER_FOLDER, CANCELLATION_TOKEN), []);
+    assert.deepStrictEqual(p.provideDebugConfigurations(undefined, CANCELLATION_TOKEN), []);
+  });
+
+  test("provides no entries for any folder once released", () => {
+    const p = provider(null);
+    assert.deepStrictEqual(p.provideDebugConfigurations(SELECTED_FOLDER, CANCELLATION_TOKEN), []);
+    assert.deepStrictEqual(p.provideDebugConfigurations(OTHER_FOLDER, CANCELLATION_TOKEN), []);
+  });
+
+  test("rejects a tbench configuration for another folder, logging and notifying", () => {
+    const resolved = provider().resolveDebugConfiguration(OTHER_FOLDER, proxy(), CANCELLATION_TOKEN);
+
+    assert.strictEqual(resolved, undefined);
+    assert.ok(logLines.some((line) => line.includes("[PROVIDER] wrong-folder")), logLines.join("\n"));
+    assert.strictEqual(errorMessages.length, 1);
+    assert.ok(errorMessages[0].includes("trezor-firmware"));
+  });
+
+  test("resolves a tbench configuration for the selected folder", () => {
+    const resolved = provider().resolveDebugConfiguration(SELECTED_FOLDER, proxy(), CANCELLATION_TOKEN);
+
+    assert.ok(resolved);
+    assert.strictEqual(errorMessages.length, 0);
+  });
+
+  test("rejects resolution while released, logging reload-required", () => {
+    const resolved = provider(null).resolveDebugConfiguration(SELECTED_FOLDER, proxy(), CANCELLATION_TOKEN);
+
+    assert.strictEqual(resolved, undefined);
+    assert.ok(logLines.some((line) => line.includes("[PROVIDER] reload-required")), logLines.join("\n"));
+    assert.strictEqual(errorMessages.length, 1);
+    assert.ok(errorMessages[0].includes("Reload the window to continue."));
+  });
+
+  test("passes non-tbench configurations through untouched, even while released", () => {
+    const foreign = { type: "gdb", request: "launch", name: "external" };
+
+    assert.strictEqual(
+      provider(null).resolveDebugConfiguration(OTHER_FOLDER, foreign, CANCELLATION_TOKEN),
+      foreign
+    );
+    assert.strictEqual(errorMessages.length, 0);
   });
 });

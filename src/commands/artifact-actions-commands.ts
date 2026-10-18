@@ -5,7 +5,7 @@
  */
 import * as vscode from "vscode";
 import { loadedManifest } from "../manifest/manifest-types";
-import { isWorkflowWorkspaceSupported } from "../workspace/workspace-guard";
+import { hasSupportedWorkspace } from "../workspace/workspace-guard";
 import {
   ArtifactActionKind,
   evaluateArtifactActionPreconditions,
@@ -34,7 +34,8 @@ export function registerArtifactActionCommands(
     const component = manifest?.components.find((c) => c.id === buildContext?.componentId);
 
     const blockReason = evaluateArtifactActionPreconditions({
-      workspaceSupported: isWorkflowWorkspaceSupported(),
+      workspaceSupported: hasSupportedWorkspace(),
+      reloadRequired: deps.isReloadRequired(),
       manifestStatus: state?.status ?? "missing",
       hasWorkflowBlockingIssues: manifest?.hasWorkflowBlockingIssues ?? false,
       buildSelectionResolved: !!actionCtx,
