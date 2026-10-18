@@ -16,7 +16,7 @@ import {
   PROVIDER_SETTING_FIX,
   CPPTOOLS_EXTENSION_ID,
 } from "../../../intellisense/cpptools-backend";
-import { checkProviderReadiness } from "../../../intellisense/intellisense-backend";
+import { resolveIntelliSenseBackend, checkProviderReadiness } from "../../../intellisense/intellisense-backend";
 import { CLANGD_EXTENSION_ID } from "../../../intellisense/clangd-backend";
 
 // ---------------------------------------------------------------------------
@@ -145,22 +145,22 @@ suite("checkProviderReadiness – missing-provider", () => {
   });
 
   test("warningState is 'missing-provider' when cpptools is not installed", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.warningState, "missing-provider");
   });
 
   test("providerInstalled is false when cpptools is absent", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.providerInstalled, false);
   });
 
   test("providerConfigured is false when cpptools is absent", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.providerConfigured, false);
   });
 
   test("lastWarningMessage is set for missing-provider", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.ok(
       result.lastWarningMessage && result.lastWarningMessage.length > 0,
       "expected lastWarningMessage to be non-empty"
@@ -168,7 +168,7 @@ suite("checkProviderReadiness – missing-provider", () => {
   });
 
   test("lastWarningMessage mentions known IntelliSense backends", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.ok(
       result.lastWarningMessage?.includes(CPPTOOLS_EXTENSION_ID),
       `expected message to mention '${CPPTOOLS_EXTENSION_ID}', got: ${result.lastWarningMessage}`
@@ -183,14 +183,14 @@ suite("checkProviderReadiness – missing-provider", () => {
   test("warningState is 'missing-provider' when cpptools API is unsupported and clangd is absent", () => {
     stubExtensionInstalledWithUnsupportedApi();
     stubConfigurationProvider("cepetr.tbench");
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.warningState, "missing-provider");
   });
 
   test("unsupported cpptools API message names cpptools and clangd when clangd is absent", () => {
     stubExtensionInstalledWithUnsupportedApi();
     stubConfigurationProvider("cepetr.tbench");
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.warningState, "missing-provider");
     assert.ok(
       result.lastWarningMessage?.includes(CPPTOOLS_EXTENSION_ID),
@@ -206,7 +206,7 @@ suite("checkProviderReadiness – missing-provider", () => {
     stubExtensionInstalledWithUnsupportedApi();
     stubClangdExtensionInstalled();
     stubConfigurationProvider("cepetr.tbench");
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.warningState, "none");
     assert.strictEqual(result.providerInstalled, true);
     assert.strictEqual(result.providerConfigured, true);
@@ -234,22 +234,22 @@ suite("checkProviderReadiness – wrong-provider", () => {
   });
 
   test("warningState is 'wrong-provider' when another provider is configured", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.warningState, "wrong-provider");
   });
 
   test("providerInstalled is true when cpptools is present", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.providerInstalled, true);
   });
 
   test("providerConfigured is false when a different provider is active", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.providerConfigured, false);
   });
 
   test("lastWarningMessage references the misconfigured provider id", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.ok(
       result.lastWarningMessage?.includes("ms-vscode.cmake-tools"),
       `expected message to include the wrong provider id, got: ${result.lastWarningMessage}`
@@ -257,7 +257,7 @@ suite("checkProviderReadiness – wrong-provider", () => {
   });
 
   test("lastWarningMessage is set for wrong-provider", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.ok(
       result.lastWarningMessage && result.lastWarningMessage.length > 0,
       "expected lastWarningMessage to be non-empty"
@@ -267,14 +267,14 @@ suite("checkProviderReadiness – wrong-provider", () => {
   test("warningState is 'wrong-provider' when provider setting is undefined", () => {
     stubExtensionInstalled();
     stubConfigurationProvider(undefined);
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.warningState, "wrong-provider");
   });
 
   test("warningState is 'wrong-provider' when provider setting is empty string", () => {
     stubExtensionInstalled();
     stubConfigurationProvider("");
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.warningState, "wrong-provider");
   });
 });
@@ -297,42 +297,42 @@ suite("checkProviderReadiness – ready (none)", () => {
   test("warningState is 'none' when provider is set to cepetr.tbench", () => {
     stubExtensionInstalled();
     stubConfigurationProvider("cepetr.tbench");
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.warningState, "none");
   });
 
     test("warningState is 'none' when provider is set to CEPETR.TBENCH (case-insensitive)", () => {
       stubExtensionInstalled();
       stubConfigurationProvider("CEPETR.TBENCH");
-      const result = checkProviderReadiness();
+      const result = checkProviderReadiness(undefined);
       assert.strictEqual(result.warningState, "none");
     });
 
   test("providerInstalled is true when cpptools is present", () => {
     stubExtensionInstalled();
     stubConfigurationProvider(undefined);
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.providerInstalled, true);
   });
 
   test("providerConfigured is true when prerequisites are satisfied", () => {
     stubExtensionInstalled();
     stubConfigurationProvider("cepetr.tbench");
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.providerConfigured, true);
   });
 
   test("lastWarningMessage is undefined when warningState is 'none'", () => {
     stubExtensionInstalled();
     stubConfigurationProvider("cepetr.tbench");
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.lastWarningMessage, undefined);
   });
 
   test("warningState stays 'none' when cpptools is installed but not yet activated", () => {
     stubExtensionInstalledButInactive();
     stubConfigurationProvider("cepetr.tbench");
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(result.warningState, "none");
     assert.strictEqual(result.providerInstalled, true);
     assert.strictEqual(result.providerConfigured, true);
@@ -422,5 +422,64 @@ suite("applyProviderSettingFix", () => {
   test("produces exactly one update call per invocation", async () => {
     await applyProviderSettingFix(fakeFolder, () => { });
     assert.strictEqual(updateCalls.length, 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite: readiness reads the selected folder's setting scope
+// ---------------------------------------------------------------------------
+
+suite("provider readiness – folder scope", () => {
+  const selected = {
+    uri: vscodeMock.Uri.file("/ws/trezor-firmware"),
+    name: "trezor-firmware",
+    index: 1,
+  } as vscode.WorkspaceFolder;
+  let scopes: unknown[];
+
+  suiteSetup(() => {
+    originalGetExtension = vscodeMock.extensions.getExtension as GetExtensionFn;
+    originalExtensionsAll = vscodeMock.extensions.all;
+    originalGetConfiguration = vscodeMock.workspace.getConfiguration as GetConfigurationFn;
+  });
+
+  suiteTeardown(() => {
+    restoreExtensionMocks();
+  });
+
+  setup(() => {
+    stubExtensionInstalled();
+    scopes = [];
+    // The correct provider is configured only in the selected folder's scope;
+    // any other scope (including the unscoped read) reports a different provider.
+    vscodeMock.workspace.getConfiguration = (section?: string, scope?: { toString(): string }) => {
+      scopes.push({ section, scope });
+      const inSelectedFolder = scope?.toString() === selected.uri.toString();
+      return {
+        get: (key: string) =>
+          key === "default.configurationProvider"
+            ? inSelectedFolder
+              ? "cepetr.tbench"
+              : "ms-vscode.cmake-tools"
+            : undefined,
+      };
+    };
+  });
+
+  test("checkProviderReadiness reads C_Cpp with the folder URI and follows its value", () => {
+    const result = checkProviderReadiness(selected);
+
+    assert.strictEqual(result.warningState, "none");
+    assert.deepStrictEqual(scopes, [{ section: "C_Cpp", scope: selected.uri }]);
+  });
+
+  test("a wrong value outside the selected folder does not produce a warning", () => {
+    assert.strictEqual(checkProviderReadiness(selected).warningState, "none");
+    assert.strictEqual(checkProviderReadiness(undefined).warningState, "wrong-provider");
+  });
+
+  test("resolveIntelliSenseBackend passes the folder through", () => {
+    assert.strictEqual(resolveIntelliSenseBackend(selected), "cpptools");
+    assert.strictEqual(resolveIntelliSenseBackend(undefined), undefined);
   });
 });

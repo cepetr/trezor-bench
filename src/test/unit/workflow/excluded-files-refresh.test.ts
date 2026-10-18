@@ -23,6 +23,7 @@ import {
   ExcludedFilesSnapshot,
   normalizeToForwardSlashes,
 } from "../../../intellisense/excluded-files-service";
+import { gatherExcludedFileCandidates } from "../../../intellisense/excluded-files-refresh";
 import {
   excludedFilesScopeWorkspaceRoot,
   makeExcludedFilesSettings,
@@ -261,5 +262,54 @@ suite("ExcludedFilesService — event emission discipline", () => {
 
     assert.strictEqual(count, 2, "two clear calls must produce two events");
     svc.dispose();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite: candidate gathering is bound to the selected folder
+// ---------------------------------------------------------------------------
+
+suite("gatherExcludedFileCandidates — multi-root windows", () => {
+  const workspaceMock = vscode.workspace as unknown as {
+    findFiles?: (pattern: { base: unknown; pattern: string }) => Promise<vscode.Uri[]>;
+  };
+  let originalFindFiles: typeof workspaceMock.findFiles;
+
+  setup(() => {
+    originalFindFiles = workspaceMock.findFiles;
+  });
+
+  teardown(() => {
+    workspaceMock.findFiles = originalFindFiles;
+  });
+
+  test("searches only under the selected folder and never marks files of another folder", async () => {
+    const selected = {
+      uri: vscode.Uri.file("/ws/trezor-firmware"),
+      name: "trezor-firmware",
+      index: 1,
+    } as vscode.WorkspaceFolder;
+    const otherRoot = "/ws/notes";
+    const bases: unknown[] = [];
+
+    // Behaves like a multi-root findFiles: results depend on the pattern base.
+    workspaceMock.findFiles = async (pattern) => {
+      bases.push(pattern.base);
+      const base = pattern.base as vscode.WorkspaceFolder;
+      return base.uri.fsPath === otherRoot
+        ? [vscode.Uri.file(`${otherRoot}/core/embed/main.c`)]
+        : [vscode.Uri.file(`${base.uri.fsPath}/core/embed/main.c`)];
+    };
+
+    const found = await gatherExcludedFileCandidates(
+      makeExcludedFilesSettings({ fileNamePatterns: ["*.c"], folderGlobs: ["core/embed/**"] }),
+      selected
+    );
+
+    assert.deepStrictEqual(bases, [selected]);
+    assert.deepStrictEqual(
+      found.map((uri) => uri.fsPath),
+      ["/ws/trezor-firmware/core/embed/main.c"]
+    );
   });
 });

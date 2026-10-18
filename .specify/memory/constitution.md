@@ -1,12 +1,18 @@
 <!--
 Sync Impact Report
-Version change: 1.7.0 -> 1.8.0
+Version change: 1.8.0 -> 1.9.0
 Modified principles:
 - None
+Modified sections:
+- Technical Guardrails (single-root assumption replaced by exactly one selected folder)
 Added sections:
-- VI. Code Must Stand Alone
+- None
 Removed sections:
 - None
+Dependent docs to update:
+- specs/product-spec.md
+- specs/glossary.md
+- README.md
 Follow-up TODOs:
 - None
 -->
@@ -71,8 +77,9 @@ tests must remain understandable from their own plain-language intent.
 - The product is a single-package VS Code extension for the `trezor-firmware`
 	workspace and is implemented in TypeScript.
 - The supported editor baseline is VS Code 1.105+.
-- The extension may assume a single-root workspace unless a future amendment
-	expands that scope.
+- The extension operates against exactly one workspace folder, the selected
+	folder, chosen as described in `specs/product-spec.md`; it never operates
+	against several folders at once.
 - Integration with external tools such as cpptools, Cargo tasks, YAML manifests,
 	and debug templates MUST use stable, documented interfaces and fail explicitly
 	when prerequisites are missing.
@@ -162,4 +169,4 @@ requirements, and PATCH for clarifications that do not change project obligation
 Compliance review is required for every plan, task list, and pull request that
 changes behavior, tooling, or development workflow.
 
-**Version**: 1.8.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-08-15
+**Version**: 1.9.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-10-18

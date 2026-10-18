@@ -111,6 +111,7 @@ suite("formatStatusBarText – unresolvable ids", () => {
 interface StatusBarItemStub {
   text: string;
   command: string | undefined;
+  tooltip: string | undefined;
   visible: boolean;
   disposed: boolean;
   show(): void;
@@ -122,6 +123,7 @@ function makeItemStub(): StatusBarItemStub {
   return {
     text: "",
     command: undefined,
+    tooltip: undefined,
     visible: false,
     disposed: false,
     show() {
@@ -207,6 +209,32 @@ suite("StatusBarPresenter", () => {
     presenter.update(makeLoadedState(), config("MISSING", "hw", "core"), true);
 
     assert.strictEqual(item.visible, false);
+    presenter.dispose();
+  });
+
+  test("names the selected folder in the tooltip when a folder name is given", () => {
+    const presenter = new StatusBarPresenter();
+    presenter.update(makeLoadedState(), config("T2T1", "hw", "core"), true, "trezor-firmware");
+
+    assert.strictEqual(item.tooltip, "Selected folder: trezor-firmware");
+    presenter.dispose();
+  });
+
+  test("leaves the tooltip unset without a folder name", () => {
+    const presenter = new StatusBarPresenter();
+    presenter.update(makeLoadedState(), config("T2T1", "hw", "core"), true);
+
+    assert.strictEqual(item.tooltip, undefined);
+    presenter.dispose();
+  });
+
+  test("clears the tooltip when a later update has no folder name", () => {
+    const presenter = new StatusBarPresenter();
+    const state = makeLoadedState();
+    presenter.update(state, config("T2T1", "hw", "core"), true, "trezor-firmware");
+    presenter.update(state, config("T2T1", "hw", "core"), true);
+
+    assert.strictEqual(item.tooltip, undefined);
     presenter.dispose();
   });
 

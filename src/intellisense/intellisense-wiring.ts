@@ -1,8 +1,9 @@
 /**
  * Wires the IntelliSense event surface: refresh results feeding the tree
  * artifact row and the wrong-provider Fix notification, the user-local
- * setting watchers, the manual-refresh command, and the extension- and
- * workspace-change triggers that re-schedule refreshes.
+ * setting watchers, the manual-refresh command, and the extension-change
+ * trigger that re-schedules refreshes. The workspace-folder-change refresh
+ * is scheduled by the folder-change wiring.
  */
 import * as vscode from "vscode";
 import { IntelliSenseService } from "./intellisense-service";
@@ -79,12 +80,6 @@ export function registerIntelliSenseWiring(
     // Provider-change refresh: re-evaluate readiness when extensions change.
     vscode.extensions.onDidChange(() => {
       service.scheduleRefresh("provider-change");
-    }),
-
-    // Trigger IntelliSense refresh when workspace folders change so excluded-file
-    // candidate paths are re-evaluated against the updated workspace root.
-    vscode.workspace.onDidChangeWorkspaceFolders(() => {
-      service.scheduleRefresh("workspace-change");
     })
   );
 }

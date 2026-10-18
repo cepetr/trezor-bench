@@ -293,12 +293,12 @@ suite("resolveArtifact('compile-commands') – filesystem integration", () => {
 
 suite("checkProviderReadiness – integration", () => {
   test("returns a defined readiness object", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.ok(result, "expected checkProviderReadiness to return a value");
   });
 
   test("warningState is one of the expected values", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     const validStates = ["none", "missing-provider", "wrong-provider"];
     assert.ok(
       validStates.includes(result.warningState),
@@ -307,17 +307,17 @@ suite("checkProviderReadiness – integration", () => {
   });
 
   test("providerInstalled is boolean", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(typeof result.providerInstalled, "boolean");
   });
 
   test("providerConfigured is boolean", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.strictEqual(typeof result.providerConfigured, "boolean");
   });
 
   test("lastWarningMessage is string or undefined", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     assert.ok(
       result.lastWarningMessage === undefined || typeof result.lastWarningMessage === "string",
       `expected lastWarningMessage to be string or undefined`
@@ -325,7 +325,7 @@ suite("checkProviderReadiness – integration", () => {
   });
 
   test("lastWarningMessage is set when warningState is not 'none'", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     if (result.warningState !== "none") {
       assert.ok(
         result.lastWarningMessage && result.lastWarningMessage.length > 0,
@@ -335,7 +335,7 @@ suite("checkProviderReadiness – integration", () => {
   });
 
   test("lastWarningMessage is undefined when warningState is 'none'", () => {
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     if (result.warningState === "none") {
       assert.strictEqual(result.lastWarningMessage, undefined);
     }
@@ -346,7 +346,7 @@ suite("checkProviderReadiness – integration", () => {
     // This test validates the detection path works correctly in the host.
     const cpptoolsExt = vscode.extensions.getExtension("ms-vscode.cpptools");
     const clangdExt = vscode.extensions.getExtension("llvm-vs-code-extensions.vscode-clangd");
-    const result = checkProviderReadiness();
+    const result = checkProviderReadiness(undefined);
     if (!cpptoolsExt && !clangdExt) {
       assert.strictEqual(result.providerInstalled, false);
       assert.strictEqual(result.warningState, "missing-provider");
@@ -415,7 +415,7 @@ suite("IntelliSenseService – provider warning flows", () => {
     svc.scheduleRefresh("activation");
     await drainRefresh();
     const fromService = svc.getLastReadiness()!;
-    const direct = checkProviderReadiness();
+    const direct = checkProviderReadiness(undefined);
     assert.strictEqual(fromService.warningState, direct.warningState);
     assert.strictEqual(fromService.providerInstalled, direct.providerInstalled);
     assert.strictEqual(fromService.providerConfigured, direct.providerConfigured);

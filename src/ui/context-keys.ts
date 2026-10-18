@@ -14,7 +14,7 @@ import {
 import { evaluateWorkflowPreconditions } from "../commands/build-workflow";
 import { isArtifactActionApplicable } from "../commands/artifact-actions";
 import { resolveWorkflowContext } from "../tasks/build-task-provider";
-import { isWorkflowWorkspaceSupported } from "../workspace/workspace-guard";
+import { hasSupportedWorkspace } from "../workspace/workspace-guard";
 import { PaneTreeModel } from "./pane-tree";
 
 /** The kinds updateArtifactActionContext resolves and publishes context keys for. */
@@ -26,7 +26,8 @@ const ACTION_ARTIFACT_KINDS = ["binary", "map"] as const;
  */
 export function updateWorkflowBlockedContext(
   state: ManifestState,
-  buildContext: BuildContext | undefined
+  buildContext: BuildContext | undefined,
+  reloadRequired: boolean
 ): void {
   const manifest = loadedManifest(state);
   const buildSelectionResolved = !!(
@@ -36,7 +37,8 @@ export function updateWorkflowBlockedContext(
     evaluateWorkflowPreconditions({
       manifestStatus: state.status,
       hasWorkflowBlockingIssues: manifest?.hasWorkflowBlockingIssues ?? false,
-      workspaceSupported: isWorkflowWorkspaceSupported(),
+      workspaceSupported: hasSupportedWorkspace(),
+      reloadRequired,
       buildSelectionResolved,
     }) !== "no-block";
   vscode.commands.executeCommand("setContext", "tbench.workflowBlocked", blocked);

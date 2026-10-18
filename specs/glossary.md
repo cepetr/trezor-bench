@@ -10,8 +10,11 @@ This glossary defines the preferred product and documentation terms used by the 
 | **Trezor** | The compact user-facing label used in space-constrained UI surfaces. | Use for the command category prefix and other compact UI labels. Not used for the activity bar container title, which carries the formal product name. Do not use it as a replacement for the formal product name in general prose. |
 | **the extension** | The default prose reference to Trezor Bench after first mention. | Preferred term for most requirement and behavior statements throughout the specification. |
 | **tbench** | Short internal identifier for the product. | Use for file names, setting prefixes, variable names, command ids, and compact references. Do not use as the main product name in user-facing prose. |
-| **workspace** | The single opened VS Code workspace folder in which the extension operates. | The product assumes a single-root workspace. |
-| **workspace root** | The root directory of the opened workspace folder. | Use when describing how relative settings or manifest paths are resolved. |
+| **workspace** | The selected folder of the open VS Code window, in which the extension operates. | In a window with one folder, that folder. Other folders of a multi-root window are ignored. |
+| **workspace root** | The root directory of the selected folder. | Use when describing how relative settings or manifest paths are resolved. |
+| **multi-root window** | A VS Code window with more than one workspace folder open. | The extension works against one folder of such a window, the selected folder. |
+| **selected folder** | The one workspace folder the extension works against: the first folder holding `tbench.toml`, else the first holding the default manifest, else the first folder. | Re-evaluated at activation and when the folder list changes; a different result requires a window reload. |
+| **folder selection reason** | Why a folder was selected: `tbench.toml` found, default manifest found, or no folder qualified and the first folder was used. | Written to the log output when the folder is selected. |
 | **workspace maintainer** | A person who authors or updates the manifest, templates, and workspace-specific settings consumed by the extension. | Useful when requirements address repository configuration rather than day-to-day usage. |
 | **user** | A person operating the extension inside VS Code. | Default actor for product behavior unless a narrower role is needed. |
 

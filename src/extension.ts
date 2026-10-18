@@ -4,7 +4,9 @@
  * task and debug providers, and coordinates state refreshes between them.
  */
 import * as vscode from "vscode";
-import { hasSupportedWorkspace, requireWorkspaceFolder } from "./workspace/workspace-guard";
+import { hasSupportedWorkspace } from "./workspace/workspace-guard";
+import { selectWorkspaceFolder } from "./workspace/folder-selection";
+import { registerFolderChangeWiring } from "./workspace/folder-change-wiring";
 import { isStatusBarEnabled } from "./workspace/settings";
 import { RepositoryConfigService, resolveArtifactsPath, resolveDebugTemplatesPath } from "./workspace/repository-config";
 import { registerRepositoryConfigWiring } from "./workspace/repository-config-wiring";
@@ -18,7 +20,10 @@ import { StatusBarPresenter } from "./ui/status-bar";
 import {
   disposeLogChannel,
   initLogChannel,
+  logFolderSelection,
+  logFolderSelectionChange,
   logWarning,
+  notifyWarning,
   logRustAnalyzerFailure,
   revealLogs,
   logManifestState,
@@ -75,6 +80,8 @@ let _intelliSenseService: IntelliSenseService | undefined;
 let _artifactFileWatcher: ArtifactFileWatcher | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
 let _rustAnalyzerService: RustAnalyzerConfigService | undefined;
+/** Set once the selected workspace folder was released; a window reload is pending. */
+let _reloadRequired = false;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   initLogChannel();
@@ -151,8 +158,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     return;
   }
 
-  const workspaceFolder = requireWorkspaceFolder();
+  // Safe after the hasSupportedWorkspace() guard: at least one folder is open.
+  const selection = selectWorkspaceFolder(vscode.workspace.workspaceFolders)!;
+  const workspaceFolder = selection.folder;
+  logFolderSelection(selection);
   const refreshArtifactFileWatcher = (): void => {
+    if (_reloadRequired) {
+      return;
+    }
     const manifest = loadedManifest(_manifestState);
 
     _artifactFileWatcher?.update(
@@ -162,7 +175,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
   };
   const refreshArtifactActionState = (): void => {
-    if (!_manifestState) {
+    if (_reloadRequired || !_manifestState) {
       return;
     }
 
@@ -180,17 +193,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
   };
   const refreshStatusBar = (): void => {
-    if (!_manifestState) {
+    if (_reloadRequired || !_manifestState) {
       return;
     }
 
     _statusBar?.update(
       _manifestState,
       _buildSelection,
-      isStatusBarEnabled(workspaceFolder)
+      isStatusBarEnabled(workspaceFolder),
+      (vscode.workspace.workspaceFolders?.length ?? 0) > 1 ? workspaceFolder.name : undefined
     );
   };
   const refreshBuildArtifacts = (trigger: RefreshTrigger): void => {
+    if (_reloadRequired) {
+      return;
+    }
     if (_manifestState) {
       updateCompileCommandsTreeArtifact(
         _treeModel,
@@ -206,6 +223,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // The dependency surface handed to the per-slice command registrations.
   const commandDeps: CommandDeps = {
     workspaceFolder,
+    isReloadRequired: () => _reloadRequired,
     getManifestState: () => _manifestState,
     getBuildSelection: () => _buildSelection,
     getResolvedOptions: () => presetOptions.resolvedOptions,
@@ -221,7 +239,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     refreshArtifactFileWatcher,
     refreshBuildArtifacts,
     refreshRustAnalyzer: () => {
-      if (_rustAnalyzerService) {
+      if (_rustAnalyzerService && !_reloadRequired) {
         refreshRustAnalyzerConfiguration(
           _rustAnalyzerService,
           loadedManifest(_manifestState),
@@ -301,7 +319,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     refreshStatusBar();
     handleManifestStateDiagnostics(state);
     logManifestState(state);
-    updateWorkflowBlockedContext(state, _buildSelection);
+    updateWorkflowBlockedContext(state, _buildSelection, _reloadRequired);
 
     // Update IntelliSense service with the new manifest state
     const manifest = loadedManifest(state);
@@ -359,6 +377,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     getBuildContext: () => _buildSelection,
     getArtifactsRoot: () => resolveArtifactsPath(workspaceFolder),
     getTemplatesRoot: () => resolveDebugTemplatesPath(workspaceFolder),
+    getWorkspaceFolder: () => (_reloadRequired ? undefined : workspaceFolder),
   });
 
   // --- Task provider. ---
@@ -367,7 +386,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     getBuildContext: () => _buildSelection,
     getResolvedOptions: () => presetOptions.resolvedOptions,
     getActivePresetId: () => activePresetId(_buildSelection),
-    getWorkspaceFolder: () => workspaceFolder,
+    getWorkspaceFolder: () => (_reloadRequired ? undefined : workspaceFolder),
     refreshBuildArtifacts: () => refreshBuildArtifacts("workflow-task-complete"),
   });
 
@@ -456,6 +475,69 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Schedule IntelliSense refresh on activation.
   refreshArtifactFileWatcher();
   _intelliSenseService?.scheduleRefresh("activation");
+
+  // --- Folder-list changes: keep running against the same folder, or release
+  // it and require a window reload. ---
+  const release = (): void => {
+    _reloadRequired = true;
+
+    repositoryConfigService.dispose();
+    _manifestStateSubscription?.dispose();
+    _manifestStateSubscription = undefined;
+    _manifestService?.dispose();
+    _manifestService = undefined;
+    _presetStateSubscription?.dispose();
+    _presetStateSubscription = undefined;
+    _presetService?.dispose();
+    _presetService = undefined;
+    _artifactFileWatcher?.dispose();
+    _intelliSenseService?.release();
+    _intelliSenseService?.dispose();
+    _intelliSenseService = undefined;
+
+    const rustAnalyzerService = _rustAnalyzerService;
+    _rustAnalyzerService = undefined;
+    if (rustAnalyzerService) {
+      void stopRustAnalyzerConfiguration(rustAnalyzerService);
+    }
+
+    _manifestState = undefined;
+    _presetState = undefined;
+    _buildSelection = undefined;
+    presetOptions.clearResolvedOptions();
+    _statusBar?.dispose();
+    _statusBar = undefined;
+
+    for (const [key, value] of [
+      ["tbench.workflowBlocked", true],
+      ["tbench.startDebuggingEnabled", false],
+      ["tbench.flashApplicable", false],
+      ["tbench.uploadApplicable", false],
+      ["tbench.binaryExists", false],
+      ["tbench.mapExists", false],
+    ] as const) {
+      void vscode.commands.executeCommand("setContext", key, value);
+    }
+
+    void notifyWarning(
+      "The workspace folder Trezor Bench was using has changed. Reload the window to continue.",
+      "Reload Window"
+    ).then((choice) => {
+      if (choice === "Reload Window") {
+        void vscode.commands.executeCommand("workbench.action.reloadWindow");
+      }
+    });
+  };
+  registerFolderChangeWiring(context, workspaceFolder, {
+    onUnchanged: () => {
+      _intelliSenseService?.scheduleRefresh("workspace-change");
+      refreshStatusBar();
+    },
+    onRelease: (next) => {
+      logFolderSelectionChange(workspaceFolder, next);
+      release();
+    },
+  });
 }
 
 /**
@@ -466,6 +548,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 export function deactivate(): void {
   _manifestState = undefined;
   _buildSelection = undefined;
+  _reloadRequired = false;
   disposeDiagnostics();
   disposeLogChannel();
 }

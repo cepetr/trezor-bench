@@ -20,7 +20,19 @@ It also reduces or eliminates manual VS Code configuration needed for C/C++ Inte
 
 The extension is intended for work inside a `trezor-firmware` workspace shape and assumes that the workspace contains the files, directories, and generated artifacts needed for firmware-oriented build, IntelliSense, and debug workflows.
 
-The extension expects an open workspace folder. Workspace-specific state — manifest, presets, build artifacts, and IntelliSense — is loaded from the first workspace folder whenever at least one folder is open. Task-launching workflow commands are designed for a single-root workspace: they require exactly one open workspace folder and reject execution when no folder or multiple workspace folders are open.
+The extension expects an open workspace folder. In a window with several folders (a multi-root window) it works against exactly one of them, the selected folder, and ignores the others. In a window with one folder, that folder is the selected folder. Workspace-specific state — manifest, presets, build artifacts, and IntelliSense — is loaded from the selected folder, and every capability that resolves a path, reads a folder-scoped setting, or starts a task or debug session does so against the selected folder only.
+
+The selected folder is chosen at activation, and again whenever the list of workspace folders changes, as the first folder in workspace order that satisfies the first of these rules:
+
+- its root contains `tbench.toml`
+- its root contains the manifest at the built-in default manifest path (the default of `[paths].manifest`; the manifest path configured by `tbench.toml` is not consulted)
+- otherwise, the first folder, whether or not it looks like a `trezor-firmware` workspace
+
+Selection checks only whether those files exist; it does not read them, so a folder whose `tbench.toml` is invalid is still selected and then reports the repository-configuration error described in `Repository Path Configuration`. Marker files in other folders are never watched. The extension logs the selected folder and the reason it was chosen (`tbench.toml` found, default manifest found, or no folder qualified and the first folder used).
+
+The number of open folders never blocks a command. Task-launching workflow commands are blocked only by the shared blocking conditions described in `Availability And Blocking Model`.
+
+When a change to the folder list makes a different folder (or no folder) the selected folder, the extension does not rebind in place. It releases the folder it was using: it stops its watchers and services, clears its manifest, preset, build-selection, IntelliSense, and Rust Analyzer runtime state, hides the status bar item, disables workflow and artifact actions, and shows a warning notification with a `Reload Window` action. Until the window is reloaded, every command that depends on the workspace is blocked with a reload-required reason and no task or debug session is started. A reload selects the folder anew. Managed files already on disk, such as the managed compile database, are left as they are. Folder-list changes that keep the same folder selected, such as adding an unrelated folder, need no reload.
 
 At a high level, the extension expects these workspace inputs:
 
@@ -293,7 +305,7 @@ This surface exists so the current model, target, and component remain visible e
 
 ### Displayed Information
 
-When visible, the status bar shows the active build context using the shared display conventions defined in `Build Context Display Conventions`. The status-bar text is prefixed with the `symbol-field` codicon.
+When visible, the status bar shows the active build context using the shared display conventions defined in `Build Context Display Conventions`. The status-bar text is prefixed with the `symbol-field` codicon. In a multi-root window the tooltip names the selected folder (`Selected folder: <name>`); with a single folder the item has no tooltip.
 
 ### Visibility Rules
 
@@ -328,7 +340,7 @@ This capability has two user-visible outcomes:
 
 The extension resolves the expected compile-commands artifact for the active build context and treats that artifact as the source of truth for IntelliSense.
 
-The expected compile-commands path is constructed as `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix>.cc.json`, where `artifacts-root` comes from the resolved repository configuration, `artifactFolder` comes from the selected model, `artifactName` comes from the selected component, and `artifactSuffix` comes from the selected target and defaults to an empty string when omitted.
+The expected compile-commands path is constructed as `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix>.cc.json`, where `artifacts-root` comes from the repository configuration resolved against the selected folder, `artifactFolder` comes from the selected model, `artifactName` comes from the selected component, and `artifactSuffix` comes from the selected target and defaults to an empty string when omitted.
 
 The `Compile Commands` row in `Build Artifacts` shows whether that artifact is currently available for the active build context, following the row-description and tooltip conventions described in `Build Artifacts`.
 
@@ -343,7 +355,7 @@ When cpptools is installed but the configuration-provider setting is unset or na
 
 When the clangd backend is active, the extension makes the active compile database discoverable to clangd without requiring manual setup:
 
-- it maintains a managed compile database at `.tbench/compile_commands.json` in the workspace root as a link to the active compile-commands artifact, and retargets that link whenever the active build context changes;
+- it maintains a managed compile database at `.tbench/compile_commands.json` in the selected folder's root as a link to the active compile-commands artifact, and retargets that link whenever the active build context changes;
 - it ensures the workspace `.clangd` configuration points clangd at the `.tbench` directory. If no `.clangd` file exists, the extension creates one it owns and marks it as managed by Trezor Bench. A `.clangd` file carrying the managed marker is owned by the extension and is rewritten back to the managed content whenever its content drifts, so manual edits to a managed file are not preserved. If a `.clangd` file already exists without the managed marker and without a matching `CompilationDatabase` entry, the extension does not modify it and instead logs a warning that clangd may not discover the managed compile database;
 - it restarts the clangd language server after applying or clearing the managed compile database so clangd reloads the current configuration.
 
@@ -355,7 +367,7 @@ The extension does not intentionally keep using a stale compile database from an
 
 The same active compile database is also used to determine whether a file belongs to the active build configuration.
 
-Files outside the active compile database can be marked as excluded when they also match the excluded-file scope configured through `tbench.excludedFiles.fileNamePatterns` and `tbench.excludedFiles.folderGlobs`.
+Files outside the active compile database can be marked as excluded when they also match the excluded-file scope configured through `tbench.excludedFiles.fileNamePatterns` and `tbench.excludedFiles.folderGlobs`. Only files under the selected folder are considered; files in other folders of a multi-root window are never marked.
 
 The excluded-file scope follows these rules:
 
@@ -378,7 +390,7 @@ Excluded-file visibility is therefore part of the IntelliSense capability, but i
 
 ### Refresh And Warning Behavior
 
-IntelliSense state refreshes automatically as described in `Startup And Refresh Behavior`, including activation, manifest changes, active build-context changes, relevant artifact-file changes for the active build context, artifact-path changes, workspace changes, and relevant setting changes.
+IntelliSense state refreshes automatically as described in `Startup And Refresh Behavior`, including activation, manifest changes, active build-context changes, relevant artifact-file changes for the active build context, artifact-path changes, workspace-folder changes, and relevant setting changes.
 
 The extension also provides the manual `Refresh IntelliSense` command described in `Command Surface`.
 
@@ -386,7 +398,7 @@ When IntelliSense prerequisites are not satisfied, the extension reports that st
 
 - if the active compile-commands artifact is missing, the extension clears previously applied IntelliSense state and the `Compile Commands` row shows the missing state
 - if no supported IntelliSense backend is available — neither the Microsoft C/C++ extension exposing the supported custom-configuration API nor the clangd extension — the extension reports that IntelliSense integration is unavailable
-- if the Microsoft C/C++ extension is installed but the configuration-provider setting is unset or names a different provider, the extension reports the misconfiguration and can offer a workspace-setting fix instead of falling back to clangd (see `Compile Commands And Provider Integration`)
+- if the Microsoft C/C++ extension is installed but the configuration-provider setting is unset or names a different provider, the extension reports the misconfiguration and can offer a workspace-setting fix instead of falling back to clangd (see `Compile Commands And Provider Integration`); the setting is read and fixed at the same scope, the selected folder's, so a value in an unrelated folder neither triggers nor hides the warning
 
 When excluded-file input data becomes unavailable, excluded-file badges and overlays are also cleared so stale excluded-file state does not remain visible after the active context changes.
 
@@ -418,7 +430,7 @@ Before registration, the extension checks every managed key for explicit values 
 
 If Rust Analyzer is missing, the extension warns consistently with the missing C/C++ tooling behavior. Generation failure, invalid output, or `addConfiguration` failure retains the selected mode and last successfully applied configuration. The extension shows a concise warning and records standard error plus the relevant model, target, preset, and effective build-option context in the `Trezor Bench` output channel. It retries after the next relevant selection change or mode toggle.
 
-No-folder and multi-root windows follow the extension's existing unsupported-workspace behavior. When the workspace can no longer be managed safely or the capability is disposed, Trezor Bench clears its managed Rust Analyzer overrides with an empty configuration object.
+The capability works against the selected folder only: the generator runs in the selected folder's cargo workspace and conflicts are inspected at the selected folder's scope. A window with no folder follows the extension's existing unsupported-workspace behavior. When the workspace can no longer be managed safely or the capability is disposed, Trezor Bench clears its managed Rust Analyzer overrides with an empty configuration object.
 
 ## Extension Configuration
 
@@ -451,7 +463,7 @@ This applies to `tbench.taskExtraEnv` and excluded-file glob settings. Repositor
 
 ### Repository Path Configuration
 
-The extension reads the optional `tbench.toml` only from the workspace root of a supported single-root workspace. Its `[paths]` table can define the following string entries:
+The extension reads the optional `tbench.toml` only from the root of the selected folder; `tbench.toml` files in other folders of a multi-root window are ignored. Its `[paths]` table can define the following string entries:
 
 - `cargo-workspace`: default `core/embed`; the cargo workspace used for build-related tasks. An empty value uses the workspace root.
 - `debug-templates`: default `core/embed/xtask/tf-tools/debug`; the directory containing debug template files. An empty value uses the built-in default.
@@ -459,7 +471,7 @@ The extension reads the optional `tbench.toml` only from the workspace root of a
 - `manifest`: default `core/embed/xtask/tf-tools/manifest.yaml`; the manifest file. An empty value uses the built-in default.
 - `xtask-presets`: default `core/embed/xtask`; the directory containing `presets.toml` and `user-presets.toml`. An empty value uses the built-in default.
 
-Each relative value is resolved from the workspace root, while each absolute value is used unchanged. The file deliberately does not expand VS Code variable references, so variable-reference-like text is treated as literal path content. If the file is absent, or if an individual supported entry is absent, the corresponding default applies. Unsupported `[paths]` keys are ignored. A present file that cannot be read or parsed, or that contains a non-string supported path entry, is a blocking configuration error: the extension logs and shows the error and does not silently use defaults or stale paths until the file is corrected or removed.
+Each relative value is resolved from the selected folder's root, while each absolute value is used unchanged. The file deliberately does not expand VS Code variable references, so variable-reference-like text is treated as literal path content. If the file is absent, or if an individual supported entry is absent, the corresponding default applies. Unsupported `[paths]` keys are ignored. A present file that cannot be read or parsed, or that contains a non-string supported path entry, is a blocking configuration error: the extension logs and shows the error and does not silently use defaults or stale paths until the file is corrected or removed.
 
 ### Task Environment Settings
 
@@ -488,7 +500,7 @@ When the extension activates, it always registers the configuration tree view an
 
 If no workspace folder is open, the extension shows a warning, keeps workflow actions blocked, and does not attempt to load workspace-specific manifest, artifact, or IntelliSense state.
 
-If at least one workspace folder is open, the extension loads workspace state from the first workspace folder. In a multi-root window, task-launching workflow commands remain blocked as described in `Workspace Assumptions And Scope`, while the rest of the extension state follows the first folder. The extension then:
+If at least one workspace folder is open, the extension selects the workspace folder as described in `Workspace Assumptions And Scope`, logs the selection and its reason before loading anything, and loads workspace state from the selected folder. The extension then:
 
 - Resolves repository paths from root-level `tbench.toml` or the built-in defaults, and begins watching `tbench.toml`.
 - Starts the manifest service and begins watching the resolved manifest file.
@@ -562,7 +574,7 @@ When the user changes the active model, target, component, or preset from the tr
 
 - Relevant artifact-file changes for the active build context refresh build-artifact state and IntelliSense so newly produced, updated, or removed artifacts become visible in the tree view and related actions without requiring the build to be launched by the extension.
 - A manual IntelliSense refresh command re-runs IntelliSense evaluation without changing the active build context.
-- Workspace-folder changes trigger IntelliSense refresh so excluded-file evaluation stays aligned with the current workspace shape.
+- Workspace-folder changes re-run folder selection. If the same folder is still selected, IntelliSense refreshes and the status bar tooltip is updated for the new folder count. If a different folder (or none) is now selected, the extension releases the folder and asks for a window reload as described in `Workspace Assumptions And Scope`. Later folder-list changes are ignored while released.
 
 ## Persistence And Defaults
 
@@ -635,7 +647,8 @@ The extension uses shared blocking rules across workflow-oriented commands.
 
 Commands may be blocked when:
 
-- no supported workspace folder is open
+- no supported workspace folder is open (the number of open folders never blocks)
+- the selected workspace folder was released after a folder-list change and the window has not been reloaded (reload required; evaluated right after the no-folder condition and before the manifest conditions)
 - the manifest file is missing
 - the manifest file is invalid
 - workflow-blocking manifest validation issues are present
@@ -897,6 +910,8 @@ When exactly one profile matches, the `Configuration view` header, overflow menu
 
 #### Preconditions
 
+The debug session is always started in the selected folder, so `${workspaceFolder}` in debug templates resolves to it regardless of which editor is active. `Run and Debug` offers the tbench-owned entries only under the selected folder and rejects, with a logged error, a tbench configuration resolved for any other folder or while the folder is released.
+
 At a high level, debugging is considered available only when the shared workspace, manifest, and active-build-context conditions defined in `Availability And Blocking Model` are satisfied, the manifest is loaded without debug-blocking issues, and additionally:
 
 - The selected component provides at least one debug profile that matches the active build context.
@@ -988,6 +1003,7 @@ Blocked or failed launch attempts include cases such as:
 - No matching debug profile for the selected component.
 - Missing executable artifact.
 - Invalid manifest debug state.
+- The selected folder was released and the window must be reloaded.
 - Unknown active model, target, or component references.
 - Missing template file.
 - Template path escaping the configured templates root.

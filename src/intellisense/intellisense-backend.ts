@@ -2,6 +2,7 @@
  * IntelliSense backend selection: picks cpptools or clangd for the current
  * workspace and evaluates provider readiness and warning states.
  */
+import * as vscode from "vscode";
 import { IntelliSenseProviderReadiness } from "./intellisense-types";
 import {
   CLANGD_EXTENSION_ID,
@@ -26,8 +27,10 @@ export type IntelliSenseBackend = "cpptools" | "clangd";
  * extension is unavailable — for example in editors such as Cursor that ship a
  * different C/C++ extension and rely on clangd instead.
  */
-export function resolveIntelliSenseBackend(): IntelliSenseBackend | undefined {
-  const cpptools = evaluateCpptoolsReadiness();
+export function resolveIntelliSenseBackend(
+  workspaceFolder: vscode.WorkspaceFolder | undefined
+): IntelliSenseBackend | undefined {
+  const cpptools = evaluateCpptoolsReadiness(workspaceFolder);
   if (cpptools.status === "ready") {
     return "cpptools";
   }
@@ -44,8 +47,10 @@ export function resolveIntelliSenseBackend(): IntelliSenseBackend | undefined {
  * Evaluates whether IntelliSense prerequisites are satisfied for either cpptools
  * or clangd.
  */
-export function checkProviderReadiness(): IntelliSenseProviderReadiness {
-  const cpptools = evaluateCpptoolsReadiness();
+export function checkProviderReadiness(
+  workspaceFolder: vscode.WorkspaceFolder | undefined
+): IntelliSenseProviderReadiness {
+  const cpptools = evaluateCpptoolsReadiness(workspaceFolder);
 
   if (cpptools.status === "ready") {
     return {

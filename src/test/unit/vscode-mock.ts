@@ -94,13 +94,30 @@ const window = {
   onDidChangeVisibleTextEditors: () => ({ dispose: () => {} }),
 };
 
+const workspaceFoldersListeners = new Set<() => void>();
+
 const workspace = {
   workspaceFolders: undefined,
-  getConfiguration: () => ({
-    get: () => undefined,
-    update: () => Promise.resolve(),
-    inspect: () => undefined,
-  }),
+  /** Arguments of every getConfiguration call, for scope assertions. */
+  getConfigurationCalls: [] as { section: unknown; scope: unknown }[],
+  getConfiguration: (section?: unknown, scope?: unknown) => {
+    workspace.getConfigurationCalls.push({ section, scope });
+    return {
+      get: () => undefined,
+      update: () => Promise.resolve(),
+      inspect: () => undefined,
+    };
+  },
+  onDidChangeWorkspaceFolders: (listener: () => void) => {
+    workspaceFoldersListeners.add(listener);
+    return { dispose: () => workspaceFoldersListeners.delete(listener) };
+  },
+  /** Test helper: invokes every registered workspace-folder listener. */
+  fireDidChangeWorkspaceFolders: () => {
+    for (const listener of [...workspaceFoldersListeners]) {
+      listener();
+    }
+  },
   createFileSystemWatcher: () => ({
     onDidCreate: () => ({ dispose: () => {} }),
     onDidChange: () => ({ dispose: () => {} }),

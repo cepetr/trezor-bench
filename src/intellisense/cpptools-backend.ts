@@ -85,7 +85,9 @@ export type CpptoolsReadinessResult =
  * Returns `unsupported` when a known C/C++ extension is installed but does not
  * expose the supported custom-configuration API.
  */
-export function evaluateCpptoolsReadiness(): CpptoolsReadinessResult {
+export function evaluateCpptoolsReadiness(
+  workspaceFolder: vscode.WorkspaceFolder | undefined
+): CpptoolsReadinessResult {
   const ext = vscode.extensions.getExtension(CPPTOOLS_EXTENSION_ID);
 
   if (!ext) {
@@ -97,7 +99,8 @@ export function evaluateCpptoolsReadiness(): CpptoolsReadinessResult {
     return { status: "unsupported", extensionId: ext.id };
   }
 
-  const cfg = vscode.workspace.getConfiguration("C_Cpp");
+  // Read the same folder scope that applyProviderSettingFix writes.
+  const cfg = vscode.workspace.getConfiguration("C_Cpp", workspaceFolder?.uri);
   const configuredProvider: string | undefined = cfg.get<string>(
     "default.configurationProvider"
   );
