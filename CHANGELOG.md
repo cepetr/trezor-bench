@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 - 2026-10-22
 ### Added
 - Multi-root windows are now supported. Trezor Bench finds the `trezor-firmware` folder among the open folders and works against it; other folders are ignored.
 - Rust Analyzer is now configured automatically. Use `Rust Analyzer: Select Configuration…` in the `Build Selection` menu to choose `All Features` (the default) or `Model Specific`, which matches Rust Analyzer to your selected model, target, preset, and build options.
