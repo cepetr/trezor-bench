@@ -163,8 +163,8 @@ export interface ResolvedOption {
  *    null-valued state's id.
  * 3. A surviving selection becomes `value`; `isOverride = value !== presetValue`.
  * 4. Otherwise `value = presetValue`, `isOverride = false`.
- * 5. When `presetState === "unresolved"`, `value` is the null-valued state id
- *    if one exists, else the first state id; `isOverride` is forced `false`.
+ * 5. When `presetState === "unresolved"`, `value` is the option's baseline
+ *    state (`BuildOption.defaultState`); `isOverride` is forced `false`.
  * 6. When `presetState === "mismatch"`, `isOverride` is forced `false`.
  *
  * Invalid/unknown keys in `saved` are quietly ignored (not written back here).
@@ -192,9 +192,9 @@ export function normalizeBuildOptions(
       // "absent" row of the raw-value table (upstream implicit disabled).
       presetState = "resolved";
       presetValue = false;
-    } else if (option.states?.some((s) => s.id === "null")) {
+    } else if (option.defaultState !== undefined) {
       presetState = "resolved";
-      presetValue = "null";
+      presetValue = option.defaultState;
     } else {
       presetState = "unresolved";
     }
@@ -217,11 +217,10 @@ export function normalizeBuildOptions(
     let isOverride: boolean;
 
     if (presetState === "unresolved") {
-      const nullState = option.states?.find((s) => s.id === "null");
-      value = nullState ? "null" : (option.states?.[0]?.id ?? "");
+      value = option.defaultState ?? "";
       isOverride = false;
     } else if (presetState === "mismatch") {
-      value = stored ?? (option.kind === "checkbox" ? false : (option.states?.[0]?.id ?? ""));
+      value = stored ?? (option.kind === "checkbox" ? false : (option.defaultState ?? ""));
       isOverride = false;
     } else if (stored !== undefined) {
       value = stored;

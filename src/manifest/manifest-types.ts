@@ -101,6 +101,7 @@ export type ValidationCode =
   | "yaml-parse"
   | "missing-field"
   | "duplicate-id"
+  | "duplicate-default"
   | "invalid-type"
   | "empty-collection"
   | "duplicate-flag"
@@ -176,7 +177,12 @@ export interface BuildOption {
   readonly when?: WhenExpression;
   /** Ordered selectable states for `kind === "multistate"` options. */
   readonly states?: ReadonlyArray<BuildOptionState>;
-  /** Default state id for `kind === "multistate"` when no selection is stored. */
+  /**
+   * Baseline state id for `kind === "multistate"`: the value shown and used
+   * when no preset fragment sets the option and no override is stored.
+   * Resolved from the manifest as the state marked `default: true`, else the
+   * state whose value is null, else the first declared state.
+   */
   readonly defaultState?: string;
 }
 

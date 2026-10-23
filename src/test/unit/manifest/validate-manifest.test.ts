@@ -454,6 +454,97 @@ options:
     assert.strictEqual(result.buildOptions[0].defaultState, "null");
   });
 
+  test("falls back to the null-valued state even when it is not declared first", () => {
+    const source = baseManifest(`
+options:
+  - name: "Verbosity"
+    flag: "--verbose"
+    type: multistate
+    states:
+      - value: "on"
+        name: "On"
+      - value: null
+        name: "Off"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.buildOptions[0].defaultState, "null");
+  });
+
+  test("falls back to the first state when no state is null-valued", () => {
+    const source = baseManifest(`
+options:
+  - name: "Verbosity"
+    flag: "--verbose"
+    type: multistate
+    states:
+      - value: "on"
+        name: "On"
+      - value: "off"
+        name: "Off"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.buildOptions[0].defaultState, "on");
+  });
+
+  test("an explicit default wins over a null-valued state", () => {
+    const source = baseManifest(`
+options:
+  - name: "Verbosity"
+    flag: "--verbose"
+    type: multistate
+    states:
+      - value: null
+        name: "Off"
+      - value: "on"
+        name: "On"
+        default: true
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    assert.strictEqual(result.buildOptions[0].defaultState, "on");
+  });
+
+  test("reports an error when more than one state declares default: true", () => {
+    const source = baseManifest(`
+options:
+  - name: "Verbosity"
+    flag: "--verbose"
+    type: multistate
+    states:
+      - value: null
+        name: "Off"
+      - value: "on"
+        name: "On"
+        default: true
+      - value: "loud"
+        name: "Loud"
+        default: true
+`);
+    const result = parseManifest(source);
+    const errors = result.issues.filter((i) => i.severity === "error");
+    assert.strictEqual(errors.length, 1);
+    assert.strictEqual(errors[0].code, "duplicate-default");
+    assert.ok(errors[0].message.includes("Verbosity"));
+  });
+
+  test("a duplicate default makes the manifest invalid", () => {
+    const source = baseManifest(`
+options:
+  - name: "Verbosity"
+    flag: "--verbose"
+    type: multistate
+    states:
+      - value: "on"
+        name: "On"
+        default: true
+      - value: "off"
+        name: "Off"
+        default: true
+`);
+    const state = validateManifest(source, vscode.Uri.file("/workspace/manifest.yaml"));
+    assert.strictEqual(state.status, "invalid");
+  });
+
   // -------------------------------------------------------------------------
   // when expressions
   // -------------------------------------------------------------------------

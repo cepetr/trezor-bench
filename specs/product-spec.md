@@ -611,11 +611,10 @@ If an option is temporarily unavailable in the current context, its saved value 
 
 When no active build context has been saved yet, the extension defaults to the first available model, first available target, and first available component from the loaded manifest, and the synthetic `Default` preset choice.
 
-When no explicit build-option value has been saved yet, the displayed and emitted value is the option's preset-effective value — the value calculated from the active preset's matching shared and user preset fragments — rather than a manifest-authored default:
+When no explicit build-option value has been saved yet, the displayed and emitted value is the option's preset-effective value — the value calculated from the active preset's matching shared and user preset fragments, falling back to the option's baseline where no fragment applies:
 
 - Checkbox options preset-effective to disabled when no applicable preset fragment sets them (the upstream implicit-disabled value).
-- Multistate options preset-effective to the state whose manifest-declared value is `null`, when the option declares such a state, whenever no applicable preset fragment sets them.
-- A multistate option that declares no `null`-valued state and receives no value from any applicable preset fragment preset-effective to its first declared state.
+- Multistate options preset-effective to their baseline state whenever no applicable preset fragment sets them. The baseline is the state marked `default: true`; failing that, the state whose manifest-declared value is `null`; failing that, the first declared state.
 
 Explicitly selecting a multistate option's `null`-valued state clears any stored override for that option — the row then follows the active preset again, the same as if no selection had ever been made. A value stored before this behavior existed that happens to equal that `null`-valued state's id is treated the same way.
 
@@ -1113,6 +1112,7 @@ Collection requirements:
 - `options` is optional.
 - Entry ids must be unique within each collection; a duplicate id is a validation error.
 - Effective option flags must be unique across all options, and state ids must be unique within a multistate option; duplicates are validation errors.
+- At most one state per multistate option may declare `default: true`; a second one is a validation error.
 
 At a high level, the manifest structure looks like this:
 
@@ -1249,9 +1249,9 @@ When an option uses `type: multistate`, each state may define these authored fie
 - `value`: string or null, optional. Value paired with the option's `flag` when the state is selected. If omitted or set to `null`, the state suppresses the CLI value for that option.
 - `name`: string, required. User-facing state label shown in the UI.
 - `description`: string, optional. Explanatory text shown for the state.
-- `default`: boolean, optional. Accepted for backward compatibility and ignored; it has no effect on the effective value.
+- `default`: boolean, optional. Marks this state as the option's baseline, so states can be declared in whatever order reads best. At most one state per option may set it; declaring it on more than one state is a validation error.
 
-For multistate options, the effective value when no override is stored follows the preset-effective rules described in `Persistence And Defaults`; a state's `default` marking has no effect.
+For multistate options, the effective value when no override is stored follows the preset-effective rules described in `Persistence And Defaults`, whose baseline is the state marked `default: true`.
 
 Examples:
 

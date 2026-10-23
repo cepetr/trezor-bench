@@ -46,7 +46,8 @@ function checkboxOption(id: string): BuildOption {
 
 function multistateOption(
   id: string,
-  states: Array<{ id: string; label: string; flag: string }>
+  states: Array<{ id: string; label: string; flag: string }>,
+  defaultState?: string
 ): BuildOption {
   return {
     key: id.replace(/-/g, "_"),
@@ -55,6 +56,8 @@ function multistateOption(
     flag: `--${id}`,
     kind: "multistate",
     states,
+    // Mirrors the parser's baseline fallback when no state declares `default: true`.
+    defaultState: defaultState ?? states.find((s) => s.id === "null")?.id ?? states[0]?.id,
   };
 }
 
@@ -223,6 +226,26 @@ suite("computePresetEffectiveValue – multistate", () => {
     const result = computePresetEffectiveValue(pyoptNoNull, overlay);
     assert.strictEqual(result.state, "resolved");
     assert.strictEqual(result.value, "true");
+  });
+
+  test("absent -> resolved to the manifest-declared default over the null-valued state", () => {
+    const withDeclaredDefault = multistateOption("dbg-console", DBG_CONSOLE_STATES, "swo");
+    const result = computePresetEffectiveValue(withDeclaredDefault, new Map());
+    assert.strictEqual(result.state, "resolved");
+    assert.strictEqual(result.value, "swo");
+  });
+
+  test("absent with no baseline at all -> unresolved", () => {
+    const stateless: BuildOption = {
+      key: "stateless",
+      id: "stateless",
+      label: "stateless",
+      flag: "--stateless",
+      kind: "multistate",
+      states: [],
+    };
+    const result = computePresetEffectiveValue(stateless, new Map());
+    assert.strictEqual(result.state, "unresolved");
   });
 
   test("boolean-like raw values map to 'true'/'false' state ids", () => {

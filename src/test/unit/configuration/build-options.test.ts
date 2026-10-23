@@ -47,7 +47,15 @@ function multistate(
   states: BuildOption["states"],
   defaultState?: string
 ): BuildOption {
-  return { key, label: key, flag, kind: "multistate", states, defaultState };
+  return {
+    key,
+    label: key,
+    flag,
+    kind: "multistate",
+    states,
+    // Mirrors the parser's baseline fallback when no state declares `default: true`.
+    defaultState: defaultState ?? states?.find((s) => s.id === "null")?.id ?? states?.[0]?.id,
+  };
 }
 
 const ctx: BuildContext = {
@@ -249,16 +257,54 @@ suite("normalizeBuildOptions", () => {
     assert.strictEqual(resolved[0].isOverride, true);
   });
 
-  test("multistate option with no null-valued state and no preset data is unresolved, falling back to the first state", () => {
+  test("multistate option with no null-valued state and no preset data resolves to its baseline state", () => {
     const states = [
       { id: "off", label: "Off", flag: "" },
       { id: "on", label: "On", flag: "--fast" },
     ];
     const opts = [multistate("fast", "--fast", states)];
     const resolved = normalizeBuildOptions(opts, undefined, ctx, NO_PRESETS);
-    assert.strictEqual(resolved[0].presetState, "unresolved");
+    assert.strictEqual(resolved[0].presetState, "resolved");
     assert.strictEqual(resolved[0].value, "off");
     assert.strictEqual(resolved[0].isOverride, false);
+  });
+
+  test("multistate option with no preset data shows the manifest-declared default, not the first state", () => {
+    const states = [
+      { id: "off", label: "Off", flag: "" },
+      { id: "on", label: "On", flag: "--fast" },
+    ];
+    const opts = [multistate("fast", "--fast", states, "on")];
+    const resolved = normalizeBuildOptions(opts, undefined, ctx, NO_PRESETS);
+    assert.strictEqual(resolved[0].presetState, "resolved");
+    assert.strictEqual(resolved[0].value, "on");
+    assert.strictEqual(resolved[0].isOverride, false);
+  });
+
+  test("a declared default outranks the null-valued state as the baseline", () => {
+    const states = [
+      { id: "null", label: "Default", flag: "" },
+      { id: "swo", label: "SWO", flag: "--dbg-console=swo" },
+    ];
+    const opts = [multistate("dbg-console", "--dbg-console", states, "swo")];
+    const resolved = normalizeBuildOptions(opts, undefined, ctx, NO_PRESETS);
+    assert.strictEqual(resolved[0].value, "swo");
+    assert.strictEqual(resolved[0].isOverride, false);
+  });
+
+  test("selecting the baseline state stores it literally and is not an override", () => {
+    const states = [
+      { id: "off", label: "Off", flag: "" },
+      { id: "on", label: "On", flag: "--fast" },
+    ];
+    const saved: BuildOptionsState = {
+      values: { fast: "on" },
+      persistedAt: "2026-01-01T00:00:00Z",
+    };
+    const opts = [multistate("fast", "--fast", states, "on")];
+    const resolved = normalizeBuildOptions(opts, saved, ctx, NO_PRESETS);
+    assert.strictEqual(resolved[0].value, "on");
+    assert.strictEqual(resolved[0].isOverride, false, "equals the baseline it was stored over");
   });
 
   test("multistate option restores a saved state that differs from a resolved preset-effective value", () => {

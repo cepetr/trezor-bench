@@ -807,14 +807,27 @@ function validateBuildOptionStates(
 
     const isDefault = stateItem.get("default") === true;
     if (isDefault) {
-      defaultState = id;
+      if (defaultState !== undefined) {
+        const defaultNode = stateItem.get("default", true) as unknown as { range?: [number, number, number] };
+        issues.push(
+          issue(
+            "error",
+            "duplicate-default",
+            `options "${optionLabel}": only one state may declare "default": true`,
+            toVsRange(lineCounter, defaultNode?.range)
+          )
+        );
+      } else {
+        defaultState = id;
+      }
     }
     states.push({ id, label, flag, description });
   }
 
-  // If no explicit default, use the first state
+  // No state declared `default: true`: fall back to the null-valued state,
+  // else the first declared state.
   if (!defaultState && states.length > 0) {
-    defaultState = states[0].id;
+    defaultState = states.find((s) => s.id === "null")?.id ?? states[0].id;
   }
 
   return { states, defaultState };

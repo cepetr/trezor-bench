@@ -231,13 +231,8 @@ export function computePresetEffectiveValue(
 
   // multistate
   if (entry === undefined) {
-    const nullState = option.states?.find((s) => s.id === "null");
-    if (nullState) {
-      return { optionKey, state: "resolved", value: "null" };
-    }
-    const firstState = option.states?.[0];
-    if (firstState) {
-      return { optionKey, state: "resolved", value: firstState.id };
+    if (option.defaultState !== undefined) {
+      return { optionKey, state: "resolved", value: option.defaultState };
     }
     return { optionKey, state: "unresolved" };
   }

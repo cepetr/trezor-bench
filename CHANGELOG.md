@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+### Added
+- A multistate build option's state can again be marked `default: true` in the manifest to declare which state is the option's baseline, so states can be ordered however reads best rather than placing the baseline first. 
+
 ## 0.5.0 - 2026-10-22
 ### Added
 - Multi-root windows are now supported. Trezor Bench finds the `trezor-firmware` folder among the open folders and works against it; other folders are ignored.
