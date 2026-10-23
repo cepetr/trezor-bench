@@ -63,6 +63,7 @@ const BUILD_OPTIONS: BuildOption[] = [
       { id: "swo", label: "SWO", flag: "--dbg-console=swo" },
       { id: "vcp", label: "VCP", flag: "--dbg-console=vcp" },
     ],
+    defaultState: "null",
   },
   {
     key: "pyopt",
@@ -75,6 +76,7 @@ const BUILD_OPTIONS: BuildOption[] = [
       { id: "true", label: "Enabled", flag: "--pyopt=true" },
       { id: "false", label: "Disabled", flag: "--pyopt=false" },
     ],
+    defaultState: "null",
   },
 ];
 
