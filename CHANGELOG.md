@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 - 2026-10-26
 ### Added
 - A multistate build option's state can again be marked `default: true` in the manifest to declare which state is the option's baseline, so states can be ordered however reads best rather than placing the baseline first. 
 
